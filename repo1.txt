@@ -1,1 +1,2 @@
 Hello, Git!
+Let's try smth else.
