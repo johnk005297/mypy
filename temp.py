@@ -18,7 +18,7 @@ db = [
     {
         "name": "Кириллов Вадим",
         "birthday": "01/12/1980",
-        "height": 190,
+        "height": 180,
         "weight": 90.5,
         "car": True,
         "languages": ["JavaScript", "Python"]
