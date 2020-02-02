@@ -5,7 +5,7 @@ db = [
         "height": 170,
         "weight": 70.5,
         "car": True,
-        "languages": ["С#", "Ruby"]
+        "languages": ["c#", "ruby"]
     },
     {
         "name": "Петров Алексей",
@@ -13,7 +13,7 @@ db = [
         "height": 178,
         "weight": 77,
         "car": False,
-        "languages": ["С++", "Python"]
+        "languages": ["c++", "python"]
     },
     {
         "name": "Кириллов Вадим",
@@ -21,7 +21,7 @@ db = [
         "height": 180,
         "weight": 90.5,
         "car": True,
-        "languages": ["JavaScript", "Python"]
+        "languages": ["javascript", "python"]
     }
     
 ]
@@ -38,9 +38,9 @@ while True:
     answer = input()
 
     if answer == "1":
-        print("Содержимое базы данных ({}):".format(len(db)))
-        for i, item in enumerate(db, start=1):
-            print("{}.".format(i))
+        print("Содержимое базы данных ({}):".format(len(db)), "\n")
+        for i, item in enumerate(db, start=1):            
+            print("{}.".format(i), end=' ')
             print("Имя: {}".format(item["name"]))
 
             
@@ -48,7 +48,7 @@ while True:
     elif answer == "2":
         lang = input("Введите язык программирования: ")
         # "Нормализация" наименования языка на случай ошибки при вводе
-        lang = lang.capitalize()
+        lang = lang.lower()
 
         # res - копия db, с сотрудниками, удовлетворяющими условию по языку
         res = []
@@ -58,9 +58,9 @@ while True:
 
         if len(res) > 0:
             print("Список сотрудников со знанием "
-                  "языка программирования {} ({}):".format(lang, len(res)))
+                  "языка программирования {} ({}):".format(lang, len(res)),"\n")
             for i, item in enumerate(res, start=1):
-                print("{}.".format(i))
+                print("{}.".format(i), end=" ")
                 print("Имя: {}".format(item["name"]))
 
                 
@@ -86,5 +86,3 @@ while True:
 
     else:
         break
-
-print("smth to reveal the changes")
