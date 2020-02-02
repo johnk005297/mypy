@@ -86,3 +86,5 @@ while True:
 
     else:
         break
+
+print("smth to reveal the changes")
