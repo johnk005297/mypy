@@ -5,7 +5,7 @@ db = [
         "height": 170,
         "weight": 70.5,
         "car": True,
-        "languages": ["С++"]
+        "languages": ["С#", "Ruby"]
     },
     {
         "name": "Петров Алексей",
@@ -43,7 +43,7 @@ while True:
             print("{}.".format(i))
             print("Имя: {}".format(item["name"]))
 
-            ...
+            
 
     elif answer == "2":
         lang = input("Введите язык программирования: ")
@@ -63,7 +63,7 @@ while True:
                 print("{}.".format(i))
                 print("Имя: {}".format(item["name"]))
 
-                ...
+                
         else:
             print("Таких сотрудников нет.")
 
