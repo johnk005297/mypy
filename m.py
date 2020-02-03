@@ -1,13 +1,19 @@
+def ask_user(prompt, retries=3, hint="Ответьте, ДА или НЕТ?"):
+    while True:
+        retries -= 1
+        ok = input(prompt + " -> ").upper()
 
-    
-while True:
-    x = int(input("Give me the number: "))
-    if x > 100:
-        print("Print lower number")
-    elif x <= 50:
-        print("Try more")
-    else:
-        print("No good this time!")
-        break
+        if ok in ("Д", "ДА"):
+            return True
+        elif ok in ("Н", "НЕТ"):
+            return False
 
+        if retries <= 0:
+            print("Не смог получить нужный ответ, считаю за отказ.")
+            return False
+        print(hint)
 
+if ask_user("Сохранить файл?"):
+    print("Сохранил!")
+else:
+    print("Не сохранил.")
