@@ -11,4 +11,4 @@ def test(a, b, c, units="сантиметры", print_error=True):
 abc = [6, 4, 3]
 params = dict(units="см.",print_error=True)
 
-print(test(*abc, **params))
+test(*abc, **params)
