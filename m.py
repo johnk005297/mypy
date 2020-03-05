@@ -1,14 +1,25 @@
-def test(a, b, c, units="сантиметры", print_error=True):
-    if a + b <= c or a + c <= b or b + c <= a:
-        if print_error:
-            return "Проверьте введенные стороны треугольника!"
+import mysql.connector
+
+def test():
+    db_connection = mysql.connector.connect(
+            
+        host = '172.17.0.2', # for linux db
+        port = '3306',
+        database = 'clients',
+        user = 'root',
+        password = 'root',
+        auth_plugin='mysql_native_password'
+    )     
+    cursor = db_connection.cursor()
+
+    if not db_connection.is_connected():
+        print("No connection")  
         
+    cur = db_connection.cursor()
+    cur.execute("delete from organizations where org_id = 1")
+    db_connection.commit()
+    # result = cur.fetchall()
+    # for x in result:
+    #     print(x)
 
-    p = (a + b + c) / 2
-    s = (p * (p - a) * (p - b) * (p - c)) ** 0.5  
-    return "{} {}".format(round(s,2), units)
-
-abc = [6, 4, 3]
-params = dict(units="см.",print_error=True)
-
-test(*abc, **params)
+test()
