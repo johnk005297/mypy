@@ -3,7 +3,7 @@ class t:
         self.x = a
         self.y = b
            
-    def some_func(self):
+    def summingUp(self):
         if self.x == self.y:
             return "They are even"
         else:
@@ -12,5 +12,6 @@ class t:
 if __name__ == "__main__":
     c = t(5,578)
     c2 = t(33, 22)
-    print(c2.some_func())
-    
+    print(c2.summingUp())
+    print("")
+
