@@ -1,25 +1,16 @@
-import mysql.connector
+class t:
+    def __init__(self, a, b):        
+        self.x = a
+        self.y = b
+           
+    def some_func(self):
+        if self.x == self.y:
+            return "They are even"
+        else:
+            return self.x + self.y
 
-def test():
-    db_connection = mysql.connector.connect(
-            
-        host = '172.17.0.2', # for linux db
-        port = '3306',
-        database = 'clients',
-        user = 'root',
-        password = 'root',
-        auth_plugin='mysql_native_password'
-    )     
-    cursor = db_connection.cursor()
-
-    if not db_connection.is_connected():
-        print("No connection")  
-        
-    cur = db_connection.cursor()
-    cur.execute("delete from organizations where org_id = 1")
-    db_connection.commit()
-    # result = cur.fetchall()
-    # for x in result:
-    #     print(x)
-
-test()
+if __name__ == "__main__":
+    c = t(5,578)
+    c2 = t(33, 22)
+    print(c.some_func())
+    print()
