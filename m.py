@@ -13,5 +13,5 @@ if __name__ == "__main__":
     c = t(5,578)
     c2 = t(33, 22)
     print(c2.summingUp())
-    print("")
+    print("Wrap it up!")
 
