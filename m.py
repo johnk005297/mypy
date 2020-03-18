@@ -1,7 +1,7 @@
-class t:
-    def __init__(self, a, b):        
-        self.x = a
-        self.y = b
+class tclass:
+    def __init__(self):        
+        self.x = int(input("enter first num: "))
+        self.y = int(input("enter sec num: "))
 
     def __str__(self):
         return "{} and {}".format(self.x, self.y)
@@ -18,13 +18,13 @@ class t:
             if self.x == self.y:
                 return "They are even"
             else:
-                return self.x + self.y
+                return print("The result off summing: {}".format(self.x + self.y))
         except Exception as err:
             print("There is an error: {}".format(err))
 
 if __name__ == "__main__":
-    c = t(7,55)
-    
+
+    c = tclass()    
     print(c.summingUp())
     
     
