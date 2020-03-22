@@ -1,26 +1,26 @@
 class tclass:
-    def __init__(self):        
-        self.x = int(input("enter first num: "))
-        self.y = int(input("enter sec num: "))
+    def __init__(self):
+        try:                
+            self.x = float(input("enter first num: "))
+            self.y = float(input("enter sec num: "))
+        except Exception as err:
+            print("Not float, error: {}".format(err))
+            raise
 
-    def __str__(self):
-        return "{} and {}".format(self.x, self.y)
+    # def __str__(self):
+    #     return "{} and {}".format(self.x, self.y)
 
     def summingUp(self):
-        try:
-            # if isinstance(self.x or self.y, (int, float)):
-            #     print("The obj is a number!")
-            # elif isinstance(self.x or self.y, str):
-            #     print("The obj is a string")
-            # else:
-            #     raise TypeError("Not a number: {} or {}".format(type(self.x), type(self.y)))
+                  
+        if self.x == self.y:
+            return "They are even: {} = {}".format(self.x, self.y)
 
-            if self.x == self.y:
-                return "They are even"
-            else:
-                return print("The result off summing: {}".format(self.x + self.y))
-        except Exception as err:
-            print("There is an error: {}".format(err))
+        else:
+            return "The result off summing: {}".format(self.x + self.y)
+        # else:
+        #     raise TypeError("Not a number: {} or {}".format(type(self.x), type(self.y)))
+        
+    
 
 if __name__ == "__main__":
 
