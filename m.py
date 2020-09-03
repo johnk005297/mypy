@@ -4,14 +4,14 @@ class myMath:
         self.b = 962    
         self.d = "Description of the instance"
 
-    def summingUp(self, x, y):
+    def summingUp(self):
         
         try:
-            if x == y:
-                return "They are even: {} = {}".format(x, y)
+            if self.a == self.b:
+                return "They are even: {} = {}".format(self.a, self.b)
 
             else:
-                return "The result off summing: {}".format(x + y)
+                return "The result off summing: {}".format(self.a + self.b)
         except Exception as err:
             print("There is an error!")
             print("Type: ", type(err))
@@ -25,11 +25,10 @@ class myMath:
 
 if __name__ == "__main__":
        
-    c = myMath()    
-    print(c)    
-    print(c.summingUp(27.60,13.74))
-    print(myMath.summingUp(c,5,7))
-
+    c = myMath()        
+    print(c.summingUp())
+    # print(myMath.summingUp(myMath()))
+    print(myMath().summingUp())
     
     
     
