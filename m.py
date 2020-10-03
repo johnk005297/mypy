@@ -29,6 +29,7 @@ if __name__ == "__main__":
     print(c.summingUp())
     # print(myMath.summingUp(myMath()))
     print(myMath().summingUp())
+    print('Smth for commit')
     
     
     
