@@ -31,7 +31,8 @@ if __name__ == "__main__":
     print(myMath().summingUp())
     print('Smth for commit')
     
-    
+
+#   git commit <file_name> -m "<Message text>"
     
     
     
