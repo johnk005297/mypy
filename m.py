@@ -23,6 +23,7 @@ class myMath:
     #     return "{}. {} {} ".format(self.d, self.a, self.b)
         
 
+#   git commit <file_name> -m "<Message text>"
 if __name__ == "__main__":
        
     c = myMath()        
@@ -31,8 +32,6 @@ if __name__ == "__main__":
     print(myMath().summingUp())
     print('Smth for commit')
     
-
-#   git commit <file_name> -m "<Message text>"
     
     
     
