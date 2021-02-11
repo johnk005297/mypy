@@ -1,5 +1,5 @@
 pill = int(input(("Сколько аскорбинок хотите купить? ")))
-has_discount = input("Есть ли у Вас социальная карта? ").upper() in ("YES","Y","1","ДА")
+has_discount = input("Есть ли у Вас социальная карта? ").upper() in ("YES","Y","1")
 
 price = 15.35
 total_price = price * pill
@@ -23,6 +23,5 @@ if has_discount:
 print("Соц. карта:", "Да" if has_discount else "Нет")
 print()
 
-
-
-
+    
+#   git commit <file_name> -m "<Message text>"
