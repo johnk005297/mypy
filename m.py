@@ -1,40 +1,28 @@
-class myMath:
-    def __init__(self):                      
-        self.a = 155
-        self.b = 962    
-        self.d = "Description of the instance"
+pill = int(input(("Сколько аскорбинок хотите купить? ")))
+has_discount = input("Есть ли у Вас социальная карта? ").upper() in ("YES","Y","1","ДА")
 
-    def summingUp(self):
-        
-        try:
-            if self.a == self.b:
-                return "They are even: {} = {}".format(self.a, self.b)
+price = 15.35
+total_price = price * pill
+final_price = total_price
 
-            else:
-                return "The result off summing: {}".format(self.a + self.b)
-        except Exception as err:
-            print("There is an error!")
-            print("Type: ", type(err))
-            print(err)
-        
-    # def __str__(self):
-    #     return "\nYour object are: {0}({1}) and {2}({3}) \n{4}".format(self.x,type(self.x), self.y, type(self.y), self.d)
-    # def __str__(self):
-    #     return "{}. {} {} ".format(self.d, self.a, self.b)
-        
+if 0 < pill <= 5:
+  print("Продажа по обычной цене")
+elif pill < 10:
+  final_price *= 0.95
+  print("Продажа со скидкой 5%")
+else:
+  free_count = pill // 10
+  final_price -= free_count * price
+  print("Каждая 10-ая бесплатно!")
 
-#   git commit <file_name> -m "<Message text>"
-if __name__ == "__main__":
-       
-    c = myMath()        
-    print(c.summingUp())
-    # print(myMath.summingUp(myMath()))
-    print(myMath().summingUp())
-    print('Smth for commit')
+# If has discount - 10% bonus
+if has_discount:
+  final_price = int(final_price * 0.9)
 
-#   Need to get back real quick to classes!
-    
-    
-    
-    
-    
+
+print("Соц. карта:", "Да" if has_discount else "Нет")
+print()
+
+
+
+
