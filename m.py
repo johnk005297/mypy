@@ -24,6 +24,7 @@ print("# Соц. карта:", "Да" if has_discount else "Нет")
 print("# Скидка: {}", )
 print("# Итоговая цена: {}", final_price)
 # if we would like to change smth !!!
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     
 #   git commit <file_name> -m "<Message text>"
