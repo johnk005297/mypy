@@ -27,3 +27,4 @@ print("# Итоговая цена: {}", final_price)
 
     
 #   git commit <file_name> -m "<Message text>"
+# git setup 
