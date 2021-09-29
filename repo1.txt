@@ -1,2 +1,15 @@
 Hello, Git!
-Let's try smth else.
+
+Some usefull commands to remember:
+git init    // declare .git directory
+git remote -v   // get the name of remote repository
+git help -a
+git config --list
+git diff    // check the changes been made
+git status
+git add -A
+git commit -m "comment to commit"
+git push origin main    // push commits to the branch(main)
+git pull origin main    // pull all the changes from the repo been made by others
+git branch    // create a branch
+git checkout <branch name>
