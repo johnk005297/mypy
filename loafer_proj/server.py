@@ -5,8 +5,11 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    weather = city_weather("Moscow,Russia")
-    return f"Weather in Moscow: {weather['temp_C']}, feels like {weather['FeelsLikeC']}"
+    weather = city_weather("Moscow,Russia")    
+    if weather:
+        return f"Weather in Moscow: {weather['temp_C']}, feels like {weather['FeelsLikeC']}"
+    else:
+        return "Service error"
 
 if __name__ == "__main__":
     app.run()
