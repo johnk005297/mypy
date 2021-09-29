@@ -12,4 +12,8 @@ git commit -m "comment to commit"
 git push origin main    // push commits to the branch(main)
 git pull origin main    // pull all the changes from the repo been made by others
 git branch    // create a branch
+git branch -a   // list of branches
 git checkout <branch name>
+
+//MERGE BRANCHES
+
