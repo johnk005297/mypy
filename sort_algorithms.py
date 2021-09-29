@@ -1,4 +1,4 @@
-#   git commit <file_name> -m "<Message text>"
+#   git commit <file_name> -m "Message text"
 
 
 def fact(x):
@@ -20,7 +20,7 @@ def fact_rec(x):
     else:
         return "It's negative"
 
-# print(fact_rec(2))
+
 
 def factorial_2(x):
     if x == 1:
@@ -29,7 +29,6 @@ def factorial_2(x):
         # print(f"I'm here!! X is {x}")
         return x * factorial_2(x - 1)
 
-# print(factorial_2(5))
 
 
 def insert_sort(A):
