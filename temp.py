@@ -1,91 +1,64 @@
-def person_data():
-    db = [
-        {
-            "name": "Иванов Иван",
-            "birthday": "04/05/1994",
-            "height": 170,
-            "weight": 70.5,
-            "car": True,
-            "languages": ["c#", "ruby"]
-        },
-        {
-            "name": "Петров Алексей",
-            "birthday": "14/09/2000",
-            "height": 178,
-            "weight": 77,
-            "car": False,
-            "languages": ["c++", "python"]
-        },
-        {
-            "name": "Кириллов Вадим",
-            "birthday": "01/12/1980",
-            "height": 180,
-            "weight": 90.5,
-            "car": True,
-            "languages": ["javascript", "python"]
-        }
-        
-    ]
+# from string import ascii_lowercase as letters
 
-    while True:
-        print("\n-----")
-        print("Меню")
-        print("-----")
-        print("1. Список сотрудников.")
-        print("2. Фильтр по языку программирования.")
-        print("3. Средний рост сотрудников, моложе указанного г.р.")
-        print("\nВыберите пункт меню или нажмите ENTER для выхода: ", end="")
+# key = {}
+# # for x in range(len(letters)):
+# #     key[letters[x]] = x+1
 
-        answer = input()
+# num = list(range(1,29))
 
-        if answer == "1":
-            print("Содержимое базы данных ({}):".format(len(db)), "\n")
-            for i, item in enumerate(db, start=1):            
-                print("{}.".format(i), end=' ')
-                print("Имя: {}".format(item["name"]))
+# key = dict(zip(num, letters))
+# print(key)
 
-                
 
-        elif answer == "2":
-            lang = input("Введите язык программирования: ")
-            # "Нормализация" наименования языка на случай ошибки при вводе
-            lang = lang.lower()
+# with open("C:\\Users\\johnk\\Desktop\\sizes.txt", "r",encoding='utf-8') as file:
+#     f = file.read()
+# f = f.split()
 
-            # res - копия db, с сотрудниками, удовлетворяющими условию по языку
-            res = []
-            for item in db:
-                if lang in item["languages"]:
-                    res.append(item)
+# book = {}
 
-            if len(res) > 0:
-                print("Список сотрудников со знанием "
-                    "языка программирования {} ({}):".format(lang, len(res)),"\n")
-                for i, item in enumerate(res, start=1):
-                    print("{}.".format(i), end=" ")
-                    print("Имя: {}".format(item["name"]))
+# for word in f:
+#     if word not in book:
+#         book[word] = 1
+#     else:
+#         book[word] += 1
 
-                    
-            else:
-                print("Таких сотрудников нет.")
+# print(book)
 
-        elif answer == "3":
-            younger_than = int(input("Введите год рождения сотрудника: "))
+# def phone_number():
+#     x = input("Enter your phone number: ")
+#     print(f'({x[:3]})-{x[3:6]}-{x[6:8]}-{x[8:]}')
 
-            r_sum = 0
-            r_col = 0
-            for item in db:
-                year = int(item["birthday"][-4:])
-                if year >= younger_than:
-                    r_sum += item["height"]
-                    r_col += 1
+# phone_number()
 
-            if r_col > 0:
-                print("Средний рост сотрудников, {} г.р. и моложе: ({:.1f}) см.".
-                    format(younger_than, r_sum / r_col))
-            else:
-                print("Таких сотрудников нет.")
 
+
+
+# students = ['polly', 'bob', 'jack', 'roberta']
+# s_dict = {student[0].upper(): student for student in students}
+# print(s_dict)
+
+from datetime import datetime
+
+def not_during_the_night(func):
+    # print("I'm here!")
+    def wrapper():        
+        if 7 <= datetime.now().hour < 22:
+            func()         
         else:
-            break
+            print(f'It\'s {datetime.now().hour}')
+    return wrapper
 
-person_data()
+
+# @not_during_the_night       # It's the same way as <anyLink = not_during_the_night(poop)>, but only using decorators!
+# def poop():
+#     print('ONe poop man')
+
+def wrapper(f):    
+    def upper_func():
+        return f().upper()
+    print(upper_func())
+
+# @wrapper
+def hi():
+    return 'hi'
+test = wrapper(hi)
