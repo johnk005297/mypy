@@ -25,7 +25,4 @@ print("# Скидка: {}", )
 print("# Итоговая цена: {}", final_price)
 
 
-    
-#   git commit <file_name> -m "<Message text>"
-#   git status   // check working tree of commits
-#   git diff     // check changes have been made
+
