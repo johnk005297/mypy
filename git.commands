@@ -23,4 +23,4 @@ git merge master    // merge master with main branch *if we are currenly working
 git branch -D branch_name   // delete branch locally
 git push origin --delete branch_name    // delete branch from repository
 //
-git add .gitignore
+git reset   // Remove files from Stage Area for commit
