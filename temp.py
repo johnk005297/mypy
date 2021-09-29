@@ -61,4 +61,4 @@ def wrapper(f):
 # @wrapper
 def hi():
     return 'hi'
-test = wrapper(hi)
+
