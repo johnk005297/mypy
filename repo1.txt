@@ -20,5 +20,5 @@ git checkout <branch name>  // swith to branch
 git pull origin main    // pull all the changes from the repo been made by others
 git merge master    // merge master with main branch *if we are currenly working on main(git checkout)
 //
-git branch -d branch_name   // delete branch locally
+git branch -D branch_name   // delete branch locally
 git push origin --delete branch_name    // delete branch from repository
