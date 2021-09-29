@@ -71,3 +71,4 @@ if __name__ == "__main__":
     test_sort(choice_sort)
     test_sort(bubble_sort)
     
+#need to check smth
