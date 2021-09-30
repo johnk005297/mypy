@@ -9,5 +9,5 @@ def index():
     weather = city_weather("Moscow,Russia")   
     return render_template("index.html", page_title=title, weather_html=weather)
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
 

@@ -3,12 +3,12 @@
             <title>{{ page_title }}</title>
         </head>
         <body>
-            <h1>
+            <h2>
             {% if weather_html %}
                 Weather: {{ weather_html.temp_C }}, feels_like {{ weather_html.FeelsLikeC }}
             {% else %}
                 Service temporary unavailable!
             {% endif %}
-            </h1>   
+            </h2>   
         </body>
 </html>
