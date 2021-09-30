@@ -15,8 +15,8 @@ def city_weather(city_name):
         weather = resp.json()
         if "data" in weather:
             if "current_condition" in weather["data"]:
-                try:
-                    return weather["data"]["current_condition"][0]
+                try:                    
+                    return weather["data"]["current_condition"][0]                    
                 except(IndexError, TypeError):
                     return False                
     except(requests.RequestException, ValueError):
