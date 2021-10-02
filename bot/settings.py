@@ -1,0 +1,4 @@
+API_KEY = "AAEYroXQ5sbWIwaj0HukMVhwy6C7cNNdp04"
+# PROXY_URL = ""
+# PROXY_USERNAME = ""
+# PROXY_PASSWORD = ""
