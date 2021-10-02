@@ -1,4 +1,0 @@
-API_KEY = ""
-# PROXY_URL = ""
-# PROXY_USERNAME = ""
-# PROXY_PASSWORD = ""
