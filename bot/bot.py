@@ -1,4 +1,3 @@
-from re import T
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 # MessageHandler - это широкий обработчик, который может реагировать на большой тип сообщений.
 # CommandHendler - это узко-нишевой обработчик, который реагирует только на команды.

@@ -1,6 +1,7 @@
 bot/settings.py
 git.commands 
 web_proj/web/ 
-bot/bot.log 
+*.log 
 repo2.txt 
-__pycache__ 
+__pycache__
+env/
