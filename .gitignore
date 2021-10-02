@@ -3,3 +3,4 @@ git.commands
 web_proj/web/ 
 bot/bot.log 
 repo2.txt 
+__pycache__ 
