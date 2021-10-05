@@ -1,4 +1,4 @@
-#   git commit <file_name> -m "Message text"
+                ###### SOME ALGORITHMS #######
 
 
 def fact(x):
@@ -10,12 +10,10 @@ def fact(x):
 
 def fact_rec(x):
     if x > 0:         
-        if x == 1:
-            print(f"I'm here!!!!  X is: {x}")
+        if x == 1:            
             return 1
         else:            
-            new_var = fact_rec(x-1)
-            print(f"I'm here!!!!  X is: {x}, and new_var is {new_var}")
+            new_var = fact_rec(x-1)            
             return new_var*x
     else:
         return "It's negative"
@@ -25,8 +23,7 @@ def fact_rec(x):
 def factorial_2(x):
     if x == 1:
         return 1
-    else:
-        # print(f"I'm here!! X is {x}")
+    else:        
         return x * factorial_2(x - 1)
 
 
@@ -48,6 +45,7 @@ def choice_sort(A):
                 A[k], A[pos] = A[pos], A[k]
     return A
 
+
 def bubble_sort(A):
     """ Bubble sort"""
     for bypass in range(1, len(A)):
@@ -55,7 +53,8 @@ def bubble_sort(A):
             if A[k] > A[k+1]:
                 A[k], A[k+1] = A[k+1], A[k]
     return A
-    
+
+
 def test_sort(sort_algorithm):
     print(f"Testing: {sort_algorithm.__doc__}")
     A = [8,2,5,334,99,1,9867,23,74,58]
@@ -66,10 +65,59 @@ def test_sort(sort_algorithm):
     
 
 
-if __name__ == "__main__":
-    test_sort(insert_sort)
-    test_sort(choice_sort)
-    test_sort(bubble_sort)
+def KMP():
+    """
+        Knut-Morris-Pratt algorithm. Finding matches in array. 
+    """    
+    str_to_find = "lolo"    
+    source = "llolo" 
+    """ 1. Need to construct "pi" array.
+       By default: pi[0] = 0; j = 0; i = 1;
+    """
+    pi = [0]*len(str_to_find)
+    j = 0
+    i = 1
+    while i < len(str_to_find):
+        if str_to_find[j] == str_to_find[i]:
+            pi[i] = j + 1
+            i += 1
+            j += 1
+        else:
+            if j == 0:
+                pi[i] = 0
+                i += 1
+            else:
+                j = pi[j-1]
+    print(pi)
+    
+    """
+        2. Main KMP algorithm itself.
+    """    
+    i = 0
+    j = 0
 
+    while i < len(source):
+        if source[i] == str_to_find[j]:
+            i += 1
+            j += 1
+            if j == len(str_to_find):
+                print("Match is found!")
+                break
+        else:
+            if j > 0:
+                j = pi[j-1]
+            else:
+                i += 1
     
-    
+    if i == len(source):
+        print("No matches.")
+
+
+
+
+if __name__ == "__main__":
+    # test_sort(insert_sort)
+    # test_sort(choice_sort)
+    # test_sort(bubble_sort)
+    KMP()
+

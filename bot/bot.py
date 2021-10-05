@@ -1,3 +1,4 @@
+from emoji import emojize           # used in send_emoji function
 from glob import glob               # used in send_picture function
 import logging                      # used in take_logs function
 from random import randint, choice  # used in play_random_number function and send_picture function
@@ -12,7 +13,7 @@ def take_logs():
 
 def greet_user(update, context):        # every function must have two args: update and context
     update.message.reply_text("Hello, user!")
-    update.message.reply_first_name()
+
 
 def talk_to_me(update,context):    
     text = update.message.text      # input from the user    
@@ -26,7 +27,8 @@ def play_random_number(user_number):
         message = f"Your number {user_number}, mine {bot_number}. It's a draw!"
     elif user_number < bot_number:
         message = f"Your number {user_number}, mine {bot_number}. I win! Hehehe"
-    else: pass
+    else:
+        message = f"Something went wrong! Check logs!"
     return message
 
 def guess_number(update, context):
@@ -57,6 +59,8 @@ def send_picture(update, context):
     chat_id_var = update.effective_chat.id
     context.bot.send_photo(chat_id=chat_id_var, photo=open(photo_file_name, "rb"))
 
+def send_emoji():
+    pass
 
 def main():
     mybot = Updater(settings.API_KEY,use_context=True)
