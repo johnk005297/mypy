@@ -70,7 +70,7 @@ def KMP():
         Knut-Morris-Pratt algorithm. Finding matches in array. 
     """    
     str_to_find = "lolo"    
-    source = "llolo" 
+    source = "sdsdfsdfsdflolo" 
     """ 1. Need to construct "pi" array.
        By default: pi[0] = 0; j = 0; i = 1;
     """
@@ -109,7 +109,7 @@ def KMP():
             else:
                 i += 1
     
-    if i == len(source):
+    if i == len(source) and j != len(str_to_find):
         print("No matches.")
 
 
