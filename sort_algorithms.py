@@ -1,32 +1,49 @@
-                ###### SOME ALGORITHMS #######
+                                ###### SOME ALGORITHMS #######
 
 
-def fact(x):
+
+def factorial(x:int):
     tot = 1
     while x > 0:
         tot *= x
         x -= 1
     return tot
 
-def fact_rec(x):
+
+                                ####### Recursion examples #######
+
+def pow(a:float, n:int):
+    if n == 0:
+        return 1
+    elif n%2 == 1: # if n is odd
+        return pow(a, n-1) * a
+    else: # if n is even
+        return pow(a**2, n//2)
+
+
+def gcd(a:int, b:int):
+    if b == 0:
+        return a
+    return gcd(b, a%b)
+
+
+def factorial_rec(x):
     if x > 0:         
         if x == 1:            
             return 1
         else:            
-            new_var = fact_rec(x-1)            
-            return new_var*x
+            f = factorial_rec(x-1)
+            return f*x
     else:
-        return "It's negative"
+        return "Number should be greater than zero!"
 
 
 
-def factorial_2(x):
-    if x == 1:
-        return 1
-    else:        
-        return x * factorial_2(x - 1)
+
+##################################################################################################
 
 
+                                ####### SORT algorithms #######
 
 def insert_sort(A):
     """ Insert sort"""  
@@ -56,15 +73,19 @@ def bubble_sort(A):
 
 
 def test_sort(sort_algorithm):
-    print(f"Testing: {sort_algorithm.__doc__}")
-    A = [8,2,5,334,99,1,9867,23,74,58]
-    A_sorted = [1, 2, 5, 8, 23, 58, 74, 99, 334, 9867]
+    print(f"Testing: {sort_algorithm.__doc__}")    
+    A = [8,2,5,334,99,1,9867,23,74,58]  
+    print(f"Was: {A}")
+    A_sorted = [1, 2, 5, 8, 23, 58, 74, 99, 334, 9867]    
     print("testcase #1: ",end='')    
     sort_algorithm(A)
-    print('OK' if A == A_sorted else 'FAIL')
-    
+    print('OK' if A == A_sorted else 'FAIL')    
+    print(f"Now: {A_sorted}\n")
+
+####################################################################################################################
 
 
+                                ####### Finding matches in array. #######
 def KMP():
     """
         Knut-Morris-Pratt algorithm. Finding matches in array. 
@@ -88,7 +109,7 @@ def KMP():
                 i += 1
             else:
                 j = pi[j-1]
-    print(pi)
+    
     
     """
         2. Main KMP algorithm itself.
@@ -112,7 +133,7 @@ def KMP():
     if i == len(source) and j != len(str_to_find):
         print("No matches.")
 
-
+##################################################################################################################################
 
 
 if __name__ == "__main__":
@@ -120,4 +141,6 @@ if __name__ == "__main__":
     # test_sort(choice_sort)
     # test_sort(bubble_sort)
     KMP()
+    # print(gcd(224,42))
+    # print(pow(3,4))
 

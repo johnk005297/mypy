@@ -28,7 +28,7 @@ def play_random_number(user_number):
     elif user_number < bot_number:
         message = f"Your number {user_number}, mine {bot_number}. I win! Hehehe"
     else:
-        message = f"Something went wrong! Check logs!"
+        message = "Something went wrong! Check logs!"
     return message
 
 def guess_number(update, context):
@@ -43,7 +43,8 @@ def guess_number(update, context):
     update.message.reply_text(message)
 
 def show_update_data(update, context):    
-    update.message.reply_text(f"{update}")
+    #update.message.reply_text(f"{update}")
+    pass
     
 def help(update, context):
     options_dict = {
@@ -80,6 +81,6 @@ def main():
 if __name__ == "__main__":    
     take_logs()
     main()
-    # test TESTSETSEETSTSEESTSETSET
+    
     
     
