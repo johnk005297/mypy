@@ -168,7 +168,7 @@ elif m in m28:
         print("Wrong date!")
 
 
-### 10 times more concise solution with no couple of checks!
+### 10 times more concise solution except a couple of checks!
 
 # lst = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 # m, n = map(int, input().split())
