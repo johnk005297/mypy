@@ -170,12 +170,15 @@ elif m in m28:
 
 ### 10 times more concise solution except a couple of checks!
 
-# lst = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-# m, n = map(int, input().split())
-
-# if n == 1:
-#     print(f'{m-1:02}.{lst[m-2]} {m:02}.{n+1:02}')
-# elif n == lst[m-1]:
-#     print(f'{m:02}.{n-1:02} {m+1:02}.01')
+# mon, day = map(int, input().split())
+# monT = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+# if mon == 1 and day == 1:
+#     print(f'31 декабря, прошлого года! {mon:02}.02')
+# elif mon == 12 and day == 31:
+#     print(f'{mon:02}.{(monT[mon - 1] - 1):02} 1 января следующего года')
+# elif day == monT[mon - 1]:
+#     print(f'{mon:02}.{(monT[mon - 1] - 1):02} {(mon + 1):02}.01')
+# elif day == 1:
+#     print(f'{(mon - 1):02}.{monT[mon + 1]:02} {mon:02}.02')
 # else:
-#     print(f'{m:02}.{n-1:02} {m:02}.{n+1:02}')
+#     print(f'{mon:02}.{(day - 1):02} {mon:02}.{(day + 1):02}')
