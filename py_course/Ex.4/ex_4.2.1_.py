@@ -1,13 +1,15 @@
-# Find minimum number using if condition
-a,b,c = map(int, input().split())
+#
+# Print simple numbers less input number
 
-if a < b:
-    if a < c:
-        print(a)
-    else: # a > c
-        print(c)
-else: # a > b
-    if b < c:
-        print(b)
-    else: # b > c
-        print(c)
+n = int(input())
+a: list = list(range(2,n))
+for x in range(2,n):
+    for y in range(2,x):
+        if x%y==0:
+            a.remove(x)
+            break
+print(*a)
+
+        
+           
+    
