@@ -1,18 +1,23 @@
 #
-# Print simple numbers less input number
+############  CHECK IF ROWS AND COLUMNS ARE SIMMETRIC ###############
+import sys
+lst = [[2,3,4,5,6],[3,2,7,8,9],[4,7,2,0,4],[5,8,0,2,1],[6,9,4,1,2]]
 
-n = int(input())
+for x in range(len(lst)):
+    print(*lst[x])
+print('---------')
 
-a: list = list(range(2,n))
-for x in range(2,n):
-    for y in range(2,x):
-        if x%y==0:
-            a.remove(x)
-            break
+      
+for x in range(len(lst)):
+    for y in range(x+1,len(lst)):
+        if lst[x][y] != lst[y][x]:
+            print(False)
+            sys.exit()
+print(True)            
 
-print(a)
+     
+    
+    
 
-
-        
-           
+    
     
