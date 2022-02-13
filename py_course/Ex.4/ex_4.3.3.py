@@ -6,10 +6,10 @@ a: list = []
 
 while True:
     if sum(a) >= n:
+        print(*a)
         break
     for x in lst[::-1]:
         while x <= (n - sum(a)):            
             a.append(x)
             
         
-print(*a)
