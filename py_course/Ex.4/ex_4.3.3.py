@@ -17,4 +17,5 @@ a: list = []
 for x in lst[::-1]:
     while x <= (n - sum(a)):
         a.append(x)
+print()
 print(*a)
