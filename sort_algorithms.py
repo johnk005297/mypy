@@ -142,4 +142,5 @@ if __name__ == "__main__":
     KMP()
     # print(gcd(224,42))
     # print(pow(3,4))
+    
 
