@@ -15,7 +15,7 @@ def std_p7_call():
     
     response = requests.get(url_std_p7, headers=headers)
 
-    return(response.json())
+    return(response.headers)
 
 
 print(std_p7_call())
