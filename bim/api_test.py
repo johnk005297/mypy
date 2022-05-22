@@ -1,4 +1,5 @@
 #
+from email import contentmanager
 import json
 import requests
 from dotenv import load_dotenv
@@ -18,4 +19,14 @@ def std_p7_call():
     return(response.headers)
 
 
-print(std_p7_call())
+
+def string_search():
+    with open(r'C:\Users\ivan.kutuzov\YandexDisk\job_bimeister\BIM\sprints\94_local_deploy_lite.yml', 'r') as reader:
+        content = reader.readlines()
+        if 'db:' in content:
+            print("YES!")
+    
+    
+        
+string_search()
+
