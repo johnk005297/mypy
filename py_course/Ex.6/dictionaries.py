@@ -12,8 +12,9 @@ Patterns to create dictionary using dict() function:
 
 
 '''
-Task: 
-    Input value: one=1 two=2 three=3. Need to make Output -> ('one', 1) ('three', 3) ('two', 2) using dict() function.
+Task 6.1.1
+    Input value: one=1 two=2 three=3. 
+    Need to make Output -> ('one', 1) ('three', 3) ('two', 2) using dict() function.
 '''
 
 #--------------------------------------- Solution 1 ---------------------------------------
@@ -24,10 +25,11 @@ def solution1():
     inp = input().replace(' ',',').replace('=',',').split(',')    # Output: ['one', '1', 'two', '2', 'three', '3']
 
     ab: list = [ [inp[x-1]] + [int(inp[x])]
-                    for x in range(1, len(inp), 2) ]
+                    for x in range(1, len(inp), 2) ]              # Output: {'one': 1, 'two': 2, 'three': 3}
 
     ab = dict(ab)
     print(*sorted(ab.items()))
+    
 
 
 #--------------------------------------- Solution 2 ---------------------------------------
@@ -56,16 +58,41 @@ def solution3():
     d=dict(b)
     print(*sorted(d.items()))
 
+#----------------------------End of Task 6.1.1----------------------------------------------
 
 
-solution2()
+'''
+Task 6.1.2
+    Input value: ['5=отлично', '4=хорошо', '3=удовлетворительно']
+    Need to make Output as (3, 'удовлетворительно') (4, 'хорошо') (5, 'отлично'), without using dict() function.
+    
+'''
+# import sys
+
+#--------------------------------------- Solution 4 ---------------------------------------
+def solution4():
+    
+    # считывание списка из входного потока
+    # lst_in = list(map(str.strip, sys.stdin.readlines()))
+    lst_in = ['5=отлично', '4=хорошо', '3=удовлетворительно']
+    d = {}
+    for x in lst_in:        
+        d[int(x.split('=')[0])] = x.split('=')[1]
+            
+    print(*sorted(d.items()))
 
 
+#--------------------------------------- Solution 5 ----------------------------------------
 
-             
+def solution5():
+
+    lst_in = ['5=отлично', '4=хорошо', '3=удовлетворительно']
+    lst = [i.split('=') for i in lst_in]
+    d = {int(x): y for x,y in lst}
+    print(d)
 
 
-
+#----------------------------End of Task 6.1.2----------------------------------------------
 
 
 
