@@ -13,7 +13,7 @@ load_dotenv()
 token_std_h5 = os.getenv("token_std_h5")
 headers = {'accept': '*/*','Content-type':'application/json-patch+json', 'Authorization': f"Bearer {token_std_h5}"}
 
-site_url: str = "http://std-h5.dev.bimeister.io"
+site_url: str = "http://std-h5.dev.company.io"
 
 '''
     List of global variables to access
@@ -178,12 +178,12 @@ def create_workflow():
 ############################## IMPORT #####################################
 '''
 URL for workflow with *.xml file:
-    http://std-h5.dev.bimeister.io/api/WorkFlows/3c088ed3-6386-4b99-8d13-1a397e79ce5e/Diagram?contentType=file
+    http://std-h5.dev.company.io/api/WorkFlows/3c088ed3-6386-4b99-8d13-1a397e79ce5e/Diagram?contentType=file
 '''
 
 def import_workflow():  ## Need to fix. Not working!
 
-    url = "http://std-h5.dev.bimeister.io/api/WorkFlows/cfbf150e-21d0-4534-899c-a52a0d685e64/Diagram"
+    url = "http://std-h5.dev.company.io/api/WorkFlows/cfbf150e-21d0-4534-899c-a52a0d685e64/Diagram"
     
     read_xml = os.getcwd() + "\\" + "exportedWorkflow.xml"
     payload={}
