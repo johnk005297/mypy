@@ -112,8 +112,7 @@ def alter_yml():
 
         elif "webapi:" == current_str:
             lst.insert(index+1, " "*count_spaces + ports + " "*count_spaces + "- \"0.0.0.0:8081:80\"\n")
-             
-
+        
         else:
             pass
 
@@ -121,17 +120,15 @@ def alter_yml():
         for line in lst:
             file.write(line)    
     
-    
     if os.path.isfile(yml_file_open_ports):
         print(f'\nFile "{yml_file_open_ports}" is ready.')
     else:
         print("No file here")
 
 
-
 if __name__ == "__main__":      
     alter_yml()    
-    # input('\nPress any key to exit')
+    input('\nPress any key to exit')
     
 
 
