@@ -64,8 +64,7 @@ def get_workflow_nodes_export():   # Getting Draft, Archived and Active processe
     with open('workflow_nodes_export.json', 'w') as json_file:
         json.dump(response, json_file, ensure_ascii=False, indent=4)  
     
-    print("get_workflow_nodes_export - \033[;38;5;34mdone\033[0;0m")
-    
+    print("get_workflow_nodes_export - \033[;38;5;34mdone\033[0;0m")    
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
