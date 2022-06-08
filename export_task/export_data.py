@@ -24,6 +24,7 @@ site_import_url: str = "http://study.bimeister.io"
 '''     GLOBAL VARIABLES    '''
 pwd = os.getcwd()
 bimClass_id_draft_workFlows_export: dict = {}
+
 ''''''''''''''''''''''''''''''
 
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -142,13 +143,13 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
         with open(f"{pwd}\\draft_json\\{line['name']}_bimClass.json", 'w', encoding='utf-8') as file:
             json.dump(response, file, ensure_ascii=False, indent=4)
 
-    # write dict with draft workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}
-        bimClass_id_draft_workFlows_export.append(line['name'])
+    # write dict with draft workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}        
+        bimClass_id_draft_workFlows_export.append(line['name'])        
         bimClass_id_draft_workFlows_export.append(response[0]['id'])
-    
+        
     b = bimClass_id_draft_workFlows_export
     b = [ [b[x-1]] + [b[x]] for x in range(1, len(b), 2) ]      # generation list in format [ ['a', 'b'], ['c', 'd'], ['elem', 'abc'] ]
-    bimClass_id_draft_workFlows_export = dict(b)                # transform list above to dictionary using dict function
+    bimClass_id_draft_workFlows_export = dict(b)                # transform list from above to dictionary using dict() function in format {"name_of_workFlow_process": "bimClass_id"}
     
     with open("bimClass_id_draft_workFlows_export.json", 'w', encoding='utf-8')as file:
         json.dump(bimClass_id_draft_workFlows_export, file, ensure_ascii=False, indent=4)
@@ -183,6 +184,7 @@ if __name__ == "__main__":
     get_workflows_export()    
     workflow_xml_export()     
     get_workFlows_bimClass_export()
+    
     
     
 
