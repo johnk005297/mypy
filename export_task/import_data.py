@@ -6,7 +6,7 @@ import export_data as ex      # Data from export_data.py
 
 
 '''     GLOBAL VARIABLES    '''
-imported_workFlows: list = []
+imported_workFlows: list = []       # workFlows of IMPORTED processes 
 
 ''''''''''''''''''''''''''''''
 
@@ -24,13 +24,20 @@ def get_workflow_nodes_import():   # Getting Draft, Archived and Active processe
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
+## For future needs ##
+def need_to_create():   # /api/WorkFlows/{workFlowOriginId}/BimClasses
+    
+    pass
+
+
+#------------------------------------------------------------------------------------------------------------------------------#
 
 def create_workflow_import():
 
     url = ex.site_import_url + "/api/WorkFlows"    
     
     data_workflows_export_server = ex.read_from_json('Draft_workflows_export.json')
-    workflow_nodes_import = ex.read_from_json('workflow_nodes_import.json')
+    workflow_nodes_import = ex.read_from_json('workflow_nodes_import.json')     # Contains imported workflows
     
     for workflow in data_workflows_export_server['workFlows']:      
         payload = {
@@ -44,7 +51,8 @@ def create_workflow_import():
 
         request = requests.post(url, data=json_payload, headers=ex.headers_import)
         response = request.json()
-        imported_workFlows.append(response)       
+        
+        imported_workFlows.append(response)    
     
     print(f"create_workflow \033[;38;5;34mdone\033[0;0m" if request.status_code == 201 else f"create_workflow \033[;38;5;9m{request}\033[0;0m")
     
@@ -53,7 +61,7 @@ def create_workflow_import():
 
 def get_workflows_import():    # Creating .json only Draft workFlows
 
-    workflow_nodes_import = ex.read_from_json('workflow_nodes_import.json')   
+    workflow_nodes_import = ex.read_from_json('workflow_nodes_import.json')  
 
 
     for obj in range(len(workflow_nodes_import)):
@@ -71,20 +79,22 @@ def get_workflows_import():    # Creating .json only Draft workFlows
 
     print("get_workflows_import - \033[;38;5;34mdone\033[0;0m")
 
-
+#------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
 
 
 if __name__ == "__main__":
-    # ex.create_folders()
-    # ex.get_workflow_nodes_export()
-    # ex.get_workflows_export()    
-    # ex.workflow_xml_export()     
-    # ex.get_workFlows_bimClasses()
-    # get_workflow_nodes_import()
+    ex.create_folders()
+    ex.get_workflow_nodes_export()
+    ex.get_workflows_export()    
+    ex.workflow_xml_export()     
+    ex.get_workFlows_bimClass_export()
+    get_workflow_nodes_import()
     create_workflow_import()
-    # get_workflows_import()
+    get_workflows_import()
+    
+
 
 

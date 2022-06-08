@@ -41,12 +41,12 @@ def create_folders():
     print("create_folders - \033[;38;5;34mdone\033[0;0m")
 #------------------------------------------------------------------------------------------------------------------------------#
 
-def read_from_json(file_name):    
+def read_from_json(file_name):    # Read from JSON files, and dict in return
     
     if file_name[-5:] == '.json':
         pass
     else: file_name += '.json'    
-
+    
     with open(f'{pwd}\\{file_name}', 'r', encoding='utf-8') as file:
         data_from_json = json.load(file)
     
@@ -118,9 +118,10 @@ def workflow_xml_export():
 #------------------------------------------------------------------------------------------------------------------------------
 
 
-def get_workFlows_bimClasses():   # /api/WorkFlows/{workFlowOriginId}/BimClasses
+def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimClasses
     
-    draft_workFlows_export = read_from_json("Draft_workflows_export.json")
+    # Getting data from workFlows on EXPORT server    
+    draft_workFlows_export = read_from_json("Draft_workflows_export.json")      
     archived_workFlows_export = read_from_json("Archived_workflows_export.json")
     active_workFlows_export = read_from_json("Active_workflows_export.json")
         
@@ -143,10 +144,10 @@ def get_workFlows_bimClasses():   # /api/WorkFlows/{workFlowOriginId}/BimClasses
         request = requests.get(url, headers=headers_export)
         response = request.json()
         with open(f"{pwd}\\active_json\\{line['name']}_bimClass.json", 'w', encoding='utf-8') as file:
-            json.dump(response, file, ensure_ascii=False, indent=4)    
+            json.dump(response, file, ensure_ascii=False, indent=4)   
 
 
-    print("get_workFlows_bimClasses - \033[;38;5;34mdone\033[0;0m")
+    print("get_workFlows_bimClass_export - \033[;38;5;34mdone\033[0;0m")
     
 
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -159,7 +160,7 @@ if __name__ == "__main__":
     get_workflow_nodes_export()
     get_workflows_export()    
     workflow_xml_export()     
-    get_workFlows_bimClasses()
+    get_workFlows_bimClass_export()
     
     
 
