@@ -20,7 +20,11 @@ headers_import = {'accept': '*/*','Content-type':'application/json-patch+json', 
 site_export_url: str = "http://std-h5.dev.bimeister.io"
 site_import_url: str = "http://study.bimeister.io"
 
+
+'''     GLOBAL VARIABLES    '''
 pwd = os.getcwd()
+bimClass_id_draft_workFlows_export: dict = {}
+''''''''''''''''''''''''''''''
 
 #------------------------------------------------------------------------------------------------------------------------------#
 def check_type(data):
@@ -41,17 +45,20 @@ def create_folders():
     print("create_folders - \033[;38;5;34mdone\033[0;0m")
 #------------------------------------------------------------------------------------------------------------------------------#
 
-def read_from_json(file_name):    # Read from JSON files, and dict in return
-    
+# Read from JSON files, and dict in return. pwd - current working directory
+# Need to pass two arguments in str: path and file name
+def read_from_json(pwd,file_name):    
     if file_name[-5:] == '.json':
         pass
     else: file_name += '.json'    
-    
     with open(f'{pwd}\\{file_name}', 'r', encoding='utf-8') as file:
         data_from_json = json.load(file)
     
     return data_from_json
 
+# ADD this later
+# path = 'C:\\Users\\Username\\Path\\To\\File'
+# file=open(path, "r")
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
@@ -71,7 +78,7 @@ def get_workflow_nodes_export():   # Getting Draft, Archived and Active processe
 
 def get_workflows_export():    
 
-    data = read_from_json('workflow_nodes_export.json')
+    data = read_from_json(pwd, 'workflow_nodes_export.json')
     for obj in range(len(data)):
         key = data[obj]['name']
         value = data[obj]['id']
@@ -90,9 +97,9 @@ def get_workflows_export():
 
 def workflow_xml_export():    
     
-    draft_workFlows_export = read_from_json("Draft_workflows_export.json")
-    archived_workFlows_export = read_from_json("Archived_workflows_export.json")
-    active_workFlows_export = read_from_json("Active_workflows_export.json")
+    draft_workFlows_export = read_from_json(pwd, "Draft_workflows_export.json")
+    archived_workFlows_export = read_from_json(pwd, "Archived_workflows_export.json")
+    active_workFlows_export = read_from_json(pwd, "Active_workflows_export.json")
     
     for line in draft_workFlows_export['workFlows']:
         url = f"{site_export_url}/api/Attachments/{line['attachmentId']}"
@@ -120,17 +127,32 @@ def workflow_xml_export():
 
 def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimClasses
     
+    bimClass_id_draft_workFlows_export: list = []  # temp list to get data
+
     # Getting data from workFlows on EXPORT server    
-    draft_workFlows_export = read_from_json("Draft_workflows_export.json")      
-    archived_workFlows_export = read_from_json("Archived_workflows_export.json")
-    active_workFlows_export = read_from_json("Active_workflows_export.json")
-        
+    draft_workFlows_export = read_from_json(pwd, "Draft_workflows_export.json")      
+    archived_workFlows_export = read_from_json(pwd, "Archived_workflows_export.json")
+    active_workFlows_export = read_from_json(pwd, "Active_workflows_export.json")
+
+       
     for line in draft_workFlows_export['workFlows']:
         url = f"{site_export_url}/api/WorkFlows/{line['originalId']}/BimClasses"
         request = requests.get(url, headers=headers_export)
         response = request.json()
         with open(f"{pwd}\\draft_json\\{line['name']}_bimClass.json", 'w', encoding='utf-8') as file:
             json.dump(response, file, ensure_ascii=False, indent=4)
+
+    # write dict with draft workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}
+        bimClass_id_draft_workFlows_export.append(line['name'])
+        bimClass_id_draft_workFlows_export.append(response[0]['id'])
+    
+    b = bimClass_id_draft_workFlows_export
+    b = [ [b[x-1]] + [b[x]] for x in range(1, len(b), 2) ]      # generation list in format [ ['a', 'b'], ['c', 'd'], ['elem', 'abc'] ]
+    bimClass_id_draft_workFlows_export = dict(b)                # transform list above to dictionary using dict function
+    
+    with open("bimClass_id_draft_workFlows_export.json", 'w', encoding='utf-8')as file:
+        json.dump(bimClass_id_draft_workFlows_export, file, ensure_ascii=False, indent=4)
+
     
     for line in archived_workFlows_export['workFlows']:
         url = f"{site_export_url}/api/WorkFlows/{line['originalId']}/BimClasses"
@@ -138,7 +160,7 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
         response = request.json()
         with open(f"{pwd}\\archived_json\\{line['name']}_bimClass.json", 'w', encoding='utf-8') as file:
             json.dump(response, file, ensure_ascii=False, indent=4)
-    
+        
     for line in active_workFlows_export['workFlows']:
         url = f"{site_export_url}/api/WorkFlows/{line['originalId']}/BimClasses"
         request = requests.get(url, headers=headers_export)
@@ -163,4 +185,5 @@ if __name__ == "__main__":
     get_workFlows_bimClass_export()
     
     
+
 
