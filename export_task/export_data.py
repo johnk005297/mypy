@@ -48,18 +48,17 @@ def create_folders():
 
 # Read from JSON files, and dict in return. pwd - current working directory
 # Need to pass two arguments in str: path and file name
-def read_from_json(pwd,file_name):    
+def read_from_json(path_to_file,file_name):
+
+    
     if file_name[-5:] == '.json':
         pass
     else: file_name += '.json'    
-    with open(f'{pwd}\\{file_name}', 'r', encoding='utf-8') as file:
+    with open(f'{path_to_file}\\{file_name}', 'r', encoding='utf-8') as file:
         data_from_json = json.load(file)
     
     return data_from_json
 
-# ADD this later
-# path = 'C:\\Users\\Username\\Path\\To\\File'
-# file=open(path, "r")
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
@@ -144,7 +143,7 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
             json.dump(response, file, ensure_ascii=False, indent=4)
 
     # write dict with draft workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}        
-        bimClass_id_draft_workFlows_export.append(line['name'])        
+        bimClass_id_draft_workFlows_export.append(line['originalId'])        
         bimClass_id_draft_workFlows_export.append(response[0]['id'])
         
     b = bimClass_id_draft_workFlows_export
