@@ -7,14 +7,14 @@ from dotenv import load_dotenv
 import xml.etree.ElementTree as ET
 
 
-
 load_dotenv()
 token_std_h5 = os.getenv("token_std_h5")
 token_study = os.getenv("token_study")
 
 
-headers_export = {'accept': '*/*','Content-type':'application/json-patch+json', 'Authorization': f"Bearer {token_std_h5}"}
-headers_import = {'accept': '*/*','Content-type':'application/json-patch+json', 'Authorization': f"Bearer {token_study}"}
+headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_std_h5}"}
+headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_study}"}
+headers_for_xml_import = {'accept': '*/*', 'Authorization': f"Bearer {token_study}"}
 
 
 site_export_url: str = "http://std-h5.dev.bimeister.io"
@@ -53,7 +53,7 @@ def read_from_json(path_to_file,file_name):
     
     if file_name[-5:] == '.json':
         pass
-    else: file_name += '.json'    
+    else: file_name += '.json'
     with open(f'{path_to_file}\\{file_name}', 'r', encoding='utf-8') as file:
         data_from_json = json.load(file)
     
@@ -104,19 +104,20 @@ def workflow_xml_export():
     for line in draft_workFlows_export['workFlows']:
         url = f"{site_export_url}/api/Attachments/{line['attachmentId']}"
         request = requests.get(url, headers=headers_export)        
-        with open(f"{pwd}\\draft_xml\\{line['name']}.xml", 'wb') as file:
+        # with open(f"{pwd}\\draft_xml\\{line['name']}.xml", 'wb') as file:
+        with open(f"{pwd}\\draft_xml\\{line['originalId']}.xml", 'wb') as file:
             file.write(request.content)
     
     for line in archived_workFlows_export['workFlows']:
         url = f"{site_export_url}/api/Attachments/{line['attachmentId']}"
         request = requests.get(url, headers=headers_export)        
-        with open(f"{pwd}\\archived_xml\\{line['name']}.xml", 'wb') as file:
+        with open(f"{pwd}\\archived_xml\\{line['originalId']}.xml", 'wb') as file:
             file.write(request.content)
     
     for line in active_workFlows_export['workFlows']:
         url = f"{site_export_url}/api/Attachments/{line['attachmentId']}"
         request = requests.get(url, headers=headers_export)        
-        with open(f"{pwd}\\active_xml\\{line['name']}.xml", 'wb') as file:
+        with open(f"{pwd}\\active_xml\\{line['originalId']}.xml", 'wb') as file:  
             file.write(request.content)
 
 
@@ -148,7 +149,7 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
         
     b = bimClass_id_draft_workFlows_export
     b = [ [b[x-1]] + [b[x]] for x in range(1, len(b), 2) ]      # generation list in format [ ['a', 'b'], ['c', 'd'], ['elem', 'abc'] ]
-    bimClass_id_draft_workFlows_export = dict(b)                # transform list from above to dictionary using dict() function in format {"name_of_workFlow_process": "bimClass_id"}
+    bimClass_id_draft_workFlows_export = dict(b)                # transform list from above to dictionary using dict() function in format {"workFlow_id": "bimClass_id"}
     
     with open("bimClass_id_draft_workFlows_export.json", 'w', encoding='utf-8')as file:
         json.dump(bimClass_id_draft_workFlows_export, file, ensure_ascii=False, indent=4)

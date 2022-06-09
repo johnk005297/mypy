@@ -1,11 +1,9 @@
 #
 import requests
 import json
-import os
 import export_data as ex      # Data from export_data.py 
 import xml.etree.ElementTree as ET
 import time
-
 
 
 '''     GLOBAL VARIABLES    '''
@@ -20,9 +18,7 @@ def get_workflow_nodes_import():   # Getting Draft, Archived and Active processe
     response = request.json()
         
     with open('workflow_nodes_import.json', 'w') as json_file:
-        json.dump(response, json_file, ensure_ascii=False, indent=4)
-
-    
+        json.dump(response, json_file, ensure_ascii=False, indent=4)    
     print("get_workflow_nodes_import - \033[;38;5;34mdone\033[0;0m")
     
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -62,12 +58,12 @@ def get_BimClassID_of_current_process_import(data):  # /api/WorkFlows/{workFlowO
 
 def create_workflow_import():
 
-    url = ex.site_import_url + "/api/WorkFlows"
-     
+    url = ex.site_import_url + "/api/WorkFlows"  # POST request to create workFlow
     
     draft_workflows_export_server = ex.read_from_json(ex.pwd,'Draft_workflows_export.json')
     workflow_nodes_import = ex.read_from_json(ex.pwd,'workflow_nodes_import.json')     # Contains imported workflows    
     
+    '''  BEGIN of POST request to create workFlows  '''
     for workflow in draft_workflows_export_server['workFlows']:      
         post_payload = {
                         "name": workflow["name"],
@@ -81,13 +77,13 @@ def create_workflow_import():
         post_response = post_request.json()
         
         bimClass_id_import = get_BimClassID_of_current_process_import(post_response['originalId'])    # reference workFlow_original_ID on import server        
-        bimClass_list_id_export = ex.read_from_json(ex.pwd, 'bimClass_id_draft_workFlows_export.json')      
+        bimClass_list_id_export = ex.read_from_json(ex.pwd, 'bimClass_id_draft_workFlows_export.json')                 
+        time.sleep(0.25)
+        '''  END of POST request  '''
         
-        # replacing bimClass_ID in 'Draft_workflows_export.json' with bimClass_ID newly created workFlow
-        replace_str_in_file('Draft_workflows_export.json', 'Draft_workflows_export.json', bimClass_list_id_export[workflow["originalId"]], bimClass_id_import)      
-        time.sleep(0.5)
-                
-        # for workflow in draft_workflows_export_server['workFlows']:    
+        '''  BEGIN OF PUT REQUEST  
+            adding 'elements': [], data from workFlows export into newly created workFlow
+        '''            
         put_payload = {
                         "name": workflow["name"],
                         "workFlowNodeId": workflow_nodes_import[0]['id'],    # 0: Draft; 1: Archived; 2: Active;
@@ -96,31 +92,27 @@ def create_workflow_import():
                         "type": workflow["type"]
                         }
         json_put_payload = json.dumps(put_payload)
-
-        # Replacement of workFlow_bimClass_ID from export server to workFlow_bimClass_ID on import server
+        
+        # Replacement of workFlow_bimClass_ID from export server with bimClass_ID newly created workFlow on import server
         changed_put_payload = json_put_payload.replace(bimClass_list_id_export[workflow["originalId"]], bimClass_id_import)
-
         requests.put(url+"/"+post_response['originalId'], data=changed_put_payload, headers=ex.headers_import)   # /api/WorkFlows/{workFlowOriginalId}  
+        time.sleep(0.25)
+        '''  END OF PUT REQUEST  '''
+        
 
-        '''  BEGIN OF XML POST REQUEST'''
-       
-        # xml_path = ex.pwd+"\\draft_xml"           
-        # # for file in os.listdir(xml_path):
-        # #     if file[:-4] == workflow['name']:
-        # #         my_xml = file
-        # # with open(f'{xml_path}\\{workflow["name"]}.xml', 'rb') as file: 
-        # #     xml_file = file.read() # Записываем содержимое в переменную       
-            
-        # payload={}
-        # files=[
-        #         ('file',(f'{workflow["name"]}.xml',open(f'{xml_path}\\{workflow["name"]}.xml','rb'),'text/xml'))
-        #         ]
-        # post_xml_request = requests.post(f"{url}/{post_response['originalId']}/Diagram?contentType=file", headers=ex.headers_import, data=payload, files=files)
-        # post_xml_response = post_xml_request.json()
-
-        '''  END OF XML POST REQUEST'''         
+        '''  BEGIN OF XML POST REQUEST  '''      
+        xml_path = ex.pwd+"\\draft_xml"                 
+        payload={}
+        files=[ ('file',(f'{workflow["originalId"]}.xml',open(f'{xml_path}\\{workflow["originalId"]}.xml','rb'),'text/xml'))  ]
+                        
+        post_xml_request = requests.post(f"{url}/{post_response['originalId']}/Diagram?contentType=file", headers=ex.headers_for_xml_import, data=payload, files=files)
+        # print(f"{post_xml_request.status_code}")
+        print(f"Name of process: {post_response['name']}",end=' ')
+        print(f"\033[;38;5;34m{post_xml_request.status_code}\033[0;0m" if post_xml_request.status_code == 200 else f"\033[;38;5;9m{post_xml_request.status_code}\033[0;0m")
+        time.sleep(0.25)
+        '''  END OF XML POST REQUEST  '''   
     
-    print(f"create_workflow \033[;38;5;34mdone\033[0;0m" if post_request.status_code == 201 else f"create_workflow \033[;38;5;9m{post_request.status_code}\033[0;0m")
+    print(f"create_workflow - \033[;38;5;34mdone\033[0;0m" if post_request.status_code == 201 else f"create_workflow - \033[;38;5;9m{post_request.status_code}\033[0;0m")
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -128,8 +120,7 @@ def create_workflow_import():
 
 def get_workflows_import():    # Creating .json only Draft workFlows
 
-    workflow_nodes_import = ex.read_from_json(ex.pwd,'workflow_nodes_import.json')  
-
+    workflow_nodes_import = ex.read_from_json(ex.pwd,'workflow_nodes_import.json')
 
     for obj in range(len(workflow_nodes_import)):
         if workflow_nodes_import[obj]['name'] == "Draft":
