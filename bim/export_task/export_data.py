@@ -34,13 +34,18 @@ def check_type(data):
 def create_folders():
     try:
             # Create target Directory        
-            os.mkdir('archived_json')
-            os.mkdir('draft_json')
-            os.mkdir('active_json')
-            os.mkdir('archived_xml')
-            os.mkdir('draft_xml')
-            os.mkdir('active_xml')   
-            
+            # os.mkdir('archived_json')
+            # os.mkdir('draft_json')
+            # os.mkdir('active_json')
+            # os.mkdir('archived_xml')
+            # os.mkdir('draft_xml')
+            # os.mkdir('active_xml')
+            os.mkdir('archived')
+            os.mkdir('draft')
+            os.mkdir('active')
+
+
+
     except FileExistsError:        
         pass
     print("create_folders - \033[;38;5;34mdone\033[0;0m")
