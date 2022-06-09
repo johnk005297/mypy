@@ -22,3 +22,5 @@ draft_xml/
 export_proj_venv
 export_task_backup
 .env
+bim/export_task/*.json
+bim/export_task/*.txt
