@@ -21,3 +21,6 @@ export_task_backup
 .env
 bim/export_task/*.json
 bim/export_task/*.txt
+bim/export_task/active
+bim/export_task/draft
+bim/export_task/archived
