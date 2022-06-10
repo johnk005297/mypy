@@ -61,9 +61,8 @@ def create_workflow_import():
     url = ex.site_import_url + "/api/WorkFlows"  # POST request to create workFlow
     
 
-    draft_workflows_export_server = ex.read_from_json(f'{ex.pwd}\\draft','Draft_workflows_export.json')
-
-    draft_workflows_export_server = ex.read_from_json(ex.pwd,'Draft_workflows_export.json')
+    draft_workflows_export_server = ex.read_from_json(f'{ex.pwd}\\Draft','Draft_workflows_export.json')
+    draft_workflows_export_server = ex.read_from_json(f'{ex.pwd}\\Draft','Draft_workflows_export.json')
     # Need to add archived_workflows_export_server and active_workflows_export_server
     
 
