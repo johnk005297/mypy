@@ -106,7 +106,7 @@ def create_workflow_import():
         
 
         '''  BEGIN OF XML POST REQUEST  '''      
-        xml_path = ex.pwd+"\\draft"                 
+        xml_path = ex.pwd+"\\draft"
         payload={}
         files=[ ('file',(f'{workflow["originalId"]}.xml',open(f'{xml_path}\\{workflow["originalId"]}.xml','rb'),'text/xml'))  ]
                         
@@ -115,7 +115,7 @@ def create_workflow_import():
         print(f"Name of process: {post_response['name']}",end=' ')
         print(f"\033[;38;5;34m{post_xml_request.status_code}\033[0;0m" if post_xml_request.status_code == 200 else f"\033[;38;5;9m{post_xml_request.status_code}\033[0;0m")
         time.sleep(0.25)
-        '''  END OF XML POST REQUEST  '''   
+        '''  END OF XML POST REQUEST  '''
     
     print(f"create_workflow - \033[;38;5;34mdone\033[0;0m" if post_request.status_code == 201 else f"create_workflow - \033[;38;5;9m{post_request.status_code}\033[0;0m")
     
@@ -130,7 +130,7 @@ def get_workflows_import():    # Creating .json only Draft workFlows
     for obj in range(len(workflow_nodes_import)):
         if workflow_nodes_import[obj]['name'] == "Draft":
             draft_id = workflow_nodes_import[obj]['id']
-            draft_name = workflow_nodes_import[obj]['name']           
+            draft_name = workflow_nodes_import[obj]['name']      
     
     
     url = f"{ex.site_import_url}/api/WorkFlowNodes/{draft_id}/children"
