@@ -18,7 +18,7 @@ def get_workflow_nodes_import():   # Getting Draft, Archived and Active processe
     response = request.json()
         
     with open('workflow_nodes_import.json', 'w') as json_file:
-        json.dump(response, json_file, ensure_ascii=False, indent=4)    
+        json.dump(response, json_file, ensure_ascii=False, indent=4)   
     print("get_workflow_nodes_import - \033[;38;5;34mdone\033[0;0m")
     
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -60,7 +60,7 @@ def create_workflow_import():
 
     url = ex.site_import_url + "/api/WorkFlows"  # POST request to create workFlow
     
-    draft_workflows_export_server = ex.read_from_json(ex.pwd,'Draft_workflows_export.json')
+    draft_workflows_export_server = ex.read_from_json(f'{ex.pwd}\\draft','Draft_workflows_export.json')
     workflow_nodes_import = ex.read_from_json(ex.pwd,'workflow_nodes_import.json')     # Contains imported workflows    
     
     '''  BEGIN of POST request to create workFlows  '''
@@ -77,7 +77,7 @@ def create_workflow_import():
         post_response = post_request.json()
         
         bimClass_id_import = get_BimClassID_of_current_process_import(post_response['originalId'])    # reference workFlow_original_ID on import server        
-        bimClass_list_id_export = ex.read_from_json(ex.pwd, 'bimClass_id_draft_workFlows_export.json')                 
+        bimClass_list_id_export = ex.read_from_json(ex.pwd, 'workFlow_id_bimClass_id_export.json')                 
         time.sleep(0.25)
         '''  END of POST request  '''
         
@@ -101,7 +101,7 @@ def create_workflow_import():
         
 
         '''  BEGIN OF XML POST REQUEST  '''      
-        xml_path = ex.pwd+"\\draft_xml"                 
+        xml_path = ex.pwd+"\\draft"                 
         payload={}
         files=[ ('file',(f'{workflow["originalId"]}.xml',open(f'{xml_path}\\{workflow["originalId"]}.xml','rb'),'text/xml'))  ]
                         

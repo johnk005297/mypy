@@ -11,12 +11,6 @@ temp.py
 bim/.env
 export_task/.env
 export_task/*.json
-active_json/
-active_xml/
-archived_json/
-archived_xml/
-draft_json/
-draft_xml/
 ../py_course/Ex.6/.env
 ..bim/*
 export_proj_venv
@@ -24,3 +18,6 @@ export_task_backup
 .env
 bim/export_task/*.json
 bim/export_task/*.txt
+bim/export_task/active
+bim/export_task/draft
+bim/export_task/archived
