@@ -66,7 +66,7 @@ def define_workFlow_node():
             return "\\\\Active", 'Active_workflows_export.json', 'active'        
 
         elif count == 3:  sys.exit("\nStop import process!")            
-    return 0
+    
 
 
 # Read from JSON files, and dict in return. pwd - current working directory
@@ -219,13 +219,12 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
 
 
 if __name__ == "__main__":
-    workflow_node = define_workFlow_node()
-    if workflow_node != 0:
-        create_folders()
-        get_workflow_nodes_export()
-        get_workflows_export()    
-        workflow_xml_export()     
-        get_workFlows_bimClass_export()
+    workflow_node = define_workFlow_node()    
+    create_folders()
+    get_workflow_nodes_export()
+    get_workflows_export()    
+    workflow_xml_export()     
+    get_workFlows_bimClass_export()
     
     
     
