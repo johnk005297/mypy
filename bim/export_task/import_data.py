@@ -69,7 +69,7 @@ def create_workflow_import():
     workflow_nodes_import = ex.read_from_json(ex.pwd,'workflow_nodes_import.json')     # Contains imported workflows    
     
     '''  BEGIN of POST request to create workFlows  '''
-    for workflow in draft_workflows_export_server['workFlows']:      
+    for workflow in draft_workflows_export_server['workFlows']:
         post_payload = {
                         "name": workflow["name"],
                         "workFlowNodeId": workflow_nodes_import[0]['id'],    # 0: Draft; 1: Archived; 2: Active;

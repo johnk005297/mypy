@@ -5,6 +5,7 @@ import json
 import os
 from dotenv import load_dotenv
 import xml.etree.ElementTree as ET
+import sys
 
 
 load_dotenv()
@@ -43,24 +44,29 @@ def create_folders():
 #------------------------------------------------------------------------------------------------------------------------------#
 
 def define_workFlow_node():
-    workflow_node_select = input("\nWhat node to export[draft, archived, active]?\nType q for exit: ")
-    
-    # workflow_node_select is a tuple with two values - directory and .json file
-    if workflow_node_select == 'draft':
-        # workflow_node('Draft', 'Draft_workflows_export.json', 'draft')        
-        return "\\\\Draft", 'Draft_workflows_export.json', 'draft'
 
-    elif workflow_node_select == 'archived':
-        # workflow_node('Archived", 'Archived_workflows_export.json', 'archived')        
-        return "\\\\Archived", 'Archived_workflows_export.json', 'archived' 
+    count = 0    
+    while count < 3:
+        workflow_node_select = input("\nWhat node to export? draft(1), archived(2), active(3)\nType 'q' for exit: ")
+        if workflow_node_select == 'q':
+            sys.exit("\nStop import process!")
+        count += 1
 
-    elif workflow_node_select == 'active':
-        # workflow_node('Active", 'Active_workflows_export.json', 'active'               
-        return "\\\\Active", 'Active_workflows_export.json', 'active'
+        # workflow_node_select is a tuple with two values - directory and .json file
+        if workflow_node_select in ['draft', '1']:
+            # workflow_node('Draft', 'Draft_workflows_export.json', 'draft')        
+            return "\\\\Draft", 'Draft_workflows_export.json', 'draft'
 
-    elif workflow_node_select == 'q':
-        print("\nStop import process!")
-        return
+        elif workflow_node_select in ['archived', '2']:
+            # workflow_node('Archived", 'Archived_workflows_export.json', 'archived')        
+            return "\\\\Archived", 'Archived_workflows_export.json', 'archived' 
+
+        elif workflow_node_select in ['active', '3']:
+            # workflow_node('Active", 'Active_workflows_export.json', 'active'               
+            return "\\\\Active", 'Active_workflows_export.json', 'active'        
+
+        elif count == 3:  sys.exit("\nStop import process!")            
+    return 0
 
 
 # Read from JSON files, and dict in return. pwd - current working directory
@@ -156,7 +162,7 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
     '''
     
     if workflow_node[2] == 'draft':
-        draft_workFlows_export = read_from_json(f'{pwd}{workflow_node[0]}', {workflow_node[1]})
+        draft_workFlows_export = read_from_json(f'{pwd}{workflow_node[0]}', workflow_node[1])
         for line in draft_workFlows_export['workFlows']:
             url = f"{site_export_url}/api/WorkFlows/{line['originalId']}/BimClasses"
             request = requests.get(url, headers=headers_export)
@@ -169,7 +175,7 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
         workFlow_id_bimClass_id_export.append(response[0]['id'])
     
     elif workflow_node[2] == 'archived':
-        archived_workFlows_export = read_from_json(f'{pwd}{workflow_node[0]}', {workflow_node[1]})
+        archived_workFlows_export = read_from_json(f'{pwd}{workflow_node[0]}', workflow_node[1])
         for line in archived_workFlows_export['workFlows']:
             url = f"{site_export_url}/api/WorkFlows/{line['originalId']}/BimClasses"
             request = requests.get(url, headers=headers_export)
@@ -182,7 +188,7 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
             workFlow_id_bimClass_id_export.append(response[0]['id'])
 
     elif workflow_node[2] == 'active':
-        active_workFlows_export = read_from_json(f'{pwd}{workflow_node[0]}', {workflow_node[1]})
+        active_workFlows_export = read_from_json(f'{pwd}{workflow_node[0]}', workflow_node[1])
         for line in active_workFlows_export['workFlows']:
             url = f"{site_export_url}/api/WorkFlows/{line['originalId']}/BimClasses"
             request = requests.get(url, headers=headers_export)
@@ -214,11 +220,12 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
 
 if __name__ == "__main__":
     workflow_node = define_workFlow_node()
-    create_folders()
-    get_workflow_nodes_export()
-    get_workflows_export()    
-    workflow_xml_export()     
-    # get_workFlows_bimClass_export()
+    if workflow_node != 0:
+        create_folders()
+        get_workflow_nodes_export()
+        get_workflows_export()    
+        workflow_xml_export()     
+        get_workFlows_bimClass_export()
     
     
     
