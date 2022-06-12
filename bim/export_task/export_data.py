@@ -42,7 +42,7 @@ def check_type(data):
 
 def define_workFlow_node():
     ''' 
-        Function returns a tuple of elements like ("\\Active", "Active_workflows_export.json") which could be accessed by index. 
+        Function returns a tuple of elements like ("Active", "Active_workflows_export.json") which could be accessed by index. 
         example: workflow_node[0] - "Active"
                  workflow_node[1] - "Active_workflows_export.json"                 
     '''
@@ -140,27 +140,27 @@ def workflow_xml_export():
     '''
     
     if workflow_node[0] == 'Draft':                
-        draft_workFlows_export = read_from_json(f"{pwd}\\{workflow_node[0]}", workflow_node[1])
+        draft_workFlows_export = read_from_json(f"{pwd}\{workflow_node[0]}", workflow_node[1])
         for line in draft_workFlows_export['workFlows']:
             url = f"{site_export_url}/api/Attachments/{line['attachmentId']}"
             request = requests.get(url, headers=headers_export)        
-            with open(f"{pwd}\\{workflow_node[0]}\\{line['originalId']}.xml", 'wb') as file:
+            with open(f"{pwd}\{workflow_node[0]}\{line['originalId']}.xml", 'wb') as file:
                 file.write(request.content)
     
     elif workflow_node[0] == 'Archived':        
-        archived_workFlows_export = read_from_json(f'{pwd}\\{workflow_node[0]}', workflow_node[1])
+        archived_workFlows_export = read_from_json(f'{pwd}\{workflow_node[0]}', workflow_node[1])
         for line in archived_workFlows_export['workFlows']:
             url = f"{site_export_url}/api/Attachments/{line['attachmentId']}"
             request = requests.get(url, headers=headers_export)        
-            with open(f"{pwd}\\{workflow_node[0]}\\{line['originalId']}.xml", 'wb') as file:
+            with open(f"{pwd}\{workflow_node[0]}\{line['originalId']}.xml", 'wb') as file:
                 file.write(request.content)
     
     elif workflow_node[0] == 'Active':        
-        active_workFlows_export = read_from_json(f"{pwd}\\{workflow_node[0]}", workflow_node[1])
+        active_workFlows_export = read_from_json(f"{pwd}\{workflow_node[0]}", workflow_node[1])
         for line in active_workFlows_export['workFlows']:
             url = f"{site_export_url}/api/Attachments/{line['attachmentId']}"
             request = requests.get(url, headers=headers_export)        
-            with open(f"{pwd}\\{workflow_node[0]}\\{line['originalId']}.xml", 'wb') as file:  
+            with open(f"{pwd}\{workflow_node[0]}\{line['originalId']}.xml", 'wb') as file:  
                 file.write(request.content)
 
 
@@ -178,12 +178,12 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
     '''
     
     if workflow_node[0] == 'Draft':
-        draft_workFlows_export = read_from_json(f'{pwd}\\{workflow_node[0]}', workflow_node[1])
+        draft_workFlows_export = read_from_json(f"{pwd}\{workflow_node[0]}", workflow_node[1])
         for line in draft_workFlows_export['workFlows']:
             url = f"{site_export_url}/api/WorkFlows/{line['originalId']}/BimClasses"
             request = requests.get(url, headers=headers_export)
             response = request.json()            
-            with open(f"{pwd}\\{workflow_node[0]}\\{line['id']}.json", 'w', encoding='utf-8') as file:
+            with open(f"{pwd}\{workflow_node[0]}\{line['id']}.json", 'w', encoding='utf-8') as file:
                 json.dump(response, file, ensure_ascii=False, indent=4)
 
             # write dict with draft workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}        
@@ -191,12 +191,12 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
             workFlow_id_bimClass_id_export.append(response[0]['id'])      
     
     elif workflow_node[0] == 'Archived':
-        archived_workFlows_export = read_from_json(f'{pwd}\\{workflow_node[0]}', workflow_node[1])
+        archived_workFlows_export = read_from_json(f"{pwd}\{workflow_node[0]}", workflow_node[1])
         for line in archived_workFlows_export['workFlows']:
             url = f"{site_export_url}/api/WorkFlows/{line['originalId']}/BimClasses"
             request = requests.get(url, headers=headers_export)
             response = request.json()
-            with open(f"{pwd}\\{workflow_node[0]}\\{line['id']}.json", 'w', encoding='utf-8') as file:
+            with open(f"{pwd}\{workflow_node[0]}\{line['id']}.json", 'w', encoding='utf-8') as file:
                 json.dump(response, file, ensure_ascii=False, indent=4)
             
             # write dict with draft workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}        
@@ -204,12 +204,12 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
             workFlow_id_bimClass_id_export.append(response[0]['id'])
 
     elif workflow_node[0] == 'Active':
-        active_workFlows_export = read_from_json(f'{pwd}\\{workflow_node[0]}', workflow_node[1])
+        active_workFlows_export = read_from_json(f"{pwd}\{workflow_node[0]}", workflow_node[1])
         for line in active_workFlows_export['workFlows']:
             url = f"{site_export_url}/api/WorkFlows/{line['originalId']}/BimClasses"
             request = requests.get(url, headers=headers_export)
             response = request.json()
-            with open(f"{pwd}\\{workflow_node[0]}\\{line['id']}.json", 'w', encoding='utf-8') as file:
+            with open(f"{pwd}\{workflow_node[0]}\{line['id']}.json", 'w', encoding='utf-8') as file:
                 json.dump(response, file, ensure_ascii=False, indent=4)   
             
             # write dict with draft workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}
