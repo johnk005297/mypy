@@ -103,7 +103,7 @@ def get_workflow_nodes_export():   # Getting Draft, Archived and Active processe
     request = requests.get(url, headers=headers_export)
     response = request.json()
         
-    with open('workflow_nodes_export.json', 'w') as json_file:
+    with open('workflow_nodes_export_server.json', 'w') as json_file:
         json.dump(response, json_file, ensure_ascii=False, indent=4)  
     
     print("get_workflow_nodes_export - \033[;38;5;34mdone\033[0;0m")    
@@ -113,18 +113,18 @@ def get_workflow_nodes_export():   # Getting Draft, Archived and Active processe
 
 def get_workflows_export():    
 
-    data = read_from_json(pwd, 'workflow_nodes_export.json')
+    data = read_from_json(pwd, 'workflow_nodes_export_server.json')
     for obj in range(len(data)):
         key = data[obj]['name']
         value = data[obj]['id']
-
+        
         url = f"{site_export_url}/api/WorkFlowNodes/{value}/children"
         request = requests.get(url, headers=headers_export)        
         response = request.json()
 
         with open(f"{pwd}\{key}\{key}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
             json.dump(response, json_file, ensure_ascii=False, indent=4)
-
+    
     print("get_workflows_export - \033[;38;5;34mdone\033[0;0m")
 
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -236,8 +236,8 @@ if __name__ == "__main__":
     create_folders()
     get_workflow_nodes_export()
     get_workflows_export()    
-    workflow_xml_export()     
-    get_workFlows_bimClass_export()
+    # workflow_xml_export()     
+    # get_workFlows_bimClass_export()
     
     
     

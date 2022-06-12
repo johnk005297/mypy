@@ -120,20 +120,19 @@ def create_workflow_import():
 
 def get_workflows_import():    # Creating .json only Draft workFlows
 
-    workflow_nodes_import = ex.read_from_json(ex.pwd,'workflow_nodes_import_server.json')
+    # workflow_nodes_import = ex.read_from_json(ex.pwd,'workflow_nodes_import_server.json')
+    data = ex.read_from_json(ex.pwd, 'workflow_nodes_export_server.json')
+    for obj in range(len(data)):
+        key = data[obj]['name']
+        value = data[obj]['id']
+            
+        url = f"{ex.site_import_url}/api/WorkFlowNodes/{value}/children"
+        request = requests.get(url, headers=ex.headers_import)        
+        response = request.json()
 
-    for obj in range(len(workflow_nodes_import)):
-        if workflow_nodes_import[obj]['name'] == "Draft":
-            draft_id = workflow_nodes_import[obj]['id']
-            draft_name = workflow_nodes_import[obj]['name']      
-    
-    
-    url = f"{ex.site_import_url}/api/WorkFlowNodes/{draft_id}/children"
-    request = requests.get(url, headers=ex.headers_import)        
-    response = request.json()
+        with open(f"{ex.pwd}\{key}\{key}_workflows_import_server.json", 'w', encoding='utf-8') as json_file:
+            json.dump(response, json_file, ensure_ascii=False, indent=4)
 
-    with open(f"{draft_name}_workflows_import_server.json", 'w', encoding='utf-8') as json_file:
-        json.dump(response, json_file, ensure_ascii=False, indent=4)
 
     print("get_workflows_import - \033[;38;5;34mdone\033[0;0m")
 
@@ -151,7 +150,4 @@ if __name__ == "__main__":
     get_workflow_nodes_import()
     create_workflow_import()    
     get_workflows_import()
-    
-    
-
 
