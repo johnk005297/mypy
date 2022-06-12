@@ -52,14 +52,13 @@ def create_workflow_import():
 
     url = ex.site_import_url + "/api/WorkFlows"  # POST request to create workFlow
     '''
-    workflow_node tuple comes from ex.define_workFlow_node() function. It provides a selection of three components ex.("\\Draft", "Draft_workflows_export.json", "draft")
+    workflow_node tuple comes from ex.define_workFlow_node() function. It provides a selection of three components ex.("Draft", "Draft_workflows_export.json")
     which can be accessed by index.
-       example:  workflow_node[0] - "\\Draft"
-                 workflow_node[1] - "Draft_workflows_export.json"
-                 workflow_node[2] - "active"
+       example:  workflow_node[0] - "Draft"
+                 workflow_node[1] - "Draft_workflows_export.json"                 
     '''
     
-    workflows_export_server = ex.read_from_json(f'{ex.pwd}{ex.workflow_node[0]}',ex.workflow_node[1])    
+    workflows_export_server = ex.read_from_json(f"{ex.pwd}\\{ex.workflow_node[0]}",ex.workflow_node[1])    
     workflow_nodes_import = ex.read_from_json(ex.pwd,'workflow_nodes_import_server.json')     # Contains imported workflows    
     
     '''  BEGIN of POST request to create workFlows  '''
@@ -100,7 +99,7 @@ def create_workflow_import():
         
 
         '''  BEGIN OF XML POST REQUEST  '''      
-        xml_path = ex.pwd + ex.workflow_node[0]
+        xml_path = ex.pwd + "\\" + ex.workflow_node[0]
 
         payload={}
         files=[ ('file',(f'{workflow["originalId"]}.xml',open(f'{xml_path}\\{workflow["originalId"]}.xml','rb'),'text/xml'))  ]
