@@ -1,31 +1,27 @@
 #
+# This is linux version!
 
 import requests
 import json
 import os
-from dotenv import load_dotenv
 import xml.etree.ElementTree as ET
 import sys
+# from dotenv import load_dotenv    # commented when running on linux machine which can't install load_dotenv package
+# load_dotenv()
 
 
-load_dotenv()
-token_std_h5 = os.getenv("token_std_h5")
-token_iktest01 = os.getenv("token_iktest01")
-token_study = os.getenv("token_study")
 
 
-headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_study}"}
-headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_iktest01}"}
-headers_for_xml_import = {'accept': '*/*', 'Authorization': f"Bearer {token_iktest01}"}    # specific headers without 'Content-type' for import .xml file. Otherwise request doesn't work!
+token_iktest01 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkYTdmZDQ0OC1hYmVlLTQ3MTYtYjA4Mi04Yjg3NGIyY2I0MWIiLCJpc3MiOiJodHRwOi8vd2ViYXBpIiwiaWF0IjoxNjU0OTgyMTM0LCJzaWQiOiI0ZThmZTUxZi1kZTg2LTQ1MjctYjNkOC0wNGZhMTM3MWZhNmQiLCJzdWIiOiJhZG1pbiIsInVzZXJuYW1lIjoiYWRtaW4iLCJkaXNwbGF5X25hbWUiOiJTeXN0ZW0gQWRtaW5pc3RyYXRvciIsInRlbmFudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMCIsInVzZXJfcm9sZSI6ImFkbWluIiwibmJmIjoxNjU0OTgyMTM0LCJleHAiOjE2NjAyNjIxMzQsImF1ZCI6Imh0dHA6Ly9mcm9udGVuZCJ9.h6FtxTUAOJmd4OwPxKXl1pwkRQSungQzCu8T2uyO164"
 
-# For local testing usage url's
-site_export_url = "http://study.bimeister.io"
-site_import_url = "http://192.168.87.66"
+# token_std_p7 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJjZDg5ZTZiZC0yMTI0LTQwOTAtYTJmYS1lYmQwZjViYmIwZGIiLCJpc3MiOiJodHRwOi8vd2ViYXBpIiwiaWF0IjoxNjU0NTkxMTAzLCJzaWQiOiI4YmZmNDczNS0xMDFiLTRhN2QtODU4MS05NDQxMTYzYmQ5YjciLCJzdWIiOiJhZG1pbiIsInVzZXJuYW1lIjoiYWRtaW4iLCJkaXNwbGF5X25hbWUiOiJhZG1pbiIsInRlbmFudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMCIsInVzZXJfcm9sZSI6ImFkbWluIiwibmJmIjoxNjU0NTkxMTAzLCJleHAiOjE2NTk4NzExMDMsImF1ZCI6Imh0dHA6Ly9mcm9udGVuZCJ9.RKHnUGH3v_2k7bnqnoPMtGLgY23c7P_b84EqSrAu5oQ"
 
 
-''' Uncomment for general usage '''
-# site_export_url: str = "http://" + input("Enter export server url, like('address.com'): ")
-# site_import_url: str = "http://" + input("Enter import server url, like('address.com'): ")
+
+headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_iktest01}"}
+# headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_std_p7}"}
+# headers_for_xml_import = {'accept': '*/*', 'Authorization': f"Bearer {token_std_p7}"}    # specific headers without 'Content-type' for import .xml file. Otherwise request doesn't work!
+
 
 
 '''     GLOBAL VARIABLES    '''
@@ -39,8 +35,25 @@ def check_type(data):
     print(type(data))
 #------------------------------------------------------------------------------------------------------------------------------#
 
+def get_url_export():
+    site_export_url: str = input("Enter export server url, like('http://address.com'): ").lower()
+    return site_export_url
+#------------------------------------------------------------------------------------------------------------------------------#
 
-def define_workFlow_node():
+def create_folders():
+    try:            
+        os.mkdir('Archived')
+        os.mkdir('Draft')
+        os.mkdir('Active')
+
+    except FileExistsError:        
+        pass
+    print("create_folders - \033[;38;5;34mdone\033[0;0m")        
+    
+#------------------------------------------------------------------------------------------------------------------------------#
+
+
+def define_workFlow_node_export():
     ''' 
         Function returns a tuple of elements like ("Active", "Active_workflows_export.json") which could be accessed by index. 
         example: workflow_node[0] - "Active"
@@ -68,19 +81,7 @@ def define_workFlow_node():
             # workflow_node('Active", 'Active_workflows_export.json', 'active'               
             return "Active", "Active_workflows_export_server.json"  
 
-        elif count == 3:  sys.exit("\nStop import process!")            
-    
-#------------------------------------------------------------------------------------------------------------------------------#
-
-def create_folders():
-    try:            
-        os.mkdir('Archived')
-        os.mkdir('Draft')
-        os.mkdir('Active')
-
-    except FileExistsError:        
-        pass
-    print("create_folders - \033[;38;5;34mdone\033[0;0m")
+        elif count == 3:  sys.exit("\nStop import process!")
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -92,7 +93,7 @@ def read_from_json(path_to_file,file_name):
     if file_name[-5:] == '.json':
         pass
     else: file_name += '.json'
-    with open(f'{path_to_file}\\{file_name}', 'r', encoding='utf-8') as file:
+    with open(f'{path_to_file}/{file_name}', 'r', encoding='utf-8') as file:
         data_from_json = json.load(file)
     
     return data_from_json
@@ -102,8 +103,8 @@ def read_from_json(path_to_file,file_name):
 
 def get_workflow_nodes_export():   # Getting Draft, Archived and Active processes.    
     
-    url = site_export_url + "/api/WorkFlowNodes"
-    request = requests.get(url, headers=headers_export)
+    url_for_current_func = url_export + "/api/WorkFlowNodes"
+    request = requests.get(url_for_current_func, headers=headers_export)
     response = request.json()
         
     with open('workflow_nodes_export_server.json', 'w') as json_file:
@@ -121,11 +122,11 @@ def get_workflows_export():
         key = data[obj]['name']
         value = data[obj]['id']
         
-        url = f"{site_export_url}/api/WorkFlowNodes/{value}/children"
+        url = f"{url_export}/api/WorkFlowNodes/{value}/children"
         request = requests.get(url, headers=headers_export)        
         response = request.json()
 
-        with open(f"{pwd}\{key}\{key}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
+        with open(f"{pwd}/{key}/{key}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
             json.dump(response, json_file, ensure_ascii=False, indent=4)
     
     print("get_workflows_export - \033[;38;5;34mdone\033[0;0m")
@@ -140,27 +141,27 @@ def workflow_xml_export():
     '''
     
     if workflow_node[0] == 'Draft':                
-        draft_workFlows_export = read_from_json(f"{pwd}\{workflow_node[0]}", workflow_node[1])
+        draft_workFlows_export = read_from_json(f"{pwd}/{workflow_node[0]}", workflow_node[1])
         for line in draft_workFlows_export['workFlows']:
-            url = f"{site_export_url}/api/Attachments/{line['attachmentId']}"
+            url = f"{url_export}/api/Attachments/{line['attachmentId']}"
             request = requests.get(url, headers=headers_export)        
-            with open(f"{pwd}\{workflow_node[0]}\{line['originalId']}.xml", 'wb') as file:
+            with open(f"{pwd}/{workflow_node[0]}/{line['originalId']}.xml", 'wb') as file:
                 file.write(request.content)
     
     elif workflow_node[0] == 'Archived':        
-        archived_workFlows_export = read_from_json(f'{pwd}\{workflow_node[0]}', workflow_node[1])
+        archived_workFlows_export = read_from_json(f'{pwd}/{workflow_node[0]}', workflow_node[1])
         for line in archived_workFlows_export['workFlows']:
-            url = f"{site_export_url}/api/Attachments/{line['attachmentId']}"
+            url = f"{url_export}/api/Attachments/{line['attachmentId']}"
             request = requests.get(url, headers=headers_export)        
-            with open(f"{pwd}\{workflow_node[0]}\{line['originalId']}.xml", 'wb') as file:
+            with open(f"{pwd}/{workflow_node[0]}/{line['originalId']}.xml", 'wb') as file:
                 file.write(request.content)
     
     elif workflow_node[0] == 'Active':        
-        active_workFlows_export = read_from_json(f"{pwd}\{workflow_node[0]}", workflow_node[1])
+        active_workFlows_export = read_from_json(f"{pwd}/{workflow_node[0]}", workflow_node[1])
         for line in active_workFlows_export['workFlows']:
-            url = f"{site_export_url}/api/Attachments/{line['attachmentId']}"
+            url = f"{url_export}/api/Attachments/{line['attachmentId']}"
             request = requests.get(url, headers=headers_export)        
-            with open(f"{pwd}\{workflow_node[0]}\{line['originalId']}.xml", 'wb') as file:  
+            with open(f"{pwd}/{workflow_node[0]}/{line['originalId']}.xml", 'wb') as file:  
                 file.write(request.content)
 
 
@@ -178,12 +179,12 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
     '''
     
     if workflow_node[0] == 'Draft':
-        draft_workFlows_export = read_from_json(f"{pwd}\{workflow_node[0]}", workflow_node[1])
+        draft_workFlows_export = read_from_json(f"{pwd}/{workflow_node[0]}", workflow_node[1])
         for line in draft_workFlows_export['workFlows']:
-            url = f"{site_export_url}/api/WorkFlows/{line['originalId']}/BimClasses"
+            url = f"{url_export}/api/WorkFlows/{line['originalId']}/BimClasses"
             request = requests.get(url, headers=headers_export)
             response = request.json()            
-            with open(f"{pwd}\{workflow_node[0]}\{line['id']}.json", 'w', encoding='utf-8') as file:
+            with open(f"{pwd}/{workflow_node[0]}/{line['id']}.json", 'w', encoding='utf-8') as file:
                 json.dump(response, file, ensure_ascii=False, indent=4)
 
             # write dict with draft workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}        
@@ -191,12 +192,12 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
             workFlow_id_bimClass_id_export.append(response[0]['id'])      
     
     elif workflow_node[0] == 'Archived':
-        archived_workFlows_export = read_from_json(f"{pwd}\{workflow_node[0]}", workflow_node[1])
+        archived_workFlows_export = read_from_json(f"{pwd}/{workflow_node[0]}", workflow_node[1])
         for line in archived_workFlows_export['workFlows']:
-            url = f"{site_export_url}/api/WorkFlows/{line['originalId']}/BimClasses"
+            url = f"{url_export}/api/WorkFlows/{line['originalId']}/BimClasses"
             request = requests.get(url, headers=headers_export)
             response = request.json()
-            with open(f"{pwd}\{workflow_node[0]}\{line['id']}.json", 'w', encoding='utf-8') as file:
+            with open(f"{pwd}/{workflow_node[0]}/{line['id']}.json", 'w', encoding='utf-8') as file:
                 json.dump(response, file, ensure_ascii=False, indent=4)
             
             # write dict with draft workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}        
@@ -204,12 +205,12 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
             workFlow_id_bimClass_id_export.append(response[0]['id'])
 
     elif workflow_node[0] == 'Active':
-        active_workFlows_export = read_from_json(f"{pwd}\{workflow_node[0]}", workflow_node[1])
+        active_workFlows_export = read_from_json(f"{pwd}/{workflow_node[0]}", workflow_node[1])
         for line in active_workFlows_export['workFlows']:
-            url = f"{site_export_url}/api/WorkFlows/{line['originalId']}/BimClasses"
+            url = f"{url_export}/api/WorkFlows/{line['originalId']}/BimClasses"
             request = requests.get(url, headers=headers_export)
             response = request.json()
-            with open(f"{pwd}\{workflow_node[0]}\{line['id']}.json", 'w', encoding='utf-8') as file:
+            with open(f"{pwd}/{workflow_node[0]}/{line['id']}.json", 'w', encoding='utf-8') as file:
                 json.dump(response, file, ensure_ascii=False, indent=4)   
             
             # write dict with draft workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}
@@ -235,7 +236,8 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
 
 
 if __name__ == "__main__":
-    workflow_node = define_workFlow_node()    
+    url_export = get_url_export() 
+    workflow_node = define_workFlow_node_export()   
     create_folders()
     get_workflow_nodes_export()
     get_workflows_export()    
