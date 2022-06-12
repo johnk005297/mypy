@@ -10,7 +10,7 @@ import sys
 # load_dotenv()
 
 
-
+# Need to place a block with get key automatically
 
 token_iktest01 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkYTdmZDQ0OC1hYmVlLTQ3MTYtYjA4Mi04Yjg3NGIyY2I0MWIiLCJpc3MiOiJodHRwOi8vd2ViYXBpIiwiaWF0IjoxNjU0OTgyMTM0LCJzaWQiOiI0ZThmZTUxZi1kZTg2LTQ1MjctYjNkOC0wNGZhMTM3MWZhNmQiLCJzdWIiOiJhZG1pbiIsInVzZXJuYW1lIjoiYWRtaW4iLCJkaXNwbGF5X25hbWUiOiJTeXN0ZW0gQWRtaW5pc3RyYXRvciIsInRlbmFudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMCIsInVzZXJfcm9sZSI6ImFkbWluIiwibmJmIjoxNjU0OTgyMTM0LCJleHAiOjE2NjAyNjIxMzQsImF1ZCI6Imh0dHA6Ly9mcm9udGVuZCJ9.h6FtxTUAOJmd4OwPxKXl1pwkRQSungQzCu8T2uyO164"
 
@@ -101,23 +101,23 @@ def get_workflow_nodes_export():   # Getting Draft, Archived and Active processe
     request = requests.get(url_for_current_func, headers=headers_export)
     response = request.json()
         
-    with open('workflow_nodes_export_server.json', 'w') as json_file:
+    with open('workflow_nodes_export_server.json', 'w', encoding='utf-8') as json_file:
         json.dump(response, json_file, ensure_ascii=False, indent=4)  
     
-    print("get_workflow_nodes_export - \033[;38;5;34mdone\033[0;0m")    
+    print("get_workflow_nodes_export - \033[;38;5;34mdone\033[0;0m")   
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
-def get_model_object_export():
-    pass
+def get_model_object_export():      # /api/Integration/ObjectModel/Export
+    url_for_current_func = url_export + "/api/Integration/ObjectModel/Export"
+    request = requests.get(url_for_current_func, headers=headers_export)
+    response = request.json()
 
-
-
-
-
-
-
+    with open("model_object_export_server.json", "w", encoding="utf-8") as json_file:
+        json.dump(response, json_file, ensure_ascii=False, indent=4)
+    
+    print("get_model_object_export - \033[;38;5;34mdone\033[0;0m")
 
 
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -248,6 +248,7 @@ if __name__ == "__main__":
     workflow_node = define_workFlow_node_export()   
     create_folders()
     get_workflow_nodes_export()
+    get_model_object_export()
     get_workflows_export()    
     get_workflow_xml_export()     
     get_workFlows_bimClass_export()

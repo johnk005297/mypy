@@ -73,13 +73,79 @@ def get_workflow_nodes_import():   # Getting Draft, Archived and Active processe
 
 # Function needs for work on line replacement in files
 def replace_str_in_file(file_in, file_out, find, replace):    
-   
+    
     with open(f"{file_in}", 'r', encoding='utf-8') as file:
         new_json = file.read().replace(find, replace)      # find, replace vars must be string
     with open(f"{file_out}", 'w', encoding='utf-8') as file:
         file.write(new_json)
         
 #------------------------------------------------------------------------------------------------------------------------------#
+
+
+def get_model_object_import():
+    url_for_current_func = url_import + "/api/Integration/ObjectModel/Export"
+    request = requests.get(url_for_current_func, headers=headers_import)
+    response = request.json()
+
+    with open("model_object_import_server.json", "w", encoding="utf-8") as json_file:
+        json.dump(response, json_file, ensure_ascii=False, indent=4)
+    
+    print("get_model_object_import - \033[;38;5;34mdone\033[0;0m")
+
+
+#---------------------------------------------------------------------------------------------------------------------------------
+
+def model_object_export_file():
+    data_obj_model_import = ex.read_from_json("model_objects_import_server.json")  # read the file into dictionary
+    data_obj_model_export = ex.read_from_json("model_objects_export_server.json")  # read the file into dictionary
+    
+    # Pointers to data we need to collect from the .json file
+    big_fish: tuple = ("bimPropertyTreeNodes", "bimInterfaceTreeNodes", "bimClassTreeNodes", "bimDirectoryTreeNodes", "bimStructureTreeNodes", "rootSystemBimClass", "systemBimInterfaces", 
+                        "systemBimProperties",)
+    small_fish: tuple = ("BimProperty", "BimInterface", "BimClass", "BimDirectory", "BimStructure", "FILE_INTERFACE", "WORK_DATES_INTERFACE", "COMMERCIAL_SECRET_BIM_INTERFACE","FILE_PROPERTY", 
+                        "PLANNED_START_PROPERTY","PLANNED_END_PROPERTY", "ACTUAL_START_PROPERTY", "ACTUAL_END_PROPERTY", "COMMERCIAL_SECRET_BIM_PROPERTY", )
+    
+    insert_tuple = ()   # data will be inserted in model_objects_export.json file
+    replace_tuple = ()  # data will be removed from model_objects_export.json file
+    
+    # Collecting values from import model object .json file with values to put in export .json
+    for key in data_obj_model_import.keys():
+        if key in big_fish and isinstance(data_obj_model_import[key], list): 
+            for obj in data_obj_model_import[key]:                            
+                if isinstance(obj, dict):
+                    for k,v in obj.items():
+                        if v in small_fish:
+                            insert_tuple += (obj["id"],)
+                            # print(obj) # dict
+                                         
+        elif key in big_fish and isinstance(data_obj_model_import[key], dict):                
+            insert_tuple += (data_obj_model_import[key]["id"],)
+            
+    
+    # Collecting values from export model object .json file with values to replace in export .json
+    for key in data_obj_model_export.keys():
+        if key in big_fish and isinstance(data_obj_model_export[key], list): 
+            for obj in data_obj_model_export[key]:                            
+                if isinstance(obj, dict):
+                    for k,v in obj.items():
+                        if v in small_fish:                            
+                            replace_tuple += (obj["id"],)
+                            # print(obj) # dict
+                                      
+        elif key in big_fish and isinstance(data_obj_model_export[key], dict):
+            replace_tuple += (data_obj_model_import[key]["id"],)               
+     
+    
+    # Edit model object attributes in needed file
+    for x in range(len(replace_tuple)):
+        if len(replace_tuple) == len(insert_tuple):
+            # print(replace_tuple[x], " ---> ", insert_tuple[x])
+            replace_str_in_file("model_objects_export_server.json", "model_objects_export_server.json", replace_tuple[x], insert_tuple[x])           
+        else:             
+            sys.exit("Smth is wrong. Model_object files are incorrect. Exit")
+
+#------------------------------------------------------------------------------------------------------------------------------#
+
 
 
 # data takes {workFlowOriginId} as an argument
@@ -200,6 +266,8 @@ if __name__ == "__main__":
     url_import = get_url_import()
     workflow_node = define_workFlow_node_import()  
     get_workflow_nodes_import()
+    get_model_object_import()
+    model_object_export_file()
     create_workflow_import()    
     get_workflows_import()
     
