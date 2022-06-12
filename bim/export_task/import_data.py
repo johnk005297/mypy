@@ -4,6 +4,7 @@ import json
 import export_data as ex      # Data from export_data.py 
 import xml.etree.ElementTree as ET
 import time
+import sys
 
 
 '''     GLOBAL VARIABLES    '''
@@ -17,24 +18,15 @@ def get_workflow_nodes_import():   # Getting Draft, Archived and Active processe
     request = requests.get(url, headers=ex.headers_import)
     response = request.json()
         
-    with open('workflow_nodes_import.json', 'w') as json_file:
+    with open('workflow_nodes_import_server.json', 'w') as json_file:
         json.dump(response, json_file, ensure_ascii=False, indent=4)   
     print("get_workflow_nodes_import - \033[;38;5;34mdone\033[0;0m")
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
-
-def replace_str_in_file(file_in, file_out, find, replace):  # Need for bimClass_id replacement. From workFlows_export_server to workFlows_import_server
-
-    '''   THE FIRTS WAY   '''    
-    # fin = open("Draft_workflows_export.json", "rt", encoding='utf-8')   #input file    
-    # fout = open("changed.json", "wt", encoding='utf-8') #output file to write the result to    
-    # for line in fin:    #for each line in the input file         
-    #     fout.write(line.replace(find, replace))       # find, replace vars must be string
-    # fin.close()
-    # fout.close()
-    
-    '''   THE SECOND WAY   '''
+# Function needs for work on line replacement in files
+def replace_str_in_file(file_in, file_out, find, replace):    
+   
     with open(f"{file_in}", 'r', encoding='utf-8') as file:
         new_json = file.read().replace(find, replace)      # find, replace vars must be string
     with open(f"{file_out}", 'w', encoding='utf-8') as file:
@@ -59,17 +51,19 @@ def get_BimClassID_of_current_process_import(data):  # /api/WorkFlows/{workFlowO
 def create_workflow_import():
 
     url = ex.site_import_url + "/api/WorkFlows"  # POST request to create workFlow
+    '''
+    workflow_node tuple comes from ex.define_workFlow_node() function. It provides a selection of three components ex.("\\Draft", "Draft_workflows_export.json", "draft")
+    which can be accessed by index.
+       example:  workflow_node[0] - "\\Draft"
+                 workflow_node[1] - "Draft_workflows_export.json"
+                 workflow_node[2] - "active"
+    '''
     
-
-    draft_workflows_export_server = ex.read_from_json(f'{ex.pwd}\\Draft','Draft_workflows_export.json')
-    draft_workflows_export_server = ex.read_from_json(f'{ex.pwd}\\Draft','Draft_workflows_export.json')
-    # Need to add archived_workflows_export_server and active_workflows_export_server
-    
-
-    workflow_nodes_import = ex.read_from_json(ex.pwd,'workflow_nodes_import.json')     # Contains imported workflows    
+    workflows_export_server = ex.read_from_json(f'{ex.pwd}{ex.workflow_node[0]}',ex.workflow_node[1])    
+    workflow_nodes_import = ex.read_from_json(ex.pwd,'workflow_nodes_import_server.json')     # Contains imported workflows    
     
     '''  BEGIN of POST request to create workFlows  '''
-    for workflow in draft_workflows_export_server['workFlows']:
+    for workflow in workflows_export_server['workFlows']:
         post_payload = {
                         "name": workflow["name"],
                         "workFlowNodeId": workflow_nodes_import[0]['id'],    # 0: Draft; 1: Archived; 2: Active;
@@ -106,7 +100,8 @@ def create_workflow_import():
         
 
         '''  BEGIN OF XML POST REQUEST  '''      
-        xml_path = ex.pwd+"\\draft"
+        xml_path = ex.pwd + ex.workflow_node[0]
+
         payload={}
         files=[ ('file',(f'{workflow["originalId"]}.xml',open(f'{xml_path}\\{workflow["originalId"]}.xml','rb'),'text/xml'))  ]
                         
@@ -125,7 +120,7 @@ def create_workflow_import():
 
 def get_workflows_import():    # Creating .json only Draft workFlows
 
-    workflow_nodes_import = ex.read_from_json(ex.pwd,'workflow_nodes_import.json')
+    workflow_nodes_import = ex.read_from_json(ex.pwd,'workflow_nodes_import_server.json')
 
     for obj in range(len(workflow_nodes_import)):
         if workflow_nodes_import[obj]['name'] == "Draft":
@@ -137,7 +132,7 @@ def get_workflows_import():    # Creating .json only Draft workFlows
     request = requests.get(url, headers=ex.headers_import)        
     response = request.json()
 
-    with open(f"{draft_name}_workflows_import.json", 'w', encoding='utf-8') as json_file:
+    with open(f"{draft_name}_workflows_import_server.json", 'w', encoding='utf-8') as json_file:
         json.dump(response, json_file, ensure_ascii=False, indent=4)
 
     print("get_workflows_import - \033[;38;5;34mdone\033[0;0m")
@@ -148,6 +143,7 @@ def get_workflows_import():    # Creating .json only Draft workFlows
 
 if __name__ == "__main__":
     ex.create_folders()
+    ex.workflow_node = ex.define_workFlow_node()
     ex.get_workflow_nodes_export()
     ex.get_workflows_export()    
     ex.workflow_xml_export()     
