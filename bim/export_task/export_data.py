@@ -14,14 +14,8 @@ import sys
 
 token_iktest01 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkYTdmZDQ0OC1hYmVlLTQ3MTYtYjA4Mi04Yjg3NGIyY2I0MWIiLCJpc3MiOiJodHRwOi8vd2ViYXBpIiwiaWF0IjoxNjU0OTgyMTM0LCJzaWQiOiI0ZThmZTUxZi1kZTg2LTQ1MjctYjNkOC0wNGZhMTM3MWZhNmQiLCJzdWIiOiJhZG1pbiIsInVzZXJuYW1lIjoiYWRtaW4iLCJkaXNwbGF5X25hbWUiOiJTeXN0ZW0gQWRtaW5pc3RyYXRvciIsInRlbmFudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMCIsInVzZXJfcm9sZSI6ImFkbWluIiwibmJmIjoxNjU0OTgyMTM0LCJleHAiOjE2NjAyNjIxMzQsImF1ZCI6Imh0dHA6Ly9mcm9udGVuZCJ9.h6FtxTUAOJmd4OwPxKXl1pwkRQSungQzCu8T2uyO164"
 
-# token_std_p7 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJjZDg5ZTZiZC0yMTI0LTQwOTAtYTJmYS1lYmQwZjViYmIwZGIiLCJpc3MiOiJodHRwOi8vd2ViYXBpIiwiaWF0IjoxNjU0NTkxMTAzLCJzaWQiOiI4YmZmNDczNS0xMDFiLTRhN2QtODU4MS05NDQxMTYzYmQ5YjciLCJzdWIiOiJhZG1pbiIsInVzZXJuYW1lIjoiYWRtaW4iLCJkaXNwbGF5X25hbWUiOiJhZG1pbiIsInRlbmFudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMCIsInVzZXJfcm9sZSI6ImFkbWluIiwibmJmIjoxNjU0NTkxMTAzLCJleHAiOjE2NTk4NzExMDMsImF1ZCI6Imh0dHA6Ly9mcm9udGVuZCJ9.RKHnUGH3v_2k7bnqnoPMtGLgY23c7P_b84EqSrAu5oQ"
-
-
 
 headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_iktest01}"}
-# headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_std_p7}"}
-# headers_for_xml_import = {'accept': '*/*', 'Authorization': f"Bearer {token_std_p7}"}    # specific headers without 'Content-type' for import .xml file. Otherwise request doesn't work!
-
 
 
 '''     GLOBAL VARIABLES    '''
@@ -115,6 +109,20 @@ def get_workflow_nodes_export():   # Getting Draft, Archived and Active processe
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
+def get_model_object_export():
+    pass
+
+
+
+
+
+
+
+
+
+#------------------------------------------------------------------------------------------------------------------------------#
+
+
 def get_workflows_export():    
 
     data = read_from_json(pwd, 'workflow_nodes_export_server.json')
@@ -134,7 +142,7 @@ def get_workflows_export():
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
-def workflow_xml_export():
+def get_workflow_xml_export():
     
     '''  XML will be exported from the workFlow_node based on input above - [draft, archived]  
          example: workflow_node('Archived", 'Archived_workflows_export.json')  - each element in tuple can be accessed by index
@@ -165,7 +173,7 @@ def workflow_xml_export():
                 file.write(request.content)
 
 
-    print("workflow_xml_export - \033[;38;5;34mdone\033[0;0m")
+    print("get_workflow_xml_export - \033[;38;5;34mdone\033[0;0m")
 
 #------------------------------------------------------------------------------------------------------------------------------
 
@@ -241,7 +249,7 @@ if __name__ == "__main__":
     create_folders()
     get_workflow_nodes_export()
     get_workflows_export()    
-    workflow_xml_export()     
+    get_workflow_xml_export()     
     get_workFlows_bimClass_export()
     
     
