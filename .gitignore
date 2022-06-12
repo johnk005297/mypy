@@ -11,6 +11,9 @@ temp.py
 bim/.env
 export_task/.env
 export_task/*.json
+Active/
+Archived/
+Draft/
 ../py_course/Ex.6/.env
 ..bim/*
 export_proj_venv
