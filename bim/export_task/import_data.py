@@ -21,15 +21,7 @@ headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authoriza
 headers_for_xml_import = {'accept': '*/*', 'Authorization': f"Bearer {token_std_p7}"}    # specific headers without 'Content-type' for import .xml file. Otherwise request doesn't work!
 
 ''''''''''''''''''''''''''''''
-def create_folders():
-    try:            
-        os.mkdir('Archived')
-        os.mkdir('Draft')
-        os.mkdir('Active')
-
-    except FileExistsError:        
-        pass
-    print("create_folders - \033[;38;5;34mdone\033[0;0m")        
+        
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -168,10 +160,8 @@ def post_model_object_import():
     url_for_current_func = url_import + "/api/Integration/ObjectModel/Import"    
     
     with open("model_object_export_server.json", "r", encoding="utf-8") as file:
-        data = file.read().replace('\n', '')
-    
-    
-    json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file
+        data = file.read().replace('\n', '')    
+    # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file
     
     mod_odj_request = requests.post(url_for_current_func, data=data.encode("utf-8"),  headers=headers_import, verify=False)
 
@@ -179,9 +169,6 @@ def post_model_object_import():
 
 
 #------------------------------------------------------------------------------------------------------------------------------#
-
-
-
 
 
 # data takes {workFlowOriginId} as an argument
@@ -220,7 +207,7 @@ def create_workflow_import():
                         "type": workflow["type"]
                         }
         json_post_payload = json.dumps(post_payload)
-        post_request = requests.post(url, data=json_post_payload, headers=headers_import, verify=False)     # /api/WorkFlows/{workFlowOriginalId}
+        post_request = requests.post(url, data=json_post_payload, headers=headers_import, verify=False)     # /api/WorkFlows/{workFlowOriginalId}   # verify=False to eliminate SSL check which causes Error
         post_response = post_request.json()
         
         bimClass_id_import = get_BimClassID_of_current_process_import(post_response['originalId'])    # reference workFlow_original_ID on import server        
@@ -285,21 +272,10 @@ def get_workflows_import():    # Creating .json only Draft workFlows
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
-# def delete_draft_workflows():
-#     get_workflows_import()
-#     data = ex.read_from_json(f"{pwd}/Draft", "Draft_workflows_import_server.json")  # Change the \
-
-#     for obj in range(len(data)):
-#         print(data[obj]['name'])
-#         print(data[obj]['id'])
-    # url = f"{url_import}"    # /api/WorkFlows/{workFlowOriginalId}
-
-
-#------------------------------------------------------------------------------------------------------------------------------#
 
 
 if __name__ == "__main__": 
-    create_folders()         
+    ex.create_folders()         
     url_import = get_url_import()
     workflow_node = define_workFlow_node_import()  
     get_workflow_nodes_import()

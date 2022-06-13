@@ -10,9 +10,6 @@ from dotenv import load_dotenv    # commented when running on linux machine whic
 load_dotenv()
 
 
-
-
-
 token_demo_gpp = os.getenv("token_demo_gpp")
 headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_demo_gpp}"}
 
