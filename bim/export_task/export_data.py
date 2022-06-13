@@ -6,16 +6,12 @@ import json
 import os
 import xml.etree.ElementTree as ET
 import sys
-# from dotenv import load_dotenv    # commented when running on linux machine which can't install load_dotenv package
-# load_dotenv()
+from dotenv import load_dotenv    # commented when running on linux machine which can't install load_dotenv package
+load_dotenv()
 
 
-# Need to place a block with get key automatically
-
-token_iktest01 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkYTdmZDQ0OC1hYmVlLTQ3MTYtYjA4Mi04Yjg3NGIyY2I0MWIiLCJpc3MiOiJodHRwOi8vd2ViYXBpIiwiaWF0IjoxNjU0OTgyMTM0LCJzaWQiOiI0ZThmZTUxZi1kZTg2LTQ1MjctYjNkOC0wNGZhMTM3MWZhNmQiLCJzdWIiOiJhZG1pbiIsInVzZXJuYW1lIjoiYWRtaW4iLCJkaXNwbGF5X25hbWUiOiJTeXN0ZW0gQWRtaW5pc3RyYXRvciIsInRlbmFudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMCIsInVzZXJfcm9sZSI6ImFkbWluIiwibmJmIjoxNjU0OTgyMTM0LCJleHAiOjE2NjAyNjIxMzQsImF1ZCI6Imh0dHA6Ly9mcm9udGVuZCJ9.h6FtxTUAOJmd4OwPxKXl1pwkRQSungQzCu8T2uyO164"
-
-
-headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_iktest01}"}
+token_demo_gpp = os.getenv("token_demo_gpp")
+headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_demo_gpp}"}
 
 
 '''     GLOBAL VARIABLES    '''
@@ -98,7 +94,7 @@ def read_from_json(path_to_file,file_name):
 def get_workflow_nodes_export():   # Getting Draft, Archived and Active processes.    
     
     url_for_current_func = url_export + "/api/WorkFlowNodes"
-    request = requests.get(url_for_current_func, headers=headers_export)
+    request = requests.get(url_for_current_func, headers=headers_export, verify=False)
     response = request.json()
         
     with open('workflow_nodes_export_server.json', 'w', encoding='utf-8') as json_file:

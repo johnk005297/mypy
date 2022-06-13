@@ -6,18 +6,24 @@ import xml.etree.ElementTree as ET
 import time
 import sys
 import os
-
+from urllib3.exceptions import InsecureRequestWarning
+from urllib3 import disable_warnings
+disable_warnings(InsecureRequestWarning)
+from dotenv import load_dotenv    # commented when running on linux machine which can't install load_dotenv package
+load_dotenv()
 
 '''     GLOBAL VARIABLES    '''
 pwd = os.getcwd()
 
-token_std_p7 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJjZDg5ZTZiZC0yMTI0LTQwOTAtYTJmYS1lYmQwZjViYmIwZGIiLCJpc3MiOiJodHRwOi8vd2ViYXBpIiwiaWF0IjoxNjU0NTkxMTAzLCJzaWQiOiI4YmZmNDczNS0xMDFiLTRhN2QtODU4MS05NDQxMTYzYmQ5YjciLCJzdWIiOiJhZG1pbiIsInVzZXJuYW1lIjoiYWRtaW4iLCJkaXNwbGF5X25hbWUiOiJhZG1pbiIsInRlbmFudF9pZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMCIsInVzZXJfcm9sZSI6ImFkbWluIiwibmJmIjoxNjU0NTkxMTAzLCJleHAiOjE2NTk4NzExMDMsImF1ZCI6Imh0dHA6Ly9mcm9udGVuZCJ9.RKHnUGH3v_2k7bnqnoPMtGLgY23c7P_b84EqSrAu5oQ"
 
+token_std_p7 = os.getenv("token_std_p7")
 headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_std_p7}"}
 headers_for_xml_import = {'accept': '*/*', 'Authorization': f"Bearer {token_std_p7}"}    # specific headers without 'Content-type' for import .xml file. Otherwise request doesn't work!
 
 ''''''''''''''''''''''''''''''
-
+        
+    
+#------------------------------------------------------------------------------------------------------------------------------#
 
 
 def get_url_import():
@@ -62,7 +68,7 @@ def define_workFlow_node_import():
 def get_workflow_nodes_import():   # Getting Draft, Archived and Active processes.
     
     url_for_current_func = url_import + "/api/WorkFlowNodes"
-    request = requests.get(url_for_current_func, headers=headers_import)
+    request = requests.get(url_for_current_func, headers=headers_import, verify=False)
     response = request.json()
         
     with open('workflow_nodes_import_server.json', 'w') as json_file:
@@ -84,7 +90,7 @@ def replace_str_in_file(file_in, file_out, find, replace):
 
 def get_model_object_import():
     url_for_current_func = url_import + "/api/Integration/ObjectModel/Export"
-    request = requests.get(url_for_current_func, headers=headers_import)
+    request = requests.get(url_for_current_func, headers=headers_import, verify=False)
     response = request.json()
 
     with open("model_object_import_server.json", "w", encoding="utf-8") as json_file:
@@ -101,9 +107,10 @@ def model_object_export_file():
     
     # Pointers to data we need to collect from the .json file
     big_fish: tuple = ("bimPropertyTreeNodes", "bimInterfaceTreeNodes", "bimClassTreeNodes", "bimDirectoryTreeNodes", "bimStructureTreeNodes", "rootSystemBimClass", "systemBimInterfaces", 
-                        "systemBimProperties",)
+                        "systemBimProperties","secondLevelSystemBimClasses",)
     small_fish: tuple = ("BimProperty", "BimInterface", "BimClass", "BimDirectory", "BimStructure", "FILE_INTERFACE", "WORK_DATES_INTERFACE", "COMMERCIAL_SECRET_BIM_INTERFACE","FILE_PROPERTY", 
-                        "PLANNED_START_PROPERTY","PLANNED_END_PROPERTY", "ACTUAL_START_PROPERTY", "ACTUAL_END_PROPERTY", "COMMERCIAL_SECRET_BIM_PROPERTY", )
+                        "PLANNED_START_PROPERTY","PLANNED_END_PROPERTY", "ACTUAL_START_PROPERTY", "ACTUAL_END_PROPERTY", "COMMERCIAL_SECRET_BIM_PROPERTY","ACTIVE_CLASS","FOLDER_CLASS", "DOCUMENT_CLASS",
+                        "WORK_CLASS", )
     
     insert_tuple = ()   # data will be inserted in model_objects_export.json file
     replace_tuple = ()  # data will be removed from model_objects_export.json file
@@ -133,7 +140,7 @@ def model_object_export_file():
                             # print(obj) # dict
                                       
         elif key in big_fish and isinstance(data_obj_model_export[key], dict):
-            replace_tuple += (data_obj_model_import[key]["id"],)               
+            replace_tuple += (data_obj_model_export[key]["id"],)               
      
     
     # Edit model object attributes in needed file
@@ -144,15 +151,31 @@ def model_object_export_file():
         else:             
             sys.exit("Smth is wrong. Model_object files are incorrect. Exit")
 
+    print(f"model_object_export_file - \033[;38;5;34mdone\033[0;0m")
+
 #------------------------------------------------------------------------------------------------------------------------------#
 
+def post_model_object_import():
+
+    url_for_current_func = url_import + "/api/Integration/ObjectModel/Import"    
+    
+    with open("model_object_export_server.json", "r", encoding="utf-8") as file:
+        data = file.read().replace('\n', '')    
+    # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file
+    
+    mod_odj_request = requests.post(url_for_current_func, data=data.encode("utf-8"),  headers=headers_import, verify=False)
+
+    print(f"post_model_object_import - \033[;38;5;34mdone {mod_odj_request.status_code}\033[0;0m" if mod_odj_request.status_code in (201, 200, 204) else f"post_model_object_import - \033[;38;5;9m{mod_odj_request.text}\033[0;0m")
+
+
+#------------------------------------------------------------------------------------------------------------------------------#
 
 
 # data takes {workFlowOriginId} as an argument
 def get_BimClassID_of_current_process_import(data):  # /api/WorkFlows/{workFlowOriginId}/BimClasses
     
     url = f"{url_import}/api/WorkFlows/{data}/BimClasses"
-    request = requests.get(url, headers=headers_import)
+    request = requests.get(url, headers=headers_import, verify=False)
     response = request.json()    
     for object in range(len(response)):
         return response[object]['id']
@@ -184,7 +207,7 @@ def create_workflow_import():
                         "type": workflow["type"]
                         }
         json_post_payload = json.dumps(post_payload)
-        post_request = requests.post(url, data=json_post_payload, headers=headers_import)     # /api/WorkFlows/{workFlowOriginalId}
+        post_request = requests.post(url, data=json_post_payload, headers=headers_import, verify=False)     # /api/WorkFlows/{workFlowOriginalId}   # verify=False to eliminate SSL check which causes Error
         post_response = post_request.json()
         
         bimClass_id_import = get_BimClassID_of_current_process_import(post_response['originalId'])    # reference workFlow_original_ID on import server        
@@ -206,7 +229,7 @@ def create_workflow_import():
         
         # Replacement of workFlow_bimClass_ID from export server with bimClass_ID newly created workFlow on import server
         changed_put_payload = json_put_payload.replace(bimClass_list_id_export[workflow["originalId"]], bimClass_id_import)
-        requests.put(url+"/"+post_response['originalId'], data=changed_put_payload, headers=headers_import)   # /api/WorkFlows/{workFlowOriginalId}  
+        requests.put(url+"/"+post_response['originalId'], data=changed_put_payload, headers=headers_import, verify=False)   # /api/WorkFlows/{workFlowOriginalId}  
         time.sleep(0.25)
         '''  END OF PUT REQUEST  '''
         
@@ -217,14 +240,14 @@ def create_workflow_import():
         payload={}
         files=[ ('file',(f'{workflow["originalId"]}.xml',open(f'{xml_path}/{workflow["originalId"]}.xml','rb'),'text/xml'))  ]
                         
-        post_xml_request = requests.post(f"{url}/{post_response['originalId']}/Diagram?contentType=file", headers=headers_for_xml_import, data=payload, files=files)
+        post_xml_request = requests.post(f"{url}/{post_response['originalId']}/Diagram?contentType=file", headers=headers_for_xml_import, data=payload, files=files, verify=False)
         # print(f"{post_xml_request.status_code}")
         print(f"Name of process: {post_response['name']}",end=' ')
         print(f"\033[;38;5;34m{post_xml_request.status_code}\033[0;0m" if post_xml_request.status_code == 200 else f"\033[;38;5;9m{post_xml_request.status_code}\033[0;0m")
         time.sleep(0.25)
         '''  END OF XML POST REQUEST  '''
     
-    print(f"create_workflow - \033[;38;5;34mdone\033[0;0m" if post_request.status_code == 201 else f"create_workflow - \033[;38;5;9m{post_request.status_code}\033[0;0m")
+        print(f"create_workflow - \033[;38;5;34mdone\033[0;0m" if post_request.status_code == 201 else f"create_workflow - \033[;38;5;9m{post_request.status_code}\033[0;0m")
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -239,7 +262,7 @@ def get_workflows_import():    # Creating .json only Draft workFlows
         value = data[obj]['id']
             
         url = f"{url_import}/api/WorkFlowNodes/{value}/children"
-        request = requests.get(url, headers=headers_import)        
+        request = requests.get(url, headers=headers_import, verify=False)        
         response = request.json()
 
         with open(f"{pwd}/{key}/{key}_workflows_import_server.json", 'w', encoding='utf-8') as json_file:
@@ -249,25 +272,16 @@ def get_workflows_import():    # Creating .json only Draft workFlows
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
-# def delete_draft_workflows():
-#     get_workflows_import()
-#     data = ex.read_from_json(f"{pwd}/Draft", "Draft_workflows_import_server.json")  # Change the \
-
-#     for obj in range(len(data)):
-#         print(data[obj]['name'])
-#         print(data[obj]['id'])
-    # url = f"{url_import}"    # /api/WorkFlows/{workFlowOriginalId}
 
 
-#------------------------------------------------------------------------------------------------------------------------------#
-
-
-if __name__ == "__main__":          
+if __name__ == "__main__": 
+    ex.create_folders()         
     url_import = get_url_import()
     workflow_node = define_workFlow_node_import()  
     get_workflow_nodes_import()
     get_model_object_import()
     model_object_export_file()
+    post_model_object_import()
     create_workflow_import()    
     get_workflows_import()
     
