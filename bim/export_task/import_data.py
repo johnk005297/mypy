@@ -96,8 +96,8 @@ def get_model_object_import():
 #---------------------------------------------------------------------------------------------------------------------------------
 
 def model_object_export_file():
-    data_obj_model_import = ex.read_from_json("model_objects_import_server.json")  # read the file into dictionary
-    data_obj_model_export = ex.read_from_json("model_objects_export_server.json")  # read the file into dictionary
+    data_obj_model_import = ex.read_from_json(pwd, "model_object_import_server.json")  # read the file into dictionary
+    data_obj_model_export = ex.read_from_json(pwd, "model_object_export_server.json")  # read the file into dictionary
     
     # Pointers to data we need to collect from the .json file
     big_fish: tuple = ("bimPropertyTreeNodes", "bimInterfaceTreeNodes", "bimClassTreeNodes", "bimDirectoryTreeNodes", "bimStructureTreeNodes", "rootSystemBimClass", "systemBimInterfaces", 
@@ -140,7 +140,7 @@ def model_object_export_file():
     for x in range(len(replace_tuple)):
         if len(replace_tuple) == len(insert_tuple):
             # print(replace_tuple[x], " ---> ", insert_tuple[x])
-            replace_str_in_file("model_objects_export_server.json", "model_objects_export_server.json", replace_tuple[x], insert_tuple[x])           
+            replace_str_in_file("model_object_export_server.json", "model_object_export_server.json", replace_tuple[x], insert_tuple[x])           
         else:             
             sys.exit("Smth is wrong. Model_object files are incorrect. Exit")
 
