@@ -180,6 +180,7 @@ def post_model_object_import():
 
 # data takes {workFlowOriginId} as an argument
 def get_BimClassID_of_current_process_import(data):  # /api/WorkFlows/{workFlowOriginId}/BimClasses
+    ''' Function returns BimClass_id of provided workFlow proccess. '''
     
     url = f"{url_import}/api/WorkFlows/{data}/BimClasses"
     request = requests.get(url, headers=headers_import, verify=False)
@@ -193,18 +194,18 @@ def get_BimClassID_of_current_process_import(data):  # /api/WorkFlows/{workFlowO
 
 def create_workflow_import():    
     '''
-    workflow_node tuple comes from ex.define_workFlow_node() function. It provides a selection of two components ex.("Draft", "Draft_workflows_export.json")
+    workflow_node tuple comes from define_workFlow_node_import() function. It provides a selection of two components ex.("Draft", "Draft_workflows_export.json")
     which can be accessed by index.
        example:  workflow_node[0] - "Draft"
                  workflow_node[1] - "Draft_workflows_export.json"                 
     '''
     url = url_import + "/api/WorkFlows"  # POST request to create workFlow
 
-    workflows_export_server = ex.read_from_json(f"{pwd}/{workflow_node[0]}",workflow_node[1])    
+    workflows_from_export_server = ex.read_from_json(f"{pwd}/{workflow_node[0]}",workflow_node[1])    
     workflow_nodes_import = ex.read_from_json(pwd,'workflow_nodes_import_server.json')     # Contains imported workflows    
     
     '''  BEGIN of POST request to create workFlows  '''
-    for workflow in workflows_export_server['workFlows']:
+    for workflow in workflows_from_export_server['workFlows']:
         post_payload = {
                         "name": workflow["name"],
                         "workFlowNodeId": workflow_nodes_import[0]['id'],    # 0: Draft; 1: Archived; 2: Active;
