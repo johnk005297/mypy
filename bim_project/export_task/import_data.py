@@ -1,4 +1,6 @@
 #
+# This is linux version script!
+
 import requests
 import json
 import export_data as ex      # Data from export_data.py 
@@ -22,7 +24,6 @@ headers_for_xml_import = {'accept': '*/*', 'Authorization': f"Bearer {token_std_
 
     
 #------------------------------------------------------------------------------------------------------------------------------#
-
 
 def get_url_import():
     url_import: str = input("Enter import server url, like('http://address.com'): ").lower()
@@ -105,11 +106,11 @@ def get_model_object_import():
 
 #---------------------------------------------------------------------------------------------------------------------------------
 
-def model_object_export_file():
+def prepare_model_object_file_for_import():
     '''
         Function finds needed data(used two tuples as pointers: big_fish and small_fish) in model_object_import_server.json file, and place it in the model_object_export_server.json file.
         Both servers use the same data structure with key-value pairs. Thus, they have identical keys and different values. We search for values we need in model_object_import_server.json file, 
-        and replace with it values in model_object_export_server.json file. model_object_export_server.json file will be used further on the import server.        
+        and replace with it values in model_object_export_server.json file. model_object_export_server.json file will be used further on the import server.
     '''
     data_obj_model_import = ex.read_from_json(pwd, "model_object_import_server.json")  # read the file into dictionary
     data_obj_model_export = ex.read_from_json(pwd, "model_object_export_server.json")  # read the file into dictionary
@@ -126,40 +127,40 @@ def model_object_export_file():
     
     # Collecting values from import model object .json file with values to put in export .json
     for key in data_obj_model_import.keys():
-        if key in big_fish and isinstance(data_obj_model_import[key], list): 
-            for obj in data_obj_model_import[key]:                            
+        if key in big_fish and isinstance(data_obj_model_import[key], list):
+            for obj in data_obj_model_import[key]:
                 if isinstance(obj, dict):
                     for k,v in obj.items():
                         if v in small_fish:
                             insert_tuple += (obj["id"],)
                             # print(obj) # dict
                                          
-        elif key in big_fish and isinstance(data_obj_model_import[key], dict):                
-            insert_tuple += (data_obj_model_import[key]["id"],)            
+        elif key in big_fish and isinstance(data_obj_model_import[key], dict):
+            insert_tuple += (data_obj_model_import[key]["id"],)
     
     # Collecting values from export model object .json file with values to replace in export .json
     for key in data_obj_model_export.keys():
-        if key in big_fish and isinstance(data_obj_model_export[key], list): 
-            for obj in data_obj_model_export[key]:                            
+        if key in big_fish and isinstance(data_obj_model_export[key], list):
+            for obj in data_obj_model_export[key]:                         
                 if isinstance(obj, dict):
                     for k,v in obj.items():
-                        if v in small_fish:                            
+                        if v in small_fish:
                             replace_tuple += (obj["id"],)
                             # print(obj) # dict
                                       
         elif key in big_fish and isinstance(data_obj_model_export[key], dict):
-            replace_tuple += (data_obj_model_export[key]["id"],)               
+            replace_tuple += (data_obj_model_export[key]["id"],)
      
     
     # Edit model object attributes in needed file
     for x in range(len(replace_tuple)):
         if len(replace_tuple) == len(insert_tuple):
             # print(replace_tuple[x], " ---> ", insert_tuple[x])
-            replace_str_in_file("model_object_export_server.json", "model_object_export_server.json", replace_tuple[x], insert_tuple[x])           
+            replace_str_in_file("model_object_export_server.json", "model_object_export_server.json", replace_tuple[x], insert_tuple[x])        
         else:             
             sys.exit("Smth is wrong. Model_object files are incorrect. Exit")
 
-    print(f"model_object_export_file - \033[;38;5;34mdone\033[0;0m")
+    print(f"prepare_model_object_file_for_import - \033[;38;5;34mdone\033[0;0m")
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -278,13 +279,14 @@ def get_workflows_import():
 
 
 if __name__ == "__main__": 
+    # ex.get_token()    # function from export_task.py, which isn't ready yet.
     ex.create_folders()         
     url_import = get_url_import()
     workflow_node = define_workFlow_node_import()  
     get_workflow_nodes_import()
     get_model_object_import()
-    model_object_export_file()
+    prepare_model_object_file_for_import()
     post_model_object_import()
-    create_workflow_import()    
+    create_workflow_import()
     get_workflows_import()
     

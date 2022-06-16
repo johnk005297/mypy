@@ -1,5 +1,5 @@
 #
-# This is linux version!
+# This is linux version script!
 
 import requests
 import json
