@@ -94,8 +94,8 @@ def get_model_object_import():
     '''
         Function get's model object from import server, and write's it to model_object_import_server.json file.
     '''
-    url_for_current_func = url_import + "/api/Integration/ObjectModel/Export"
-    request = requests.get(url_for_current_func, headers=headers_import, verify=False)
+    url = url_import + "/api/Integration/ObjectModel/Export"
+    request = requests.get(url, headers=headers_import, verify=False)
     response = request.json()
 
     with open("model_object_import_server.json", "w", encoding="utf-8") as json_file:
