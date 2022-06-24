@@ -1,6 +1,6 @@
 ##
 import os
-
+import sys
 
 
 
@@ -32,7 +32,7 @@ def alter_yml():
                     lst.append(line)
             
     except Exception as err:
-            print("Error: ", err)    
+            sys.exit("Error: ", err)    
 
     ports = 'ports:\n'
     for index in range(len(lst)):
