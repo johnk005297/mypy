@@ -4,12 +4,10 @@ import os
 
 
 
-'''
-    Looks like working.
+'''    
     Need to add: 
         SSL_CERTIFICATE: '/etc/nginx/ssl/bimeister.io.crt'
-        SSL_CERTIFICATE: '/etc/nginx/ssl/bimeister.io.key'
-        
+        SSL_CERTIFICATE: '/etc/nginx/ssl/bimeister.io.key'        
 '''
 
 

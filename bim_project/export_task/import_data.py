@@ -78,7 +78,7 @@ def get_workflow_nodes_import():
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
-def replace_str_in_file(file_in, file_out, find, replace):    
+def replace_str_in_file(file_in, file_out, find, replace):
     '''
         Function takes 4 arguments: file to read, file to write, what_to_find, what_to_put_instead_of_what_to_find.
     '''

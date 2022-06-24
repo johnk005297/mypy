@@ -19,7 +19,7 @@ headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authoriza
 
 '''     GLOBAL VARIABLES    '''
 pwd = os.getcwd()
-bimClass_id_draft_workFlows_export: dict = {}
+# bimClass_id_draft_workFlows_export: dict = {}
 
 ''''''''''''''''''''''''''''''
 
@@ -144,7 +144,7 @@ def get_workflows_export():
         value = data[obj]['id']
         
         url = f"{url_export}/api/WorkFlowNodes/{value}/children"
-        request = requests.get(url, headers=headers_export, verify=False)        
+        request = requests.get(url, headers=headers_export, verify=False)
         response = request.json()
 
         with open(f"{pwd}/{key}/{key}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
