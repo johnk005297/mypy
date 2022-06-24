@@ -13,13 +13,13 @@ from dotenv import load_dotenv    # commented when running on linux machine whic
 load_dotenv()
 
 
-token_demo_gpp = os.getenv("token_demo_gpp")
-headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_demo_gpp}"}
+token_demo_01 = os.getenv("token_demo_01")
+headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_demo_01}"}
 
 
 '''     GLOBAL VARIABLES    '''
 pwd = os.getcwd()
-bimClass_id_draft_workFlows_export: dict = {}
+# bimClass_id_draft_workFlows_export: dict = {}
 
 ''''''''''''''''''''''''''''''
 
@@ -144,7 +144,7 @@ def get_workflows_export():
         value = data[obj]['id']
         
         url = f"{url_export}/api/WorkFlowNodes/{value}/children"
-        request = requests.get(url, headers=headers_export, verify=False)        
+        request = requests.get(url, headers=headers_export, verify=False)
         response = request.json()
 
         with open(f"{pwd}/{key}/{key}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
