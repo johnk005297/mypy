@@ -25,11 +25,8 @@ def alter_yml():
                     lst.append(line)
             
     except Exception as err:
-            sys.exit("Error: ", err)
+            sys.exit("Error: ", err)    
     
-    print(lst)
-    sys.exit()
-
     count = 0
     ports = 'ports:\n'  
     for index in range(len(lst)):
