@@ -40,7 +40,7 @@ def alter_yml():
         if "SSL_CERTIFICATE:" in current_str:                             
             lst[index] = (' ')*count_spaces_in_environ_block + "SSL_CERTIFICATE: '/etc/nginx/ssl/bimeister.io.crt'\n"             
         elif "SSL_CERTIFICATE_KEY:" in current_str:            
-            lst[index] = (' ')*count_spaces_in_environ_block + "SSL_CERTIFICATE: '/etc/nginx/ssl/bimeister.io.key'\n"
+            lst[index] = (' ')*count_spaces_in_environ_block + "SSL_CERTIFICATE_KEY: '/etc/nginx/ssl/bimeister.io.key'\n"
 
         if "auth:" == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5000:80\"\n")
