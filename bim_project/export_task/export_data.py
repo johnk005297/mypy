@@ -259,11 +259,11 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
 if __name__ == "__main__":
     url_export = get_url_export()
     # get_token()   # function hasn't been written yet.
-    workflow_node = define_workFlow_node_export()   
+    workflow_node = define_workFlow_node_export()
     create_folders()
     get_workflow_nodes_export()
     get_model_object_export()
-    get_workflows_export()    
+    get_workflows_export()
     get_workflow_xml_export()     
     get_workFlows_bimClass_export()
     

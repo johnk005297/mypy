@@ -25,24 +25,24 @@ def alter_yml():
                     lst.append(line)
             
     except Exception as err:
-            sys.exit("Error: ", err)    
-
+            sys.exit("Error: ", err)
     
+    print(lst)
+    sys.exit()
+
     count = 0
     ports = 'ports:\n'  
     for index in range(len(lst)):
         current_str = lst[index].strip()   # current line from the .yml file without whitespaces from both sides        
         count_spaces_next_line = len(lst[index+1]) - len(lst[index+1].lstrip(' '))    # calculate amount of whitespaces to the right of the next string
 
-        if "environment:" in current_str and count == 0:          
+        if "environment:" in current_str and count == 0:          # count spaces in environment block only once
             count_spaces_in_environ_block = len(lst[index+1]) - len(lst[index+1].lstrip(' '))
-            count += 1            
-        else:
-            pass
-
-        if "SSL_CERTIFICATE:" in current_str:            
+            count += 1        
+        
+        if "SSL_CERTIFICATE:" in current_str:                             
             lst[index] = (' ')*count_spaces_in_environ_block + "SSL_CERTIFICATE: '/etc/nginx/ssl/bimeister.io.crt'\n"             
-        elif "SSL_CERTIFICATE_KEY:" in current_str:
+        elif "SSL_CERTIFICATE_KEY:" in current_str:            
             lst[index] = (' ')*count_spaces_in_environ_block + "SSL_CERTIFICATE: '/etc/nginx/ssl/bimeister.io.key'\n"
 
         if "auth:" == current_str:
