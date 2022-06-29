@@ -125,11 +125,11 @@ def alter_yml():
         print(f'\nFile "{yml_file_open_ports}" is ready.')
     else:
         print("No file here")
-
+    os.system('pause')
 
 if __name__ == "__main__":      
     alter_yml()    
-    input('\nPress any key to exit')
+    
     
 
 

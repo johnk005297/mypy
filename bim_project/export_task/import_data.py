@@ -11,14 +11,16 @@ import os
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
-from dotenv import load_dotenv    # commented when running on linux machine which can't install load_dotenv package
-load_dotenv()
+# from dotenv import load_dotenv    # commented when running on linux machine which can't install load_dotenv package
+# load_dotenv()
 
 '''     GLOBAL VARIABLES    '''
 pwd = os.getcwd()
-token_std_p7 = os.getenv("token_std_p7")
-headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_std_p7}"}
-headers_for_xml_import = {'accept': '*/*', 'Authorization': f"Bearer {token_std_p7}"}    # specific headers without 'Content-type' for import .xml file. Otherwise request doesn't work!
+# token_iktest01 = os.getenv("token_iktest01")
+token_import_server = "token_here"
+
+headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_import_server}"}
+headers_for_xml_import = {'accept': '*/*', 'Authorization': f"Bearer {token_import_server}"}    # specific headers without 'Content-type' for import .xml file. Otherwise request doesn't work!
 
 ''''''''''''''''''''''''''''''
 
@@ -31,13 +33,14 @@ def get_url_import():
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
+
 def define_workFlow_node_import():
     ''' 
         Function returns a tuple of elements like ("Active", "Active_workflows_export.json") which could be accessed by index.
         The following proccesses will be oriented only with this choise, and working with the choisen workFlow node.
         example:  workflow_node("Active", "Active_workflows_export_server.json")
                 workflow_node[0] - "Active"
-                workflow_node[1] - "Active_workflows_export.json"                 
+                workflow_node[1] - "Active_workflows_export.json"          
     '''    
     count = 0    
     while count < 3:
@@ -252,7 +255,7 @@ def create_workflow_import():
         time.sleep(0.25)
         '''  END OF XML POST REQUEST  '''
     
-        print(f"create_workflow - \033[;38;5;34mdone\033[0;0m" if post_request.status_code == 201 else f"create_workflow - \033[;38;5;9m{post_request.status_code}\033[0;0m")
+    print(f"create_workflow - \033[;38;5;34mdone\033[0;0m" if post_request.status_code == 201 else f"create_workflow - \033[;38;5;9m{post_request.status_code}\033[0;0m")
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -267,7 +270,7 @@ def get_workflows_import():
         value = data[obj]['id']
             
         url = f"{url_import}/api/WorkFlowNodes/{value}/children"
-        request = requests.get(url, headers=headers_import, verify=False)        
+        request = requests.get(url, headers=headers_import, verify=False)
         response = request.json()
 
         with open(f"{pwd}/{key}/{key}_workflows_import_server.json", 'w', encoding='utf-8') as json_file:

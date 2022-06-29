@@ -9,17 +9,17 @@ import sys
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
-from dotenv import load_dotenv    # commented when running on linux machine which/if can't install load_dotenv package
-load_dotenv()
+# from dotenv import load_dotenv    # commented when running on linux machine which/if can't install load_dotenv package
+# load_dotenv()
 
 
-token_demo_01 = os.getenv("token_demo_01")
-headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_demo_01}"}
+
+token_export_server = "token_here"
+headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_export_server}"}
 
 
 '''     GLOBAL VARIABLES    '''
 pwd = os.getcwd()
-# bimClass_id_draft_workFlows_export: dict = {}
 
 ''''''''''''''''''''''''''''''
 
@@ -30,8 +30,8 @@ def check_type(data):
 #------------------------------------------------------------------------------------------------------------------------------#
 
 def get_url_export():
-    site_export_url: str = input("Enter export server url, like('http://address.com'): ").lower()
-    return site_export_url
+    export_site_url: str = input("Enter export server url, like('http://address.com'): ").lower()
+    return export_site_url
 #------------------------------------------------------------------------------------------------------------------------------#
 
 def get_token():
@@ -79,8 +79,12 @@ def define_workFlow_node_export():
             # workflow_node('Active", 'Active_workflows_export.json', 'active'               
             return "Active", "Active_workflows_export_server.json"  
 
-        elif count == 3 or workflow_node_select == 'q':
+        elif workflow_node_select == 'q':
             sys.exit("\nStop import process!")
+
+        elif count == 3:
+            sys.exit("\nStop import process!")
+                        
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -111,7 +115,7 @@ def get_workflow_nodes_export():
     with open('workflow_nodes_export_server.json', 'w', encoding='utf-8') as json_file:
         json.dump(response, json_file, ensure_ascii=False, indent=4)  
     
-    print("get_workflow_nodes_export - \033[;38;5;34mdone\033[0;0m")   
+    print("get_workflow_nodes_export - \033[;38;5;34mdone\033[0;0m")
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
