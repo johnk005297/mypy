@@ -120,3 +120,43 @@ def solution7():
     print(*sorted(d.items()))
 
 ''' End of Task 6.1.3 '''    
+
+
+
+'''
+Task 6.1.4
+    Вводятся номера телефонов в формате:
+    номер_1 имя_1
+    номер_2 имя_2
+    ...
+    номер_N имя_N
+
+    Необходимо создать словарь d, где ключами будут имена, а значениями - список номеров телефонов для этого имени. Обратите внимание, что одному имени может принадлежать несколько разных номеров.
+
+    Input: +71234567890 Сергей, +71234567810 Сергей, +51234567890 Михаил, +72134567890 Николай
+
+    import sys
+    # считывание списка из входного потока
+    lst_in = list(map(str.strip, sys.stdin.readlines()))
+
+'''
+def solution8():
+
+    d = dict()
+    lst_in = ['+71234567890 Сергей', '+71234567810 Сергей', '+51234567890 Михаил', '+72134567890 Николай']    
+    for x in lst_in:
+        d[x.split()[1]] = d.get(x.split()[1], []) + [x.split()[0]]
+        break
+
+    
+    ## .get method above is an equivalent for this construction
+    # for x in lst_in:
+    #     if x.split()[1] not in d.keys():
+    #         d[x.split()[1]] = [x.split()[0]]
+    #     else:                           
+    #         d[x.split()[1]] += [x.split()[0]]
+    
+    return d
+
+''' End of Task 6.1.4 '''
+print(solution8())
