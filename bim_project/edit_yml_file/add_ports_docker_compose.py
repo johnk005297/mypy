@@ -111,7 +111,28 @@ def alter_yml():
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5430:5432\"\n")
 
         elif "webapi:" == current_str:
-            lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8081:80\"\n")        
+            lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8081:80\"\n")
+        
+        elif "similar:" == current_str:
+            lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10030:80\"\n")
+        
+        elif "collision_calculator:" == current_str:
+            lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10060:80\"\n")
+        
+        elif "spatium_api:" == current_str:
+            lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10000:80\"\n")
+        
+        elif "ifc_converter:" == current_str:
+            lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10040:80\"\n")
+        
+        elif "filterdb:" == current_str:
+            lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5436:5432\"\n")
+        
+        elif "parser:" == current_str:
+            lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10010:80\"\n")
+        
+        elif "spatiumdb:" == current_str:
+            lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5435:5432\"\n")        
         
         else:
             pass

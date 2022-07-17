@@ -146,7 +146,7 @@ def solution8():
     lst_in = ['+71234567890 Сергей', '+71234567810 Сергей', '+51234567890 Михаил', '+72134567890 Николай']    
     for x in lst_in:
         d[x.split()[1]] = d.get(x.split()[1], []) + [x.split()[0]]
-        break
+        
 
     
     ## .get method above is an equivalent for this construction
