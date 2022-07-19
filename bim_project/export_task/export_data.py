@@ -14,22 +14,25 @@ disable_warnings(InsecureRequestWarning)
 
 
 
-token_export_server = "token_here"
-headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_export_server}"}
-
 
 '''     GLOBAL VARIABLES    '''
 pwd = os.getcwd()
 
 ''''''''''''''''''''''''''''''
 
+def token_export_server():
+    token_from_export_server = input("Enter Bearer token for export: ")
+    print()
+    return token_from_export_server
 
-#------------------------------------------------------------------------------------------------------------------------------#
-def check_type(data):
-    print(type(data))
+
+
+headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_export_server()}"}
+
 #------------------------------------------------------------------------------------------------------------------------------#
 
 def get_url_export():
+    
     export_site_url: str = input("Enter export server url, like('http://address.com'): ").lower()
     return export_site_url
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -50,7 +53,7 @@ def create_folders():
         os.mkdir('Active')
     except FileExistsError:
         pass
-    print("create_folders - \033[;38;5;34mdone\033[0;0m")        
+    print("create_folders - done")        
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -115,7 +118,7 @@ def get_workflow_nodes_export():
     with open('workflow_nodes_export_server.json', 'w', encoding='utf-8') as json_file:
         json.dump(response, json_file, ensure_ascii=False, indent=4)  
     
-    print("get_workflow_nodes_export - \033[;38;5;34mdone\033[0;0m")
+    print("get_workflow_nodes_export - done")
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -132,7 +135,7 @@ def get_model_object_export():
     with open("model_object_export_server.json", "w", encoding="utf-8") as json_file:
         json.dump(response, json_file, ensure_ascii=False, indent=4)
     
-    print("get_model_object_export - \033[;38;5;34mdone\033[0;0m")
+    print("get_model_object_export - done")
 
 
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -154,7 +157,7 @@ def get_workflows_export():
         with open(f"{pwd}/{key}/{key}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
             json.dump(response, json_file, ensure_ascii=False, indent=4)
     
-    print("get_workflows_export - \033[;38;5;34mdone\033[0;0m")
+    print("get_workflows_export - done")
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -190,7 +193,7 @@ def get_workflow_xml_export():
                 file.write(request.content)
 
 
-    print("get_workflow_xml_export - \033[;38;5;34mdone\033[0;0m")
+    print("get_workflow_xml_export - done")
 
 #------------------------------------------------------------------------------------------------------------------------------
 
@@ -225,7 +228,7 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
             with open(f"{pwd}/{workflow_node[0]}/{line['id']}.json", 'w', encoding='utf-8') as file:
                 json.dump(response, file, ensure_ascii=False, indent=4)
             
-            # write dict with draft workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}        
+            # write dict with archived workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}        
             workFlow_id_bimClass_id_export.append(line['originalId'])        
             workFlow_id_bimClass_id_export.append(response[0]['id'])
 
@@ -238,7 +241,7 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
             with open(f"{pwd}/{workflow_node[0]}/{line['id']}.json", 'w', encoding='utf-8') as file:
                 json.dump(response, file, ensure_ascii=False, indent=4)   
             
-            # write dict with draft workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}
+            # write dict with active workFlows BimClasses ID in format {"workFlow_name": "bimClass_ID"}
             workFlow_id_bimClass_id_export.append(line['originalId'])        
             workFlow_id_bimClass_id_export.append(response[0]['id'])
 
@@ -248,19 +251,20 @@ def get_workFlows_bimClass_export():   # /api/WorkFlows/{workFlowOriginId}/BimCl
     tmp: list = [ [tmp[x-1]] + [tmp[x]] for x in range(1, len(tmp), 2) ]      # generation list in format [ ['a', 'b'], ['c', 'd'], ['e', 'f'] ]
     workFlow_id_bimClass_id_export = dict(tmp)                          # transform tmp list from above to dictionary using dict() function in format {"workFlow_id": "bimClass_id"}
     
+
     with open("workFlow_id_bimClass_id_export.json", 'w', encoding='utf-8')as file:
         json.dump(workFlow_id_bimClass_id_export, file, ensure_ascii=False, indent=4)
 
 
-    print("get_workFlows_bimClass_export - \033[;38;5;34mdone\033[0;0m")
-    
+    print("get_workFlows_bimClass_export - done\n\n")    
+    os.system('pause')
 
 #------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
     url_export = get_url_export()
     # get_token()   # function hasn't been written yet.
     workflow_node = define_workFlow_node_export()
@@ -272,6 +276,3 @@ if __name__ == "__main__":
     get_workFlows_bimClass_export()
     
     
-    
-
-

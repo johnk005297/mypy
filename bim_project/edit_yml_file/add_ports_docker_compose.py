@@ -22,8 +22,8 @@ def alter_yml():
             for line in file:
                 l = line.strip()
                 # If the line is empty/just whitespaces or contain any open ports - don't add in the lst                
-                if len(l) == 0 or p[0] in l or p[4] in l or p[1] in l or p[2] in l or p[3] in l or p[5] in l or p[6] in l or p[7] in l or p[8] in l or p[9] in l or p[10] in l or p[11] in l or p[12] in l \
-                 or p[13] in l or p[14] in l or p[15] in l or p[16] in l or p[17] in l or p[18] in l or p[19] in l or p[20] in l or p[21] in l or p[22] in l or p[23] in l or p[24] in l or p[25] in l \
+                if len(l) == 0 or p[0] in l or p[1] in l or p[2] in l or p[3] in l or p[4] in l or p[5] in l or p[6] in l or p[7] in l or p[8] in l or p[9] in l or p[10] in l or p[11] in l or p[12] in l \
+                   or p[13] in l or p[14] in l or p[15] in l or p[16] in l or p[17] in l or p[18] in l or p[19] in l or p[20] in l or p[21] in l or p[22] in l or p[23] in l or p[24] in l or p[25] in l \
                    or p[26] in l or p[27] in l or p[28] in l or p[29] in l or p[30] in l or p[31] in l or p[32] in l or p[33] in l or p[34] in l:
                     continue                 
                 else:
