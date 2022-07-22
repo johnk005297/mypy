@@ -19,6 +19,20 @@ pwd = os.getcwd()
 # token_iktest01 = os.getenv("token_iktest01")
 
 ''''''''''''''''''''''''''''''
+
+def ask_for_object_model():
+
+    answer = input("Import object model(Y/N) ? ").lower()    
+    if answer in ("y", "yes"):
+        return True
+    elif answer in ("n", "no"):
+        return False
+    else:
+        print("No choice was made. Stop executing script!")
+        sys.exit()
+    
+
+
 def get_token_import_server():
     token_from_import_server = input("Enter Bearer token for import: ")
     print()
@@ -342,17 +356,19 @@ def get_workflows_import():
 
 
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     # ex.get_token()    # function from export_task.py, which isn't ready yet.
-    token_import_server = get_token_import_server()            
+    ask = ask_for_object_model()
+    token_import_server = get_token_import_server()
     url_import = get_url_import()
     create_folders()
     workflow_node = define_workFlow_node_import()  
     get_workflow_nodes_import()
-    get_model_object_import()
-    prepare_model_object_file_for_import()
-    fix_defaulValues()
-    post_model_object_import()    
+    if ask:
+        get_model_object_import()
+        prepare_model_object_file_for_import()
+        fix_defaulValues()
+        post_model_object_import()    
     create_workflow_import()
     get_workflows_import()
     
