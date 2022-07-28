@@ -16,21 +16,23 @@ disable_warnings(InsecureRequestWarning)
 
 '''     GLOBAL VARIABLES    '''
 pwd = os.getcwd()
-# token_iktest01 = os.getenv("token_iktest01")
 
 ''''''''''''''''''''''''''''''
 
 def ask_for_object_model():
 
-    answer = input("Import object model(Y/N) ? ").lower()    
-    if answer in ("y", "yes"):
-        return True
-    elif answer in ("n", "no"):
-        return False
+    if os.path.isfile(f"{pwd}/files/model_object_export_server.json"):
+
+        answer = input("Import object model(Y/N) ? ").lower()    
+        if answer in ("y", "yes", "1"):
+            return True
+        elif answer in ("n", "no", "0"):
+            return False
+        else:
+            print("No choice was made. Stop executing script!")
+            sys.exit()
     else:
-        print("No choice was made. Stop executing script!")
-        sys.exit()
-    
+        return False
 
 
 def get_token_import_server():
@@ -53,15 +55,12 @@ def get_url_import():
 
 def create_folders():
     try:            
-        os.mkdir('Archived')
-        os.mkdir('Draft')
-        os.mkdir('Active')
+        os.mkdir('files')
     except FileExistsError:
         pass
     print("create_folders - done")        
     
 #------------------------------------------------------------------------------------------------------------------------------#
-
 
 
 # Read from JSON files, and provide dict in return.
@@ -118,9 +117,9 @@ def get_workflow_nodes_import():
     url = url_import + "/api/WorkFlowNodes"
     request = requests.get(url, headers=headers()[0], verify=False)
     response = request.json()
-        
-    with open('workflow_nodes_import_server.json', 'w') as json_file:
-        json.dump(response, json_file, ensure_ascii=False, indent=4)   
+
+    with open(f'{pwd}/files/workflow_nodes_import_server.json', 'w') as json_file:
+        json.dump(response, json_file, ensure_ascii=False, indent=4)
     print("get_workflow_nodes_import - done")
     
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -130,9 +129,9 @@ def replace_str_in_file(file_in, file_out, find, replace):
     '''
         Function takes 4 arguments: file to read, file to write, what_to_find, what_to_put_instead_of_what_to_find.
     '''
-    with open(f"{file_in}", 'r', encoding='utf-8') as file:
+    with open(f"{pwd}/files/{file_in}", 'r', encoding='utf-8') as file:
         new_json = file.read().replace(find, replace)      # find/replace vars must be string
-    with open(f"{file_out}", 'w', encoding='utf-8') as file:
+    with open(f"{pwd}/files/{file_out}", 'w', encoding='utf-8') as file:
         file.write(new_json)
         
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -146,7 +145,7 @@ def get_model_object_import():
     request = requests.get(url, headers=headers()[0], verify=False)
     response = request.json()
 
-    with open("model_object_import_server.json", "w", encoding="utf-8") as json_file:
+    with open(f"{pwd}/files/model_object_import_server.json", "w", encoding="utf-8") as json_file:
         json.dump(response, json_file, ensure_ascii=False, indent=4)
     
     print("get_model_object_import - done")
@@ -160,8 +159,9 @@ def prepare_model_object_file_for_import():
         Both servers use the same data structure with key-value pairs. Thus, they have identical keys and different values. We search for values we need in model_object_import_server.json file, 
         and replace with it values in model_object_export_server.json file. model_object_export_server.json file will be used further on the import server.
     '''
-    data_obj_model_import = read_from_json(pwd, "model_object_import_server.json")  # read the file into dictionary
-    data_obj_model_export = read_from_json(pwd, "model_object_export_server.json")  # read the file into dictionary
+
+    data_obj_model_import = read_from_json(f"{pwd}/files", "model_object_import_server.json")  # read the file into dictionary
+    data_obj_model_export = read_from_json(f"{pwd}/files", "model_object_export_server.json")  # read the file into dictionary
     
     # Pointers to data we need to collect from the .json file
     big_fish: tuple = ("bimPropertyTreeNodes", "bimInterfaceTreeNodes", "bimClassTreeNodes", "bimDirectoryTreeNodes", "bimStructureTreeNodes", "rootSystemBimClass", "systemBimInterfaces", 
@@ -218,15 +218,15 @@ def prepare_model_object_file_for_import():
 '''
 def fix_defaulValues():
 
-    data = read_from_json(pwd, "model_object_export_server.json")
+    data = read_from_json(f"{pwd}/files", "model_object_export_server.json")
     count = 0
-    with open('model_object_export_server.json', 'w', encoding='utf-8') as file:
+    with open(f"{pwd}/files/model_object_export_server.json", 'w', encoding='utf-8') as file:
         for bimClasses_dict in data['bimClasses']:  # bimClasses - list with dictionaries inside
-                for bimProperties_dict in bimClasses_dict['bimProperties']:  # bimProperties - list with dictionaries inside               
-                    for defaultValues in bimProperties_dict.get('defaultValues'):                
-                        if all(value == None for value in defaultValues.values()):                    
-                            bimProperties_dict['defaultValues'] = []
-                            count += 1
+            for bimProperties_dict in bimClasses_dict['bimProperties']:  # bimProperties - list with dictionaries inside               
+                for defaultValues in bimProperties_dict.get('defaultValues'):                
+                    if all(value == None for value in defaultValues.values()):                    
+                        bimProperties_dict['defaultValues'] = []
+                        count += 1
                     
 
         json.dump(data, file, ensure_ascii=False, indent=4)
@@ -240,8 +240,8 @@ def fix_defaulValues():
 
 def post_model_object_import():
 
-    url = url_import + "/api/Integration/ObjectModel/Import"    
-    with open("model_object_export_server.json", "r", encoding="utf-8") as file:
+    url = url_import + "/api/Integration/ObjectModel/Import"
+    with open(f"{pwd}/files/model_object_export_server.json", "r", encoding="utf-8") as file:
         # data = file.read().replace('\n', '')   # backup line
         data = file.read()
     # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file    
@@ -259,7 +259,7 @@ def get_BimClassID_of_current_process_import(data):  # /api/WorkFlows/{workFlowO
     
     url = f"{url_import}/api/WorkFlows/{data}/BimClasses"
     request = requests.get(url, headers=headers()[0], verify=False)
-    response = request.json()    
+    response = request.json()
     for object in range(len(response)):
         return response[object]['id']
     
@@ -275,59 +275,68 @@ def create_workflow_import():
                  workflow_node[1] - "Draft_workflows_export.json"
     '''
     url = url_import + "/api/WorkFlows"  # POST request to create workFlow
+    workflow_nodes: list = []
+    if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
+        with open(f"{pwd}/files/workflow_nodes.txt", 'r', encoding='utf-8') as file:
+            for line in file:
+                workflow_nodes.append(line[:-1])
+    else:
+        print("No workflow_nodes.txt file. Check 'files' folder. Exit.")
+        sys.exit()
+            
+    workflow_nodes_import = read_from_json(f"{pwd}/files", "workflow_nodes_import_server.json")     # Contains imported workflows
 
-    workflows_from_export_server = read_from_json(f"{pwd}/{workflow_node[0]}",workflow_node[1])
-    workflow_nodes_import = read_from_json(pwd,'workflow_nodes_import_server.json')     # Contains imported workflows
-    
     '''  BEGIN of POST request to create workFlows  '''
-    for workflow in workflows_from_export_server['workFlows']:
-        post_payload = {
-                        "name": workflow["name"],
-                        "workFlowNodeId": workflow_nodes_import[0]['id'],    # 0: Draft; 1: Archived; 2: Active;
-                        "description": str(workflow["description"]),
-                        "elements": [],
-                        "type": workflow["type"]
-                        }
-        json_post_payload = json.dumps(post_payload)
-        post_request = requests.post(url, data=json_post_payload, headers=headers()[0], verify=False)     # /api/WorkFlows/{workFlowOriginalId}   # verify=False to eliminate SSL check which causes Error
-        post_response = post_request.json()
-        
-        bimClass_id_import = get_BimClassID_of_current_process_import(post_response['originalId'])    # reference workFlow_original_ID on import server
-        bimClass_list_id_export = read_from_json(f"{pwd}/{workflow_node[0]}", 'workFlow_id_bimClass_id_export.json')
-        time.sleep(0.25)
-        '''  END of POST request to create workFlows  '''
-        
-        '''  BEGIN OF PUT REQUEST  '''
-        # adding 'elements': [], data from workFlows export into newly created workFlow
-        put_payload = {
-                        "name": workflow["name"],
-                        "workFlowNodeId": workflow_nodes_import[0]['id'],    # 0: Draft; 1: Archived; 2: Active;
-                        "description": str(workflow["description"]),
-                        "elements": workflow['elements'],
-                        "type": workflow["type"]
-                        }
-        json_put_payload = json.dumps(put_payload)
-        
-        # Replacement of workFlow_bimClass_ID from export server with bimClass_ID newly created workFlow on import server
-        changed_put_payload = json_put_payload.replace(bimClass_list_id_export[workflow["originalId"]], bimClass_id_import)
-        requests.put(url + "/" + post_response['originalId'], data=changed_put_payload, headers=headers()[0], verify=False)   # /api/WorkFlows/{workFlowOriginalId}  
-        time.sleep(0.25)
-        '''  END OF PUT REQUEST  '''        
+    for node in range(len(workflow_nodes)):
+        workFlow_data = read_from_json(f"{pwd}/files", workflow_nodes[node])
+        for workflow in workFlow_data['workFlows']:
+            post_payload = {
+                            "name": workflow["name"],
+                            "workFlowNodeId": workflow_nodes_import[0]['id'],    # 0: Draft; 1: Archived; 2: Active;
+                            "description": str(workflow["description"]),
+                            "elements": [],
+                            "type": workflow["type"]
+                            }
+            json_post_payload = json.dumps(post_payload)
+            post_request = requests.post(url, data=json_post_payload, headers=headers()[0], verify=False)     # /api/WorkFlows/{workFlowOriginalId}   # verify=False to eliminate SSL check which causes Error
+            post_response = post_request.json()
+            
+            bimClass_id_import = get_BimClassID_of_current_process_import(post_response['originalId'])    # reference workFlow_original_ID on import server
+            bimClass_list_id_export = read_from_json(f"{pwd}/files", 'workFlow_id_bimClass_id_export.json')
+            time.sleep(0.25)
+            '''  END of POST request to create workFlows  '''
+            
+            '''  BEGIN OF PUT REQUEST  '''
+            # adding 'elements': [], data from workFlows export into newly created workFlow
+            put_payload = {
+                            "name": workflow["name"],
+                            "workFlowNodeId": workflow_nodes_import[0]['id'],    # 0: Draft; 1: Archived; 2: Active;
+                            "description": str(workflow["description"]),
+                            "elements": workflow['elements'],
+                            "type": workflow["type"]
+                            }
+            json_put_payload = json.dumps(put_payload)
+            
+            # Replacement of workFlow_bimClass_ID from export server with bimClass_ID newly created workFlow on import server
+            changed_put_payload = json_put_payload.replace(bimClass_list_id_export[workflow["originalId"]], bimClass_id_import)
+            requests.put(url + "/" + post_response['originalId'], data=changed_put_payload, headers=headers()[0], verify=False)   # /api/WorkFlows/{workFlowOriginalId}  
+            time.sleep(0.25)
+            '''  END OF PUT REQUEST  '''        
 
-        '''  BEGIN OF XML POST REQUEST  '''      
-        xml_path = pwd + "/" + workflow_node[0]
+            '''  BEGIN OF XML POST REQUEST  '''
+            xml_path = pwd + "/files"
 
-        payload={}
-        files=[ ('file',(f'{workflow["originalId"]}.xml',open(f'{xml_path}/{workflow["originalId"]}.xml','rb'),'text/xml'))  ]
-                        
-        post_xml_request = requests.post(f"{url}/{post_response['originalId']}/Diagram?contentType=file", headers=headers()[1], data=payload, files=files, verify=False)
-        # print(f"{post_xml_request.status_code}")
-        print(f"Name of process: {post_response['name']}",end=' ')
-        print(f"{post_xml_request.status_code} - done" if post_xml_request.status_code == 200 else f"{post_xml_request.status_code} - error")
-        time.sleep(0.25)
-        '''  END OF XML POST REQUEST  '''
-    
-        # print(f"create_workflow - done" if post_request.status_code == 201 else f"create_workflow - {post_request.status_code} - error")
+            payload={}
+            files=[ ('file',(f'{workflow["originalId"]}.xml',open(f'{xml_path}/{workflow["originalId"]}.xml','rb'),'text/xml'))  ]
+                            
+            post_xml_request = requests.post(f"{url}/{post_response['originalId']}/Diagram?contentType=file", headers=headers()[1], data=payload, files=files, verify=False)
+            # print(f"{post_xml_request.status_code}")
+            print(f"Name of process: {post_response['name']}",end=' ')
+            print(f"{post_xml_request.status_code} - done" if post_xml_request.status_code == 200 else f"{post_xml_request.status_code} - error")
+            time.sleep(0.25)
+            '''  END OF XML POST REQUEST  '''
+        
+            # print(f"create_workflow - done" if post_request.status_code == 201 else f"create_workflow - {post_request.status_code} - error")
     print("create_workflow - done")
     
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -337,7 +346,7 @@ def create_workflow_import():
 def get_workflows_import():
     ''' Function collects all workFlows from all three nodes on import server. '''
     
-    data = read_from_json(pwd, 'workflow_nodes_export_server.json')
+    data = read_from_json(f"{pwd}/files", 'workflow_nodes_export_server.json')
     for obj in range(len(data)):
         key = data[obj]['name']
         value = data[obj]['id']
@@ -346,7 +355,7 @@ def get_workflows_import():
         request = requests.get(url, headers=headers()[0], verify=False)
         response = request.json()
 
-        with open(f"{pwd}/{key}/{key}_workflows_import_server.json", 'w', encoding='utf-8') as json_file:
+        with open(f"{pwd}/files/{key}_workflows_import_server.json", 'w', encoding='utf-8') as json_file:
             json.dump(response, json_file, ensure_ascii=False, indent=4)
 
     print("get_workflows_import - done\n\n")
@@ -362,7 +371,7 @@ if __name__ == "__main__":
     token_import_server = get_token_import_server()
     url_import = get_url_import()
     create_folders()
-    workflow_node = define_workFlow_node_import()  
+    # workflow_node = define_workFlow_node_import()   # Doesn't need to be used, after creating 'workflow_nodes.txt' file, which contains all the needed to import nodes.
     get_workflow_nodes_import()
     if ask:
         get_model_object_import()
@@ -371,5 +380,3 @@ if __name__ == "__main__":
         post_model_object_import()    
     create_workflow_import()
     get_workflows_import()
-    
-    
