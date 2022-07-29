@@ -317,7 +317,7 @@ def create_workflow_import():
 def get_workflows_import():
     ''' Function collects all workFlows from all three nodes on import server. '''
     
-    data = read_from_json(f"{pwd}/files", 'workflow_nodes_export_server.json')
+    data = read_from_json(f"{pwd}/files", 'workflow_nodes_import_server.json')
     for obj in range(len(data)):
         key = data[obj]['name']
         value = data[obj]['id']
@@ -350,3 +350,4 @@ if __name__ == "__main__":
         post_model_object_import()    
     create_workflow_import()
     get_workflows_import()
+    

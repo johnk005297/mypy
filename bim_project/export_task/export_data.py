@@ -123,7 +123,7 @@ def get_workflow_nodes_export():
     url = url_export + "/api/WorkFlowNodes"
     request = requests.get(url, headers=headers_export, verify=False)
     response = request.json()
-    
+
     if request.status_code not in (200, 201, 204,):
         logging.error('%s', response)       
         sys.exit()  
@@ -264,14 +264,14 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
 
 
 if __name__ == "__main__":    
+    create_folder_and_logs() 
     url_export = get_url_export()
     headers_export = get_headers()
     # get_token()   # function hasn't been written yet.    
-    create_folder_and_logs()    
     workflow_node = define_workFlow_node_export() 
     get_workflow_nodes_export()
     get_model_object_export()
     get_workflows_export()
     get_workflow_xml_export()   
     get_workFlowId_and_bimClassId_from_export_server()
-    
+
