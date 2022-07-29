@@ -69,6 +69,13 @@ def define_workFlow_node_export():
     
     
     with open(f"{pwd}/files/workflow_nodes.txt", mode='w',encoding='utf-8'): pass
+    
+    # Check if the 'workflow_nodes.txt' was created
+    if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
+        pass
+    else:
+        print("File 'workflow_nodes.txt' hasn't been created. Exit. ")
+        sys.exit()
 
     workflow_node_selected: list = input("\nChose nodes to export workflows from. Use numbers with white spaces in-between. \nDraft(1) Archived(2) Active(3)\n\nType 'q' for exit: ").lower().split()   
 
@@ -87,11 +94,7 @@ def define_workFlow_node_export():
         with open(f"{pwd}/files/workflow_nodes.txt", 'a', encoding='utf-8') as file:            
             file.write("Active_workflows_export_server.json\n")  
         
-    if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
-        print("define_workFlow_node_export")
-    else:
-        print("File 'workflow_nodes.txt' hasn't been created. Exit. ")
-        sys.exit()
+
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -120,14 +123,24 @@ def get_workflow_nodes_export():
         request = requests.get(url, headers=headers_export, verify=False)
         response = request.json()
     except Exception as err:
-        print("No connection established.")
+        print("\nNo connection established.")
         print("Type:", type(err))
         print("Error:", err)      
         sys.exit()
 
     with open(f'{pwd}/files/workflow_nodes_export_server.json', 'w', encoding='utf-8') as json_file:
-        json.dump(response, json_file, ensure_ascii=False, indent=4)  
-    
+        json.dump(response, json_file, ensure_ascii=False, indent=4)
+
+    try:
+        with open(f'{pwd}/files/workflow_nodes_export_server.json', 'r', encoding='utf-8') as file:
+            data = json.load(file)
+        if data['title'] == 'Unauthorized':
+            print("Check provided credentials.")
+            print(data['error'])
+            sys.exit()
+    except Exception as err:
+        pass
+
     print("get_workflow_nodes_export - done")
     
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -216,15 +229,19 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
         It uses list comprehension block for transformation list of values into dictionary with {'workFlow_id': 'bimClass_id'} pairs.
     '''
 
-    workflow_nodes: list = []    
-    with open(f"{pwd}/files/workflow_nodes.txt", 'r', encoding='utf-8') as file:
-        for line in file:
-            workflow_nodes.append(line[:-1])
-        
+    workflow_nodes: list = []
+    if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
+        with open(f"{pwd}/files/workflow_nodes.txt", 'r', encoding='utf-8') as file:
+            for line in file:
+                workflow_nodes.append(line[:-1])
+    else:
+        print("No workflow_nodes.txt file. Check files folder. Exit.")
+        sys.exit()
+    
 
     for node in workflow_nodes:
+
         workFlow_data = read_from_json(f"{pwd}/files", node)
-        
         for line in workFlow_data['workFlows']:
                 url = f"{url_export}/api/WorkFlows/{line['originalId']}/BimClasses"
                 request = requests.get(url, headers=headers_export, verify=False)
@@ -258,10 +275,10 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
 if __name__ == "__main__":    
     url_export = get_url_export()
     # get_token()   # function hasn't been written yet.    
-    create_folders()
+    create_folders()    
+    workflow_node = define_workFlow_node_export() 
+    get_workflow_nodes_export()
     get_model_object_export()
-    workflow_node = define_workFlow_node_export()    
-    get_workflow_nodes_export()    
     get_workflows_export()
     get_workflow_xml_export()   
     get_workFlowId_and_bimClassId_from_export_server()

@@ -14,6 +14,8 @@ disable_warnings(InsecureRequestWarning)
 # from dotenv import load_dotenv    # commented when running on linux machine which can't install load_dotenv package
 # load_dotenv()
 
+
+
 '''     GLOBAL VARIABLES    '''
 pwd = os.getcwd()
 
@@ -22,15 +24,7 @@ pwd = os.getcwd()
 def ask_for_object_model():
 
     if os.path.isfile(f"{pwd}/files/model_object_export_server.json"):
-
-        answer = input("Import object model(Y/N) ? ").lower()    
-        if answer in ("y", "yes", "1"):
-            return True
-        elif answer in ("n", "no", "0"):
-            return False
-        else:
-            print("No choice was made. Stop executing script!")
-            sys.exit()
+        return True
     else:
         return False
 
@@ -75,37 +69,6 @@ def read_from_json(path_to_file,file_name):
     
     return data_from_json
 
-#------------------------------------------------------------------------------------------------------------------------------#
-  
-    
-def define_workFlow_node_import():
-    ''' 
-        Function returns a tuple of elements like ("Active", "Active_workflows_export.json") which could be accessed by index.
-        The following proccesses will be oriented only with this choise, and working with the choisen workFlow node.
-        example:  workflow_node("Active", "Active_workflows_export_server.json")
-                workflow_node[0] - "Active"
-                workflow_node[1] - "Active_workflows_export.json"          
-    '''    
-    count = 0    
-    while count < 3:
-        workflow_node_select = input("\nWhat node to import? draft(1), archived(2), active(3)\nType 'q' for exit: ").lower().capitalize()        
-        count += 1
-
-        # workflow_node_select is a tuple with two values - directory and .json file
-        if workflow_node_select in ('Draft', '1'):
-            # workflow_node('Draft', 'Draft_workflows_export.json', 'draft')
-            return "Draft", "Draft_workflows_export_server.json"
-
-        elif workflow_node_select in ('Archived', '2'):
-            # workflow_node('Archived", 'Archived_workflows_export.json', 'archived')        
-            return "Archived", "Archived_workflows_export_server.json"
-
-        elif workflow_node_select in ('Active', '3'):
-            # workflow_node('Active", 'Active_workflows_export.json', 'active'               
-            return "Active", "Active_workflows_export_server.json"  
-
-        elif count == 3 or workflow_node_select == 'Q':  
-            sys.exit("\nStop import process!")          
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -113,13 +76,28 @@ def define_workFlow_node_import():
 def get_workflow_nodes_import():
     ''' 
         Function to write a .json file with all the workFlow nodes on import server.                        
-    '''    
-    url = url_import + "/api/WorkFlowNodes"
-    request = requests.get(url, headers=headers()[0], verify=False)
-    response = request.json()
+    '''
+    try:
+        url = url_import + "/api/WorkFlowNodes"
+        request = requests.get(url, headers=headers()[0], verify=False)
+        response = request.json()
+    except Exception as err:
+        print("No connection established.")
+        print("Type:", type(err))
+        print("Error:", err)      
+        sys.exit()
 
-    with open(f'{pwd}/files/workflow_nodes_import_server.json', 'w') as json_file:
+    with open(f'{pwd}/files/workflow_nodes_import_server.json', 'w', encoding='utf-8') as json_file:
         json.dump(response, json_file, ensure_ascii=False, indent=4)
+    with open(f'{pwd}/files/workflow_nodes_import_server.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
+        try:
+            if data['title'] == 'Unauthorized':
+                print("Check provided credentials.")
+                print(data['error'])
+                sys.exit()
+        except Exception as err:
+            pass
     print("get_workflow_nodes_import - done")
     
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -141,9 +119,10 @@ def get_model_object_import():
     '''
         Function get's model object from import server, and write's it to model_object_import_server.json file.
     '''
+    
     url = url_import + "/api/Integration/ObjectModel/Export"
     request = requests.get(url, headers=headers()[0], verify=False)
-    response = request.json()
+    response = request.json()    
 
     with open(f"{pwd}/files/model_object_import_server.json", "w", encoding="utf-8") as json_file:
         json.dump(response, json_file, ensure_ascii=False, indent=4)
@@ -370,8 +349,7 @@ if __name__ == "__main__":
     ask = ask_for_object_model()
     token_import_server = get_token_import_server()
     url_import = get_url_import()
-    create_folders()
-    # workflow_node = define_workFlow_node_import()   # Doesn't need to be used, after creating 'workflow_nodes.txt' file, which contains all the needed to import nodes.
+    create_folders()    
     get_workflow_nodes_import()
     if ask:
         get_model_object_import()
