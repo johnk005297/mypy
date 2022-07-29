@@ -54,55 +54,44 @@ def create_folders():
     except FileExistsError:
         pass
 
-    if os.path.isdir(f"{pwd}/files"):        
+    if os.path.isdir(f"{pwd}/files"):      
         print("create_folders - done")
     else:
-        print("Folder 'files' wasn't created. Exit.")     
+        print("Folder 'files' wasn't created. Exit.")
+        sys.exit() 
     
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
 def define_workFlow_node_export():
-    ''' 
-        Function creates a file 'workflow_nodes.txt' with chosen workFlow nodes in it.
-        And returns a tuple of elements like ("Active", "Active_workflows_export.json") which could be accessed by index. And 
-        example: workflow_node[0] - "Active"    # workFlow node
-                 workflow_node[1] - "Active_workflows_export.json"  # .json file with all the workFlows from the chosen node                 
-    '''
-    if os.path.isfile(f"{pwd}/files/workflow_nodes.txt") == False:
-        with open(f"{pwd}/files/workflow_nodes.txt", mode='w',encoding='utf-8'): pass
+    
+    '''    Function creates a file 'workflow_nodes.txt' with chosen workflow nodes in it.   '''           
+    
+    
+    with open(f"{pwd}/files/workflow_nodes.txt", mode='w',encoding='utf-8'): pass
 
-    count = 0    
-    while count < 3:
-        workflow_node_select = input("\nWhat node to export? draft(1), archived(2), active(3)\nType 'q' for exit: ").lower().capitalize()        
-        count += 1
+    workflow_node_selected: list = input("\nChose nodes to export workflows from. Use numbers with white spaces in-between. \nDraft(1) Archived(2) Active(3)\n\nType 'q' for exit: ").lower().split()   
 
-        # workflow_node_select is a tuple with two values - directory and .json file
-        if workflow_node_select in ('Draft', '1'):
-            # workflow_node('Draft', 'Draft_workflows_export.json', 'draft')
-            with open(f"{pwd}/files/workflow_nodes.txt", 'r+', encoding='utf-8') as file:                
-                if "Draft_workflows_export_server.json" not in file.read():                   
-                    file.write("Draft_workflows_export_server.json\n")                                
-            return "Draft", "Draft_workflows_export_server.json"
+    if 'q' in workflow_node_selected:
+        sys.exit("\nStop export process!")
 
-        elif workflow_node_select in ('Archived', '2'):
-            # workflow_node('Archived", 'Archived_workflows_export.json', 'archived')
-            with open(f"{pwd}/files/workflow_nodes.txt", 'r+', encoding='utf-8') as file:
-                if "Archived_workflows_export_server.json" not in file.read():                             
-                    file.write("Archived_workflows_export_server.json\n")                
-            return "Archived", "Archived_workflows_export_server.json"
+    if '1' in workflow_node_selected or 'draft' in workflow_node_selected:        
+        with open(f"{pwd}/files/workflow_nodes.txt", 'a', encoding='utf-8') as file:                           
+            file.write("Draft_workflows_export_server.json\n")        
 
-        elif workflow_node_select in ('Active', '3'):
-            # workflow_node('Active", 'Active_workflows_export.json', 'active'
-            with open(f"{pwd}/files/workflow_nodes.txt", 'r+', encoding='utf-8') as file:
-                if "Active_workflows_export_server.json" not in file.read():                
-                    file.write("Active_workflows_export_server.json\n")                           
-            return "Active", "Active_workflows_export_server.json"  
+    if '2' in workflow_node_selected or 'archived' in workflow_node_selected:
+        with open(f"{pwd}/files/workflow_nodes.txt", 'a', encoding='utf-8') as file:            
+            file.write("Archived_workflows_export_server.json\n")        
 
-        elif count == 3 or workflow_node_select == 'Q':
-            sys.exit("\nStop export process!")
+    if '3' in workflow_node_selected or 'active' in workflow_node_selected:
+        with open(f"{pwd}/files/workflow_nodes.txt", 'a', encoding='utf-8') as file:            
+            file.write("Active_workflows_export_server.json\n")  
         
-                        
+    if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
+        print("define_workFlow_node_export")
+    else:
+        print("File 'workflow_nodes.txt' hasn't been created. Exit. ")
+        sys.exit()
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -149,7 +138,7 @@ def get_model_object_export():
         Function gets model object from export server, and writes it in model_object_export_server.json file.
         /api/Integration/ObjectModel/Export  - api service
     '''
-    ask_model_object = input("Shall we export object model? (Y/N): ").lower()
+    ask_model_object = input("Need to export object model? (Y/N): ").lower()
 
     if ask_model_object in ("yes", "y", "1"):
 
@@ -197,17 +186,22 @@ def get_workflows_export():
 
 def get_workflow_xml_export():    
     '''  
-        XML will be exported from the workFlow_node based on input above - [Draft, Archived, Active]
-        example: workflow_node('Archived", 'Archived_workflows_export.json')  - each element in tuple can be accessed by index
+        XML for every workflow will be exported from the 'workFlow_nodes.txt' file.
     '''
     
-    workFlow_data = read_from_json(f"{pwd}/files", workflow_node[1])
+    workflow_nodes: list = []    
+    with open(f"{pwd}/files/workflow_nodes.txt", 'r', encoding='utf-8') as file:
+        for line in file:
+            workflow_nodes.append(line[:-1])
+    
+    for node in workflow_nodes:
+        workFlow_data = read_from_json(f"{pwd}/files", node)
 
-    for line in workFlow_data['workFlows']:
-        url = f"{url_export}/api/Attachments/{line['attachmentId']}"
-        request = requests.get(url, headers=headers_export, verify=False)        
-        with open(f"{pwd}/files/{line['originalId']}.xml", 'wb') as file:
-            file.write(request.content)
+        for line in workFlow_data['workFlows']:
+            url = f"{url_export}/api/Attachments/{line['attachmentId']}"
+            request = requests.get(url, headers=headers_export, verify=False)        
+            with open(f"{pwd}/files/{line['originalId']}.xml", 'wb') as file:
+                file.write(request.content)
 
     print("get_workflow_xml_export - done")
 
@@ -222,19 +216,15 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
         It uses list comprehension block for transformation list of values into dictionary with {'workFlow_id': 'bimClass_id'} pairs.
     '''
 
-    workflow_nodes: list = []
-    if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
-        with open(f"{pwd}/files/workflow_nodes.txt", 'r', encoding='utf-8') as file:
-            for line in file:
-                workflow_nodes.append(line[:-1])
-    else:
-        print("No workflow_nodes.txt file. Check files folder. Exit.")
-        sys.exit()
-    
+    workflow_nodes: list = []    
+    with open(f"{pwd}/files/workflow_nodes.txt", 'r', encoding='utf-8') as file:
+        for line in file:
+            workflow_nodes.append(line[:-1])
+        
 
     for node in workflow_nodes:
-
         workFlow_data = read_from_json(f"{pwd}/files", node)
+        
         for line in workFlow_data['workFlows']:
                 url = f"{url_export}/api/WorkFlows/{line['originalId']}/BimClasses"
                 request = requests.get(url, headers=headers_export, verify=False)
@@ -275,4 +265,6 @@ if __name__ == "__main__":
     get_workflows_export()
     get_workflow_xml_export()   
     get_workFlowId_and_bimClassId_from_export_server()
+    
+    
     
