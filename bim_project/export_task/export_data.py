@@ -9,9 +9,7 @@ import sys
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
-# from dotenv import load_dotenv    # commented when running on linux machine which/if can't install load_dotenv package
-# load_dotenv()
-
+import logging
 
 
 
@@ -21,13 +19,10 @@ pwd = os.getcwd()
 
 ''''''''''''''''''''''''''''''
 
-def token_export_server():
-    token_from_export_server = input("Enter Bearer token for export: ")
-    print()
-    return token_from_export_server
-
-
-headers_export = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token_export_server()}"}
+def get_headers():
+    token = input("Enter Bearer token for export: ")
+    headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
+    return headers
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -48,19 +43,26 @@ def get_token():
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
-def create_folders():
+def create_folder_and_logs():
     try:        
         os.mkdir('files')
+        os.mkdir(f'{pwd}/files/logs')
     except FileExistsError:
         pass
 
-    if os.path.isdir(f"{pwd}/files"):      
-        print("create_folders - done")
-    else:
+    if os.path.isdir(f"{pwd}/files") == False:     
         print("Folder 'files' wasn't created. Exit.")
-        sys.exit() 
-    
+        sys.exit()
+    elif os.path.isdir(f"{pwd}/files/logs") == False:
+        print("Folder 'logs' wasn't created. Exit.")
+        sys.exit()
+    else:
+        pass
+
+    logging.basicConfig(filename=f"{pwd}/files/logs/export_log.txt", level=logging.DEBUG,
+                        format="%(asctime)s %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
 #------------------------------------------------------------------------------------------------------------------------------#
+
 
 
 def define_workFlow_node_export():
@@ -77,7 +79,7 @@ def define_workFlow_node_export():
         print("File 'workflow_nodes.txt' hasn't been created. Exit. ")
         sys.exit()
 
-    workflow_node_selected: list = input("\nChose nodes to export workflows from. Use numbers with white spaces in-between. \nDraft(1) Archived(2) Active(3)\n\nType 'q' for exit: ").lower().split()   
+    workflow_node_selected: list = input("\nChose nodes to export workflows from. Use white spaces in-between. \nDraft(1) Archived(2) Active(3)\n\nType 'q' for exit: ").lower().split()   
 
     if 'q' in workflow_node_selected:
         sys.exit("\nStop export process!")
@@ -117,29 +119,18 @@ def read_from_json(path_to_file,file_name):
 def get_workflow_nodes_export():       
     '''
         Getting Draft, Archived and Active nodes Ids.
-    '''
-    try:
-        url = url_export + "/api/WorkFlowNodes"
-        request = requests.get(url, headers=headers_export, verify=False)
-        response = request.json()
-    except Exception as err:
-        print("\nNo connection established.")
-        print("Type:", type(err))
-        print("Error:", err)      
-        sys.exit()
+    '''   
+    url = url_export + "/api/WorkFlowNodes"
+    request = requests.get(url, headers=headers_export, verify=False)
+    response = request.json()
+    
+    if request.status_code not in (200, 201, 204,):
+        logging.error('%s', response)       
+        sys.exit()  
 
     with open(f'{pwd}/files/workflow_nodes_export_server.json', 'w', encoding='utf-8') as json_file:
         json.dump(response, json_file, ensure_ascii=False, indent=4)
 
-    try:
-        with open(f'{pwd}/files/workflow_nodes_export_server.json', 'r', encoding='utf-8') as file:
-            data = json.load(file)
-        if data['title'] == 'Unauthorized':
-            print("Check provided credentials.")
-            print(data['error'])
-            sys.exit()
-    except Exception as err:
-        pass
 
     print("get_workflow_nodes_export - done")
     
@@ -274,14 +265,13 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
 
 if __name__ == "__main__":    
     url_export = get_url_export()
+    headers_export = get_headers()
     # get_token()   # function hasn't been written yet.    
-    create_folders()    
+    create_folder_and_logs()    
     workflow_node = define_workFlow_node_export() 
     get_workflow_nodes_export()
     get_model_object_export()
     get_workflows_export()
     get_workflow_xml_export()   
     get_workFlowId_and_bimClassId_from_export_server()
-    
-    
     
