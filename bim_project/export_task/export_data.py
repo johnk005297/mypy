@@ -20,13 +20,8 @@ pwd = os.getcwd()
 
 ''''''''''''''''''''''''''''''
 
-def get_headers():
-    token = input("Enter Bearer token for export: ")
-    headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-    return headers
 
 #------------------------------------------------------------------------------------------------------------------------------#
-
 
 
 def get_url_export():
@@ -36,16 +31,54 @@ def get_url_export():
         return url_export_server[:-1]
     else:
         return url_export_server
+
 #------------------------------------------------------------------------------------------------------------------------------#
 
 def get_token():
-    pass
-    '''
-        Need to create a function to get Bearer token
-    '''
+    
+    list_of_providersID: list = []
+    headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
+    url_get_providers = f'{url_export}/api/Providers'
+    id_request = requests.get(url_get_providers, headers=headers, verify=False)
+    response = id_request.json()    
+    for dict in response:
+        list_of_providersID.append(dict['id'])
 
+
+    url_auth = f'{url_export}/api/Auth/Login'
+    username = input("Enter login: ")
+    password = input("Enter password: ")
+
+    for id in list_of_providersID:
+        payload = {
+                    "username": username,
+                    "password": password,
+                    "providerId": id
+                }
+        data = json.dumps(payload)
+    
+        auth_request = requests.post(url_auth, data=data, headers=headers, verify=False)
+        response = auth_request.json()
+
+        if auth_request.status_code == 200:
+            token = response['access_token']
+            break
+        else:
+            logging.error('%s', auth_request.status_code)
+
+    return token
 
 #------------------------------------------------------------------------------------------------------------------------------#
+
+def get_headers():
+    token = get_token()
+    headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
+    return headers
+
+#------------------------------------------------------------------------------------------------------------------------------#
+
+
+
 
 def create_folder_for_files_and_logs():
 
@@ -67,17 +100,14 @@ def create_folder_for_files_and_logs():
         pass
 
     logging.basicConfig(filename=f"{pwd}/files/logs/export_log.txt", level=logging.DEBUG,
-                        format="%(asctime)s %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
-
-
+                        format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
 
 def define_workFlow_node_export():
     
-    '''    Function creates a file 'workflow_nodes.txt' with chosen workflow nodes in it.   '''           
-    
+    '''    Function creates a file 'workflow_nodes.txt' with chosen workflow nodes in it.   '''    
     
     with open(f"{pwd}/files/workflow_nodes.txt", mode='w',encoding='utf-8'): pass
     
@@ -85,10 +115,10 @@ def define_workFlow_node_export():
     if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
         pass
     else:
-        print("File 'workflow_nodes.txt' hasn't been created. Exit. ")
+        print("File 'workflow_nodes.txt' hasn't been created. Exit.")
         sys.exit()
 
-    workflow_node_selected: list = input("\nChose nodes to export workflows from. Use white spaces in-between. \nDraft(1) Archived(2) Active(3)\n\nType 'q' for exit: ").lower().split()   
+    workflow_node_selected: list = input("\nChose nodes to export workflows from. Use whitespaces in-between. \nDraft(1) Archived(2) Active(3)\n\nType 'q' for exit: ").lower().split()   
 
     if 'q' in workflow_node_selected:
         sys.exit("\nStop export process!")
@@ -197,7 +227,7 @@ def get_workflows_export():
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
-def get_workflow_xml_export():    
+def get_workflow_xml_export():
     '''  
         XML for every workflow will be exported from the 'workFlow_nodes.txt' file.
     '''
@@ -273,14 +303,12 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
 
 
 if __name__ == "__main__":    
-    create_folder_for_files_and_logs() 
+    create_folder_for_files_and_logs()
     url_export = get_url_export()
     headers_export = get_headers()
-    # get_token()   # function hasn't been written yet.    
     workflow_node = define_workFlow_node_export() 
     get_workflow_nodes_export()
     get_model_object_export()
     get_workflows_export()
     get_workflow_xml_export()   
     get_workFlowId_and_bimClassId_from_export_server()
-
