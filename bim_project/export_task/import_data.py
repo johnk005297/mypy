@@ -88,7 +88,7 @@ def get_headers():
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
-def create_folder_and_logs():
+def check_folder_with_files_and_logs():
 
     if os.path.isdir(f"{pwd}/files") == False:
         print("Folder 'files' is missing. Exit.")
@@ -383,7 +383,7 @@ def get_workflows_import():
 
 
 if __name__ == "__main__":
-    create_folder_and_logs() 
+    check_folder_with_files_and_logs() 
     url_import = get_url_import()
     headers_import = get_headers()   
     get_workflow_nodes_import()
