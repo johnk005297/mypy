@@ -10,6 +10,7 @@ from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 import logging
+import shutil
 
 
 
@@ -30,8 +31,11 @@ def get_headers():
 
 def get_url_export():
     
-    export_site_url: str = input("Enter export server url, like('http://address.com'): ").lower()
-    return export_site_url
+    url_export_server: str = input("Enter export server url, like('http://address.com'): ").lower()    
+    if url_export_server[-1:] == '/':
+        return url_export_server[:-1]
+    else:
+        return url_export_server
 #------------------------------------------------------------------------------------------------------------------------------#
 
 def get_token():
@@ -43,12 +47,15 @@ def get_token():
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
-def create_folder_and_logs():
-    try:        
-        os.mkdir('files')
-        os.mkdir(f'{pwd}/files/logs')
-    except FileExistsError:
-        pass
+def create_folder_for_files_and_logs():
+
+    # if 'files' folder from previous export procedure exists, it will be deleted to create a new one.
+    if os.path.isdir('files'):
+        shutil.rmtree('files')
+    else: pass
+
+    os.mkdir('files')
+    os.mkdir(f'{pwd}/files/logs')    
 
     if os.path.isdir(f"{pwd}/files") == False:     
         print("Folder 'files' wasn't created. Exit.")
@@ -61,6 +68,8 @@ def create_folder_and_logs():
 
     logging.basicConfig(filename=f"{pwd}/files/logs/export_log.txt", level=logging.DEBUG,
                         format="%(asctime)s %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
+
+
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
@@ -264,7 +273,7 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
 
 
 if __name__ == "__main__":    
-    create_folder_and_logs() 
+    create_folder_for_files_and_logs() 
     url_export = get_url_export()
     headers_export = get_headers()
     # get_token()   # function hasn't been written yet.    

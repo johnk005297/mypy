@@ -35,9 +35,13 @@ def headers():
     return headers_import, headers_for_xml_import 
 #------------------------------------------------------------------------------------------------------------------------------#
 
-def get_url_import():    
-    url_import: str = input("Enter import server url, like('http://address.com'): ").lower()
-    return url_import
+def get_url_import():       
+    url_import_server: str = input("Enter import server url, like('http://address.com'): ").lower()
+    if url_import_server[-1:] == '/':
+        return url_import_server[:-1]
+    else:
+        return url_import_server
+
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
