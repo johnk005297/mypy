@@ -139,7 +139,10 @@ def alter_yml():
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10010:80\"\n")
         
         elif "spatiumdb:" == current_str:
-            lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5435:5432\"\n")        
+            lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5435:5432\"\n")
+        
+        elif "potentialFailureMessagesdb:" == current_str:
+            lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5440:5432\"\n")
         
         else:
             pass
