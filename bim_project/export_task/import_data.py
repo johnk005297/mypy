@@ -376,7 +376,9 @@ def get_workflows_import():
             json.dump(response, json_file, ensure_ascii=False, indent=4)
 
     print("get_workflows_import - done\n\n")
-    os.system('pause')
+    
+    if sys.platform == 'win32':
+        os.system('pause')
 
 #------------------------------------------------------------------------------------------------------------------------------#
 

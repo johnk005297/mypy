@@ -295,7 +295,9 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
 
 
     print("get_workFlows_bimClass_export - done\n\n")    
-    os.system('pause')
+    
+    if sys.platform == 'win32':
+        os.system('pause')
 
 #------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------#
