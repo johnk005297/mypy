@@ -244,14 +244,6 @@ def put_license():
 
     
 
-
-'''
-http://192.168.87.66
-http://std-p7.bimeister.io
-https://bim-class.bimeister.io
-Qwerty12345!
-'''
-
 if __name__ == "__main__":
     data_for_connect = creds()
     token = get_token()
