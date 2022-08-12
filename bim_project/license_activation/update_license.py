@@ -18,7 +18,7 @@ pwd = os.getcwd()
 
 def define_purpose():
     
-    purpose = input("\nCheck the licenses(1) || Apply license(2) || Delete active license(3) || Exit(q)\nSelect what to do: ").lower()
+    purpose = input("\nCheck the licenses(1) || Apply license(2) || Delete active license(3) || Get server ID(4) || Exit(q)\nSelect one of the options: ").lower()
     print()
     if purpose in ("1", "check",):
         return 'check'
@@ -26,6 +26,8 @@ def define_purpose():
         return 'update'
     elif purpose in ("3", "delete"):
         return 'delete'
+    elif purpose in ("4", "id"):
+        return 'server_id'
     else:
         sys.exit("Exit.")
 
@@ -136,6 +138,28 @@ def show_licenses():
     print()
 
 
+
+'''   Get server ID   '''
+def get_serverID():
+
+    url = f"{data_for_connect['url']}/api/License"
+    headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
+    payload = {
+                "username": data_for_connect['username'],
+                "password": data_for_connect['password']
+              }
+    
+    request = requests.get(url, data=payload, headers=headers, verify=False)
+    request.raise_for_status()
+
+    # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
+    response = request.json()
+
+    print(f"Server ID: {response[0]['serverId']}")
+    print()
+
+
+
 '''   Get the list of licenses   '''
 def get_license():
     
@@ -239,6 +263,11 @@ if __name__ == "__main__":
         pass
     elif check_or_update == 'delete':
         delete_license()
+    elif check_or_update == 'server_id':
+        get_serverID()
+        if sys.platform == 'win32':
+            os.system('pause')
+        sys.exit()
 
     show_licenses()
     if sys.platform == 'win32':
