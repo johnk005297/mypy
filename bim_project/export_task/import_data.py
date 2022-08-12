@@ -240,8 +240,8 @@ def fix_defaulValues():
     with open(f"{pwd}/files/model_object_export_server.json", 'w', encoding='utf-8') as file:
         for bimClasses_dict in data['bimClasses']:  # bimClasses - list with dictionaries inside
             for bimProperties_dict in bimClasses_dict['bimProperties']:  # bimProperties - list with dictionaries inside               
-                for defaultValues in bimProperties_dict.get('defaultValues'):                
-                    if all(value == None for value in defaultValues.values()):                    
+                for defaultValues in bimProperties_dict.get('defaultValues'):
+                    if all(value == None for value in defaultValues.values()):
                         bimProperties_dict['defaultValues'] = []
                         count += 1
                     

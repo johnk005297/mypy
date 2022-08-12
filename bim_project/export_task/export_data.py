@@ -109,7 +109,8 @@ def define_workFlow_node_export():
     
     '''    Function creates a file 'workflow_nodes.txt' with chosen workflow nodes in it.   '''    
     
-    with open(f"{pwd}/files/workflow_nodes.txt", mode='w',encoding='utf-8'): pass
+    with open(f"{pwd}/files/workflow_nodes.txt", mode='w',encoding='utf-8'):
+        pass
     
     # Check if the 'workflow_nodes.txt' was created
     if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
@@ -118,7 +119,7 @@ def define_workFlow_node_export():
         print("File 'workflow_nodes.txt' hasn't been created. Exit.")
         sys.exit()
 
-    workflow_node_selected: list = input("\nChose nodes to export workflows from. Use whitespaces in-between. \nDraft(1) Archived(2) Active(3)\n\nType 'q' for exit: ").lower().split()   
+    workflow_node_selected: list = input("\nChoose nodes to export workflows from. Use whitespaces in-between. \nDraft(1) Archived(2) Active(3)\n\nType 'q' for exit: ").lower().split()   
 
     if 'q' in workflow_node_selected:
         sys.exit("\nStop export process!")
