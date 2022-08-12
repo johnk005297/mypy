@@ -44,7 +44,7 @@ def alter_yml():
     try:
         count_spaces_for_service            
     except NameError as err:
-        sys.exit(f"No 'service:' block in {yml_file}. Corrupted {yml_file}?! Exit.")
+        sys.exit(f"Can't find 'service:' block. Corrupted {yml_file}?! Exit.")
 
 
     for index in range(len(lst)):

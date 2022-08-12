@@ -43,7 +43,7 @@ def creds():
                     "password": password,
                     "license_token": license_token
                   }
-
+    print()
     return data_for_connect
 
 
@@ -99,7 +99,7 @@ def get_license():
     request.raise_for_status()
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
-    response = request.json()    
+    response = request.json()
     return response
 
 
@@ -109,14 +109,13 @@ def delete_license():
 
     headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
 
-    for dct in server_data:
-        if dct['isActive'] == True:
+    for dct in get_license():
+        if dct['isActive'] == True and dct['licenseID'] != '00000000-0000-0000-0000-000000000000':
             url = f"{data_for_connect['url']}/api/License/{dct['licenseID']}" 
             request = requests.delete(url, headers=headers, verify=False)
-            response = request.text
+            # response = request.text
             if request.status_code == 204:
-                print('License has been deactivated')
-                return dct['licenseID']
+                print(f"License has been deactivated: {dct['licenseID']}")
             else:
                 print(request.status_code)
 
@@ -130,8 +129,30 @@ def post_license():
     data = json.dumps(data_for_connect['license_token'])
 
     request = requests.post(url, headers=headers, data=data, verify=False)
-    print(request.status_code)
+    if request.status_code == 200:
+        print("License has been posted!")
+    else:
+        print("License has not been posted!")
 
+
+
+def put_license():
+    
+    headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
+
+    # {'isActive': True, 'serverId': '6e71c225-bb65-4ff7-b831-bc0d1894396b', 'licenseID': '309d6c41-1f4b-41b2-938d-b2069e54b12a', 'until': '2022-08-25T23:59:59', 'activeUsers': 1, 'activeUsersLimit': 1500}
+    for dct in get_license():
+        if dct['isActive'] == True:
+            url = f"{data_for_connect['url']}/api/License/active/{dct['licenseID']}"
+            data = json.dumps('no_need_to_put_anything')
+            request = requests.put(url, headers=headers, data=data, verify=False)
+            if request.status_code == 204:
+                print(f"License has been activated: {dct['licenseID']}")
+            else:
+                print(f"License has not been activated: {dct['licenseID']}")            
+            break
+
+    
 
 # http://192.168.87.66
 # http://std-p7.bimeister.io
@@ -141,8 +162,6 @@ def post_license():
 if __name__ == "__main__":
     data_for_connect = creds()
     token = get_token()
-    server_data = get_license()
-    # for x in server_data:
-    #     print(x)
     delete_license()
-    # post_license()
+    post_license()
+    put_license()

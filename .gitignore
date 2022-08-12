@@ -20,4 +20,6 @@ bim_project/export_task/*.txt
 bim_project/tmp
 bim_project/bak.json
 bim_project/export_task/from_export
-edit_yml_file/add_ports_docker_compose.exe
+bim_project/license_activation/*.lic
+bim_project/license_activation/*.txt
+
