@@ -21,15 +21,14 @@ possible_request_errors: tuple = (requests.exceptions.MissingSchema, requests.ex
 
 def define_purpose():
     
-    purpose = input("\nCheck the licenses(1) || Apply license(2) || Delete active license(3) || Get server ID(4) || Exit(q)\nSelect one of the options: ").lower()
-    print()
+    purpose = input("\nCheck the licenses(1) || Get server ID(2) || Apply license(3) || Delete active license(4) || Exit(q)\nSelect one of the options: ").lower()
     if purpose in ("1", "check",):
         return 'check'
-    elif purpose in ("2", "update"):
+    elif purpose in ("3", "update", "apply"):
         return 'update'
-    elif purpose in ("3", "delete"):
+    elif purpose in ("4", "delete"):
         return 'delete'
-    elif purpose in ("4", "id"):
+    elif purpose in ("2", "id"):
         return 'server_id'
     else:
         sys.exit("Exit.")
@@ -53,6 +52,7 @@ def get_data_from_license_file():
         return data_from_lic_file
     
     else:
+        logging.error("No license.lic file in the folder. Exit.")
         sys.exit("No license.lic file in the folder. Exit.")
 
 
@@ -134,9 +134,16 @@ def show_licenses():
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
     print("========================= Current licenses ==========================================\n")
+    # for license in response:
+    #     print(license,"\n")
+    count = 1
     for license in response:
-        print(license,"\n")
-    print("=========================================================================================\n")
+        print(f"\nLicense {count}:")
+        count+=1
+        for k, v in license.items():
+            print(f" - {k}: {v}")
+        
+    print("=====================================================================================\n")
 
 
 
@@ -159,7 +166,7 @@ def get_serverID():
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
 
-    print(f"Server ID: {response[0]['serverId']}")
+    print(f"\nServer ID: {response[0]['serverId']}")
 
 
 
@@ -216,14 +223,15 @@ def post_license():
     url = f"{data_for_connect['url']}/api/License/"
 
     license_token = get_data_from_license_file()['license_token']
+    license_id = get_data_from_license_file()['LicenseID']
     data = json.dumps(license_token)
 
     request = requests.post(url, headers=headers, data=data, verify=False)
     if request.status_code in (200, 201, 204,):
-        print("====== License has been posted! ======")
+        print(f"====== License {license_id} has been posted! ======")
     else:
         logging.error('%s', request.text)
-        print("====== License has not been posted! ======")
+        print(f"====== License {license_id} has not been posted! ======")
 
 
 
@@ -240,8 +248,7 @@ def put_license():
         print(f"====== License '{license_id}' has been activated. ======")
     else:
         logging.error('%s', request.text)
-        print(f"====== License '{license_id}' has not been activated.======")        
-        print()
+        print(f"====== License '{license_id}' has not been activated.======")
             
             
 
