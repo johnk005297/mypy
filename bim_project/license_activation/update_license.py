@@ -12,8 +12,11 @@ disable_warnings(InsecureRequestWarning)
 import logging
 
 
+'''   Global variables   '''
 pwd = os.getcwd()
-
+possible_request_errors: tuple = (requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, 
+                                      requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL,)
+''''''''''''''''''''''''''''''''
 
 
 def define_purpose():
@@ -50,8 +53,7 @@ def get_data_from_license_file():
         return data_from_lic_file
     
     else:
-        sys.exit("No .lic file in the folder. Exit.")
-
+        sys.exit("No license.lic file in the folder. Exit.")
 
 
 def creds():
@@ -86,10 +88,10 @@ def get_token():
     try:
         id_request = requests.get(url_get_providers, headers=headers, verify=False)
         response = id_request.json()
-    except requests.exceptions.MissingSchema as err:
-        logging.error('%s', err)
+    except possible_request_errors as err:
+        logging.error(f"{err}")
         sys.exit(f"Connection error: {err}")
-
+    
     for dict in response:
         list_of_providersID.append(dict['id'])
 
@@ -103,7 +105,6 @@ def get_token():
                 }
         data = json.dumps(payload)
 
-        
         auth_request = requests.post(url_auth, data=data, headers=headers, verify=False)
         response = auth_request.json()       
 
@@ -111,8 +112,7 @@ def get_token():
             token = response['access_token']
             break
         else:
-            logging.error("%s", auth_request.status_code)
-            sys.exit(f"Connection error: {auth_request.status_code}")
+            logging.error(f"ProviderID: {id}, response: {auth_request.status_code} [{data_for_connect['username']}/{data_for_connect['password']}]")
 
     return token
 
@@ -133,9 +133,10 @@ def show_licenses():
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
+    print("========================= The list of licenses ==========================================\n")
     for license in response:
-        print(license)
-    print()
+        print(license,"\n")
+    print("=========================================================================================\n")
 
 
 
@@ -149,14 +150,16 @@ def get_serverID():
                 "password": data_for_connect['password']
               }
     
-    request = requests.get(url, data=payload, headers=headers, verify=False)
-    request.raise_for_status()
+    try:
+        request = requests.get(url, data=payload, headers=headers, verify=False)
+        request.raise_for_status()
+    except possible_request_errors as err:
+        logging.error(f"{possible_request_errors}")
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
 
     print(f"Server ID: {response[0]['serverId']}")
-    print()
 
 
 
@@ -217,10 +220,10 @@ def post_license():
 
     request = requests.post(url, headers=headers, data=data, verify=False)
     if request.status_code in (200, 201, 204,):
-        print("License has been posted!")
+        print("====== License has been posted! ======")
     else:
         logging.error('%s', request.text)
-        print("License has not been posted!")
+        print("====== License has not been posted! ======")
 
 
 
@@ -234,10 +237,10 @@ def put_license():
     data = json.dumps('no_need_to_put_anything')
     request = requests.put(url, headers=headers, data=data, verify=False)
     if request.status_code in (200, 201, 204,):
-        print(f"License '{license_id}' has been activated.")
+        print(f"====== License '{license_id}' has been activated. ======")
     else:
         logging.error('%s', request.text)
-        print(f"License '{license_id}' has not been activated.")        
+        print(f"====== License '{license_id}' has not been activated.======")        
         print()
             
             
@@ -247,21 +250,18 @@ def put_license():
 if __name__ == "__main__":
     data_for_connect = creds()
     token = get_token()
-    check_or_update = define_purpose()
-    if check_or_update == 'update':
-        post_license()
-        put_license()
-    elif check_or_update == 'check':
-        pass
-    elif check_or_update == 'delete':
-        delete_license()
-    elif check_or_update == 'server_id':
-        get_serverID()
-        if sys.platform == 'win32':
-            os.system('pause')
-        sys.exit()
-
-    show_licenses()
-    if sys.platform == 'win32':
-            os.system('pause')
+    while True:
+        goal = define_purpose()
+        if goal == 'update':
+            post_license()
+            put_license()
+            show_licenses()
+        elif goal == 'check':
+            show_licenses()
+        elif goal == 'delete':
+            delete_license()
+        elif goal == 'server_id':
+            get_serverID()                
+        else:            
+            sys.exit()
 
