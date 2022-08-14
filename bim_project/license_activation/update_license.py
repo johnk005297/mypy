@@ -133,7 +133,7 @@ def show_licenses():
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
-    print("========================= The list of licenses ==========================================\n")
+    print("========================= Current licenses ==========================================\n")
     for license in response:
         print(license,"\n")
     print("=========================================================================================\n")
@@ -255,7 +255,6 @@ if __name__ == "__main__":
         if goal == 'update':
             post_license()
             put_license()
-            show_licenses()
         elif goal == 'check':
             show_licenses()
         elif goal == 'delete':
