@@ -159,4 +159,54 @@ def solution8():
     return d
 
 ''' End of Task 6.1.4 '''
-print(solution8())
+
+
+'''
+Task 6.1.5
+    Дни рождений и имена могут повторяться. На их основе сформировать словарь и вывести его в формате:
+    день рождения 1: имя1, ..., имяN1
+    день рождения 2: имя1, ..., имяN2
+'''
+def solution9():    
+    
+    lst = ['3 Сергей', '5 Николай', '4 Елена', '7 Владимир', '5 Юлия', '4 Светлана']
+    d: dict = {}
+
+    # First variant of solution for this task
+    '''
+    for x in lst:
+        if x.split()[0] in d:
+            d[x.split()[0]] += [x.split()[1]]
+        else:
+            d[x.split()[0]] = [x.split()[1]]
+    
+    for k,v in d.items():
+        print(k + ":", ", ".join(v))
+    '''
+
+    # Second variant of solution for this task
+    '''
+    d2 = {}
+    for i in lst:
+        key, value = i.split()
+        d2.setdefault(key, []).append(value)
+    
+    [print(f'{key}: {", ".join(value)}') for key, value in d2.items()]
+    '''
+
+    # Third variant of solution for this task
+    '''
+    d3 = {}
+    for i in lst:
+        key, value = i.split()
+        d3[key] = d3.get(key, []) + [value]
+
+    for key, value in d3.items():
+        print(f'{key}: ', end='')
+        print(*value, sep=', ')
+
+    '''
+
+''' End of Task 6.1.5 '''
+
+solution9()

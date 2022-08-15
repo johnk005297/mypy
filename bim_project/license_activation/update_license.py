@@ -40,12 +40,6 @@ def get_data_from_license_file():
     # Check if the *.lic file is in place
     if os.path.isfile(f"{pwd}/license.lic"):
 
-        with open("license.lic", "r", encoding="utf-8") as file:    # get license_id from the .lic file and put it into data_from_lic_file dictionary
-            for x in file.read().split('\n'):
-                if 'LicenseID' in x.strip():
-                    data_from_lic_file['LicenseID'] = x.split()[2]
-                    break
-
         with open("license.lic", "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
             data_from_lic_file['license_token'] = file.read().split()[0].strip("\"")
             
@@ -112,7 +106,7 @@ def get_token():
             token = response['access_token']
             break
         else:
-            logging.error(f"ProviderID: {id}, response: {auth_request.status_code} [{data_for_connect['username']}/{data_for_connect['password']}]")
+            logging.error(f"ProviderID: {id}, response: {auth_request.status_code} [{data_for_connect['username']}/{data_for_connect['password']}]\n{auth_request.text}")
 
     return token
 
@@ -223,15 +217,19 @@ def post_license():
     url = f"{data_for_connect['url']}/api/License/"
 
     license_token = get_data_from_license_file()['license_token']
-    license_id = get_data_from_license_file()['LicenseID']
+    
     data = json.dumps(license_token)
 
     request = requests.post(url, headers=headers, data=data, verify=False)
+    for license in get_license():
+        if license['isActive'] == True:
+            licenseID = license['licenseID']
+
     if request.status_code in (200, 201, 204,):
-        print(f"====== License {license_id} has been posted! ======")
+        print(f"====== License {licenseID} has been posted! ======")
     else:
         logging.error('%s', request.text)
-        print(f"====== License {license_id} has not been posted! ======")
+        print(f"====== License {licenseID} has not been posted! ======")
 
 
 
@@ -239,16 +237,19 @@ def put_license():
     
     headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
 
-    license_id = get_data_from_license_file()['LicenseID']
-    
-    url = f"{data_for_connect['url']}/api/License/active/{license_id}"
+    for license in get_license():
+        if license['isActive'] == True:
+            licenseID = license['licenseID']
+
+    url = f"{data_for_connect['url']}/api/License/active/{licenseID}"
     data = json.dumps('no_need_to_put_anything')
     request = requests.put(url, headers=headers, data=data, verify=False)
+
     if request.status_code in (200, 201, 204,):
-        print(f"====== License '{license_id}' has been activated. ======")
+        print(f"====== License has been activated. ======")
     else:
         logging.error('%s', request.text)
-        print(f"====== License '{license_id}' has not been activated.======")
+        print(f"====== License has not been activated.======")
             
             
 
