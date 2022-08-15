@@ -17,7 +17,8 @@ import shutil
 
 '''     GLOBAL VARIABLES    '''
 pwd = os.getcwd()
-
+possible_request_errors: tuple = (requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, 
+                                      requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL,)
 ''''''''''''''''''''''''''''''
 
 
@@ -39,11 +40,16 @@ def get_token():
     list_of_providersID: list = []
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
     url_get_providers = f'{url_export}/api/Providers'
-    id_request = requests.get(url_get_providers, headers=headers, verify=False)
-    response = id_request.json()    
+
+    try:
+        id_request = requests.get(url_get_providers, headers=headers, verify=False)
+        response = id_request.json()
+    except possible_request_errors as err:
+        logging.error(err)
+        sys.exit(f"Connection error: {err}\n\n{id_request.text}")
+
     for dict in response:
         list_of_providersID.append(dict['id'])
-
 
     url_auth = f'{url_export}/api/Auth/Login'
     username = input("Enter login: ")
@@ -64,7 +70,8 @@ def get_token():
             token = response['access_token']
             break
         else:
-            logging.error('%s', auth_request.status_code)
+            logging.error(f"ProviderID: {id}, response_code: {auth_request.status_code} [{username}/{password}]\n{auth_request.text}")
+
 
     return token
 

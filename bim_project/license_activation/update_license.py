@@ -83,7 +83,7 @@ def get_token():
         id_request = requests.get(url_get_providers, headers=headers, verify=False)
         response = id_request.json()
     except possible_request_errors as err:
-        logging.error(f"{err}")
+        logging.error(err)
         sys.exit(f"Connection error: {err}")
     
     for dict in response:
@@ -155,7 +155,7 @@ def get_serverID():
         request = requests.get(url, data=payload, headers=headers, verify=False)
         request.raise_for_status()
     except possible_request_errors as err:
-        logging.error(f"{possible_request_errors}")
+        logging.error(err)
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
