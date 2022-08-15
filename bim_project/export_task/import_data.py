@@ -32,7 +32,7 @@ def ask_for_object_model():
 
 
 def get_url_import():       
-    url_import_server: str = input("Enter import server url, like('http://address.com'): ").lower()
+    url_import_server: str = input("Enter import server URL: ").lower()
     if url_import_server[-1:] == '/':
         return url_import_server[:-1]
     else:
@@ -54,7 +54,7 @@ def get_token():
     except possible_request_errors as err:
         logging.error(err)
         sys.exit(f"Connection error: {err}\n\n{id_request.text}")
-        
+
     for dict in response:
         list_of_providersID.append(dict['id'])
 

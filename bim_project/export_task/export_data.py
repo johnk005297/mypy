@@ -27,7 +27,7 @@ possible_request_errors: tuple = (requests.exceptions.MissingSchema, requests.ex
 
 def get_url_export():
     
-    url_export_server: str = input("Enter export server url, like('http://address.com'): ").lower()    
+    url_export_server: str = input("Enter export server URL: ").lower()    
     if url_export_server[-1:] == '/':
         return url_export_server[:-1]
     else:
