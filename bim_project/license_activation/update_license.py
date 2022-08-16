@@ -10,6 +10,7 @@ from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 import logging
+import time
 
 
 '''   Global variables   '''
@@ -48,34 +49,39 @@ def get_license_token():
         # sys.exit("No license.lic file in the folder. Exit.")
         license_token = input("There is no license.lic file in the folder.\nEnter license token manually or 'q' for exit: ")
         if license_token == 'q':
-            logging.error("No license token has been provided by the user.")
+            logging.debug("No license token has been provided by the user.")
             sys.exit()
         return license_token
 
-def creds():
+def creds(username='admin', password='Qwerty12345!'):
 
     logging.basicConfig(filename=f"{pwd}/license_log.txt", level=logging.DEBUG,
                         format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
-
 
     url = input("\nEnter URL: ").lower()
     if url[-1:] == '/':
         url = url[:-1]
     else: pass
 
-    username = input("Enter login: ")
-    password = input("Enter password: ")
+    confirm_name = input("Enter login(default, admin): ")
+    confirm_pass = input("Enter password(default, Qwerty12345!): ")
+    if confirm_name:
+        username=confirm_name
+    if confirm_pass:
+        password=confirm_pass
+    
     data_for_connect: dict = {
                     "url": url,
                     "username": username,
                     "password": password
                   }
+    
     return data_for_connect
-
+    
 
 
 '''  Get bearer token from the server   '''
-def get_token():
+def get_token(username, password):
 
     list_of_providersID: list = []
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
@@ -95,13 +101,14 @@ def get_token():
 
     for id in list_of_providersID:
         payload = {
-                    "username": data_for_connect['username'],
-                    "password": data_for_connect['password'],
+                    "username": username,
+                    "password": password,
                     "providerId": id
                 }
         data = json.dumps(payload)
 
         auth_request = requests.post(url_auth, data=data, headers=headers, verify=False)
+        time.sleep(0.15)
         response = auth_request.json()       
 
         if auth_request.status_code in (200, 201, 204):
@@ -109,7 +116,7 @@ def get_token():
             break
         else:
             logging.error(f"ProviderID: {id}, response: {auth_request.status_code} [{data_for_connect['username']}/{data_for_connect['password']}]\n{auth_request.text}")
-
+    
     return token
 
 
@@ -157,35 +164,39 @@ def check_user_privileges():
     
     if not check_user():
         
-        '''   If the user doesn't have required permissions -> create another user and assing him a system role.   '''
+        ''' If the user doesn't have required permissions -> create another user and assing him a system role. '''
         
         headers_create_user_and_system_role = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}    
         payload_create_user = {
-                    "firstName": "Johnny",
-                    "lastName": "Mnemonic",
-                    "middleName": "superuser",
-                    "userName": "00000137438691328",  # the seventh number in the series of perfect numbers  137438691328  2305843008139952128
-                    "displayName": "Johnny_Mnemonic",
-                    "password": "Qwerty12345!",
-                    "phoneNumber": "+71234567890",
-                    "email": "the_matrix@exists.neo",
-                    "birthday": "2000-08-16T07:15:07.731Z",
-                    "position": "The_one"
+                                "firstName": "Johnny",
+                                "lastName": "Mnemonic",
+                                "middleName": "superuser",
+                                "userName": "1374386913280",     # the seventh number in the series of perfect numbers  137438691328
+                                "displayName": "Johnny_Mnemonic",
+                                "password": "Qwerty12345!",
+                                "phoneNumber": "+71234567890",
+                                "email": "the_matrix@exists.neo",
+                                "birthday": "2000-08-16T07:15:07.731Z",
+                                "position": "The_one"
                 }
         data = json.dumps(payload_create_user)
         try:
             request = requests.post(url_users, headers=headers_create_user_and_system_role, data=data, verify=False)
+            time.sleep(0.15)
             response = request.json()
             if request.status_code == 201:
                 logging.debug(f"'{response['userName']}' user was created successfully.")
                 created_user_name: str = response['userName']
                 created_user_id: str = response['id']
+
             # in case if userName already exists, try another userName. Which is the eighth number in the series of perfect numbers by the way.
             elif request.status_code == 409:
                 altered_data = data.replace('137438691328', '2305843008139952128')
                 request = requests.post(url_users, headers=headers_create_user_and_system_role, data=altered_data, verify=False)
+                response = request.json()
+                time.sleep(0.15)
                 if request.status_code == 201:
-                    logging.debug(f"'{request.text}' user was created successfully.")
+                    logging.debug(f"'{response['userName']}' user was created successfully.")
                     created_user_name: str = response['userName']
                     created_user_id: str = response['id']
                 else:
@@ -193,7 +204,7 @@ def check_user_privileges():
         except possible_request_errors as err:            
             logging.error(f"{err}\n{request.text}")
 
-        # Create a system role for a new user
+        ''' Create a system role for a new user '''
         payload_create_system_role = {
                             "name": created_user_name,
                             "permissions": [
@@ -215,17 +226,17 @@ def check_user_privileges():
         data = json.dumps(payload_create_system_role)
         try:
             request = requests.post(url_create_system_role, headers=headers_create_user_and_system_role, data=data, verify=False)
-            response = request.json()
+            time.sleep(0.15)
+            response = created_system_role_id = request.json()
             if request.status_code == 201:
                 logging.debug("System role was created successfully.")
-                created_system_role_id: str = response
             else:
                 logging.error(request.text)
         except possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
-        # add system role to a new user /api/Users/AddSystemRole
-        print()
+        ''' Add new system role to a new user '''
+        
         url_add_system_role_to_user = f"{data_for_connect['url']}/api/Users/AddSystemRole"
         payload_add_system_role = {
                                     "systemRoleId": created_system_role_id,
@@ -234,8 +245,38 @@ def check_user_privileges():
         data = json.dumps(payload_add_system_role)
         try:
             request = requests.post(url_add_system_role_to_user, headers=headers_create_user_and_system_role, data=data, verify=False)
+            time.sleep(0.15)
             if request.status_code in (201, 204):
-                logging.debug(f"System role '{response}' to user '{created_user_name}' added successfully.")
+                logging.debug(f"System role '{created_system_role_id}' to user '{created_user_name}' added successfully.")
+            else:
+                logging.error(request.text)
+        except possible_request_errors as err:
+            logging.error(f"{err}\n{request.text}")
+
+
+        ''' Using credentianls of the new user, up privileges for current user we are working(default, admin). '''
+        url_get_current_user = f"{data_for_connect['url']}/api/Users/current-user"
+        headers_get_currect_user = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
+
+        # Getting info about current user. Response will provide a dictionary of values.
+        try:
+            request = requests.get(url_get_current_user, headers=headers_get_currect_user, verify=False)
+            response = request.json()
+        except possible_request_errors as err:
+            logging.error(f"{err}\n{request.text}")
+        
+        ''' Adding created role to current user '''
+        headers_add_system_role_to_current_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {get_token(username=created_user_name, password='Qwerty12345!')}"}
+        payload_add_system_role = {
+                                    "systemRoleId": created_system_role_id,
+                                    "userId": response['id']
+                                    }
+        data = json.dumps(payload_add_system_role)                                    
+        try:
+            request = requests.post(url_add_system_role_to_user, headers=headers_add_system_role_to_current_user, data=data, verify=False)
+            time.sleep(0.15)
+            if request.status_code in (201, 204):
+                logging.debug(f"System role '{created_system_role_id}' to user '{response['userName']}' added successfully.")
             else:
                 logging.error(request.text)
         except possible_request_errors as err:
@@ -243,8 +284,7 @@ def check_user_privileges():
 
 
 
-
-'''   Show all the licenses in the system   '''
+''' Show all the licenses in the system '''
 def show_licenses():
     print()
     url = f"{data_for_connect['url']}/api/License"
@@ -387,7 +427,7 @@ def put_license():
 
 if __name__ == "__main__":
     data_for_connect = creds()
-    token = get_token()
+    token = get_token(username=data_for_connect['username'], password=data_for_connect['password'])    
     check_user_privileges()   # Function isn't finished yet.
     while True:
         goal = define_purpose()
