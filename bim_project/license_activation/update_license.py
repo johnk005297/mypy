@@ -31,8 +31,7 @@ def define_purpose():
         return 'delete'
     elif purpose in ("2", "id"):
         return 'server_id'
-    else:
-        sys.exit("Exit.")
+    
 
 def get_license_token():
 
@@ -119,6 +118,24 @@ def get_token(username, password):
     
     return token
 
+def get_current_user():
+
+    ''' Getting info about current user. Response will provide a dictionary of values. '''
+    url_get_current_user = f"{data_for_connect['url']}/api/Users/current-user"
+    headers_get_currect_user = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
+
+    try:
+        request = requests.get(url_get_current_user, headers=headers_get_currect_user, verify=False)
+        time.sleep(0.15)
+        response = request.json()
+        if request.status_code != 200:
+            logging.error(request.text)
+    except possible_request_errors as err:
+        logging.error(f"{err}\n{request.text}")
+    
+    return response
+
+
 
 '''   Check user privileges   '''
 def check_user_privileges():
@@ -171,7 +188,7 @@ def check_user_privileges():
                                 "firstName": "Johnny",
                                 "lastName": "Mnemonic",
                                 "middleName": "superuser",
-                                "userName": "1374386913280",     # the seventh number in the series of perfect numbers  137438691328
+                                "userName": "137438691328",     # the seventh number in the series of perfect numbers 137438691328
                                 "displayName": "Johnny_Mnemonic",
                                 "password": "Qwerty12345!",
                                 "phoneNumber": "+71234567890",
@@ -204,7 +221,7 @@ def check_user_privileges():
         except possible_request_errors as err:            
             logging.error(f"{err}\n{request.text}")
 
-        ''' Create a system role for a new user '''
+        ''' Create a new system role '''
         payload_create_system_role = {
                             "name": created_user_name,
                             "permissions": [
@@ -235,8 +252,8 @@ def check_user_privileges():
         except possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
-        ''' Add new system role to a new user '''
-        
+
+        ''' Add new system role to a new user '''        
         url_add_system_role_to_user = f"{data_for_connect['url']}/api/Users/AddSystemRole"
         payload_add_system_role = {
                                     "systemRoleId": created_system_role_id,
@@ -265,7 +282,8 @@ def check_user_privileges():
         except possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
         
-        ''' Adding created role to current user '''
+        
+        ''' Adding created role to current user '''     # this block could be skipped actually. Since we have a new user with full privileges, we could use it.
         headers_add_system_role_to_current_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {get_token(username=created_user_name, password='Qwerty12345!')}"}
         payload_add_system_role = {
                                     "systemRoleId": created_system_role_id,
@@ -282,10 +300,102 @@ def check_user_privileges():
         except possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
+        created_userName_userId_systemRoleId: dict = {"userName": created_user_name, "userId": created_user_id, "systemRoleId": created_system_role_id}
+
+        return created_userName_userId_systemRoleId   # this dictionary returns only if 'admin' user has no privileges to work with licenses. Need to be deleted afterwards.
+
+    else:
+        return True
 
 
-''' Show all the licenses in the system '''
+def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
+
+    def remove_role_from_current_user():
+        ''' Remove created role from the current user. Otherwise, the role cannot be deleted. '''
+
+        headers_remove_system_role_from_current_user = \
+        {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {get_token(username=created_userName_userId_systemRoleId['userName'], password='Qwerty12345!')}"}
+        url_remove_system_role_from_user = f"{data_for_connect['url']}/api/Users/RemoveSystemRole"
+        current_user = get_current_user()
+        payload_remove_system_role = {
+                                        "systemRoleId": created_userName_userId_systemRoleId['systemRoleId'],
+                                        "userId": current_user['id']
+                                        }
+        data = json.dumps(payload_remove_system_role)
+        try:
+            request = requests.post(url_remove_system_role_from_user, headers=headers_remove_system_role_from_current_user, data=data, verify=False)
+            time.sleep(0.15)
+            if request.status_code in (201, 204):
+                logging.debug(f"System role '{created_userName_userId_systemRoleId['systemRoleId']}' from user '{current_user['userName']}' removed successfully.")
+            else:
+                logging.error(request.text)
+        except possible_request_errors as err:
+            logging.error(f"{err}\n{request.text}")
+
+
+
+    def remove_role_from_created_user():
+        ''' Remove created role from created user. '''
+
+        headers_remove_system_role_from_created_user = \
+        {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {get_token(username=data_for_connect['username'], password=data_for_connect['password'])}"}
+        url_remove_system_role_from_user = f"{data_for_connect['url']}/api/Users/RemoveSystemRole"
+        payload_remove_system_role = {
+                                        "systemRoleId": created_userName_userId_systemRoleId['systemRoleId'],
+                                        "userId": created_userName_userId_systemRoleId['userId']
+                                        }
+        data = json.dumps(payload_remove_system_role)
+        try:
+            request = requests.post(url_remove_system_role_from_user, headers=headers_remove_system_role_from_created_user, data=data, verify=False)
+            time.sleep(0.15)
+            if request.status_code in (201, 204):
+                logging.debug(f"System role '{created_userName_userId_systemRoleId['systemRoleId']}' from user '{created_userName_userId_systemRoleId['userName']}' removed successfully.")
+            else:
+                logging.error(request.text)
+        except possible_request_errors as err:
+            logging.error(f"{err}\n{request.text}")
+
+
+
+    ''' Delete created system role and created user '''
+    def delete_system_role():
+
+        url_delete_system_role = f"{data_for_connect['url']}/api/SystemRoles/{created_userName_userId_systemRoleId['systemRoleId']}"
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {get_token(username=data_for_connect['username'], password=data_for_connect['password'])}"}
+
+        try:
+            request = requests.delete(url_delete_system_role, headers=headers, verify=False)
+            if request.status_code in (201, 204):
+                logging.debug(f"New role '{created_userName_userId_systemRoleId['systemRoleId']}' was deleted successfully.")
+            else:
+                logging.error(request.text)
+        except possible_request_errors as err:
+            logging.error(f"{err}\n{request.text}")
+
+    def delete_user():
+
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {get_token(username=data_for_connect['username'], password=data_for_connect['password'])}"}
+        url_delete_user = f"{data_for_connect['url']}/api/Users/{created_userName_userId_systemRoleId['userId']}"
+        # deleting user
+        try:
+            request = requests.delete(url_delete_user, headers=headers, verify=False)
+            if request.status_code in (201, 204):
+                logging.debug(f"New user '{created_userName_userId_systemRoleId['userId']}' was deleted successfully.")
+            else:
+                logging.error(request.text)
+        except possible_request_errors as err:
+            logging.error(f"{err}\n{request.text}")
+
+    remove_role_from_current_user()
+    remove_role_from_created_user()
+    delete_system_role()
+    delete_user()
+
+
+
 def show_licenses():
+    ''' Show all the licenses in the system '''
+
     print()
     url = f"{data_for_connect['url']}/api/License"
     headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
@@ -427,8 +537,8 @@ def put_license():
 
 if __name__ == "__main__":
     data_for_connect = creds()
-    token = get_token(username=data_for_connect['username'], password=data_for_connect['password'])    
-    check_user_privileges()   # Function isn't finished yet.
+    token = get_token(username=data_for_connect['username'], password=data_for_connect['password'])   
+    check_privelege = check_user_privileges()
     while True:
         goal = define_purpose()
         if goal == 'update':
@@ -441,5 +551,10 @@ if __name__ == "__main__":
         elif goal == 'server_id':
             get_serverID()                
         else:            
-            sys.exit()
+            break
+    if check_privelege != True:
+        delete_created_system_role_and_user(check_privelege)
+        sys.exit()
+    else:
+        sys.exit()
 
