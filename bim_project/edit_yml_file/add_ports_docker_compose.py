@@ -1,7 +1,6 @@
 ##
 import os
 import sys
-import json
 
 def alter_yml():
     
@@ -167,7 +166,8 @@ def alter_yml():
         print(f'\nFile "{yml_file_open_ports}" is ready.')
     else:
         print("No file here")
-    os.system('pause')
+    if sys.platform('win32'):
+        os.system('pause')
 
 if __name__ == "__main__":      
     alter_yml()    
