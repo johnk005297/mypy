@@ -11,6 +11,9 @@ from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 import logging
 import time
+import random
+import string
+
 
 
 '''   Global variables   '''
@@ -22,7 +25,7 @@ possible_request_errors: tuple = (requests.exceptions.MissingSchema, requests.ex
 
 def define_purpose():
     
-    purpose = input("\nCheck the licenses(1) || Get server ID(2) || Apply license(3) || Delete active license(4) || Exit(q)\nSelect one of the options: ").lower()
+    purpose = input("\nCheck licenses(1) || Get server ID(2) || Apply license(3) || Delete active license(4) || Exit(q)\nSelect one of the options: ").lower()
     if purpose in ("1", "check",):
         return 'check'
     elif purpose in ("3", "update", "apply"):
@@ -31,7 +34,7 @@ def define_purpose():
         return 'delete'
     elif purpose in ("2", "id"):
         return 'server_id'
-    
+
 
 def get_license_token():
 
@@ -86,12 +89,14 @@ def get_token(username, password):
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
     url_get_providers = f"{data_for_connect['url']}/api/Providers"
 
+
     try:
         id_request = requests.get(url_get_providers, headers=headers, verify=False)
         response = id_request.json()
     except possible_request_errors as err:
-        logging.error(err)
+        logging.error(f"{err}")
         sys.exit(f"Connection error: {err}")
+    
     
     for dict in response:
         list_of_providersID.append(dict['id'])
@@ -144,6 +149,7 @@ def check_user_privileges():
          If user doesn't have it, create another user, so we could be able to grant all privileges in system role for our current user.         
     '''
     url_users = f"{data_for_connect['url']}/api/Users"
+
     def check_user():        
         '''   Check if the user has needed permissions in his system roles already. # {'name': 'Licenses', 'operation': 'Write'}   '''
 
@@ -152,6 +158,10 @@ def check_user_privileges():
 
         headers_get_users = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
         request = requests.get(url_users, headers=headers_get_users, verify=False)
+        if request.status_code != 200:
+            logging.debug(f"BIM version before 99-release! Can't check user priviliges for work with licenses.Will skip check.\n{request.text}\n")
+            return True         # Need to add this 'return' because BIM versions below 99 don't allow to make '/api/Users' calls if the license isn't valid.
+                                # Therefore, we have to skip license privileges check.
         response = request.json()
         
         for x in range(len(response)):
@@ -170,7 +180,7 @@ def check_user_privileges():
                 request = requests.get(url_check_system_role, headers=headers_get_users, verify=False)
                 response = request.json()
             except possible_request_errors as err:
-                logging.error(err)
+                logging.error(f"{err}\n{request.text}")
 
             for dct in response.get('permissions', False):
                 if dct.get('name') == 'Licenses' and dct.get('operation') == 'Write':
@@ -181,14 +191,19 @@ def check_user_privileges():
     
     if not check_user():
         
-        ''' If the user doesn't have required permissions -> create another user and assing him a system role. '''
-        
+        ''' Create a random name for a new user '''
+        def create_name_for_new_user():            
+            user_name: str = ''.join(random.choice(string.ascii_letters) for x in range(15))
+            return user_name
+
+        created_user_name: str = create_name_for_new_user()
+        ''' If the user doesn't have required permissions -> create another user and assing him a system role. '''        
         headers_create_user_and_system_role = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}    
         payload_create_user = {
                                 "firstName": "Johnny",
                                 "lastName": "Mnemonic",
                                 "middleName": "superuser",
-                                "userName": "137438691328",     # the seventh number in the series of perfect numbers 137438691328
+                                "userName": created_user_name,
                                 "displayName": "Johnny_Mnemonic",
                                 "password": "Qwerty12345!",
                                 "phoneNumber": "+71234567890",
@@ -197,29 +212,26 @@ def check_user_privileges():
                                 "position": "The_one"
                 }
         data = json.dumps(payload_create_user)
-        try:
-            request = requests.post(url_users, headers=headers_create_user_and_system_role, data=data, verify=False)
-            time.sleep(0.15)
-            response = request.json()
+
+        count = 0   # counter to protect while loop from infinite iteration
+        request = requests.post(url_users, headers=headers_create_user_and_system_role, data=data, verify=False)
+        time.sleep(0.15)
+        while True:
+            count += 1
             if request.status_code == 201:
-                logging.debug(f"'{response['userName']}' user was created successfully.")
+                response = request.json()
+                logging.debug(f"New <{response['userName']}> user was created successfully.")
                 created_user_name: str = response['userName']
                 created_user_id: str = response['id']
+                break
+            else:
+                if count == 10:
+                    logging.error("No USERs were created! Error.")
+                    break
 
-            # in case if userName already exists, try another userName. Which is the eighth number in the series of perfect numbers by the way.
-            elif request.status_code == 409:
-                altered_data = data.replace('137438691328', '2305843008139952128')
-                request = requests.post(url_users, headers=headers_create_user_and_system_role, data=altered_data, verify=False)
-                response = request.json()
-                time.sleep(0.15)
-                if request.status_code == 201:
-                    logging.debug(f"'{response['userName']}' user was created successfully.")
-                    created_user_name: str = response['userName']
-                    created_user_id: str = response['id']
-                else:
-                    logging.error(request.text)
-        except possible_request_errors as err:            
-            logging.error(f"{err}\n{request.text}")
+                altered_data = data.replace(created_user_name, create_name_for_new_user())
+                request = requests.post(url_users, headers=headers_create_user_and_system_role, data=altered_data, verify=False)                
+
 
         ''' Create a new system role '''
         payload_create_system_role = {
@@ -294,7 +306,7 @@ def check_user_privileges():
             request = requests.post(url_add_system_role_to_user, headers=headers_add_system_role_to_current_user, data=data, verify=False)
             time.sleep(0.15)
             if request.status_code in (201, 204):
-                logging.debug(f"System role '{created_system_role_id}' to user '{response['userName']}' added successfully.")
+                logging.debug(f"System role '{created_system_role_id}' to user <{response['userName']}> added successfully.")
             else:
                 logging.error(request.text)
         except possible_request_errors as err:
@@ -326,7 +338,7 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
             request = requests.post(url_remove_system_role_from_user, headers=headers_remove_system_role_from_current_user, data=data, verify=False)
             time.sleep(0.15)
             if request.status_code in (201, 204):
-                logging.debug(f"System role '{created_userName_userId_systemRoleId['systemRoleId']}' from user '{current_user['userName']}' removed successfully.")
+                logging.debug(f"System role '{created_userName_userId_systemRoleId['systemRoleId']}' from user <{current_user['userName']}> removed successfully.")
             else:
                 logging.error(request.text)
         except possible_request_errors as err:
@@ -349,7 +361,7 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
             request = requests.post(url_remove_system_role_from_user, headers=headers_remove_system_role_from_created_user, data=data, verify=False)
             time.sleep(0.15)
             if request.status_code in (201, 204):
-                logging.debug(f"System role '{created_userName_userId_systemRoleId['systemRoleId']}' from user '{created_userName_userId_systemRoleId['userName']}' removed successfully.")
+                logging.debug(f"System role '{created_userName_userId_systemRoleId['systemRoleId']}' from user <{created_userName_userId_systemRoleId['userName']}> removed successfully.")
             else:
                 logging.error(request.text)
         except possible_request_errors as err:
@@ -380,7 +392,7 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
         try:
             request = requests.delete(url_delete_user, headers=headers, verify=False)
             if request.status_code in (201, 204):
-                logging.debug(f"New user '{created_userName_userId_systemRoleId['userId']}' was deleted successfully.")
+                logging.debug(f"New user <{created_userName_userId_systemRoleId['userName']}> was deleted successfully.")
             else:
                 logging.error(request.text)
         except possible_request_errors as err:
@@ -405,6 +417,8 @@ def show_licenses():
               }
     
     request = requests.get(url, data=payload, headers=headers, verify=False)
+    if request.status_code != 200:
+        logging.error(f"{request.text}")
     request.raise_for_status()
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
@@ -437,7 +451,7 @@ def get_serverID():
         request = requests.get(url, data=payload, headers=headers, verify=False)
         request.raise_for_status()
     except possible_request_errors as err:
-        logging.error(err)
+        logging.error(f"{err}\n{request.text}")
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
@@ -492,7 +506,6 @@ def delete_license():
             
 
 
-
 def post_license():
 
     headers = {'accept': 'text/plane', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
@@ -522,8 +535,9 @@ def put_license():
             licenseID = license['licenseID']
 
     url = f"{data_for_connect['url']}/api/License/active/{licenseID}"
-    data = json.dumps('no_need_to_put_anything')
-    request = requests.put(url, headers=headers, data=data, verify=False)
+    # data = json.dumps('no_need_to_put_anything')
+    payload = {}
+    request = requests.put(url, headers=headers, data=payload, verify=False)
 
     if request.status_code in (200, 201, 204,):
         print(f"====== License has been activated. ======")
@@ -552,9 +566,9 @@ if __name__ == "__main__":
             get_serverID()                
         else:            
             break
-    if check_privelege != True:
-        delete_created_system_role_and_user(check_privelege)
-        sys.exit()
+    if check_privelege != True:                                 # if user initialy had no privileges to work with licenses, new user was created, 
+        delete_created_system_role_and_user(check_privelege)    # and check_user_privileges() function won't return True. It returns {created_userName_userId_systemRoleId} dictionary instead.
+        sys.exit()                                              # Thus, we need to remove newely created user after we done.
     else:
         sys.exit()
 

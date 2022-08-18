@@ -261,11 +261,11 @@ def get_workflow_xml_export():
 
 def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{workFlowOriginId}/BimClasses
     
-    workFlow_id_bimClass_id_export: list = []  # temp list to get data
     '''
         This function does mapping between workFlow_id and bimClass_id. 
         It uses list comprehension block for transformation list of values into dictionary with {'workFlow_id': 'bimClass_id'} pairs.
     '''
+    workFlow_id_bimClass_id_export: list = []  # temp list to get data
 
     workflow_nodes: list = []
     if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
@@ -294,8 +294,8 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
         
     # List comprehension block for transformation list of values into {'workFlow_id': 'bimClass_id'} pairs.
     tmp = workFlow_id_bimClass_id_export
-    tmp: list = [ [tmp[x-1]] + [tmp[x]] for x in range(1, len(tmp), 2) ]      # generation list in format [ ['a', 'b'], ['c', 'd'], ['e', 'f'] ]
-    workFlow_id_bimClass_id_export = dict(tmp)                          # transform tmp list from above to dictionary using dict() function in format {"workFlow_id": "bimClass_id"}
+    tmp: list = [ [tmp[x-1]] + [tmp[x]] for x in range(1, len(tmp), 2) ]    # generation list in format [ ['a', 'b'], ['c', 'd'], ['e', 'f'] ]
+    workFlow_id_bimClass_id_export = dict(tmp)                              # transform tmp list from above to dictionary using dict() function in format {"workFlow_id": "bimClass_id"}
         
 
     with open(f"{pwd}/files/workFlow_id_bimClass_id_export.json", 'w', encoding='utf-8') as file:
