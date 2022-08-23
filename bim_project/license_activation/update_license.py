@@ -440,7 +440,7 @@ def show_licenses():
         for k, v in license.items():
             # Ternary operator. Made it just for exercise. It's hard to read, so we should aviod to use such constructions. 
             # Commented "if-elif-else" block below provides the same result, but way more readable.
-            print(f" - {k}: {Fore.GREEN + str(v)}" if v == True else (f" - {k}: {Fore.RED + str(v)}" if v == False else f" - {k}: {v}"))
+            print(f" - {k}: {Fore.GREEN + str(v)}" if v == True and k != 'activeUsers' else (f" - {k}: {Fore.RED + str(v)}" if v == False else f" - {k}: {v}"))
 
             # if v == True:
             #     print(f" - {k}: {Fore.GREEN + str(v)}")
@@ -450,7 +450,7 @@ def show_licenses():
             #     print(f" - {k}: {v}")
 
     print("=====================================================================================\n")
-
+    return response
 
 
 '''   Get server ID   '''
@@ -534,17 +534,18 @@ def post_license():
     data = json.dumps(get_license_token())
 
     request = requests.post(url, headers=headers, data=data, verify=False)
-
+    time.sleep(0.15)
+    # for license in get_license():
+    #     if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+    #         licenseID = license['licenseID']
+    #         break
     if request.status_code in (200, 201, 204,):
-        for license in get_license():
-            if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-                print(Fore.GREEN + f"====== License {license['licenseID']} has been posted successfully! ======")
-                break
+        print(Fore.GREEN + f"====== License has been posted successfully! ======")                
         post_license_result = True
 
     else:
         logging.error('%s', request.text)
-        print(Fore.RED + f"====== License {license['licenseID']} has not been posted! ======")
+        print(Fore.RED + f"====== License has not been posted! ======")
     
     return post_license_result
 
@@ -558,6 +559,7 @@ def put_license():
     for license in get_license():
         if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
             licenseID = license['licenseID']
+            break
 
     url = f"{data_for_connect['url']}/api/License/active/{licenseID}"
     payload = {}
@@ -565,10 +567,10 @@ def put_license():
 
     if request.status_code in (200, 201, 204,):
         put_license_result = True
-        print(Fore.GREEN + f"====== License {licenseID} has been activated successfully! ======")
+        print(Fore.GREEN + f"====== License has been activated successfully! ======")
     else:
         logging.error('%s', request.text)
-        print(Fore.RED + f"====== License {licenseID} has not been activated! ======")
+        print(Fore.RED + f"====== License has not been activated! ======")
             
     return put_license_result
 
