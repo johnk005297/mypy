@@ -12,6 +12,8 @@ from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 import logging
+import shutil
+
 
 
 '''     GLOBAL VARIABLES    '''
@@ -49,7 +51,7 @@ def check_for_object_model():
 #------------------------------------------------------------------------------------------------------------------------------#
 
 def get_url_import():       
-    url_import_server: str = input("Enter import server URL: ").lower()
+    url_import_server: str = input("Enter import server URL: ").lower().strip()
     if url_import_server[-1:] == '/':
         return url_import_server[:-1]
     else:
@@ -186,7 +188,7 @@ def get_model_object_import():
     
     logging.info("Object model function is finished. 'model_object_import_server.json' file is ready.")
     print("  - Get object model:                   done")
-
+    
 
 #---------------------------------------------------------------------------------------------------------------------------------
 
@@ -197,6 +199,7 @@ def prepare_model_object_file_for_import():
         and replace with it values in model_object_export_server.json file. model_object_export_server.json file will be used further on the import server.
     '''
 
+
     data_obj_model_import = read_from_json(f"{pwd}/files", "model_object_import_server.json")  # read the file into dictionary
     data_obj_model_export = read_from_json(f"{pwd}/files", "model_object_export_server.json")  # read the file into dictionary
     
@@ -205,48 +208,58 @@ def prepare_model_object_file_for_import():
                         "systemBimProperties","secondLevelSystemBimClasses",)
     small_fish: tuple = ("BimProperty", "BimInterface", "BimClass", "BimDirectory", "BimStructure", "FILE_INTERFACE", "WORK_DATES_INTERFACE", "COMMERCIAL_SECRET_BIM_INTERFACE","FILE_PROPERTY", 
                         "PLANNED_START_PROPERTY","PLANNED_END_PROPERTY", "ACTUAL_START_PROPERTY", "ACTUAL_END_PROPERTY", "COMMERCIAL_SECRET_BIM_PROPERTY","ACTIVE_CLASS","FOLDER_CLASS", "DOCUMENT_CLASS",
-                        "WORK_CLASS", )
+                        "WORK_CLASS", "Файл", "Даты работы", "Коммерческая тайна", "Планируемое начало", "Планируемое окончание", "Фактическое начало", "Фактическое окончание")
     
-    insert_tuple = ()   # data will be inserted in model_objects_export.json file
-    replace_tuple = ()  # data will be removed from model_objects_export.json file
     
+    
+    insert_data: dict = {}    # data that needs to be added to model_objects_export.json file
+    replace_data: dict = {}   # data that needs to be removed from model_objects_export.json file
+
     # Collecting values from import model object .json file with values to put in export .json
     for key in data_obj_model_import.keys():
         if key in big_fish and isinstance(data_obj_model_import[key], list):
+            insert_data.setdefault(key, {})
             for obj in data_obj_model_import[key]:
                 if isinstance(obj, dict):
                     for k,v in obj.items():
                         if v in small_fish:
-                            insert_tuple += (obj["id"],)
-                            # print(obj) # dict
+                            # insert_data[key][k] = v
+                            # insert_data[key]['id'] = obj['id']
+                            insert_data[key][v] = obj['id']
                                          
         elif key in big_fish and isinstance(data_obj_model_import[key], dict):
-            insert_tuple += (data_obj_model_import[key]["id"],)
+            insert_data.setdefault(key, {data_obj_model_import[key]['name']: data_obj_model_import[key]['id']})
+            
     
-    # Collecting values from export model object .json file with values to replace in export .json
+    # Collecting data from 'model_object_export_server.json' file to replace it with data from 'model_object_import_server.json'
     for key in data_obj_model_export.keys():
         if key in big_fish and isinstance(data_obj_model_export[key], list):
+            replace_data.setdefault(key, {})
             for obj in data_obj_model_export[key]:                         
                 if isinstance(obj, dict):
                     for k,v in obj.items():
                         if v in small_fish:
-                            replace_tuple += (obj["id"],)
-                            # print(obj) # dict
+                            # replace_data[key][k] = v
+                            # replace_data[key]['id'] = obj['id']
+                            replace_data[key][v] = obj['id']
+                            
                                       
         elif key in big_fish and isinstance(data_obj_model_export[key], dict):
-            replace_tuple += (data_obj_model_export[key]["id"],)
-     
+            replace_data.setdefault(key, {data_obj_model_export[key]['name']: data_obj_model_export[key]['id']})
+
+
+    # Making a copy of the 'model_object_export_server.json' file which we will prepare for export
+    shutil.copyfile(f"{pwd}/files/model_object_export_server.json", f"{pwd}/files/modified_object_model.json")
+
+    # Replacement values in .json file       
+    for key,value in replace_data.items():
+        for key_from_export_json, value_from_export_json in value.items():
+            try:
+                replace_str_in_file('modified_object_model.json', 'modified_object_model.json', value_from_export_json, insert_data[key][key_from_export_json])
+                time.sleep(0.1)
+            except (KeyError, ValueError, TypeError, UnicodeError, UnicodeDecodeError, UnicodeEncodeError, SyntaxError) as err:
+                logging.error(err)
     
-    # Edit model object attributes in needed file
-    
-    for x in range(len(replace_tuple)):
-        # print(replace_tuple[x], " ---> ", insert_tuple[x])
-        if len(replace_tuple) == len(insert_tuple):
-            # print(replace_tuple[x], " ---> ", insert_tuple[x])
-            replace_str_in_file("model_object_export_server.json", "model_object_export_server.json", replace_tuple[x], insert_tuple[x])        
-        else:
-            logging.error("Smth is wrong. Model_object files are incorrect. Exit")             
-            sys.exit("Smth is wrong. Model_object files are incorrect. Exit")
 
     logging.info("Preparation object model file is finished. 'model_object_export_server.json' was altered.")
     print("  - Preparation object model file:      done")
@@ -259,9 +272,9 @@ def prepare_model_object_file_for_import():
 '''
 def fix_defaulValues():
 
-    data = read_from_json(f"{pwd}/files", "model_object_export_server.json")
+    data = read_from_json(f"{pwd}/files", "modified_object_model.json")
     count = 0
-    with open(f"{pwd}/files/model_object_export_server.json", 'w', encoding='utf-8') as file:
+    with open(f"{pwd}/files/modified_object_model.json", 'w', encoding='utf-8') as file:
         for bimClasses_dict in data['bimClasses']:  # bimClasses - list with dictionaries inside
             for bimProperties_dict in bimClasses_dict['bimProperties']:  # bimProperties - list with dictionaries inside               
                 for defaultValues in bimProperties_dict.get('defaultValues'):                
@@ -271,7 +284,7 @@ def fix_defaulValues():
 
         json.dump(data, file, ensure_ascii=False, indent=4)
 
-    logging.info("Fixing defaultValues in model_object_export_server.json: finished.")
+    logging.info("Fixing defaultValues in object model finished.")
     print(f"      Fixed 'defaultValues': {count}")
 
 
@@ -282,7 +295,7 @@ def fix_defaulValues():
 def post_model_object_import():
 
     url = url_import + "/api/Integration/ObjectModel/Import"
-    with open(f"{pwd}/files/model_object_export_server.json", "r", encoding="utf-8") as file:
+    with open(f"{pwd}/files/modified_object_model.json", "r", encoding="utf-8") as file:
         # data = file.read().replace('\n', '')   # backup line
         data = file.read()
     # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file   
@@ -290,12 +303,14 @@ def post_model_object_import():
         model_odject_request = requests.post(url, data=data.encode("utf-8"),  headers=headers_import[0], verify=False)
     except possible_request_errors as err:
         logging.error(f"{err}")
-        sys.exit("  - Post object model error. Check out the 'import_data.log' file. Exit.")
-    if model_odject_request.status_code == 500:
+        sys.exit("  - Post object model:                  error. Check out the 'import_data.log' file. Exit.")
+    if model_odject_request.status_code != 200:
         logging.error(f"\n{model_odject_request.text}")
-        
+        print("  - Post object model:                  error ", model_odject_request.status_code)
+    else:
+        print("  - Post object model:                  done")
 
-    print("  - Post object model:                  done")
+    
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -323,7 +338,7 @@ def create_workflow_import():
     if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
         with open(f"{pwd}/files/workflow_nodes.txt", 'r', encoding='utf-8') as file:
             for line in file:
-                workflow_nodes.append(line[:-1])
+                workflow_nodes.append(line[:-1])    # it removes the last symbol, because 'workflow_nodes.txt' always has '\n' - newline, as a last symbol
     else:
         print("No workflow_nodes.txt file. Check 'files' folder. Exit.")
         sys.exit()
@@ -389,7 +404,7 @@ def create_workflow_import():
             except possible_request_errors as err:
                 logging.error(f"{err}\n{post_xml_request.text}")
 
-            print("      " + post_response['name'] + ":" + "  " + str(post_xml_request.status_code))
+            print("      " + post_response['name'] + ":" + " " + ('ok' if post_xml_request.status_code == 200 else "error"))
             time.sleep(0.25)
             '''  END OF XML POST REQUEST  '''
         
@@ -418,8 +433,10 @@ def get_workflows_import():
             json.dump(response, json_file, ensure_ascii=False, indent=4)
 
     logging.info(f"Get workflows for {key} is finished. '{key}_workflows_import_server.json' file is ready.")
-    print("  - Get workflows:                      done\n\n")
+    print("  - Get workflows:                      done\n")
+    print("================== Import procedure finished ==================\n\n")
     
+
     if sys.platform == 'win32':
         os.system('pause')
 
@@ -436,7 +453,6 @@ if __name__ == "import_data":           # current module will be executed only i
         get_model_object_import()
         prepare_model_object_file_for_import()
         fix_defaulValues()
-        post_model_object_import()    
+        post_model_object_import()   
     create_workflow_import()
     get_workflows_import()
-

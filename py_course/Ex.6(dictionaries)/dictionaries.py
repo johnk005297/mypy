@@ -195,7 +195,7 @@ def solution9():
     '''
 
     # Third variant of solution for this task
-    '''
+    
     d3 = {}
     for i in lst:
         key, value = i.split()
@@ -205,7 +205,7 @@ def solution9():
         print(f'{key}: ', end='')
         print(*value, sep=', ')
 
-    '''
+    print(d3)
 
 ''' End of Task 6.1.5 '''
 
@@ -236,6 +236,6 @@ def solution10():
 # sortdict=dict([(k,v) for v,k in marklist])
 # print(sortdict)
 
-solution10()
+solution9()
 
 
