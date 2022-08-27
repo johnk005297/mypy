@@ -274,13 +274,13 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
         It uses list comprehension block for transformation list of values into dictionary with {'workFlow_id': 'bimClass_id'} pairs.
     '''
 
-    workFlow_id_bimClass_id_export: list = []  # temp list to store data   
+    workFlow_id_bimClass_id_export: list = []  # temp list to store data
 
     workflow_nodes: list = []   # append all workflow nodes from the workflow_nodes.txt
     if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
         with open(f"{pwd}/files/workflow_nodes.txt", 'r', encoding='utf-8') as file:
             for line in file:
-                workflow_nodes.append(line[:-1])
+                workflow_nodes.append(line[:-1])    # it removes the last symbol, because 'workflow_nodes.txt' always has '\n' - newline, as a last symbol
     else:
         sys.exit("No workflow_nodes.txt file. Check files folder. Exit.")
 
@@ -293,16 +293,16 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
                 response = request.json()
                 with open(f"{pwd}/files/{line['id']}.json", 'w', encoding='utf-8') as file:
                     json.dump(response, file, ensure_ascii=False, indent=4)
-                
+
                 # write list with active workFlows BimClasses ID in format [workFlow_id, bimClass_id]
                 workFlow_id_bimClass_id_export.append(line['originalId'])
                 workFlow_id_bimClass_id_export.append(response[0]['id'])
         
-        
+
     # List comprehension block for transformation list of values into {'workFlow_id': 'bimClass_id'} pairs.
     tmp = workFlow_id_bimClass_id_export
     tmp: list = [ [tmp[x-1]] + [tmp[x]] for x in range(1, len(tmp), 2) ]      # generation list in format [ ['a', 'b'], ['c', 'd'], ['e', 'f'] ]
-    workFlow_id_bimClass_id_export = dict(tmp)                          # transform tmp list from above to dictionary using dict() function in format {"workFlow_id": "bimClass_id"}
+    workFlow_id_bimClass_id_export = dict(tmp)                                # transform tmp list from above to dictionary using dict() function in format {"workFlow_id": "bimClass_id"}
         
 
     with open(f"{pwd}/files/workFlow_id_bimClass_id_export.json", 'w', encoding='utf-8') as file:
