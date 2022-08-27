@@ -56,7 +56,7 @@ def get_license_token():
         # sys.exit("No license.lic file in the folder. Exit.")
         license_token = input(Fore.WHITE + "There is no " + Fore.YELLOW + "license.lic" + Fore.WHITE + " file in the folder.\nEnter license token manually or 'q' for exit: ")
         if license_token == 'q':
-            logging.debug("No license token has been provided by the user.")
+            logging.info("No license token has been provided by the user.")
             sys.exit()
         return license_token
 
@@ -165,7 +165,7 @@ def check_user_privileges():
         headers_get_users = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
         request = requests.get(url_users, headers=headers_get_users, verify=False)
         if request.status_code != 200:
-            logging.debug(f"BIM version before 99-release! Can't check user priviliges for work with licenses.Will skip check.\n{request.text}\n")
+            logging.info(f"BIM version before 99-release! Can't check user priviliges for work with licenses.Will skip check.\n{request.text}\n")
             return True         # Need to add this 'return' because BIM versions below 99 don't allow to make '/api/Users' calls if the license isn't valid.
                                 # Therefore, we have to skip license privileges check.
         response = request.json()
@@ -346,7 +346,7 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
             request = requests.post(url_remove_system_role_from_user, headers=headers_remove_system_role_from_current_user, data=data, verify=False)
             time.sleep(0.15)
             if request.status_code in (201, 204):
-                logging.debug(f"System role '{created_userName_userId_systemRoleId['systemRoleId']}' from user <{current_user['userName']}> removed successfully.")
+                logging.info(f"System role '{created_userName_userId_systemRoleId['systemRoleId']}' from user <{current_user['userName']}> removed successfully.")
             else:
                 logging.error(request.text)
         except possible_request_errors as err:
@@ -369,7 +369,7 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
             request = requests.post(url_remove_system_role_from_user, headers=headers_remove_system_role_from_created_user, data=data, verify=False)
             time.sleep(0.15)
             if request.status_code in (201, 204):
-                logging.debug(f"System role '{created_userName_userId_systemRoleId['systemRoleId']}' from user <{created_userName_userId_systemRoleId['userName']}> removed successfully.")
+                logging.info(f"System role '{created_userName_userId_systemRoleId['systemRoleId']}' from user <{created_userName_userId_systemRoleId['userName']}> removed successfully.")
             else:
                 logging.error(request.text)
         except possible_request_errors as err:
@@ -386,7 +386,7 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
         try:
             request = requests.delete(url_delete_system_role, headers=headers, verify=False)
             if request.status_code in (201, 204):
-                logging.debug(f"New role '{created_userName_userId_systemRoleId['systemRoleId']}' was deleted successfully.")
+                logging.info(f"New role '{created_userName_userId_systemRoleId['systemRoleId']}' was deleted successfully.")
             else:
                 logging.error(request.text)
         except possible_request_errors as err:
@@ -400,7 +400,7 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
         try:
             request = requests.delete(url_delete_user, headers=headers, verify=False)
             if request.status_code in (201, 204):
-                logging.debug(f"New user <{created_userName_userId_systemRoleId['userName']}> was deleted successfully.")
+                logging.info(f"New user <{created_userName_userId_systemRoleId['userName']}> was deleted successfully.")
             else:
                 logging.error(request.text)
         except possible_request_errors as err:
@@ -437,10 +437,10 @@ def show_licenses():
     for license in response:
         print(f"\nLicense {count}:")
         count+=1
-        for k, v in license.items():
+        for key, value in license.items():
             # Ternary operator. Made it just for exercise. It's hard to read, so we should aviod to use such constructions. 
             # Commented "if-elif-else" block below provides the same result, but way more readable.
-            print(f" - {k}: {Fore.GREEN + str(v)}" if v == True and k != 'activeUsers' else (f" - {k}: {Fore.RED + str(v)}" if v == False else f" - {k}: {v}"))
+            print(f" - {key}: {Fore.GREEN + str(value)}" if value == True and key != 'activeUsers' else (f" - {key}: {Fore.RED + str(value)}" if value == False else f" - {key}: {value}"))
 
             # if v == True:
             #     print(f" - {k}: {Fore.GREEN + str(v)}")
@@ -517,7 +517,7 @@ def delete_license():
                 if request.status_code in (200, 201, 204,) and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                     print(Fore.GREEN + f"====== License '{license['licenseID']}' has been deactivated successfully! ======")
                 elif request.status_code in (200, 201, 204,) and license['licenseID'] == '00000000-0000-0000-0000-000000000000':                    
-                    logging.debug("Attempt to deactivate '00000000-0000-0000-0000-000000000000' license.")
+                    logging.info("Attempt to deactivate '00000000-0000-0000-0000-000000000000' license.")
                 else:
                     logging.error('%s', request.text)
                     print(Fore.RED + f"====== License '{license['licenseID']}' has not been deactivated! ======")
