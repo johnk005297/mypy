@@ -193,6 +193,8 @@ def get_model_object_export():
         /api/Integration/ObjectModel/Export  - api service
     '''
     ask_model_object = input("Need to export object model? (Y/N): ").lower()
+    
+    print("\n================== Starting export procedure ==================\n")
 
     if ask_model_object in ("yes", "y", "1"):
 
@@ -207,7 +209,7 @@ def get_model_object_export():
         with open(f"{pwd}/files/model_object_export_server.json", "w", encoding="utf-8") as json_file:
             json.dump(response, json_file, ensure_ascii=False, indent=4)
 
-        print("\n================== Starting export procedure ==================\n")
+
         print("  - Get object model:                            done")
 
     elif ask_model_object in ("n", "no", "0"):

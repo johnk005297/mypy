@@ -54,7 +54,7 @@ def get_license_token():
     else:
         # logging.error("No license.lic file in the folder. Exit.")
         # sys.exit("No license.lic file in the folder. Exit.")
-        license_token = input(Fore.WHITE + "There is no " + Fore.YELLOW + "license.lic" + Fore.WHITE + " file in the folder.\nEnter license token manually or 'q' for exit: ")
+        license_token = input("\nThere is no 'license.lic' file in the folder.\nEnter license token manually or 'q' for exit: ")
         if license_token == 'q':
             logging.info("No license token has been provided by the user.")
             sys.exit()
@@ -440,7 +440,8 @@ def show_licenses():
         for key, value in license.items():
             # Ternary operator. Made it just for exercise. It's hard to read, so we should aviod to use such constructions. 
             # Commented "if-elif-else" block below provides the same result, but way more readable.
-            print(f" - {key}: {Fore.GREEN + str(value)}" if value == True and key != 'activeUsers' else (f" - {key}: {Fore.RED + str(value)}" if value == False else f" - {key}: {value}"))
+            print(f" - {key}: {Fore.GREEN + str(value)}" if value == True and key != 'activeUsers'
+                        else (f" - {key}: {Fore.RED + str(value)}" if value == False else f" - {key}: {value}"))
 
             # if v == True:
             #     print(f" - {k}: {Fore.GREEN + str(v)}")
