@@ -1,5 +1,5 @@
 #
-# version: 1.1
+# version: 1.3
 
 import requests
 import json
@@ -21,24 +21,18 @@ possible_request_errors: tuple = (requests.exceptions.MissingSchema, requests.ex
 
 ''''''''''''''''''''''''''''''
 
-#------------------------------------------------------------------------------------------------------------------------------#
 
+def get_server_url():
 
-def get_url_export():
-    
-    url_export_server: str = input("Enter export server URL: ").lower()    
-    if url_export_server[-1:] == '/':
-        return url_export_server[:-1]
-    else:
-        return url_export_server
+    server_url: str = input("Enter server URL: ").lower().strip()
+    return server_url[:-1] if server_url[-1:]=='/' else server_url
 
-#------------------------------------------------------------------------------------------------------------------------------#
 
 def get_token(username='admin', password='Qwerty12345!'):
     
     list_of_providersID: list = []
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-    url_get_providers = f'{url_export}/api/Providers'
+    url_get_providers = f'{server_url}/api/Providers'
 
     try:
         id_request = requests.get(url_get_providers, headers=headers, verify=False)
@@ -50,14 +44,14 @@ def get_token(username='admin', password='Qwerty12345!'):
     for dict in response:
         list_of_providersID.append(dict['id'])
 
-    url_auth = f'{url_export}/api/Auth/Login'
-    confirm_name = input("Enter login(default, admin): ")
-    confirm_pass = input("Enter password(default, Qwerty12345!): ")
+    url_auth = f'{server_url}/api/Auth/Login'
+    confirm_username = input("Enter login(default, admin): ")
+    confirm_password = input("Enter password(default, Qwerty12345!): ")
 
-    if confirm_name:
-        username=confirm_name
-    if confirm_pass:
-        password=confirm_pass
+    if confirm_username:
+        username=confirm_username
+    if confirm_password:
+        password=confirm_password
 
     for id in list_of_providersID:
         payload = {
@@ -74,7 +68,7 @@ def get_token(username='admin', password='Qwerty12345!'):
             token = response['access_token']
             break
         else:
-            logging.error('%s', auth_request.status_code)
+            logging.error(f"{auth_request.status_code}\n{auth_request.text}")
 
     return token
 
@@ -86,8 +80,6 @@ def get_headers():
     return headers
 
 #------------------------------------------------------------------------------------------------------------------------------#
-
-
 
 
 def create_folder_for_files_and_logs():
@@ -131,22 +123,22 @@ def define_workFlow_node_export():
         logging.error("File 'workflow_nodes.txt' hasn't been created. Exit.")
         sys.exit("File 'workflow_nodes.txt' hasn't been created. Exit.")
 
-    workflow_node_selected: list = input("\nChose nodes to export workflows from. Use whitespaces in-between. \nDraft(1) || Archived(2) || Active(3)\n\nType 'q' for exit: ").lower().split()   
+    workflow_node_selected: list = input("Chose nodes to export workflows from. Use whitespaces in-between. \nDraft(1) || Archived(2) || Active(3)\n\nType 'q' for exit: ").lower().split()   
 
     if 'q' in workflow_node_selected:
         sys.exit("\nStop export process!")
 
     if '1' in workflow_node_selected or 'draft' in workflow_node_selected:        
-        with open(f"{pwd}/files/workflow_nodes.txt", 'a', encoding='utf-8') as file:                           
-            file.write("Draft_workflows_export_server.json\n")        
+        with open(f"{pwd}/files/workflow_nodes.txt", 'a', encoding='utf-8') as file:
+            file.write("Draft_workflows_export_server.json\n")
 
     if '2' in workflow_node_selected or 'archived' in workflow_node_selected:
-        with open(f"{pwd}/files/workflow_nodes.txt", 'a', encoding='utf-8') as file:            
-            file.write("Archived_workflows_export_server.json\n")        
+        with open(f"{pwd}/files/workflow_nodes.txt", 'a', encoding='utf-8') as file:
+            file.write("Archived_workflows_export_server.json\n")
 
     if '3' in workflow_node_selected or 'active' in workflow_node_selected:
-        with open(f"{pwd}/files/workflow_nodes.txt", 'a', encoding='utf-8') as file:            
-            file.write("Active_workflows_export_server.json\n")  
+        with open(f"{pwd}/files/workflow_nodes.txt", 'a', encoding='utf-8') as file:
+            file.write("Active_workflows_export_server.json\n")
         
 
 
@@ -169,9 +161,9 @@ def read_from_json(path_to_file,file_name):
 
 
 def get_workflow_nodes_export():       
-    ''' Getting Draft, Archived and Active nodes Ids.  '''   
+    ''' Getting Draft, Archived and Active nodes Id.  '''   
 
-    url = url_export + "/api/WorkFlowNodes"
+    url = server_url + "/api/WorkFlowNodes"
     try:
         request = requests.get(url, headers=headers_export, verify=False)
         response = request.json()
@@ -192,32 +184,21 @@ def get_model_object_export():
         Function gets model object from export server, and writes it in model_object_export_server.json file.
         /api/Integration/ObjectModel/Export  - api service
     '''
-    ask_model_object = input("Need to export object model? (Y/N): ").lower()
-    
-    print("\n================== Starting export procedure ==================\n")
 
-    if ask_model_object in ("yes", "y", "1"):
+    url = server_url + "/api/Integration/ObjectModel/Export"
+    try:
+        request = requests.get(url, headers=headers_export, verify=False)
+        response = request.json()
+    except possible_request_errors as err:
+        logging.error(f"{err}\n{request.text}")
+        sys.exit(f"Error: Couldn't export object model. Exit.\n\n{err}")
 
-        url = url_export + "/api/Integration/ObjectModel/Export"
-        try:
-            request = requests.get(url, headers=headers_export, verify=False)
-            response = request.json()
-        except possible_request_errors as err:
-            logging.error(f"{err}\n{request.text}")
-            sys.exit(f"Error: Couldn't export object model. Exit.\n\n{err}")
-
-        with open(f"{pwd}/files/model_object_export_server.json", "w", encoding="utf-8") as json_file:
-            json.dump(response, json_file, ensure_ascii=False, indent=4)
+    with open(f"{pwd}/files/model_object_export_server.json", "w", encoding="utf-8") as json_file:
+        json.dump(response, json_file, ensure_ascii=False, indent=4)
 
 
-        print("  - Get object model:                            done")
-
-    elif ask_model_object in ("n", "no", "0"):
-        pass
-    else:
-        sys.exit("No choice was made. Stop executing script!")
-    
-    
+    print("  - Get object model:                            done")
+    logging.info(f"Object model has been exported. 'model_object_export_server.json' file is ready.")    
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
@@ -230,7 +211,7 @@ def get_workflows_export():
         key = data[obj]['name']
         value = data[obj]['id']
         
-        url = f"{url_export}/api/WorkFlowNodes/{value}/children"
+        url = f"{server_url}/api/WorkFlowNodes/{value}/children"
         try:
             request = requests.get(url, headers=headers_export, verify=False)
             response = request.json()
@@ -259,7 +240,7 @@ def get_workflow_xml_export():
         workFlow_data = read_from_json(f"{pwd}/files", node)
 
         for line in workFlow_data['workFlows']:
-            url = f"{url_export}/api/Attachments/{line['attachmentId']}"
+            url = f"{server_url}/api/Attachments/{line['attachmentId']}"
             request = requests.get(url, headers=headers_export, verify=False)  
 
             with open(f"{pwd}/files/{line['originalId']}.xml", 'wb') as file:
@@ -273,7 +254,7 @@ def get_workflow_xml_export():
 def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{workFlowOriginId}/BimClasses
     '''
         This function does mapping between workFlow_id and bimClass_id. 
-        It uses list comprehension block for transformation list of values into dictionary with {'workFlow_id': 'bimClass_id'} pairs.
+        It uses list comprehension block for transformation list of objects into dictionary with {'workFlow_id': 'bimClass_id'} pairs.
     '''
 
     workFlow_id_bimClass_id_export: list = []  # temp list to store data
@@ -284,13 +265,14 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
             for line in file:
                 workflow_nodes.append(line[:-1])    # it removes the last symbol, because 'workflow_nodes.txt' always has '\n' - newline, as a last symbol
     else:
+        logging.error("No 'workflow_nodes.txt' file. Check files folder.")
         sys.exit("No workflow_nodes.txt file. Check files folder. Exit.")
 
     for node in workflow_nodes:
 
         workFlow_data = read_from_json(f"{pwd}/files", node)
         for line in workFlow_data['workFlows']:
-                url = f"{url_export}/api/WorkFlows/{line['originalId']}/BimClasses"
+                url = f"{server_url}/api/WorkFlows/{line['originalId']}/BimClasses"
                 request = requests.get(url, headers=headers_export, verify=False)
                 response = request.json()
                 with open(f"{pwd}/files/{line['id']}.json", 'w', encoding='utf-8') as file:
@@ -311,28 +293,60 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
         json.dump(workFlow_id_bimClass_id_export, file, ensure_ascii=False, indent=4)
     
     logging.info("Mapping between workflow_ID and bimClass_ID: done. 'workFlow_id_bimClass_id_export.json' file is ready.")
-    print("  - Mapping between workflow_ID and bimClass_ID: done\n")
-    print("================== Export procedure finished ==================\n")
-    
+    print("  - Mapping between workflow_ID and bimClass_ID: done")
+#------------------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------------------------------------------#
+
+
+def define_procedure():
+    answer = input("Export(1) || Import(2): ").lower()
+    if answer not in ('1', '2', 'export', 'import'):
+        logging.info("No choice was made on procedure [export or import].")
+        sys.exit("Nothing was chosen. Exit.")
+    return True if answer in ('1', 'export') else False
+
+
+def ask_about_process():
+    answer = input("Need to export processes? (Y/N): ").lower()
+    if answer not in ('y','n'):
+        logging.info("No choice was made on processes.")
+        sys.exit("Nothing was chosen. Exit.")
+    return True if answer == 'y' else False
+
+
+def ask_about_object_model():
+    answer = input("Need to export object model? (Y/N): ").lower()
+    if answer not in ('y','n'):
+        logging.info("No choice was made on object model.")
+        sys.exit("Nothing was chosen. Exit.")
+    return True if answer == 'y' else False
+
+
+def mark_begin():
+    print("\n================== BEGIN export procedure ==================\n")
+
+
+def mark_finish():
+    print("\n================== END export procedure ====================\n")
     if sys.platform == 'win32':
         os.system('pause')
 
-#------------------------------------------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------------------------------------------#
 
-define_procedure = input("Export(1) || Import(2): ").lower()
-
-if define_procedure in ('1', 'export'):    
-    create_folder_for_files_and_logs()
-    url_export = get_url_export()
-    headers_export = get_headers()
-    workflow_node = define_workFlow_node_export()
-    get_model_object_export()
-    get_workflow_nodes_export()
-    get_workflows_export()
-    get_workflow_xml_export()   
-    get_workFlowId_and_bimClassId_from_export_server()
-elif define_procedure in ('2', 'import'):
-    import import_data
-        
-else: print("Nothing was chosen. Exit.")
+if __name__ == "__main__":
+    purpose = define_procedure()
+    if purpose: # if export
+        server_url = get_server_url()
+        headers_export = get_headers()
+        mark_begin()
+        create_folder_for_files_and_logs()
+        if ask_about_object_model():
+            get_model_object_export()
+        if ask_about_process():
+            workflow_node = define_workFlow_node_export()
+            get_workflow_nodes_export()
+            get_workflows_export()
+            get_workflow_xml_export()
+            get_workFlowId_and_bimClassId_from_export_server()
+        mark_finish()
+    else:   # if import
+        import import_data

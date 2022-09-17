@@ -6,42 +6,42 @@ def alter_yml():
     
     
     yml_file = input("Enter the name of the .yml file: ")
-    yml_file += '.yml' if yml_file[-4:] != '.yml' else yml_file
+    yml_file += '.yml' if yml_file[-4:] != '.yml' else ''
     
     read_file = os.getcwd() + "\\" + yml_file
     yml_file_open_ports = yml_file[:-4] +'_open_ports.yml'    
     
     # Creating a list of .yml file in format ['first string', 'second string', etc]
     lst: list = []
-    p: tuple = ('ports:', '5000:80', '5433:5432', '8082:8082', '80:80', '5432:5432', '443:443', '8092:80', '7687:7687', '7474:7474', '8088:5500', '8086:8086', '5103:80', '5501:80', '8084:80','9000:9000','8090:80',
-                            '8089:5000', '8085:80', '5672:5672', '15672:15672', '6379:6379', '5434:5432', '8087:80', '8091:80', '7782:80', '5430:5432', '8081:80', '10030:80', '10060:80', '10000:80','10040:80', 
-                            '5436:5432', '10010:80', '5435:5432',)
+    p: tuple = ('ports:','80:5000','443:5001','8081:5000','8087:5000','8085:5000','8084:5000','8082:5000','8089:5000','5432:5432','5433:5432','8080:5000','9000:9000','5103:5000',
+                '5672:5672','15672:15672','6379:6379','5434:5432','8086:8086','5501:5000','8088:5000','7687:7687','7474:7474','5430:5432','7782:5000','8090:5000',
+                '8091:5000','8092:5000','10000:5000','10010:5000','10020:5000','10030:5000','10040:5000','10060:5000','5435:5432','5436:5432','5440:5432','5437:5432','5450:5432')
+    
     try:
-        with open(read_file, 'r', encoding='utf-8') as file:    
+        with open(read_file, 'r', encoding='utf-8') as file:
             for line in file:
                 l = line.strip()
-                # If the line is empty/just whitespaces or contain any open ports - don't add in the lst                
+                # If the line is empty/just whitespaces or contain any open ports - don't add in the lst
                 if len(l) == 0 or p[0] in l or p[1] in l or p[2] in l or p[3] in l or p[4] in l or p[5] in l or p[6] in l or p[7] in l or p[8] in l or p[9] in l or p[10] in l or p[11] in l or p[12] in l \
-                   or p[13] in l or p[14] in l or p[15] in l or p[16] in l or p[17] in l or p[18] in l or p[19] in l or p[20] in l or p[21] in l or p[22] in l or p[23] in l or p[24] in l or p[25] in l \
-                   or p[26] in l or p[27] in l or p[28] in l or p[29] in l or p[30] in l or p[31] in l or p[32] in l or p[33] in l or p[34] in l:
-                    continue                 
+                    or p[13] in l or p[14] in l or p[15] in l or p[16] in l or p[17] in l or p[18] in l or p[19] in l or p[20] in l or p[21] in l or p[22] in l or p[23] in l or p[24] in l or p[25] in l \
+                    or p[26] in l or p[27] in l or p[28] in l or p[29] in l or p[30] in l or p[31] in l or p[32] in l or p[33] in l or p[34] in l or p[35] in l or p[36] in l \
+                    or p[37] in l or p[38] in l:
+                    continue
                 else:
-                    lst.append(line)                
+                    lst.append(line)
             
     except Exception as err:
             sys.exit("Error: ", err)    
     
-    
     count = 0
     ports = 'ports:\n'
-    
     for index in range(len(lst)):
         if lst[index].rstrip() == 'services:':
             count_spaces_for_service = len(lst[index+1]) - len(lst[index+1].lstrip(' '))          
             break
     
     try:
-        count_spaces_for_service            
+        count_spaces_for_service
     except NameError as err:
         sys.exit(f"Can't find 'service:' block. Corrupted {yml_file}?! Exit.")
 

@@ -1,9 +1,8 @@
 #
-# version: 1.1
+# version: 1.3
 
 import requests
 import json
-# import export_data as ex      # Data from export_data.py 
 import xml.etree.ElementTree as ET
 import time
 import sys
@@ -13,13 +12,16 @@ from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 import logging
 import shutil
+# from export_data import ex.possible_request_errors
+import export_data as ex
+
 
 
 
 '''     GLOBAL VARIABLES    '''
 pwd = os.getcwd()
-possible_request_errors: tuple = (requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, 
-                                      requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL,)
+# ex.possible_request_errors: tuple = (requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, 
+                                    #   requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL,)
 ''''''''''''''''''''''''''''''
 
 
@@ -27,6 +29,7 @@ possible_request_errors: tuple = (requests.exceptions.MissingSchema, requests.ex
 def check_folder_with_files_and_logs():
 
     if os.path.isdir(f"{pwd}/files") == False:
+        logging.error("Folder 'files' is missing.")
         sys.exit("Folder 'files' is missing. Exit.")
     elif os.path.isdir(f"{pwd}/files/logs") == False:
         os.mkdir(f"{pwd}/files/logs")
@@ -36,48 +39,45 @@ def check_folder_with_files_and_logs():
     logging.basicConfig(filename=f"{pwd}/files/logs/import_log.txt", level=logging.DEBUG,
                         format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
 
-
-
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
 def check_for_object_model():
 
-    if os.path.isfile(f"{pwd}/files/model_object_export_server.json"):
-        return True
-    else:        
-        return False
-
+    return True if os.path.isfile(f"{pwd}/files/model_object_export_server.json") else False
 #------------------------------------------------------------------------------------------------------------------------------#
 
-def get_url_import():       
-    url_import_server: str = input("Enter import server URL: ").lower().strip()
-    if url_import_server[-1:] == '/':
-        return url_import_server[:-1]
-    else:
-        return url_import_server
 
+def check_for_process():
+
+    return True if os.path.isfile(f"{pwd}/files/workflow_nodes.txt") else False
 #------------------------------------------------------------------------------------------------------------------------------#
 
+
+def get_server_url():
+
+    server_url: str = input("Enter server URL: ").lower().strip()
+    return server_url[:-1] if server_url[-1:]=='/' else server_url
+#------------------------------------------------------------------------------------------------------------------------------#
 
 
 def get_token(username='admin', password='Qwerty12345!'):
     
     list_of_providersID: list = []
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-    url_get_providers = f'{url_import}/api/Providers'
+    url_get_providers = f'{server_url}/api/Providers'
 
     try:
         id_request = requests.get(url_get_providers, headers=headers, verify=False)
         response = id_request.json()    
-    except possible_request_errors as err:
+    except ex.possible_request_errors as err:
         logging.error(err)
         sys.exit(f"Connection error: {err}")
     
     for dict in response:
         list_of_providersID.append(dict['id'])
 
-    url_auth = f'{url_import}/api/Auth/Login'
+    url_auth = f'{server_url}/api/Auth/Login'
     confirm_username = input("Enter login(default, admin): ")
     confirm_password = input("Enter password(default, Qwerty12345!): ")
 
@@ -103,7 +103,6 @@ def get_token(username='admin', password='Qwerty12345!'):
         else:
             logging.error(f"{auth_request.status_code}\n{auth_request.text}")
 
-
     return token
 
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -114,7 +113,7 @@ def get_headers():
     headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
     headers_for_xml_import = {'accept': '*/*', 'Authorization': f"Bearer {token}"}    # specific headers without 'Content-type' for import .xml file. Otherwise request doesn't work!
 
-    return headers_import, headers_for_xml_import 
+    return headers_import, headers_for_xml_import
 
 
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -139,11 +138,11 @@ def get_workflow_nodes_import():
     ''' 
         Function to write a .json file with all the workFlow nodes on import server.                        
     '''    
-    url = url_import + "/api/WorkFlowNodes"
+    url = server_url + "/api/WorkFlowNodes"
     try:
         request = requests.get(url, headers=headers_import[0], verify=False)        
         response = request.json()
-    except possible_request_errors as err:
+    except ex.possible_request_errors as err:
         logging.error(f"{err}\n{request.text}")
         sys.exit()
     
@@ -152,10 +151,7 @@ def get_workflow_nodes_import():
 
     logging.info("Workflow nodes function is finished. 'workflow_nodes_import_server.json' file is ready.")
 
-    print("\n================== Starting import procedure ==================\n")
     print("  - Get workflow nodes:                 done")
-
-    
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
@@ -176,11 +172,11 @@ def get_model_object_import():
         Function get's model object from import server, and write's it to model_object_import_server.json file.
     '''
     
-    url = url_import + "/api/Integration/ObjectModel/Export"
+    url = server_url + "/api/Integration/ObjectModel/Export"
     try:
         request = requests.get(url, headers=headers_import[0], verify=False)
         response = request.json()    
-    except possible_request_errors as err:
+    except ex.possible_request_errors as err:
         logging.error(f"{err}\n{request.text}")
 
     with open(f"{pwd}/files/model_object_import_server.json", "w", encoding="utf-8") as json_file:
@@ -284,26 +280,23 @@ def fix_defaulValues():
 
         json.dump(data, file, ensure_ascii=False, indent=4)
 
-    logging.info("Fixing defaultValues in object model finished.")
-    print(f"      Fixed 'defaultValues': {count}")
-
-
+    logging.info(f"Fixing defaultValues in object model finished. Corrupted defaulValues: {count}")
+    return count
 #------------------------------------------------------------------------------------------------------------------------------#
-
 
 
 def post_model_object_import():
 
-    url = url_import + "/api/Integration/ObjectModel/Import"
+    url = server_url + "/api/Integration/ObjectModel/Import"
     with open(f"{pwd}/files/modified_object_model.json", "r", encoding="utf-8") as file:
         # data = file.read().replace('\n', '')   # backup line
         data = file.read()
     # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file   
     try: 
         model_odject_request = requests.post(url, data=data.encode("utf-8"),  headers=headers_import[0], verify=False)
-    except possible_request_errors as err:
+    except ex.possible_request_errors as err:
         logging.error(f"{err}")
-        sys.exit("  - Post object model:                  error. Check out the 'import_data.log' file. Exit.")
+        # sys.exit("  - Post object model:                  error. Check out the 'import_data.log' file. Exit.")
     if model_odject_request.status_code != 200:
         logging.error(f"\n{model_odject_request.text}")
         print("  - Post object model:                  error ", model_odject_request.status_code)
@@ -319,13 +312,11 @@ def post_model_object_import():
 def get_BimClassID_of_current_process_import(data):  # /api/WorkFlows/{workFlowOriginId}/BimClasses
     ''' Function returns BimClass_id of provided workFlow proccess. '''
     
-    url = f"{url_import}/api/WorkFlows/{data}/BimClasses"
+    url = f"{server_url}/api/WorkFlows/{data}/BimClasses"
     request = requests.get(url, headers=headers_import[0], verify=False)
     response = request.json()
     for object in range(len(response)):
         return response[object]['id']
-    
-
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
@@ -333,7 +324,7 @@ def create_workflow_import():
     '''
     
     '''
-    url = url_import + "/api/WorkFlows"  # POST request to create workFlow
+    url = server_url + "/api/WorkFlows"  # POST request to create workFlow
     workflow_nodes: list = []
     if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
         with open(f"{pwd}/files/workflow_nodes.txt", 'r', encoding='utf-8') as file:
@@ -347,7 +338,7 @@ def create_workflow_import():
 
     
     '''  BEGIN of POST request to create workFlows  '''
-    print("  - Creating processes: ")
+    print("  - Created processes: ")
     for node in range(len(workflow_nodes)):
         workFlow_data = read_from_json(f"{pwd}/files", workflow_nodes[node])
         
@@ -363,7 +354,7 @@ def create_workflow_import():
             try:
                 post_request = requests.post(url, data=json_post_payload, headers=headers_import[0], verify=False)     # verify=False to eliminate SSL check which causes Error
                 post_response = post_request.json()
-            except possible_request_errors as err:
+            except ex.possible_request_errors as err:
                 logging.error(f"{err}\n{post_request.text}")
 
             bimClass_id_import = get_BimClassID_of_current_process_import(post_response['originalId'])    # reference workFlow_original_ID on import server
@@ -387,7 +378,7 @@ def create_workflow_import():
             try:
                 requests.put(url + "/" + post_response['originalId'], data=changed_put_payload, headers=headers_import[0], verify=False)   # /api/WorkFlows/{workFlowOriginalId}  
                 time.sleep(0.25)
-            except possible_request_errors as err:
+            except ex.possible_request_errors as err:
                 logging.error(err)
                 logging.debug("Workflow name: " + workflow["name"])
                 sys.exit("  - Put workflow got error. Check out the 'import_data.log' file. Exit.")
@@ -401,17 +392,13 @@ def create_workflow_import():
 
             try:           
                 post_xml_request = requests.post(f"{url}/{post_response['originalId']}/Diagram?contentType=file", headers=headers_import[1], data=payload, files=files, verify=False)
-            except possible_request_errors as err:
+            except ex.possible_request_errors as err:
                 logging.error(f"{err}\n{post_xml_request.text}")
 
-            print("      " + post_response['name'] + ":" + " " + ('ok' if post_xml_request.status_code == 200 else "error"))
+            print("      " + post_response['name'] + " " + ('' if post_xml_request.status_code == 200 else "  --->  error"))
             time.sleep(0.25)
             '''  END OF XML POST REQUEST  '''
-        
-
-
 #------------------------------------------------------------------------------------------------------------------------------#
-
 
 
 def get_workflows_import():
@@ -422,37 +409,42 @@ def get_workflows_import():
         key = data[obj]['name']
         value = data[obj]['id']
 
-        url = f"{url_import}/api/WorkFlowNodes/{value}/children"
+        url = f"{server_url}/api/WorkFlowNodes/{value}/children"
         try:
             request = requests.get(url, headers=headers_import[0], verify=False)
             response = request.json()
-        except possible_request_errors as err:
+        except ex.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
         with open(f"{pwd}/files/{key}_workflows_import_server.json", 'w', encoding='utf-8') as json_file:
             json.dump(response, json_file, ensure_ascii=False, indent=4)
 
     logging.info(f"Get workflows for {key} is finished. '{key}_workflows_import_server.json' file is ready.")
-    print("  - Get workflows:                      done\n")
-    print("================== Import procedure finished ==================\n\n")
-    
+    print("  - Get workflows:                      done")
 
+
+def mark_begin():
+    print("\n================== BEGIN import procedure ==================\n")
+
+
+def mark_finish():
+    print("\n================== END import procedure ====================\n")
     if sys.platform == 'win32':
         os.system('pause')
 
-#------------------------------------------------------------------------------------------------------------------------------#
-
-
 
 if __name__ == "import_data":           # current module will be executed only if it is imported
-    check_folder_with_files_and_logs() 
-    url_import = get_url_import()
-    headers_import = get_headers()   
-    get_workflow_nodes_import()
+    check_folder_with_files_and_logs()
+    server_url = get_server_url()
+    headers_import = get_headers()
+    mark_begin()
+    if check_for_process():
+        get_workflow_nodes_import()
+        create_workflow_import()
+        get_workflows_import()
     if check_for_object_model():
         get_model_object_import()
         prepare_model_object_file_for_import()
         fix_defaulValues()
-        post_model_object_import()   
-    create_workflow_import()
-    get_workflows_import()
+        post_model_object_import()
+    mark_finish()
