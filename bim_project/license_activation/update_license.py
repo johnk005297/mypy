@@ -1,5 +1,5 @@
 #
-# version 1.1
+# version 1.2
 '''
     Script for work with license on the server. Activation, deactivation, check licenses, get serverID.
     version for windows OS with colors.
@@ -17,6 +17,8 @@ import random
 import string
 from colorama import init, Fore
 init(autoreset=True)
+from datetime import date
+from datetime import datetime
 
 
 
@@ -48,7 +50,8 @@ def get_license_token():
     if os.path.isfile(f"{pwd}/license.lic"):
         with open("license.lic", "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
             license_token = file.read().split()[0].strip("\"")            
-        return license_token    
+        return license_token
+
     else:
         license_token = input("\nThere is no 'license.lic' file in the folder.\nEnter license token manually or 'q' for exit: ")
         if license_token == 'q':
@@ -75,7 +78,7 @@ def creds(username='admin', password='Qwerty12345!'):
                     "username": username,
                     "password": password
                   }
-    
+
     return data_for_connect
     
 
@@ -96,7 +99,6 @@ def get_token(username, password):
         list_of_providersID.append(dict['id'])
 
     url_auth = f"{data_for_connect['url']}/api/Auth/Login"
-
     for id in list_of_providersID:
         payload = {
                     "username": username,
@@ -104,7 +106,6 @@ def get_token(username, password):
                     "providerId": id
                 }
         data = json.dumps(payload)
-
         auth_request = requests.post(url_auth, data=data, headers=headers, verify=False)
         time.sleep(0.15)
         response = auth_request.json()       
@@ -119,8 +120,8 @@ def get_token(username, password):
 
 
 def get_current_user():
-
     ''' Getting info about current user. Response will provide a dictionary of values. '''
+
     url_get_current_user = f"{data_for_connect['url']}/api/Users/current-user"
     headers_get_currect_user = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
 
@@ -136,12 +137,12 @@ def get_current_user():
     return response
 
 
-
-def check_user_privileges():
-    
-    '''  Users aren't authorized to create or edit their own system roles. Thus, need to check for {'name': 'Licenses', 'operation': 'Write'} privileges in system role.
-         If user doesn't have it, create another user, so we could be able to grant all privileges in system role for our current user.         
+def check_user_privileges():    
     '''
+        Users aren't authorized to create or edit their own system roles. Thus, need to check for {'name': 'Licenses', 'operation': 'Write'} privileges in system role.
+        If user doesn't have it, create another user, so we could be able to grant all privileges in system role for our current user.         
+    '''
+
     url_users = f"{data_for_connect['url']}/api/Users"
 
     def check_user():        
@@ -183,9 +184,9 @@ def check_user_privileges():
         return False           
 
     
-    if not check_user():
-        
+    if not check_user():        
         ''' Create a random name for a new user '''
+
         def create_name_for_new_user():            
             user_name: str = ''.join(random.choice(string.ascii_letters) for x in range(15))
             return user_name
@@ -202,7 +203,7 @@ def check_user_privileges():
                                 "password": "Qwerty12345!",
                                 "phoneNumber": "+71234567890",
                                 "email": "the_matrix@exists.neo",
-                                "birthday": "2000-08-16T07:15:07.731Z",
+                                "birthday": "1964-09-02T07:15:07.731Z",
                                 "position": "The_one"
                 }
         data = json.dumps(payload_create_user)
@@ -222,7 +223,6 @@ def check_user_privileges():
                 if count == 10:
                     logging.error("No USERs were created! Error.")
                     break
-
                 altered_data = data.replace(created_user_name, create_name_for_new_user())
                 request = requests.post(url_users, headers=headers_create_user_and_system_role, data=altered_data, verify=False)                
 
@@ -314,8 +314,6 @@ def check_user_privileges():
         return True
 
 
-
-
 def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
 
     def remove_role_from_current_user():
@@ -341,7 +339,6 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
             logging.error(f"{err}\n{request.text}")
 
 
-
     def remove_role_from_created_user():
         ''' Remove created role from created user. '''
 
@@ -364,7 +361,6 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
             logging.error(f"{err}\n{request.text}")
 
 
-
     ''' Delete created system role and created user '''
     def delete_system_role():
 
@@ -379,6 +375,7 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
                 logging.error(request.text)
         except possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
+
 
     def delete_user():
 
@@ -423,27 +420,29 @@ def show_licenses():
 
     count = 1
     for license in response:
+        if license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] < str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
+            continue
         print(f"\nLicense {count}:")
         count+=1
         for key, value in license.items():
             # Ternary operator. Made it just for exercise. It's hard to read, so we should aviod to use such constructions. 
-            # Commented "if-elif-else" block below provides the same result, but way more readable.
+            # # Commented "if-elif-else" block below provides the same result, but way more readable.
             print(f" - {key}: {Fore.GREEN + str(value)}" if value == True and key != 'activeUsers'
                         else (f" - {key}: {Fore.RED + str(value)}" if value == False else f" - {key}: {value}"))
 
-            # if v == True:
-            #     print(f" - {k}: {Fore.GREEN + str(v)}")
-            # elif v == False:
-            #     print(f" - {k}: {Fore.RED + str(v)}")
+            # if value == True:
+            #     print(f" - {key}: {Fore.GREEN + str(value)}")
+            # elif value == False:
+            #     print(f" - {key}: {Fore.RED + str(value)}")
             # else:
-            #     print(f" - {k}: {v}")
+            #     print(f" - {key}: {value}")
 
     print("=====================================================================================\n")
     return response
 
 
-'''   Get server ID   '''
 def get_serverID():
+    ''' Get server ID '''
 
     url = f"{data_for_connect['url']}/api/License"
     headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
@@ -464,10 +463,9 @@ def get_serverID():
     print(f"\nServer ID: {response[0]['serverId']}")
 
 
-
-'''   Get the list of licenses   '''
 def get_license():
-    
+    ''' Get the list of licenses '''
+
     url = f"{data_for_connect['url']}/api/License"
     headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
     payload = {
@@ -480,7 +478,6 @@ def get_license():
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
-
     return response    
 
 
@@ -491,8 +488,8 @@ def delete_license():
 
     # Check if there are any active licenses
     count = 0
-    for dct in get_license():
-        if dct.get('isActive'):
+    for license in get_license():
+        if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
             count += 1
     
     if count == 0:
@@ -505,8 +502,8 @@ def delete_license():
             if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                 url = f"{data_for_connect['url']}/api/License/{license['licenseID']}" 
                 request = requests.delete(url, headers=headers, verify=False)
-                if request.status_code in (200, 201, 204,): # and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-                    print(Fore.GREEN + f"====== License '{license['licenseID']}' has been deactivated successfully! ======")
+                if request.status_code in (200, 201, 204,):
+                    print(Fore.GREEN + f"====== License '{license['licenseID']}' has been deactivated! ======")
                 else:
                     logging.error('%s', request.text)
                     print(Fore.RED + f"====== License '{license['licenseID']}' has not been deactivated! ======")
@@ -524,8 +521,7 @@ def post_license():
     response = request.json()
     time.sleep(0.15)
     if request.status_code in (200, 201, 204,):
-        print(Fore.GREEN + f"====== New license has been posted successfully! ======")                
-
+        print(Fore.GREEN + f"====== New license has been posted successfully! =========")
     else:
         logging.error('%s', request.text)
         print(Fore.RED + f"====== New license has not been posted! ======")
