@@ -1,5 +1,5 @@
 #
-
+# version 1.1
 '''
     Script for work with license on the server. Activation, deactivation, check licenses, get serverID.
     version for windows OS with colors.
@@ -29,7 +29,8 @@ possible_request_errors: tuple = (  requests.exceptions.MissingSchema, requests.
 
 
 def define_purpose():
-    
+    ''' Define what the user would like to do '''
+
     purpose = input("\nCheck licenses(1) || Get server ID(2) || Apply license(3) || Delete active license(4) || Exit(q)\nSelect one of the options: ").lower()
     if purpose in ("1", "check",):
         return 'check'
@@ -42,42 +43,33 @@ def define_purpose():
 
 
 def get_license_token():
-
-    # Check if the *.lic file is in place
-    if os.path.isfile(f"{pwd}/license.lic"):
-
-        with open("license.lic", "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
-            license_token = file.read().split()[0].strip("\"")
-            
-        return license_token
+    ''' Check if the *.lic file is in place '''
     
+    if os.path.isfile(f"{pwd}/license.lic"):
+        with open("license.lic", "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
+            license_token = file.read().split()[0].strip("\"")            
+        return license_token    
     else:
-        # logging.error("No license.lic file in the folder. Exit.")
-        # sys.exit("No license.lic file in the folder. Exit.")
         license_token = input("\nThere is no 'license.lic' file in the folder.\nEnter license token manually or 'q' for exit: ")
         if license_token == 'q':
             logging.info("No license token has been provided by the user.")
             sys.exit()
         return license_token
 
+
 def creds(username='admin', password='Qwerty12345!'):
 
     logging.basicConfig(filename=f"{pwd}/license_log.txt", level=logging.DEBUG,
                         format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
 
-
     url = input("\nEnter URL: ").lower()
-    if url[-1:] == '/':
-        url = url[:-1]
-    else: pass
+    url = url[:-1] if url[-1:] == '/' else url
 
     confirm_name = input("Enter login(default, admin): ")
     confirm_pass = input("Enter password(default, Qwerty12345!): ")
-    if confirm_name:
-        username=confirm_name
-    if confirm_pass:
-        password=confirm_pass
-    
+    username=confirm_name if confirm_name else username
+    password=confirm_pass if confirm_pass else password
+
     data_for_connect: dict = {
                     "url": url,
                     "username": username,
@@ -87,21 +79,18 @@ def creds(username='admin', password='Qwerty12345!'):
     return data_for_connect
     
 
-
-'''  Get bearer token from the server   '''
 def get_token(username, password):
+    '''  Get bearer token from the server   '''
 
     list_of_providersID: list = []
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-    url_get_providers = f"{data_for_connect['url']}/api/Providers"
-    
+    url_get_providers = f"{data_for_connect['url']}/api/Providers"    
     try:
         id_request = requests.get(url_get_providers, headers=headers, verify=False)
         response = id_request.json()
     except possible_request_errors as err:
         logging.error(f"{err}")
-        sys.exit(f"Connection error: {err}")
-    
+        sys.exit(f"Connection error: {err}")    
     
     for dict in response:
         list_of_providersID.append(dict['id'])
@@ -127,7 +116,6 @@ def get_token(username, password):
             logging.error(f"ProviderID: {id}, response: {auth_request.status_code} [{data_for_connect['username']}/{data_for_connect['password']}]\n{auth_request.text}")
     
     return token
-
 
 
 def get_current_user():
@@ -431,7 +419,7 @@ def show_licenses():
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
-    print("========================= Current licenses ==========================================\n")
+    print("========================= Current licenses ==========================================")
 
     count = 1
     for license in response:
@@ -519,8 +507,6 @@ def delete_license():
                 request = requests.delete(url, headers=headers, verify=False)
                 if request.status_code in (200, 201, 204,): # and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                     print(Fore.GREEN + f"====== License '{license['licenseID']}' has been deactivated successfully! ======")
-                # elif request.status_code in (200, 201, 204,) and license['licenseID'] == '00000000-0000-0000-0000-000000000000':                    
-                #     logging.info("Attempt to deactivate '00000000-0000-0000-0000-000000000000' license.")
                 else:
                     logging.error('%s', request.text)
                     print(Fore.RED + f"====== License '{license['licenseID']}' has not been deactivated! ======")
@@ -537,10 +523,6 @@ def post_license():
     request = requests.post(url, headers=headers, data=data, verify=False)
     response = request.json()
     time.sleep(0.15)
-    # for license in get_license():
-    #     if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-    #         licenseID = license['licenseID']
-    #         break
     if request.status_code in (200, 201, 204,):
         print(Fore.GREEN + f"====== New license has been posted successfully! ======")                
 
@@ -551,15 +533,15 @@ def post_license():
     return response['licenseID']
 
 
-
 def put_license():
     
     put_license_result = False
     headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
 
+    # all the active licenses will be deactivated, if user forgot to do it, and if there are any active
     for license in get_license():
-        if license['isActive'] == True:
-            delete_license()    # all the active licenses will be deactivated, if user forgot to do it, and if there are any active.
+        if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+            delete_license()
     
     licenseID = post_license()   # function will post provided license, and return posted licenses ID
     url = f"{data_for_connect['url']}/api/License/active/{licenseID}"
@@ -577,10 +559,9 @@ def put_license():
 
 
 
-
 if __name__ == "__main__":
     data_for_connect = creds()
-    token = get_token(username=data_for_connect['username'], password=data_for_connect['password'])   
+    token = get_token(data_for_connect['username'], data_for_connect['password'])   
     check_privelege = check_user_privileges()    
     while True:
         goal = define_purpose()
