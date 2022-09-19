@@ -493,12 +493,11 @@ def get_license():
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
 
-    return response
-    
+    return response    
 
 
-'''   Delete active license, if there is one.   '''
 def delete_license():
+    '''   Delete active license, if there is one.   '''
 
     headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
 
@@ -511,14 +510,17 @@ def delete_license():
     if count == 0:
         print("No active licenses have been found in the system.")
     else:
+        ''' There is a default license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
+            After new license will be applied, default lic will disappear automatically.
+        '''
         for license in get_license():
-            if license['isActive'] == True:
+            if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                 url = f"{data_for_connect['url']}/api/License/{license['licenseID']}" 
                 request = requests.delete(url, headers=headers, verify=False)
-                if request.status_code in (200, 201, 204,) and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+                if request.status_code in (200, 201, 204,): # and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                     print(Fore.GREEN + f"====== License '{license['licenseID']}' has been deactivated successfully! ======")
-                elif request.status_code in (200, 201, 204,) and license['licenseID'] == '00000000-0000-0000-0000-000000000000':                    
-                    logging.info("Attempt to deactivate '00000000-0000-0000-0000-000000000000' license.")
+                # elif request.status_code in (200, 201, 204,) and license['licenseID'] == '00000000-0000-0000-0000-000000000000':                    
+                #     logging.info("Attempt to deactivate '00000000-0000-0000-0000-000000000000' license.")
                 else:
                     logging.error('%s', request.text)
                     print(Fore.RED + f"====== License '{license['licenseID']}' has not been deactivated! ======")
@@ -528,27 +530,25 @@ def delete_license():
 
 def post_license():
 
-    post_license_result = False
     headers = {'accept': 'text/plane', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
     url = f"{data_for_connect['url']}/api/License/"
     
     data = json.dumps(get_license_token())
-
     request = requests.post(url, headers=headers, data=data, verify=False)
+    response = request.json()
     time.sleep(0.15)
     # for license in get_license():
     #     if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
     #         licenseID = license['licenseID']
     #         break
     if request.status_code in (200, 201, 204,):
-        print(Fore.GREEN + f"====== License has been posted successfully! ======")                
-        post_license_result = True
+        print(Fore.GREEN + f"====== New license has been posted successfully! ======")                
 
     else:
         logging.error('%s', request.text)
-        print(Fore.RED + f"====== License has not been posted! ======")
+        print(Fore.RED + f"====== New license has not been posted! ======")
     
-    return post_license_result
+    return response['licenseID']
 
 
 
@@ -558,33 +558,33 @@ def put_license():
     headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
 
     for license in get_license():
-        if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-            licenseID = license['licenseID']
-            break
-
+        if license['isActive'] == True:
+            delete_license()    # all the active licenses will be deactivated, if user forgot to do it, and if there are any active.
+    
+    licenseID = post_license()   # function will post provided license, and return posted licenses ID
     url = f"{data_for_connect['url']}/api/License/active/{licenseID}"
     payload = {}
     request = requests.put(url, headers=headers, data=payload, verify=False)
 
     if request.status_code in (200, 201, 204,):
         put_license_result = True
-        print(Fore.GREEN + f"====== License has been activated successfully! ======")
+        print(Fore.GREEN + f"====== New license has been activated successfully! ======")
     else:
         logging.error('%s', request.text)
-        print(Fore.RED + f"====== License has not been activated! ======")
+        print(Fore.RED + f"====== New license has not been activated! ======")
             
     return put_license_result
 
-    
+
+
 
 if __name__ == "__main__":
     data_for_connect = creds()
     token = get_token(username=data_for_connect['username'], password=data_for_connect['password'])   
-    check_privelege = check_user_privileges()
+    check_privelege = check_user_privileges()    
     while True:
         goal = define_purpose()
-        if goal == 'update':
-            post_license()
+        if goal == 'update':      
             put_license()
         elif goal == 'check':
             show_licenses()
