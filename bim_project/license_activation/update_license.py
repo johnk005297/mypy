@@ -1,5 +1,5 @@
 #
-# version 1.2
+# version 1.4
 '''
     Script for work with license on the server. Activation, deactivation, check licenses, get serverID.
     version for windows OS with colors.
@@ -46,10 +46,10 @@ def define_purpose():
 
 def get_license_token():
     ''' Check if the *.lic file is in place '''
-    
+
     if os.path.isfile(f"{pwd}/license.lic"):
         with open("license.lic", "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
-            license_token = file.read().split()[0].strip("\"")            
+            license_token = file.read().split()[0].strip("\"")
         return license_token
 
     else:
@@ -73,32 +73,35 @@ def creds(username='admin', password='Qwerty12345!'):
     username=confirm_name if confirm_name else username
     password=confirm_pass if confirm_pass else password
 
+    ''' block to check both ports: 80 and 443 '''    
+    for x in range(2):
+        try:
+            headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
+            check_url_request = requests.get(url=url+'/api/Providers', headers=headers, verify=False)
+            if check_url_request.status_code == 200:
+                break
+
+        except possible_request_errors as err:
+            logging.error(f"Connection error via '{url[:url.index(':')]}':\n{err}.")
+            url = url[:4] + url[5:] if url[4] == 's' else url[:4] + url[5:]
+            continue
+    response = check_url_request.json()
+    list_of_providersID: list = [dct['id'] for dct in response]     # This list with id's will be provided to get_token() function. It needs to receive a token.
     data_for_connect: dict = {
                     "url": url,
                     "username": username,
                     "password": password
                   }
 
-    return data_for_connect
+    return data_for_connect, list_of_providersID
     
 
 def get_token(username, password):
     '''  Get bearer token from the server   '''
 
-    list_of_providersID: list = []
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-    url_get_providers = f"{data_for_connect['url']}/api/Providers"    
-    try:
-        id_request = requests.get(url_get_providers, headers=headers, verify=False)
-        response = id_request.json()
-    except possible_request_errors as err:
-        logging.error(f"{err}")
-        sys.exit(f"Connection error: {err}")    
-    
-    for dict in response:
-        list_of_providersID.append(dict['id'])
-
     url_auth = f"{data_for_connect['url']}/api/Auth/Login"
+
     for id in list_of_providersID:
         payload = {
                     "username": username,
@@ -418,12 +421,18 @@ def show_licenses():
     response = request.json()
     print("========================= Current licenses ==========================================")
 
-    count = 1
+    count = 0
     for license in response:
+        count+=1
+        print(f"\nLicense {count}:\n")
+                
         if license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] < str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
             continue
-        print(f"\nLicense {count}:")
-        count+=1
+        elif license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] >= str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):        
+            print(f" - System license from deploy")
+            print(f" - validation period: {license['until'][:19]}")
+            continue
+
         for key, value in license.items():
             # Ternary operator. Made it just for exercise. It's hard to read, so we should aviod to use such constructions. 
             # # Commented "if-elif-else" block below provides the same result, but way more readable.
@@ -525,7 +534,7 @@ def post_license():
     else:
         logging.error('%s', request.text)
         print(Fore.RED + f"====== New license has not been posted! ======")
-    
+
     return response['licenseID']
 
 
@@ -550,13 +559,13 @@ def put_license():
     else:
         logging.error('%s', request.text)
         print(Fore.RED + f"====== New license has not been activated! ======")
-            
+
     return put_license_result
 
 
 
 if __name__ == "__main__":
-    data_for_connect = creds()
+    data_for_connect, list_of_providersID = creds()
     token = get_token(data_for_connect['username'], data_for_connect['password'])   
     check_privelege = check_user_privileges()    
     while True:
