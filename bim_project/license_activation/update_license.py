@@ -161,7 +161,7 @@ def check_user_privileges():
             return True         # Need to add this 'return' because BIM versions below 99 don't allow to make '/api/Users' calls if the license isn't valid.
                                 # Therefore, we have to skip license privileges check.
         response = request.json()
-        
+
         for x in range(len(response)):
             if data_for_connect['username'] == response[x].get('userName'):
                 for role in response[x]['systemRoles']:
@@ -424,18 +424,18 @@ def show_licenses():
     count = 0
     for license in response:
         count+=1
-        print(f"\nLicense {count}:\n")
-                
+        print(f"\nLicense {count}:")
+
         if license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] < str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
+            print(f" - System license from deploy\n - validation period: expired")
             continue
-        elif license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] >= str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):        
-            print(f" - System license from deploy")
-            print(f" - validation period: {license['until'][:19]}")
+        if license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] >= str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):        
+            print(f" - System license from deploy\n - validation period: {license['until'][:19]}")
             continue
 
         for key, value in license.items():
             # Ternary operator. Made it just for exercise. It's hard to read, so we should aviod to use such constructions. 
-            # # Commented "if-elif-else" block below provides the same result, but way more readable.
+            # Commented "if-elif-else" block below provides the same result, but way more readable.
             print(f" - {key}: {Fore.GREEN + str(value)}" if value == True and key != 'activeUsers'
                         else (f" - {key}: {Fore.RED + str(value)}" if value == False else f" - {key}: {value}"))
 
