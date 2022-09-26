@@ -1,5 +1,5 @@
 #
-# version 1.4
+# version 1.5
 '''
     Script for work with license on the server. Activation, deactivation, check licenses, get serverID.
     version for windows OS with colors.
@@ -51,7 +51,6 @@ def get_license_token():
         with open("license.lic", "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
             license_token = file.read().split()[0].strip("\"")
         return license_token
-
     else:
         license_token = input("\nThere is no 'license.lic' file in the folder.\nEnter license token manually or 'q' for exit: ")
         if license_token == 'q':
@@ -61,6 +60,10 @@ def get_license_token():
 
 
 def creds(username='admin', password='Qwerty12345!'):
+    ''' 
+        1. Function that prompt for a login and pasword. Also checks both ports for connection, if one of them isn't available. 
+        2. Returns list of providers id's which needs to get the token, and uses in get_token() func.
+    '''
 
     logging.basicConfig(filename=f"{pwd}/license_log.txt", level=logging.DEBUG,
                         format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
@@ -77,13 +80,13 @@ def creds(username='admin', password='Qwerty12345!'):
     for x in range(2):
         try:
             headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-            check_url_request = requests.get(url=url+'/api/Providers', headers=headers, verify=False)
+            check_url_request = requests.get(url=url+'/api/Providers', headers=headers, verify=False, timeout=2)
             if check_url_request.status_code == 200:
                 break
 
         except possible_request_errors as err:
             logging.error(f"Connection error via '{url[:url.index(':')]}':\n{err}.")
-            url = url[:4] + url[5:] if url[4] == 's' else url[:4] + url[5:]
+            url = url[:4] + url[5:] if url[4] == 's' else url[:4] + 's' + url[4:]
             continue
     response = check_url_request.json()
     list_of_providersID: list = [dct['id'] for dct in response]     # This list with id's will be provided to get_token() function. It needs to receive a token.
@@ -161,10 +164,10 @@ def check_user_privileges():
             return True         # Need to add this 'return' because BIM versions below 99 don't allow to make '/api/Users' calls if the license isn't valid.
                                 # Therefore, we have to skip license privileges check.
         response = request.json()
-
+        # response is a nested array, list with dictionaries inside.
         for x in range(len(response)):
             if data_for_connect['username'] == response[x].get('userName'):
-                for role in response[x]['systemRoles']:
+                for role in response[x]['systemRoles']: # systemRoles is a list with dictionaries    # role is a dictionary: {'id': '679c9933-5937-4eee-b47f-1ebaec5f946b', 'name': 'admin'}
                     user_system_roles_id.append(role.get('id'))
 
                     ''' We're taking userName and fill our dictionary with it. In format {'userName': [systemRoles_id1, systemRoles_id2, ...}
@@ -262,7 +265,7 @@ def check_user_privileges():
             logging.error(f"{err}\n{request.text}")
 
 
-        ''' Add new system role to a new user '''        
+        ''' Add new system role to a new user '''
         url_add_system_role_to_user = f"{data_for_connect['url']}/api/Users/AddSystemRole"
         payload_add_system_role = {
                                     "systemRoleId": created_system_role_id,
@@ -420,18 +423,18 @@ def show_licenses():
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
     print("========================= Current licenses ==========================================")
-
+    
     count = 0
     for license in response:
         count+=1
         print(f"\nLicense {count}:")
-
-        if license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] < str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
-            print(f" - System license from deploy\n - validation period: expired")
-            continue
-        if license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] >= str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):        
-            print(f" - System license from deploy\n - validation period: {license['until'][:19]}")
-            continue
+        if license['licenseID'] == '00000000-0000-0000-0000-000000000000':
+            if license['until'] < str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
+                print(f" - System license from deploy\n - validation period: expired")
+                continue
+            else:
+                print(f" - System license from deploy\n - validation period: {license['until'][:19]}")
+                continue
 
         for key, value in license.items():
             # Ternary operator. Made it just for exercise. It's hard to read, so we should aviod to use such constructions. 
@@ -439,7 +442,7 @@ def show_licenses():
             print(f" - {key}: {Fore.GREEN + str(value)}" if value == True and key != 'activeUsers'
                         else (f" - {key}: {Fore.RED + str(value)}" if value == False else f" - {key}: {value}"))
 
-            # if value == True:
+            # if value == True and key != 'activeUsers':
             #     print(f" - {key}: {Fore.GREEN + str(value)}")
             # elif value == False:
             #     print(f" - {key}: {Fore.RED + str(value)}")
@@ -500,11 +503,12 @@ def delete_license():
     for license in get_license():
         if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
             count += 1
-    
+
     if count == 0:
         print("No active licenses have been found in the system.")
     else:
-        ''' There is a default license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
+        ''' 
+            There is a default license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
             After new license will be applied, default lic will disappear automatically.
         '''
         for license in get_license():
@@ -518,7 +522,6 @@ def delete_license():
                     print(Fore.RED + f"====== License '{license['licenseID']}' has not been deactivated! ======")
                     print(f"Error with deactivation: {request.status_code}")
             
-
 
 def post_license():
 
@@ -565,6 +568,7 @@ def put_license():
 
 
 if __name__ == "__main__":
+    print("v1.5")
     data_for_connect, list_of_providersID = creds()
     token = get_token(data_for_connect['username'], data_for_connect['password'])   
     check_privelege = check_user_privileges()    

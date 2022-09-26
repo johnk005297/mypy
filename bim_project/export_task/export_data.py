@@ -1,5 +1,5 @@
 #
-# version: 1.3
+# version: 1.4
 
 import requests
 import json
@@ -21,37 +21,35 @@ possible_request_errors: tuple = (requests.exceptions.MissingSchema, requests.ex
 
 ''''''''''''''''''''''''''''''
 
+#------------------------------------------------------------------------------------------------------------------------------#
 
-def get_server_url():
+
+def get_server_url_and_token(username='admin', password='Qwerty12345!'):
 
     server_url: str = input("Enter server URL: ").lower().strip()
-    return server_url[:-1] if server_url[-1:]=='/' else server_url
+    server_url[:-1] if server_url[-1:]=='/' else server_url
 
-
-def get_token(username='admin', password='Qwerty12345!'):
-    
-    list_of_providersID: list = []
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-    url_get_providers = f'{server_url}/api/Providers'
 
-    try:
-        id_request = requests.get(url_get_providers, headers=headers, verify=False)
-        response = id_request.json()
-    except possible_request_errors as err:
-        logging.error(err)
-        sys.exit(f"Connection error: {err}")
+    ''' block to check both ports: 80 and 443 '''    
+    for x in range(2):
+        try:
+            check_url_request = requests.get(url=server_url+'/api/Providers', headers=headers, verify=False, timeout=2)
+            if check_url_request.status_code == 200:
+                break
+        except possible_request_errors as err:
+            logging.error(f"Connection error via '{server_url[:server_url.index(':')]}':\n{err}.")
+            server_url = server_url[:4] + server_url[5:] if server_url[4] == 's' else server_url[:4] + 's' + server_url[4:]
+            continue
+    response = check_url_request.json()
 
-    for dict in response:
-        list_of_providersID.append(dict['id'])
+    list_of_providersID: list = [dct['id'] for dct in response]
 
     url_auth = f'{server_url}/api/Auth/Login'
     confirm_username = input("Enter login(default, admin): ")
     confirm_password = input("Enter password(default, Qwerty12345!): ")
-
-    if confirm_username:
-        username=confirm_username
-    if confirm_password:
-        password=confirm_password
+    username=confirm_username if confirm_username else username
+    password=confirm_password if confirm_password else password
 
     for id in list_of_providersID:
         payload = {
@@ -70,19 +68,19 @@ def get_token(username='admin', password='Qwerty12345!'):
         else:
             logging.error(f"{auth_request.status_code}\n{auth_request.text}")
 
-    return token
+    return server_url, token
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
-def get_headers():
-    token = get_token()
+def get_server_url_and_headers():
+    server_url, token = get_server_url_and_token()
     headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-    return headers
+    return server_url, headers
 
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
-def create_folder_for_files_and_logs():
+def create_folder_for_files_and_logs_export():
 
     # if 'files' folder from previous export procedure exists, it will be deleted to create a new one.
     if os.path.isdir('files'):
@@ -105,9 +103,17 @@ def create_folder_for_files_and_logs():
                         format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
 
 
+def create_folder_for_files_and_logs_import():
+    if os.path.isdir(f"{pwd}/files") == False:
+        logging.error("Folder 'files' is missing.")
+        sys.exit("Folder 'files' is missing. Exit.")
+    elif os.path.isdir(f"{pwd}/files/logs") == False:
+        os.mkdir(f"{pwd}/files/logs")
+    else:
+        pass
 
-#------------------------------------------------------------------------------------------------------------------------------#
-
+    logging.basicConfig(filename=f"{pwd}/files/logs/import_log.txt", level=logging.DEBUG,
+                        format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
 
 
 def define_workFlow_node_export():
@@ -139,24 +145,17 @@ def define_workFlow_node_export():
     if '3' in workflow_node_selected or 'active' in workflow_node_selected:
         with open(f"{pwd}/files/workflow_nodes.txt", 'a', encoding='utf-8') as file:
             file.write("Active_workflows_export_server.json\n")
-        
-
-
-#------------------------------------------------------------------------------------------------------------------------------#
-
 
 
 def read_from_json(path_to_file,file_name):
     ''' Read from JSON files, and provide dict in return. Need to pass two arguments in str format: path and file name. '''
 
-    if file_name[-5:] == '.json':
-        pass
-    else: file_name += '.json'
+    file_name + '.json' if file_name[-5:] != '.json' else file_name
+    
     with open(f'{path_to_file}/{file_name}', 'r', encoding='utf-8') as file:
         data_from_json = json.load(file)
     
     return data_from_json
-
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
@@ -222,7 +221,6 @@ def get_workflows_export():
             json.dump(response, json_file, ensure_ascii=False, indent=4)
     
     logging.info(f"'{key}_workflows_export_server.json' file is ready.")
-    print("  - Get workflows:                               done")
 
 
 #------------------------------------------------------------------------------------------------------------------------------#
@@ -231,10 +229,9 @@ def get_workflows_export():
 def get_workflow_xml_export():
     ''' XML for every workflow will be exported from the 'workFlow_nodes.txt' file. '''
     
-    workflow_nodes: list = []    
     with open(f"{pwd}/files/workflow_nodes.txt", 'r', encoding='utf-8') as file:
-        for line in file:
-            workflow_nodes.append(line[:-1])
+        workflow_nodes: list = [line[:-1] for line in file]     # append all workflow nodes from the workflow_nodes.txt
+                                                                # line[:-1] removes the last symbol, because 'workflow_nodes.txt' always has '\n' - newline, as a last symbol
     
     for node in workflow_nodes:
         workFlow_data = read_from_json(f"{pwd}/files", node)
@@ -246,7 +243,6 @@ def get_workflow_xml_export():
             with open(f"{pwd}/files/{line['originalId']}.xml", 'wb') as file:
                 file.write(request.content)
 
-    print("  - Get workflows XML:                           done")
 
 #------------------------------------------------------------------------------------------------------------------------------
 
@@ -259,22 +255,23 @@ def get_workFlowId_and_bimClassId_from_export_server():   # /api/WorkFlows/{work
 
     workFlow_id_bimClass_id_export: list = []  # temp list to store data
 
-    workflow_nodes: list = []   # append all workflow nodes from the workflow_nodes.txt
     if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
         with open(f"{pwd}/files/workflow_nodes.txt", 'r', encoding='utf-8') as file:
-            for line in file:
-                workflow_nodes.append(line[:-1])    # it removes the last symbol, because 'workflow_nodes.txt' always has '\n' - newline, as a last symbol
+            workflow_nodes: list = [line[:-1] for line in file]     # append all workflow nodes from the workflow_nodes.txt
+                                                                    # line[:-1] removes the last symbol, because 'workflow_nodes.txt' always has '\n' - newline, as a last symbol
     else:
         logging.error("No 'workflow_nodes.txt' file. Check files folder.")
         sys.exit("No workflow_nodes.txt file. Check files folder. Exit.")
 
+    print(f"  - Get workflows:")
     for node in workflow_nodes:
-
         workFlow_data = read_from_json(f"{pwd}/files", node)
         for line in workFlow_data['workFlows']:
+                print(f"     {line['name']}")   # display the name of the process in the output
                 url = f"{server_url}/api/WorkFlows/{line['originalId']}/BimClasses"
                 request = requests.get(url, headers=headers_export, verify=False)
                 response = request.json()
+                
                 with open(f"{pwd}/files/{line['id']}.json", 'w', encoding='utf-8') as file:
                     json.dump(response, file, ensure_ascii=False, indent=4)
 
@@ -333,12 +330,12 @@ def mark_finish():
 
 
 if __name__ == "__main__":
+    print('v1.4\n')
     purpose = define_procedure()
     if purpose: # if export
-        server_url = get_server_url()
-        headers_export = get_headers()
+        create_folder_for_files_and_logs_export()
+        server_url, headers_export = get_server_url_and_headers()
         mark_begin()
-        create_folder_for_files_and_logs()
         if ask_about_object_model():
             get_model_object_export()
         if ask_about_process():
