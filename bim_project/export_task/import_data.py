@@ -234,11 +234,10 @@ def create_workflow_import():
     
     '''
     url = server_url + "/api/WorkFlows"  # POST request to create workFlow
-    workflow_nodes: list = []
     if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
         with open(f"{pwd}/files/workflow_nodes.txt", 'r', encoding='utf-8') as file:
-            for line in file:
-                workflow_nodes.append(line[:-1])    # it removes the last symbol, because 'workflow_nodes.txt' always has '\n' - newline, as a last symbol
+            # remove the last symbol, because define_workFlow_node_export() function adds '\n'(newline) to each line in 'workflow_nodes.txt' file.
+            workflow_nodes: list = [line[:-1] if line[-1]=='\n' else line for line in file]
     else:
         print("No workflow_nodes.txt file. Check 'files' folder. Exit.")
         sys.exit()
@@ -340,7 +339,6 @@ def mark_finish():
     print("\n================== END import procedure ====================\n")
     if sys.platform == 'win32':
         os.system('pause')
-
 
 
 if __name__ == "import_data": # current module will be executed only if it is imported
