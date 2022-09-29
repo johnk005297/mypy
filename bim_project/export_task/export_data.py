@@ -24,7 +24,7 @@ possible_request_errors: tuple = (requests.exceptions.MissingSchema, requests.ex
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
-def get_server_url_and_token(username='admin', password='Qwerty12345!'):
+def get_server_url_and_token():
 
     server_url: str = input("Enter server URL: ").lower().strip()
     server_url[:-1] if server_url[-1:]=='/' else server_url
@@ -48,8 +48,8 @@ def get_server_url_and_token(username='admin', password='Qwerty12345!'):
     url_auth = f'{server_url}/api/Auth/Login'
     confirm_username = input("Enter login(default, admin): ")
     confirm_password = input("Enter password(default, Qwerty12345!): ")
-    username=confirm_username if confirm_username else username
-    password=confirm_password if confirm_password else password
+    username=confirm_username if confirm_username else 'admin'
+    password=confirm_password if confirm_password else 'Qwerty12345!'
 
     for id in list_of_providersID:
         payload = {

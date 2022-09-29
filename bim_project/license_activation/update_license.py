@@ -59,7 +59,7 @@ def get_license_token():
         return license_token
 
 
-def creds(username='admin', password='Qwerty12345!'):
+def creds():
     ''' 
         1. Function that prompt for a login and pasword. Also checks both ports for connection, if one of them isn't available. 
         2. Returns list of providers id's which needs to get the token, and uses in get_token() func.
@@ -73,8 +73,8 @@ def creds(username='admin', password='Qwerty12345!'):
 
     confirm_name = input("Enter login(default, admin): ")
     confirm_pass = input("Enter password(default, Qwerty12345!): ")
-    username=confirm_name if confirm_name else username
-    password=confirm_pass if confirm_pass else password
+    username=confirm_name if confirm_name else 'admin'
+    password=confirm_pass if confirm_pass else 'Qwerty12345!'
 
     ''' block to check both ports: 80 and 443 '''    
     for x in range(2):
