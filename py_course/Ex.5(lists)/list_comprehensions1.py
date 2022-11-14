@@ -33,8 +33,8 @@ lst: list = [  [a[x-1]] + [int(a[x])]
 ######################### 3 ############################
 matrix = [[1,2],[11,12,13,14],[21,22,23,24]]
 bb = [ x
-        for row in matrix
-            for x in row
+        for row in matrix   # runs FIRST
+            for x in row    # runs SECOND
     ]
 # Output: [1, 2, 11, 12, 13, 14, 21, 22, 23, 24]
 #####################################################
