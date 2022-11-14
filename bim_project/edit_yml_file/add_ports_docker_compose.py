@@ -2,6 +2,8 @@
 import os
 import sys
 
+
+## Need to check git sync
 def alter_yml():
     
     
@@ -15,8 +17,8 @@ def alter_yml():
         sys.exit()
 
     read_file = os.getcwd() + "\\" + yml_file
-    yml_file_open_ports = yml_file[:-4] +'_open_ports.yml'    
-    
+    yml_file_open_ports = yml_file[:-4] +'_open_ports.yml'
+
     # Creating a list of .yml file in format ['first string', 'second string', etc]
     lst: list = []
     p: tuple = ('ports:','80:5000','443:5001','8081:5000','8087:5000','8085:5000','8084:5000','8082:5000','8089:5000','5432:5432','5433:5432','8080:5000','9000:9000','5103:5000',
@@ -35,7 +37,7 @@ def alter_yml():
                     continue
                 else:
                     lst.append(line)
-            
+
     except Exception as err:
             sys.exit("Error: ", err)    
     
@@ -43,7 +45,7 @@ def alter_yml():
     ports = 'ports:\n'
     for index in range(len(lst)):
         if lst[index].rstrip() == 'services:':
-            count_spaces_for_service = len(lst[index+1]) - len(lst[index+1].lstrip(' '))          
+            count_spaces_for_service = len(lst[index+1]) - len(lst[index+1].lstrip(' '))
             break
     
     try:

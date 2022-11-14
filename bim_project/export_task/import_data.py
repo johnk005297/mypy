@@ -117,7 +117,7 @@ def prepare_model_object_file_for_import():
                         "WORK_CLASS", "Файл", "Даты работы", "Коммерческая тайна", "Планируемое начало", "Планируемое окончание", "Фактическое начало", "Фактическое окончание")
     
     
-    
+
     insert_data: dict = {}    # data that needs to be added to model_objects_export.json file
     replace_data: dict = {}   # data that needs to be removed from model_objects_export.json file
 
