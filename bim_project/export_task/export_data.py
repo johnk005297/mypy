@@ -27,7 +27,8 @@ possible_request_errors: tuple = (requests.exceptions.MissingSchema, requests.ex
 def get_server_url_and_token():
 
     server_url: str = input("Enter server URL: ").lower().strip()
-    server_url[:-1] if server_url[-1:]=='/' else server_url
+    server_url = server_url[:-1] if server_url[-1:]=='/' else server_url
+    
 
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
 

@@ -160,7 +160,7 @@ def check_user_privileges():
         headers_get_users = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
         request = requests.get(url_users, headers=headers_get_users, verify=False)
         if request.status_code != 200:
-            logging.info(f"BIM version before 99-release! Can't check user priviliges for work with licenses.Will skip check.\n{request.text}\n")
+            logging.info(f"Get /api/Users method isn't working. Can't check user priviliges for work with licenses.Will skip check.\n{request.text}\n")
             return True         # Need to add this 'return' because BIM versions below 99 don't allow to make '/api/Users' calls if the license isn't valid.
                                 # Therefore, we have to skip license privileges check.
         response = request.json()
@@ -568,7 +568,7 @@ def put_license():
 
 
 if __name__ == "__main__":
-    print("v1.5")
+    print("v1.6\nnote: applicable with BIM version 101 and higher.")
     data_for_connect, list_of_providersID = creds()
     token = get_token(data_for_connect['username'], data_for_connect['password'])   
     check_privelege = check_user_privileges()    
@@ -589,4 +589,3 @@ if __name__ == "__main__":
         sys.exit()                                              # Thus, we need to remove newely created user and role after we done.
     else:
         sys.exit()
-
