@@ -3,7 +3,11 @@ import os
 import sys
 
 
+<<<<<<< HEAD
 
+=======
+# github bug
+>>>>>>> d72f308d781f51fba7158735a12d2e6dec48cabf
 def alter_yml():
     
     
