@@ -12,6 +12,7 @@ bim_project/.env
 export_task/.env
 export_task/*.json
 ../py_course/Ex.6/.env
+/py_course/test.py
 export_proj_venv
 export_task_backup
 .env
