@@ -3,7 +3,7 @@ import os
 import sys
 
 
-## Need to check git sync
+
 def alter_yml():
     
     
