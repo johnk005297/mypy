@@ -2,14 +2,7 @@
 import os
 import sys
 
-<<<<<<< HEAD
 
-
-
-
-=======
-## checking out
->>>>>>> beta
 def alter_yml():
     
     
