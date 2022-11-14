@@ -1,7 +1,7 @@
 ##
 import os
 import sys
-## just checking github sync
+
 def alter_yml():
     
     
