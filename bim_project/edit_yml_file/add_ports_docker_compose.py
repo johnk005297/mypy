@@ -7,7 +7,13 @@ def alter_yml():
     
     yml_file = input("Enter the name of the .yml file: ")
     yml_file += '.yml' if yml_file[-4:] != '.yml' else ''
-    
+    # check if the file exists
+    if os.path.isfile(f"{os.getcwd()}/{yml_file}"):
+        pass
+    else:
+        print("No .yml file has been found. Exit!")
+        sys.exit()
+
     read_file = os.getcwd() + "\\" + yml_file
     yml_file_open_ports = yml_file[:-4] +'_open_ports.yml'    
     
