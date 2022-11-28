@@ -509,38 +509,33 @@ def get_serverID():
 
 
 def delete_license():
-    '''   Delete active license, if there is one.   '''
+    '''   Delete active license, if there is one.   '''    
 
-    if check_active_lic:
+    headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
 
-        headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
+    # Check if there are any active licenses
+    count = 0
+    for license in show_licenses():
+        if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+            count += 1
 
-        # Check if there are any active licenses
-        count = 0
-        for license in show_licenses():
-            if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-                count += 1
-
-        if count == 0:
-            print("No active licenses have been found in the system.")
-        else:
-            ''' 
-                There is a default license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
-                After new license will be applied, default lic will disappear automatically.
-            '''
-            for license in show_licenses():
-                if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-                    url = f"{data_for_connect['url']}/api/License/{license['licenseID']}" 
-                    request = requests.delete(url, headers=headers, verify=False)
-                    if request.status_code in (200, 201, 204,):
-                        print(Fore.GREEN + f"====== License '{license['licenseID']}' has been deactivated! ======")
-                    else:
-                        logging.error('%s', request.text)
-                        print(Fore.RED + f"====== License '{license['licenseID']}' has not been deactivated! ======")
-                        print(f"Error with deactivation: {request.status_code}")
-
+    if count == 0:
+        print("No active licenses have been found in the system.")
     else:
-        print("\n--- No active license on the server! Need to activate! ---")
+        ''' 
+            There is a default license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
+            After new license will be applied, default lic will disappear automatically.
+        '''
+        for license in show_licenses():
+            if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+                url = f"{data_for_connect['url']}/api/License/{license['licenseID']}" 
+                request = requests.delete(url, headers=headers, verify=False)
+                if request.status_code in (200, 201, 204,):
+                    print(Fore.GREEN + f"====== License '{license['licenseID']}' has been deactivated! ======")
+                else:
+                    logging.error('%s', request.text)
+                    print(Fore.RED + f"====== License '{license['licenseID']}' has not been deactivated! ======")
+                    print(f"Error with deactivation: {request.status_code}")
             
 
 def post_license():
@@ -591,8 +586,8 @@ if __name__ == "__main__":
     print("v1.6\nnote: applicable with BIM version 101 and higher.")
     data_for_connect, list_of_providersID = creds()
     token = get_token(data_for_connect['username'], data_for_connect['password'])
-    # check_active_lic = check_active_license()    
-    if check_active_license():
+    check_active_lic = check_active_license()    
+    if check_active_lic:
         check_privelege = check_user_privileges()
     else:
         print("Warning: There is no active license. Can't check users' permissions!")
@@ -610,7 +605,7 @@ if __name__ == "__main__":
         else:            
             break
     
-    if check_active_license():
+    if check_active_lic:
         if check_privelege != True:                                 # If user initially had no privileges to work with licenses, new user will be created, and check_user_privileges() never returns True.
             delete_created_system_role_and_user(check_privelege)    # It will always return {created_userName_userId_systemRoleId} dictionary instead.
             sys.exit()                                              # Thus, we need to remove newely created user and role after we done.
