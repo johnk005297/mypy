@@ -38,17 +38,18 @@ def alter_yml():
                     lst.append(line)
 
     except Exception as err:
-            sys.exit("Error: ", err)    
+            sys.exit("Error: ", err)
+
     
     count = 0
     ports = 'ports:\n'
     for index in range(len(lst)):
         if lst[index].rstrip() == 'services:':
-            count_spaces_for_service = len(lst[index+1]) - len(lst[index+1].lstrip(' '))
+            count_spaces_next_line_for_service = len(lst[index+1]) - len(lst[index+1].lstrip(' ')) # calculate amount of whitespaces to the right of the next string
             break
     
     try:
-        count_spaces_for_service
+        count_spaces_next_line_for_service
     except NameError as err:
         sys.exit(f"Can't find 'service:' block. Corrupted {yml_file}?! Exit.")
 
@@ -58,117 +59,117 @@ def alter_yml():
         count_spaces_next_line = len(lst[index+1]) - len(lst[index+1].lstrip(' '))    # calculate amount of whitespaces to the right of the next string
 
         if "environment:" in current_str and count == 0:          # count spaces in environment block only once
-            count_spaces_in_environ_block = len(lst[index+1]) - len(lst[index+1].lstrip(' '))
+            count_spaces_next_line_for_environ_block = len(lst[index+1]) - len(lst[index+1].lstrip(' '))
             count += 1        
         
         if "SSL_CERTIFICATE:" in current_str:                             
-            lst[index] = (' ')*count_spaces_in_environ_block + "SSL_CERTIFICATE: '/etc/nginx/ssl/bimeister.io.crt'\n"             
+            lst[index] = (' ')*count_spaces_next_line_for_environ_block + "SSL_CERTIFICATE: '/etc/nginx/ssl/bimeister.io.crt'\n"             
         elif "SSL_CERTIFICATE_KEY:" in current_str:            
-            lst[index] = (' ')*count_spaces_in_environ_block + "SSL_CERTIFICATE_KEY: '/etc/nginx/ssl/bimeister.io.key'\n"
+            lst[index] = (' ')*count_spaces_next_line_for_environ_block + "SSL_CERTIFICATE_KEY: '/etc/nginx/ssl/bimeister.io.key'\n"
 
-        if " "*count_spaces_for_service + "auth:" == current_str:
+        if " "*count_spaces_next_line_for_service + "auth:" == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8080:5000\"\n")
 
-        elif " "*count_spaces_for_service +  "authdb:" == current_str:
+        elif " "*count_spaces_next_line_for_service +  "authdb:" == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5433:5432\"\n")
 
-        elif " "*count_spaces_for_service +  "bimeister_frontend:" == current_str:                  
+        elif " "*count_spaces_next_line_for_service +  "bimeister_frontend:" == current_str:                  
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:80:5000\"\n" + " "*count_spaces_next_line + "- \"0.0.0.0:443:5001\"\n")  
         
-        elif " "*count_spaces_for_service +  "collisions:" == current_str:
+        elif " "*count_spaces_next_line_for_service +  "collisions:" == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8092:5000\"\n")
         
-        elif " "*count_spaces_for_service +  "db:" == current_str:
+        elif " "*count_spaces_next_line_for_service +  "db:" == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5432:5432\"\n")
         
-        elif " "*count_spaces_for_service +  "e57service:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "e57service:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8082:5000\"\n")
 
-        elif " "*count_spaces_for_service +  "graphdb:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "graphdb:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:7687:7687\"\n" + " "*count_spaces_next_line + "- \"0.0.0.0:7474:7474\"\n")
 
-        elif " "*count_spaces_for_service +  "ifc-geometry-converter:"  == current_str:                        
+        elif " "*count_spaces_next_line_for_service +  "ifc-geometry-converter:"  == current_str:                        
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8088:5000\"\n")
 
-        elif " "*count_spaces_for_service +  "influxdb:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "influxdb:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8086:8086\"\n")
 
-        elif " "*count_spaces_for_service +  "ldapwebapi:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "ldapwebapi:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5103:5000\"\n")
 
-        elif " "*count_spaces_for_service +  "license-service:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "license-service:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5501:5000\"\n")
         
-        elif " "*count_spaces_for_service +  "mailservice:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "mailservice:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8084:5000\"\n")
         
-        elif " "*count_spaces_for_service +  "minio:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "minio:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:9000:9000\"\n")
 
-        elif " "*count_spaces_for_service +  "notification:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "notification:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8090:5000\"\n")
 
-        elif " "*count_spaces_for_service +  "pdfservice:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "pdfservice:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8089:5000\"\n")
 
-        elif " "*count_spaces_for_service +  "pointcloudapi:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "pointcloudapi:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8085:5000\"\n")
 
-        elif " "*count_spaces_for_service +  "rabbitmq:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "rabbitmq:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5672:5672\"\n" + " "*count_spaces_next_line + "- \"0.0.0.0:15672:15672\"\n")
 
-        elif " "*count_spaces_for_service +  "redis:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "redis:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:6379:6379\"\n")
 
-        elif " "*count_spaces_for_service +  "spatialdb:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "spatialdb:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5434:5432\"\n")
         
-        elif " "*count_spaces_for_service +  "spatialwebapi:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "spatialwebapi:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8087:5000\"\n")
 
-        elif " "*count_spaces_for_service +  "tasksworker:"  == current_str:                   
+        elif " "*count_spaces_next_line_for_service +  "tasksworker:"  == current_str:                   
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8091:5000\"\n")
 
-        elif " "*count_spaces_for_service +  "treesapi:"  == current_str:                   
+        elif " "*count_spaces_next_line_for_service +  "treesapi:"  == current_str:                   
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:7782:5000\"\n") 
 
-        elif " "*count_spaces_for_service +  "treesdb:"  == current_str:                   
+        elif " "*count_spaces_next_line_for_service +  "treesdb:"  == current_str:                   
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5430:5432\"\n")
 
-        elif " "*count_spaces_for_service +  "webapi:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "webapi:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8081:5000\"\n")
         
-        elif " "*count_spaces_for_service +  "similar:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "similar:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10030:5000\"\n")
         
-        elif " "*count_spaces_for_service +  "collision_calculator:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "collision_calculator:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10060:5000\"\n")
         
-        elif " "*count_spaces_for_service +  "spatium_api:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "spatium_api:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10000:5000\"\n")
         
-        elif " "*count_spaces_for_service +  "ifc_converter:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "ifc_converter:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10040:5000\"\n")
         
-        elif " "*count_spaces_for_service +  "filter:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "filter:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10020:5000\"\n")
 
-        elif " "*count_spaces_for_service +  "filterdb:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "filterdb:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5436:5432\"\n")
         
-        elif " "*count_spaces_for_service +  "parser:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "parser:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10010:5000\"\n")
         
-        elif " "*count_spaces_for_service +  "spatiumdb:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "spatiumdb:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5435:5432\"\n")
         
-        elif " "*count_spaces_for_service +  "potential_failure_messages_db:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "potential_failure_messages_db:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5440:5432\"\n")
         
-        elif " "*count_spaces_for_service +  "hangfiredb:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "hangfiredb:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5437:5432\"\n")
         
-        elif " "*count_spaces_for_service +  "timescaledb:"  == current_str:
+        elif " "*count_spaces_next_line_for_service +  "timescaledb:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:5450:5432\"\n")
         
         else:

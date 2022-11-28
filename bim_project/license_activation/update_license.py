@@ -143,15 +143,15 @@ def get_current_user():
     return response
 
 
-def check_user_privileges():    
+def check_user_privileges():
     '''
         Users aren't authorized to create or edit their own system roles. Thus, need to check for {'name': 'Licenses', 'operation': 'Write'} privileges in system role.
-        If user doesn't have it, create another user, so we could be able to grant all privileges in system role for our current user.         
+        If user doesn't have it, create another user, so we could be able to grant all privileges in system role for our current user.  
     '''
 
     url_users = f"{data_for_connect['url']}/api/Users"
 
-    def check_user():        
+    def check_user():
         '''   Check if the user has needed permissions in his system roles already. # {'name': 'Licenses', 'operation': 'Write'}   '''
 
         # user_names_and_system_roles_id: dict = {}    # dictionary to collect user's permissions.
@@ -160,8 +160,8 @@ def check_user_privileges():
         headers_get_users = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
         request = requests.get(url_users, headers=headers_get_users, verify=False)
         if request.status_code != 200:
-            logging.info(f"Get /api/Users method isn't working. Can't check user priviliges for work with licenses.Will skip check.\n{request.text}\n")
-            return True         # Need to add this 'return' because BIM versions below 99 don't allow to make '/api/Users' calls if the license isn't valid.
+            logging.info(f"Get /api/Users method isn't working. Can't check user priviliges for work with licenses. Need to skip check.\n{request.text}\n")
+            return False        # Need to add this 'return' because BIM versions below 99 don't allow to make '/api/Users' calls if the license isn't valid.
                                 # Therefore, we have to skip license privileges check.
         response = request.json()
         # response is a nested array, list with dictionaries inside.
@@ -182,10 +182,8 @@ def check_user_privileges():
                 response = request.json()
             except possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
-
-            for dct in response.get('permissions', False):
-                if dct.get('name') == 'Licenses' and dct.get('operation') == 'Write':
-                    return True
+            
+            return True if 'LicensesWrite' in response['permissions'] else False
 
         return False           
 
@@ -237,19 +235,28 @@ def check_user_privileges():
         payload_create_system_role = {
                             "name": created_user_name,
                             "permissions": [
-                                                {'name': 'CreateProject', 'operation': 'Write'},
-                                                {'name': 'ObjectModels', 'operation': 'Write'},
-                                                {'name': 'Roles', 'operation': 'Write'},
-                                                {'name': 'Security', 'operation': 'Write'},
-                                                {'name': 'Licenses', 'operation': 'Write'},
-                                                {'name': 'Processes', 'operation': 'Write'},
-                                                {'name': 'Ldap', 'operation': 'Write'},
-                                                {'name': 'Groups', 'operation': 'Write'},
-                                                {'name': 'MailServer', 'operation': 'Write'},
-                                                {'name': 'Users', 'operation': 'Write'},
-                                                {'name': 'Logs', 'operation': 'Read'}
+                                            'MailServerRead',
+                                            'MailServerWrite',
+                                            'ObjectModelsRead',
+                                            'ObjectModelsWrite',
+                                            'SecurityRead',
+                                            'SecurityWrite',
+                                            'ProcessesRead',
+                                            'ProcessesWrite',
+                                            'GroupsRead',
+                                            'GroupsWrite',
+                                            'LicensesRead',
+                                            'LicensesWrite',
+                                            'UsersRead',
+                                            'UsersWrite',
+                                            'RolesWrite',
+                                            'RolesRead',
+                                            'LdapRead',
+                                            'LdapWrite',
+                                            'OrgStructureWrite',
+                                            'CreateProject'
                                             ]
-                            }
+                                    }
 
         url_create_system_role = f"{data_for_connect['url']}/api/SystemRoles"
         data = json.dumps(payload_create_system_role)

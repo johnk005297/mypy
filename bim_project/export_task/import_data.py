@@ -132,16 +132,16 @@ def prepare_model_object_file_for_import():
                             # insert_data[key][k] = v
                             # insert_data[key]['id'] = obj['id']
                             insert_data[key][v] = obj['id']
-                                         
+
         elif key in big_fish and isinstance(data_obj_model_import[key], dict):
             insert_data.setdefault(key, {data_obj_model_import[key]['name']: data_obj_model_import[key]['id']})
             
-    
+
     # Collecting data from 'model_object_export_server.json' file to replace it with data from 'model_object_import_server.json'
     for key in data_obj_model_export.keys():
         if key in big_fish and isinstance(data_obj_model_export[key], list):
             replace_data.setdefault(key, {})
-            for obj in data_obj_model_export[key]:                         
+            for obj in data_obj_model_export[key]:
                 if isinstance(obj, dict):
                     for k,v in obj.items():
                         if v in small_fish:
@@ -171,7 +171,6 @@ def prepare_model_object_file_for_import():
     print("  - Preparation object model file:      done")
 
 
-#------------------------------------------------------------------------------------------------------------------------------#
 def fix_defaulValues():
     '''
         The function checks for 'defaultValues' keys in 'bimProperties'. If all values in the list are null, it will be replaced with an empty list [].
