@@ -119,10 +119,10 @@ def create_folder_for_files_and_logs_import():
 
 def define_workFlow_node_export():
     
-    '''    Function creates a file 'workflow_nodes.txt' with chosen workflow nodes in it.   '''    
-    
+    '''   Function creates a file 'workflow_nodes.txt' with chosen workflow nodes in it.   '''
+
     with open(f"{pwd}/files/workflow_nodes.txt", mode='w',encoding='utf-8'): pass
-    
+
     # Check if the 'workflow_nodes.txt' was created
     if os.path.isfile(f"{pwd}/files/workflow_nodes.txt"):
         pass
@@ -130,12 +130,12 @@ def define_workFlow_node_export():
         logging.error("File 'workflow_nodes.txt' hasn't been created. Exit.")
         sys.exit("File 'workflow_nodes.txt' hasn't been created. Exit.")
 
-    workflow_node_selected: list = input("Chose nodes to export workflows from. Use whitespaces in-between. \nDraft(1) || Archived(2) || Active(3)\n\nType 'q' for exit: ").lower().split()   
+    workflow_node_selected: list = input("Chose nodes to export workflows from. Use whitespaces in-between. \nDraft(1) || Archived(2) || Active(3)\n\nType 'q' for exit: ").lower().split()
 
     if 'q' in workflow_node_selected:
         sys.exit("\nStop export process!")
 
-    if '1' in workflow_node_selected or 'draft' in workflow_node_selected:        
+    if '1' in workflow_node_selected or 'draft' in workflow_node_selected:
         with open(f"{pwd}/files/workflow_nodes.txt", 'a', encoding='utf-8') as file:
             file.write("Draft_workflows_export_server.json\n")
 
@@ -152,16 +152,15 @@ def read_from_json(path_to_file,file_name):
     ''' Read from JSON files, and provide dict in return. Need to pass two arguments in str format: path and file name. '''
 
     file_name + '.json' if file_name[-5:] != '.json' else file_name
-    
+
     with open(f'{path_to_file}/{file_name}', 'r', encoding='utf-8') as file:
         data_from_json = json.load(file)
-    
+
     return data_from_json
-#------------------------------------------------------------------------------------------------------------------------------#
 
 
-def get_workflow_nodes_export():       
-    ''' Getting Draft, Archived and Active nodes Id.  '''   
+def get_workflow_nodes_export():
+    ''' Getting Draft, Archived and Active nodes Id.  '''
 
     url = server_url + "/api/WorkFlowNodes"
     try:
@@ -179,7 +178,7 @@ def get_workflow_nodes_export():
 #------------------------------------------------------------------------------------------------------------------------------#
 
 
-def get_model_object_export():    
+def get_object_model_export():    
     ''' 
         Function gets model object from export server, and writes it in model_object_export_server.json file.
         /api/Integration/ObjectModel/Export  - api service
@@ -338,7 +337,7 @@ if __name__ == "__main__":
         server_url, headers_export = get_server_url_and_headers()
         mark_begin()
         if ask_about_object_model():
-            get_model_object_export()
+            get_object_model_export()
         if ask_about_process():
             workflow_node = define_workFlow_node_export()
             get_workflow_nodes_export()

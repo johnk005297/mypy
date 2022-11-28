@@ -143,27 +143,53 @@ def get_current_user():
     return response
 
 
-def check_user_privileges():    
+def check_active_license():
+    ''' Get the list of licenses '''
+
+    url = f"{data_for_connect['url']}/api/License"
+    headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
+    payload = {
+                "username": data_for_connect['username'],
+                "password": data_for_connect['password']
+              }
+    
+    request = requests.get(url, data=payload, headers=headers, verify=False)
+    request.raise_for_status()
+
+    # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
+    response = request.json()
+    for license in response:
+        if license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] > str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
+            return True
+
+    for license in response:          
+        if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+            return True
+    
+    print("\n--- No active license on the server! Need to activate! ---")
+    return False
+
+def check_user_privileges():
     '''
         Users aren't authorized to create or edit their own system roles. Thus, need to check for {'name': 'Licenses', 'operation': 'Write'} privileges in system role.
-        If user doesn't have it, create another user, so we could be able to grant all privileges in system role for our current user.         
+        If user doesn't have it, create another user, so we could be able to grant all privileges in system role for our current user.  
     '''
 
+    
     url_users = f"{data_for_connect['url']}/api/Users"
 
-    def check_user():        
+    def check_user():
         '''   Check if the user has needed permissions in his system roles already. # {'name': 'Licenses', 'operation': 'Write'}   '''
 
         # user_names_and_system_roles_id: dict = {}    # dictionary to collect user's permissions.
         user_system_roles_id: list = []         # list to collect user's permissions
 
         headers_get_users = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
-        request = requests.get(url_users, headers=headers_get_users, verify=False)
-        if request.status_code != 200:
-            logging.info(f"Get /api/Users method isn't working. Can't check user priviliges for work with licenses.Will skip check.\n{request.text}\n")
-            return True         # Need to add this 'return' because BIM versions below 99 don't allow to make '/api/Users' calls if the license isn't valid.
-                                # Therefore, we have to skip license privileges check.
+        request = requests.get(url_users, headers=headers_get_users, verify=False)                                
         response = request.json()
+        if request.status_code != 200:
+            logging.error(f"/api/Users: {request.text}")
+        
         # response is a nested array, list with dictionaries inside.
         for x in range(len(response)):
             if data_for_connect['username'] == response[x].get('userName'):
@@ -182,12 +208,11 @@ def check_user_privileges():
                 response = request.json()
             except possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
+            
+            if 'LicensesWrite' in response['permissions']:
+                return True
 
-            for dct in response.get('permissions', False):
-                if dct.get('name') == 'Licenses' and dct.get('operation') == 'Write':
-                    return True
-
-        return False           
+        return False          
 
     
     if not check_user():        
@@ -237,19 +262,28 @@ def check_user_privileges():
         payload_create_system_role = {
                             "name": created_user_name,
                             "permissions": [
-                                                {'name': 'CreateProject', 'operation': 'Write'},
-                                                {'name': 'ObjectModels', 'operation': 'Write'},
-                                                {'name': 'Roles', 'operation': 'Write'},
-                                                {'name': 'Security', 'operation': 'Write'},
-                                                {'name': 'Licenses', 'operation': 'Write'},
-                                                {'name': 'Processes', 'operation': 'Write'},
-                                                {'name': 'Ldap', 'operation': 'Write'},
-                                                {'name': 'Groups', 'operation': 'Write'},
-                                                {'name': 'MailServer', 'operation': 'Write'},
-                                                {'name': 'Users', 'operation': 'Write'},
-                                                {'name': 'Logs', 'operation': 'Read'}
+                                            'MailServerRead',
+                                            'MailServerWrite',
+                                            'ObjectModelsRead',
+                                            'ObjectModelsWrite',
+                                            'SecurityRead',
+                                            'SecurityWrite',
+                                            'ProcessesRead',
+                                            'ProcessesWrite',
+                                            'GroupsRead',
+                                            'GroupsWrite',
+                                            'LicensesRead',
+                                            'LicensesWrite',
+                                            'UsersRead',
+                                            'UsersWrite',
+                                            'RolesWrite',
+                                            'RolesRead',
+                                            'LdapRead',
+                                            'LdapWrite',
+                                            'OrgStructureWrite',
+                                            'CreateProject'
                                             ]
-                            }
+                                    }
 
         url_create_system_role = f"{data_for_connect['url']}/api/SystemRoles"
         data = json.dumps(payload_create_system_role)
@@ -471,36 +505,17 @@ def get_serverID():
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
-
-    print(f"\nServer ID: {response[0]['serverId']}")
-
-
-def get_license():
-    ''' Get the list of licenses '''
-
-    url = f"{data_for_connect['url']}/api/License"
-    headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
-    payload = {
-                "username": data_for_connect['username'],
-                "password": data_for_connect['password']
-              }
-    
-    request = requests.get(url, data=payload, headers=headers, verify=False)
-    request.raise_for_status()
-
-    # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
-    response = request.json()
-    return response    
+    print(f"\nServer ID: {response[-1]['serverId']}") 
 
 
 def delete_license():
-    '''   Delete active license, if there is one.   '''
+    '''   Delete active license, if there is one.   '''    
 
     headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
 
     # Check if there are any active licenses
     count = 0
-    for license in get_license():
+    for license in show_licenses():
         if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
             count += 1
 
@@ -511,7 +526,7 @@ def delete_license():
             There is a default license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
             After new license will be applied, default lic will disappear automatically.
         '''
-        for license in get_license():
+        for license in show_licenses():
             if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                 url = f"{data_for_connect['url']}/api/License/{license['licenseID']}" 
                 request = requests.delete(url, headers=headers, verify=False)
@@ -547,7 +562,7 @@ def put_license():
     headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
 
     # all the active licenses will be deactivated, if user forgot to do it, and if there are any active
-    for license in get_license():
+    for license in show_licenses():
         if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
             delete_license()
     
@@ -570,11 +585,16 @@ def put_license():
 if __name__ == "__main__":
     print("v1.6\nnote: applicable with BIM version 101 and higher.")
     data_for_connect, list_of_providersID = creds()
-    token = get_token(data_for_connect['username'], data_for_connect['password'])   
-    check_privelege = check_user_privileges()    
+    token = get_token(data_for_connect['username'], data_for_connect['password'])
+    check_active_lic = check_active_license()    
+    if check_active_lic:
+        check_privelege = check_user_privileges()
+    else:
+        print("Warning: There is no active license. Can't check users' permissions!")
+    
     while True:
         goal = define_purpose()
-        if goal == 'update':      
+        if goal == 'update':
             put_license()
         elif goal == 'check':
             show_licenses()
@@ -584,8 +604,10 @@ if __name__ == "__main__":
             get_serverID()                
         else:            
             break
-    if check_privelege != True:                                 # If user initially had no privileges to work with licenses, new user will be created, and check_user_privileges() never returns True.
-        delete_created_system_role_and_user(check_privelege)    # It will always return {created_userName_userId_systemRoleId} dictionary instead.
-        sys.exit()                                              # Thus, we need to remove newely created user and role after we done.
+    
+    if check_active_lic:
+        if check_privelege != True:                                 # If user initially had no privileges to work with licenses, new user will be created, and check_user_privileges() never returns True.
+            delete_created_system_role_and_user(check_privelege)    # It will always return {created_userName_userId_systemRoleId} dictionary instead.
+            sys.exit()                                              # Thus, we need to remove newely created user and role after we done.
     else:
         sys.exit()
