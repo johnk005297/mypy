@@ -138,7 +138,7 @@ def alter_yml():
 
         elif " "*count_spaces_next_line_for_service +  "webapi:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:8081:5000\"\n")
-        
+            
         elif " "*count_spaces_next_line_for_service +  "similar:"  == current_str:
             lst.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + "- \"0.0.0.0:10030:5000\"\n")
         
