@@ -1,5 +1,6 @@
 #
-# version 1.5
+# 
+version = '1.7'
 '''
     Script for work with license on the server. Activation, deactivation, check licenses, get serverID.
     version for windows OS with colors.
@@ -68,6 +69,7 @@ def creds():
     logging.basicConfig(filename=f"{pwd}/license_log.txt", level=logging.DEBUG,
                         format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
 
+    headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
     url = input("\nEnter URL: ").lower()
     url = url[:-1] if url[-1:] == '/' else url
 
@@ -76,19 +78,24 @@ def creds():
     username=confirm_name if confirm_name else 'admin'
     password=confirm_pass if confirm_pass else 'Qwerty12345!'
 
-    ''' block to check both ports: 80 and 443 '''    
+    ''' block to check both ports: 80 and 443 '''  # added fix if url is set with redirect to another source
     for x in range(2):
-        try:
-            headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-            check_url_request = requests.get(url=url+'/api/Providers', headers=headers, verify=False, timeout=2)
+        try:            
+            check_url_request = requests.get(url=url+'/api/Providers', headers=headers, verify=False, allow_redirects=False, timeout=2)
             if check_url_request.status_code == 200:
                 break
+            elif check_url_request.status_code in (301, 302):
+                url = url[:4] + url[5:] if url[4] == 's' else url[:4] + 's' + url[4:]
 
         except possible_request_errors as err:
             logging.error(f"Connection error via '{url[:url.index(':')]}':\n{err}.")
             url = url[:4] + url[5:] if url[4] == 's' else url[:4] + 's' + url[4:]
+            if x == 1:
+                logging.error(f"Check host connection to {url}.")
             continue
+
     response = check_url_request.json()
+
     list_of_providersID: list = [dct['id'] for dct in response]     # This list with id's will be provided to get_token() function. It needs to receive a token.
     data_for_connect: dict = {
                     "url": url,
@@ -97,7 +104,7 @@ def creds():
                   }
 
     return data_for_connect, list_of_providersID
-    
+
 
 def get_token(username, password):
     '''  Get bearer token from the server   '''
@@ -583,7 +590,7 @@ def put_license():
 
 
 if __name__ == "__main__":
-    print("v1.6\nnote: applicable with BIM version 101 and higher.")
+    print(f"v{version}\nnote: applicable with BIM version 101 and higher.")
     data_for_connect, list_of_providersID = creds()
     token = get_token(data_for_connect['username'], data_for_connect['password'])
     check_active_lic = check_active_license()    
