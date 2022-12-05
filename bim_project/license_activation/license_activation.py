@@ -43,6 +43,8 @@ def define_purpose():
         return 'delete'
     elif purpose in ("2", "id"):
         return 'server_id'
+    elif purpose in ("q", "Q"):
+        return 'q'
 
 
 def get_license_token():
@@ -71,20 +73,20 @@ def creds():
 
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
     url = input("\nEnter URL: ").lower()
-    url = url[:-1] if url[-1:] == '/' else url
+    url = url[:-1] if url[-1] == '/' else url
 
     confirm_name = input("Enter login(default, admin): ")
     confirm_pass = input("Enter password(default, Qwerty12345!): ")
     username=confirm_name if confirm_name else 'admin'
     password=confirm_pass if confirm_pass else 'Qwerty12345!'
 
-    ''' block to check both ports: 80 and 443 '''  # added fix if url is set with redirect to another source
+    ''' block to check both ports: 80 and 443 '''  # Added fix if url is set with redirect to another source
     for x in range(2):
         try:            
             check_url_request = requests.get(url=url+'/api/Providers', headers=headers, verify=False, allow_redirects=False, timeout=2)
             if check_url_request.status_code == 200:
                 break
-            elif check_url_request.status_code in (301, 302):
+            elif check_url_request.status_code in (301, 302):   # This part needs to fix issues if the redirect had been set up.
                 url = url[:4] + url[5:] if url[4] == 's' else url[:4] + 's' + url[4:]
 
         except possible_request_errors as err:
@@ -609,7 +611,7 @@ if __name__ == "__main__":
             delete_license()
         elif goal == 'server_id':
             get_serverID()                
-        else:            
+        elif goal == 'q':            
             break
     
     if check_active_lic:
