@@ -1,5 +1,6 @@
 #
-# version: 1.4
+#
+version = '1.5'
 
 import requests
 import json
@@ -32,18 +33,23 @@ def get_server_url_and_token():
 
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
 
-    ''' block to check both ports: 80 and 443 '''    
+    ''' block to check both ports: 80 and 443 ''' # Added fix if url is set with redirect to another source
     for x in range(2):
-        try:
-            check_url_request = requests.get(url=server_url+'/api/Providers', headers=headers, verify=False, timeout=2)
+        try:            
+            check_url_request = requests.get(url=server_url+'/api/Providers', headers=headers, verify=False, allow_redirects=False, timeout=2)
             if check_url_request.status_code == 200:
                 break
+            elif check_url_request.status_code in (301, 302):   # This part needs to fix issues if the redirect had been set up.
+                server_url = server_url[:4] + server_url[5:] if server_url[4] == 's' else server_url[:4] + 's' + server_url[4:]
+
         except possible_request_errors as err:
             logging.error(f"Connection error via '{server_url[:server_url.index(':')]}':\n{err}.")
             server_url = server_url[:4] + server_url[5:] if server_url[4] == 's' else server_url[:4] + 's' + server_url[4:]
+            if x == 1:
+                logging.error(f"Check host connection to {server_url}.")
             continue
-    response = check_url_request.json()
 
+    response = check_url_request.json()
     list_of_providersID: list = [dct['id'] for dct in response]
 
     url_auth = f'{server_url}/api/Auth/Login'
@@ -63,22 +69,40 @@ def get_server_url_and_token():
         auth_request = requests.post(url_auth, data=data, headers=headers, verify=False)
         response = auth_request.json()
 
-        if auth_request.status_code == 200:
+        '''  
+        Block is for checking authorization request. 
+        Correct response of /api/Auth/Login method suppose to return a .json with 'access_token' and 'refresh_token'. 
+        '''
+        if auth_request.status_code  in (200, 201, 204):
             token = response['access_token']
             break
+        elif auth_request.status_code == 401:
+            def logging_error():
+                print(f"--- {message} ---",'\n')
+                logging.error(f"{message}")
+                logging.error(f"ProviderID: {id}, response: {auth_request.status_code} [{username}/{password}]\n{auth_request.text}")
+                if sys.platform == 'win32':
+                    os.system('pause')
+                sys.exit()
+            if response.get('type') and response.get('type') == 'TransitPasswordExpiredBimException':
+                message = f"Password for [{username}] has been expired!"
+                logging_error()
+            elif response.get('type') and response.get('type') == 'IpAddressLoginAttemptsExceededBimException':
+                message = "Too many authorization attempts. IP address has been blocked!"
+                logging_error()
+            elif response.get('type') and response.get('type') == 'AuthCommonBimException':
+                message = f"Unauthorized access. Check credentials: {username}/{password}"
+                logging_error()
         else:
-            logging.error(f"{auth_request.status_code}\n{auth_request.text}")
+            logging.error(f"ProviderID: {id}, response: {auth_request.status_code} [{username}/{password}]\n{auth_request.text}")
 
     return server_url, token
 
-#------------------------------------------------------------------------------------------------------------------------------#
 
 def get_server_url_and_headers():
     server_url, token = get_server_url_and_token()
     headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
     return server_url, headers
-
-#------------------------------------------------------------------------------------------------------------------------------#
 
 
 def create_folder_for_files_and_logs_export():
@@ -330,7 +354,7 @@ def mark_finish():
 
 
 if __name__ == "__main__":
-    print('v1.4\n')
+    print(f'v{version}')
     purpose = define_procedure()
     if purpose: # if export
         create_folder_for_files_and_logs_export()

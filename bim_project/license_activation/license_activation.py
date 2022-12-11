@@ -123,13 +123,34 @@ def get_token(username, password):
         data = json.dumps(payload)
         auth_request = requests.post(url_auth, data=data, headers=headers, verify=False)
         time.sleep(0.15)
-        response = auth_request.json()       
+        response = auth_request.json()
 
-        if auth_request.status_code in (200, 201, 204):
+        '''  
+        Block is for checking authorization request. 
+        Correct response of /api/Auth/Login method suppose to return a .json with 'access_token' and 'refresh_token'. 
+        '''
+        if auth_request.status_code  in (200, 201, 204):
             token = response['access_token']
             break
+        elif auth_request.status_code == 401:
+            def logging_error():
+                print(f"--- {message} ---",'\n')
+                logging.error(f"{message}")
+                logging.error(f"ProviderID: {id}, response: {auth_request.status_code} [{username}/{password}]\n{auth_request.text}")
+                if sys.platform == 'win32':
+                    os.system('pause')
+                sys.exit()
+            if response.get('type') and response.get('type') == 'TransitPasswordExpiredBimException':
+                message = f"Password for [{username}] has been expired!"
+                logging_error()
+            elif response.get('type') and response.get('type') == 'IpAddressLoginAttemptsExceededBimException':
+                message = "Too many authorization attempts. IP address has been blocked!"
+                logging_error()
+            elif response.get('type') and response.get('type') == 'AuthCommonBimException':
+                message = f"Unauthorized access. Check credentials: {username}/{password}"
+                logging_error()
         else:
-            logging.error(f"ProviderID: {id}, response: {auth_request.status_code} [{data_for_connect['username']}/{data_for_connect['password']}]\n{auth_request.text}")
+            logging.error(f"ProviderID: {id}, response: {auth_request.status_code} [{username}/{password}]\n{auth_request.text}")
     
     return token
 
