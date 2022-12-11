@@ -1,6 +1,6 @@
 #
 # 
-version = '1.7'
+version = '1.8'
 '''
     Script for work with license on the server. Activation, deactivation, check licenses, get serverID.
     version for windows OS with colors.
@@ -129,14 +129,15 @@ def get_token(username, password):
         Block is for checking authorization request. 
         Correct response of /api/Auth/Login method suppose to return a .json with 'access_token' and 'refresh_token'. 
         '''
+        log_text = f"ProviderID: {id}, response: {auth_request.status_code} [{username}/{password}]\n{auth_request.text}"
         if auth_request.status_code  in (200, 201, 204):
             token = response['access_token']
             break
         elif auth_request.status_code == 401:
             def logging_error():
-                print(f"--- {message} ---",'\n')
-                logging.error(f"{message}")
-                logging.error(f"ProviderID: {id}, response: {auth_request.status_code} [{username}/{password}]\n{auth_request.text}")
+                print(f"--- {message} ---",'\n' if message != "Message for the log only." else '401 Error. Check the log file.')
+                logging.error(f"{message}" if message != "Message for the log only." else '')
+                logging.error(log_text)
                 if sys.platform == 'win32':
                     os.system('pause')
                 sys.exit()
@@ -149,8 +150,11 @@ def get_token(username, password):
             elif response.get('type') and response.get('type') == 'AuthCommonBimException':
                 message = f"Unauthorized access. Check credentials: {username}/{password}"
                 logging_error()
+            else:
+                message = "Message for the log only."
+                logging_error()
         else:
-            logging.error(f"ProviderID: {id}, response: {auth_request.status_code} [{username}/{password}]\n{auth_request.text}")
+            logging.error(log_text)
     
     return token
 
