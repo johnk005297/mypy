@@ -1,6 +1,6 @@
 #
 # 
-version = '1.8'
+version = '1.9'
 '''
     Script for work with license on the server. Activation, deactivation, check licenses, get serverID.
     version for windows OS with colors.
@@ -20,13 +20,14 @@ from colorama import init, Fore
 init(autoreset=True)
 from datetime import date
 from datetime import datetime
+import auth_data    # local module for authentication procedure
 
 
 
 '''   Global variables   '''
 pwd = os.getcwd()
-possible_request_errors: tuple = (  requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, 
-                                    requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL, requests.JSONDecodeError  )
+# auth_data.possible_request_errors: tuple = (  requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, 
+#                                     requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL, requests.JSONDecodeError  )
                                  
 ''''''''''''''''''''''''''''''''
 
@@ -62,108 +63,11 @@ def get_license_token():
         return license_token
 
 
-def creds():
-    ''' 
-        1. Function that prompt for a login and pasword. Also checks both ports for connection, if one of them isn't available. 
-        2. Returns list of providers id's which needs to get the token, and uses in get_token() func.
-    '''
-
-    logging.basicConfig(filename=f"{pwd}/license_log.txt", level=logging.DEBUG,
-                        format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
-
-    headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-    url = input("\nEnter URL: ").lower()
-    url = url[:-1] if url[-1] == '/' else url
-
-    confirm_name = input("Enter login(default, admin): ")
-    confirm_pass = input("Enter password(default, Qwerty12345!): ")
-    username=confirm_name if confirm_name else 'admin'
-    password=confirm_pass if confirm_pass else 'Qwerty12345!'
-
-    ''' block to check both ports: 80 and 443 '''  # Added fix if url is set with redirect to another source
-    for x in range(2):
-        try:            
-            check_url_request = requests.get(url=url+'/api/Providers', headers=headers, verify=False, allow_redirects=False, timeout=2)
-            if check_url_request.status_code == 200:
-                break
-            elif check_url_request.status_code in (301, 302):   # This part needs to fix issues if the redirect had been set up.
-                url = url[:4] + url[5:] if url[4] == 's' else url[:4] + 's' + url[4:]
-
-        except possible_request_errors as err:
-            logging.error(f"Connection error via '{url[:url.index(':')]}':\n{err}.")
-            url = url[:4] + url[5:] if url[4] == 's' else url[:4] + 's' + url[4:]
-            if x == 1:
-                logging.error(f"Check host connection to {url}.")
-            continue
-
-    response = check_url_request.json()
-
-    list_of_providersID: list = [dct['id'] for dct in response]     # This list with id's will be provided to get_token() function. It needs to receive a token.
-    data_for_connect: dict = {
-                    "url": url,
-                    "username": username,
-                    "password": password
-                  }
-
-    return data_for_connect, list_of_providersID
-
-
-def get_token(username, password):
-    '''  Get bearer token from the server   '''
-
-    headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-    url_auth = f"{data_for_connect['url']}/api/Auth/Login"
-
-    for id in list_of_providersID:
-        payload = {
-                    "username": username,
-                    "password": password,
-                    "providerId": id
-                }
-        data = json.dumps(payload)
-        auth_request = requests.post(url_auth, data=data, headers=headers, verify=False)
-        time.sleep(0.15)
-        response = auth_request.json()
-
-        '''  
-        Block is for checking authorization request. 
-        Correct response of /api/Auth/Login method suppose to return a .json with 'access_token' and 'refresh_token'. 
-        '''
-        log_text = f"ProviderID: {id}, response: {auth_request.status_code} [{username}/{password}]\n{auth_request.text}"
-        if auth_request.status_code  in (200, 201, 204):
-            token = response['access_token']
-            break
-        elif auth_request.status_code == 401:
-            def logging_error():
-                print(f"--- {message} ---",'\n' if message != "Message for the log only." else '401 Error. Check the log file.')
-                logging.error(f"{message}" if message != "Message for the log only." else '')
-                logging.error(log_text)
-                if sys.platform == 'win32':
-                    os.system('pause')
-                sys.exit()
-            if response.get('type') and response.get('type') == 'TransitPasswordExpiredBimException':
-                message = f"Password for [{username}] has been expired!"
-                logging_error()
-            elif response.get('type') and response.get('type') == 'IpAddressLoginAttemptsExceededBimException':
-                message = "Too many authorization attempts. IP address has been blocked!"
-                logging_error()
-            elif response.get('type') and response.get('type') == 'AuthCommonBimException':
-                message = f"Unauthorized access. Check credentials: {username}/{password}"
-                logging_error()
-            else:
-                message = "Message for the log only."
-                logging_error()
-        else:
-            logging.error(log_text)
-    
-    return token
-
-
 def get_current_user():
     ''' Getting info about current user. Response will provide a dictionary of values. '''
 
-    url_get_current_user = f"{data_for_connect['url']}/api/Users/current-user"
-    headers_get_currect_user = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
+    url_get_current_user = f"{url}/api/Users/current-user"
+    headers_get_currect_user = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {auth_data.token}"}
 
     try:
         request = requests.get(url_get_current_user, headers=headers_get_currect_user, verify=False)
@@ -171,7 +75,7 @@ def get_current_user():
         response = request.json()
         if request.status_code != 200:
             logging.error(request.text)
-    except possible_request_errors as err:
+    except auth_data.possible_request_errors as err:
         logging.error(f"{err}\n{request.text}")
     
     return response
@@ -180,14 +84,14 @@ def get_current_user():
 def check_active_license():
     ''' Get the list of licenses '''
 
-    url = f"{data_for_connect['url']}/api/License"
-    headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
+    url_check_license = f"{url}/api/License"
+    headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
     payload = {
-                "username": data_for_connect['username'],
-                "password": data_for_connect['password']
+                "username": auth_data.credentials['username'],
+                "password": auth_data.credentials['password']
               }
     
-    request = requests.get(url, data=payload, headers=headers, verify=False)
+    request = requests.get(url_check_license, data=payload, headers=headers, verify=False)
     request.raise_for_status()
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
@@ -210,7 +114,7 @@ def check_user_privileges():
     '''
 
     
-    url_users = f"{data_for_connect['url']}/api/Users"
+    url_users = f"{url}/api/Users"
 
     def check_user():
         '''   Check if the user has needed permissions in his system roles already. # {'name': 'Licenses', 'operation': 'Write'}   '''
@@ -218,7 +122,7 @@ def check_user_privileges():
         # user_names_and_system_roles_id: dict = {}    # dictionary to collect user's permissions.
         user_system_roles_id: list = []         # list to collect user's permissions
 
-        headers_get_users = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
+        headers_get_users = {'Content-type':'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
         request = requests.get(url_users, headers=headers_get_users, verify=False)                                
         response = request.json()
         if request.status_code != 200:
@@ -226,21 +130,21 @@ def check_user_privileges():
         
         # response is a nested array, list with dictionaries inside.
         for x in range(len(response)):
-            if data_for_connect['username'] == response[x].get('userName'):
+            if auth_data.credentials['username'] == response[x].get('userName'):
                 for role in response[x]['systemRoles']: # systemRoles is a list with dictionaries    # role is a dictionary: {'id': '679c9933-5937-4eee-b47f-1ebaec5f946b', 'name': 'admin'}
                     user_system_roles_id.append(role.get('id'))
 
                     ''' We're taking userName and fill our dictionary with it. In format {'userName': [systemRoles_id1, systemRoles_id2, ...}
                         Two options to create a dictionary we need. '''
-                    # user_names_and_system_roles_id.setdefault(data_for_connect['username'], []).append(role.get('id'))     # Option one                                                                                                            
-                    # user_names_and_system_roles_id[data_for_connect['username']] = user_names_and_system_roles_id.get(data_for_connect['username'], []) + [role.get('id')]    # Option two
+                    # user_names_and_system_roles_id.setdefault(auth_data.credentials['username'], []).append(role.get('id'))     # Option one                                                                                                            
+                    # user_names_and_system_roles_id[auth_data.credentials['username']] = user_names_and_system_roles_id.get(auth_data.credentials['username'], []) + [role.get('id')]    # Option two
 
         for id in user_system_roles_id:
-            url_check_system_role = f"{data_for_connect['url']}/api/SystemRoles/{id}"
+            url_check_system_role = f"{url}/api/SystemRoles/{id}"
             try:
                 request = requests.get(url_check_system_role, headers=headers_get_users, verify=False)
                 response = request.json()
-            except possible_request_errors as err:
+            except auth_data.possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
             
             if 'LicensesWrite' in response['permissions']:
@@ -258,7 +162,7 @@ def check_user_privileges():
 
         created_user_name: str = create_name_for_new_user()
         ''' If the user doesn't have required permissions -> create another user and assing him a system role. '''        
-        headers_create_user_and_system_role = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}    
+        headers_create_user_and_system_role = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {auth_data.token}"}    
         payload_create_user = {
                                 "firstName": "Johnny",
                                 "lastName": "Mnemonic",
@@ -319,7 +223,7 @@ def check_user_privileges():
                                             ]
                                     }
 
-        url_create_system_role = f"{data_for_connect['url']}/api/SystemRoles"
+        url_create_system_role = f"{url}/api/SystemRoles"
         data = json.dumps(payload_create_system_role)
         try:
             request = requests.post(url_create_system_role, headers=headers_create_user_and_system_role, data=data, verify=False)
@@ -329,12 +233,12 @@ def check_user_privileges():
                 logging.debug("System role was created successfully.")
             else:
                 logging.error(request.text)
-        except possible_request_errors as err:
+        except auth_data.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
 
         ''' Add new system role to a new user '''
-        url_add_system_role_to_user = f"{data_for_connect['url']}/api/Users/AddSystemRole"
+        url_add_system_role_to_user = f"{url}/api/Users/AddSystemRole"
         payload_add_system_role = {
                                     "systemRoleId": created_system_role_id,
                                     "userId": created_user_id
@@ -347,24 +251,25 @@ def check_user_privileges():
                 logging.debug(f"System role '{created_system_role_id}' to user '{created_user_name}' added successfully.")
             else:
                 logging.error(request.text)
-        except possible_request_errors as err:
+        except auth_data.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
 
         ''' Using credentianls of the new user, up privileges for current user we are working(default, admin). '''
-        url_get_current_user = f"{data_for_connect['url']}/api/Users/current-user"
-        headers_get_currect_user = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
+        url_get_current_user = f"{url}/api/Users/current-user"
+        headers_get_currect_user = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {auth_data.token}"}
 
         # Getting info about current user. Response will provide a dictionary of values.
         try:
             request = requests.get(url_get_current_user, headers=headers_get_currect_user, verify=False)
             response = request.json()
-        except possible_request_errors as err:
+        except auth_data.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
         
         
         ''' Adding created role to current user '''     # this block could be skipped actually. Since we have a new user with full privileges, we could use it.
-        headers_add_system_role_to_current_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {get_token(username=created_user_name, password='Qwerty12345!')}"}
+        headers_add_system_role_to_current_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 
+                                                'Authorization': f"Bearer {auth_data.get_token(url, created_user_name, 'Qwerty12345!', auth_data.provider_id)}"}
         payload_add_system_role = {
                                     "systemRoleId": created_system_role_id,
                                     "userId": response['id']
@@ -377,7 +282,7 @@ def check_user_privileges():
                 logging.debug(f"System role '{created_system_role_id}' to user <{response['userName']}> added successfully.")
             else:
                 logging.error(request.text)
-        except possible_request_errors as err:
+        except auth_data.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
         created_userName_userId_systemRoleId: dict = {"userName": created_user_name, "userId": created_user_id, "systemRoleId": created_system_role_id}
@@ -394,8 +299,8 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
         ''' Remove created role from the current user. Otherwise, the role cannot be deleted. '''
 
         headers_remove_system_role_from_current_user = \
-        {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {get_token(username=created_userName_userId_systemRoleId['userName'], password='Qwerty12345!')}"}
-        url_remove_system_role_from_user = f"{data_for_connect['url']}/api/Users/RemoveSystemRole"
+        {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {auth_data.get_token(url, created_userName_userId_systemRoleId['userName'], 'Qwerty12345!', auth_data.provider_id)}"}
+        url_remove_system_role_from_user = f"{url}/api/Users/RemoveSystemRole"
         current_user = get_current_user()
         payload_remove_system_role = {
                                         "systemRoleId": created_userName_userId_systemRoleId['systemRoleId'],
@@ -409,7 +314,7 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
                 logging.info(f"System role '{created_userName_userId_systemRoleId['systemRoleId']}' from user <{current_user['userName']}> removed successfully.")
             else:
                 logging.error(request.text)
-        except possible_request_errors as err:
+        except auth_data.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
 
@@ -417,8 +322,9 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
         ''' Remove created role from created user. '''
 
         headers_remove_system_role_from_created_user = \
-        {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {get_token(username=data_for_connect['username'], password=data_for_connect['password'])}"}
-        url_remove_system_role_from_user = f"{data_for_connect['url']}/api/Users/RemoveSystemRole"
+        {'accept': '*/*', 'Content-type': 'application/json-patch+json', 
+         'Authorization': f"Bearer {auth_data.get_token(auth_data.credentials['url'], auth_data.credentials['username'], auth_data.credentials['password'], auth_data.provider_id)}" }
+        url_remove_system_role_from_user = f"{url}/api/Users/RemoveSystemRole"
         payload_remove_system_role = {
                                         "systemRoleId": created_userName_userId_systemRoleId['systemRoleId'],
                                         "userId": created_userName_userId_systemRoleId['userId']
@@ -431,15 +337,15 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
                 logging.info(f"System role '{created_userName_userId_systemRoleId['systemRoleId']}' from user <{created_userName_userId_systemRoleId['userName']}> removed successfully.")
             else:
                 logging.error(request.text)
-        except possible_request_errors as err:
+        except auth_data.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
 
     ''' Delete created system role and created user '''
     def delete_system_role():
 
-        url_delete_system_role = f"{data_for_connect['url']}/api/SystemRoles/{created_userName_userId_systemRoleId['systemRoleId']}"
-        headers = {'accept': '*/*', 'Authorization': f"Bearer {get_token(username=data_for_connect['username'], password=data_for_connect['password'])}"}
+        url_delete_system_role = f"{url}/api/SystemRoles/{created_userName_userId_systemRoleId['systemRoleId']}"
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {auth_data.get_token(auth_data.credentials['url'], auth_data.credentials['username'], auth_data.credentials['password'], auth_data.provider_id)}"}
 
         try:
             request = requests.delete(url_delete_system_role, headers=headers, verify=False)
@@ -447,14 +353,14 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
                 logging.info(f"New role '{created_userName_userId_systemRoleId['systemRoleId']}' was deleted successfully.")
             else:
                 logging.error(request.text)
-        except possible_request_errors as err:
+        except auth_data.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
 
     def delete_user():
 
-        headers = {'accept': '*/*', 'Authorization': f"Bearer {get_token(username=data_for_connect['username'], password=data_for_connect['password'])}"}
-        url_delete_user = f"{data_for_connect['url']}/api/Users/{created_userName_userId_systemRoleId['userId']}"
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {auth_data.get_token(auth_data.credentials['url'], auth_data.credentials['username'], auth_data.credentials['password'], auth_data.provider_id)}"}
+        url_delete_user = f"{url}/api/Users/{created_userName_userId_systemRoleId['userId']}"
         # deleting user
         try:
             request = requests.delete(url_delete_user, headers=headers, verify=False)
@@ -462,7 +368,7 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
                 logging.info(f"New user <{created_userName_userId_systemRoleId['userName']}> was deleted successfully.")
             else:
                 logging.error(request.text)
-        except possible_request_errors as err:
+        except auth_data.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
     remove_role_from_current_user()
@@ -476,14 +382,14 @@ def show_licenses():
     ''' Show all the licenses in the system '''
 
     print()
-    url = f"{data_for_connect['url']}/api/License"
-    headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
+    url_show_license = f"{url}/api/License"
+    headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
     payload = {
-                "username": data_for_connect['username'],
-                "password": data_for_connect['password']
+                "username": auth_data.credentials['username'],
+                "password": auth_data.credentials['password']
               }
     
-    request = requests.get(url, data=payload, headers=headers, verify=False)
+    request = requests.get(url_show_license, data=payload, headers=headers, verify=False)
     if request.status_code != 200:
         logging.error(f"{request.text}")
     request.raise_for_status()
@@ -524,17 +430,17 @@ def show_licenses():
 def get_serverID():
     ''' Get server ID '''
 
-    url = f"{data_for_connect['url']}/api/License"
-    headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
+    url_get_serverID = f"{url}/api/License"
+    headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
     payload = {
-                "username": data_for_connect['username'],
-                "password": data_for_connect['password']
+                "username": auth_data.credentials['username'],
+                "password": auth_data.credentials['password']
               }
     
     try:
-        request = requests.get(url, data=payload, headers=headers, verify=False)
+        request = requests.get(url_get_serverID, data=payload, headers=headers, verify=False)
         request.raise_for_status()
-    except possible_request_errors as err:
+    except auth_data.possible_request_errors as err:
         logging.error(f"{err}\n{request.text}")
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
@@ -545,7 +451,7 @@ def get_serverID():
 def delete_license():
     '''   Delete active license, if there is one.   '''    
 
-    headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
+    headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
 
     # Check if there are any active licenses
     count = 0
@@ -562,7 +468,7 @@ def delete_license():
         '''
         for license in show_licenses():
             if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-                url = f"{data_for_connect['url']}/api/License/{license['licenseID']}" 
+                url = f"{url}/api/License/{license['licenseID']}" 
                 request = requests.delete(url, headers=headers, verify=False)
                 if request.status_code in (200, 201, 204,):
                     print(Fore.GREEN + f"====== License '{license['licenseID']}' has been deactivated! ======")
@@ -574,11 +480,11 @@ def delete_license():
 
 def post_license():
 
-    headers = {'accept': 'text/plane', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
-    url = f"{data_for_connect['url']}/api/License/"
+    headers = {'accept': 'text/plane', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {auth_data.token}"}
+    url_post_license = f"{url}/api/License/"
     
     data = json.dumps(get_license_token())
-    request = requests.post(url, headers=headers, data=data, verify=False)
+    request = requests.post(url_post_license, headers=headers, data=data, verify=False)
     response = request.json()
     time.sleep(0.15)
     if request.status_code in (200, 201, 204,):
@@ -593,7 +499,7 @@ def post_license():
 def put_license():
     
     put_license_result = False
-    headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
+    headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
 
     # all the active licenses will be deactivated, if user forgot to do it, and if there are any active
     for license in show_licenses():
@@ -601,9 +507,9 @@ def put_license():
             delete_license()
     
     licenseID = post_license()   # function will post provided license, and return posted licenses ID
-    url = f"{data_for_connect['url']}/api/License/active/{licenseID}"
+    url_put_license = f"{url}/api/License/active/{licenseID}"
     payload = {}
-    request = requests.put(url, headers=headers, data=payload, verify=False)
+    request = requests.put(url_put_license, headers=headers, data=payload, verify=False)
 
     if request.status_code in (200, 201, 204,):
         put_license_result = True
@@ -618,8 +524,7 @@ def put_license():
 
 if __name__ == "__main__":
     print(f"v{version}\nnote: applicable with BIM version 101 and higher.")
-    data_for_connect, list_of_providersID = creds()
-    token = get_token(data_for_connect['username'], data_for_connect['password'])
+    url = auth_data.credentials['url']
     check_active_lic = check_active_license()    
     if check_active_lic:
         check_privelege = check_user_privileges()
