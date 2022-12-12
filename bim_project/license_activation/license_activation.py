@@ -20,14 +20,12 @@ from colorama import init, Fore
 init(autoreset=True)
 from datetime import date
 from datetime import datetime
-import auth_data    # local module for authentication procedure
+# import auth_data    # local module for authentication procedure
 
 
 
 '''   Global variables   '''
 pwd = os.getcwd()
-# auth_data.possible_request_errors: tuple = (  requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, 
-#                                     requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL, requests.JSONDecodeError  )
                                  
 ''''''''''''''''''''''''''''''''
 
@@ -378,7 +376,7 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
 
 
 
-def show_licenses():
+def display_licenses():
     ''' Show all the licenses in the system '''
 
     print()
@@ -424,6 +422,25 @@ def show_licenses():
             #     print(f" - {key}: {value}")
 
     print("=====================================================================================\n")
+
+
+def get_licenses():
+    ''' Get all the licenses in the system '''
+
+    url_show_license = f"{url}/api/License"
+    headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
+    payload = {
+                "username": auth_data.credentials['username'],
+                "password": auth_data.credentials['password']
+              }
+    
+    request = requests.get(url_show_license, data=payload, headers=headers, verify=False)
+    if request.status_code != 200:
+        logging.error(f"{request.text}")
+    request.raise_for_status()
+
+    # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
+    response = request.json()
     return response
 
 
@@ -455,7 +472,7 @@ def delete_license():
 
     # Check if there are any active licenses
     count = 0
-    for license in show_licenses():
+    for license in get_licenses():
         if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
             count += 1
 
@@ -466,10 +483,10 @@ def delete_license():
             There is a default license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
             After new license will be applied, default lic will disappear automatically.
         '''
-        for license in show_licenses():
+        for license in get_licenses():
             if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-                url = f"{url}/api/License/{license['licenseID']}" 
-                request = requests.delete(url, headers=headers, verify=False)
+                url_delete_license = f"{url}/api/License/{license['licenseID']}" 
+                request = requests.delete(url_delete_license, headers=headers, verify=False)
                 if request.status_code in (200, 201, 204,):
                     print(Fore.GREEN + f"====== License '{license['licenseID']}' has been deactivated! ======")
                 else:
@@ -502,7 +519,7 @@ def put_license():
     headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
 
     # all the active licenses will be deactivated, if user forgot to do it, and if there are any active
-    for license in show_licenses():
+    for license in get_licenses():
         if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
             delete_license()
     
@@ -524,6 +541,7 @@ def put_license():
 
 if __name__ == "__main__":
     print(f"v{version}\nnote: applicable with BIM version 101 and higher.")
+    import auth_data    # local module for authentication procedure
     url = auth_data.credentials['url']
     check_active_lic = check_active_license()    
     if check_active_lic:
@@ -536,7 +554,7 @@ if __name__ == "__main__":
         if goal == 'update':
             put_license()
         elif goal == 'check':
-            show_licenses()
+            display_licenses()
         elif goal == 'delete':
             delete_license()
         elif goal == 'server_id':
