@@ -19,6 +19,7 @@ export_task_backup
 bim_project/export_task/*.json
 bim_project/export_task/*.txt
 bim_project/tmp
+bim_project/auth_data.py
 bim_project/bak.json
 bim_project/export_task/from_export
 bim_project/export_task/files

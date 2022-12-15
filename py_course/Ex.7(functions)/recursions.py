@@ -14,14 +14,15 @@ def fib_rec(N=7, f=[]):
         f.append(f[N-3] + f[N-2])
 
     return f
-    
+
+fib_rec01 = fib_rec()
 
 def fib_rec2(N=7, f=[]):
 
     f.append(f[-1] + f[-2]) if len(f) > 1 else f.append(1)
     return f if len(f) == N else fib_rec2(N, f)
 
-
+fib_rec02 = fib_rec()
 
 
 def fib_rec3(N=7, f=[1, 1]):
@@ -30,6 +31,7 @@ def fib_rec3(N=7, f=[1, 1]):
         fib_rec3(N, f)
 
     return f
+fib_rec03 = fib_rec()
 
 
 '''
@@ -38,7 +40,7 @@ def fib_rec3(N=7, f=[1, 1]):
     Функция должна возвращать новый созданный одномерный список.
 '''
 
-d = [1, 2, [True, False], ["Москва", "Уфа", [100, 101], ['True', [-2, -1]]], 7.89]
+lst_for_get_line_list = [1, 2, [True, False], ["Москва", "Уфа", [100, 101], ['True', [-2, -1]]], 7.89]
 
 def get_line_list(d,a=[]):
     for item in d:
@@ -48,7 +50,7 @@ def get_line_list(d,a=[]):
             a.append(item)
     return a
 
-f = get_line_list(d)
+get_line = get_line_list(lst_for_get_line_list)
 
 
 '''
@@ -79,5 +81,57 @@ def get_path(n=6):
     # just another form of writing as above.
     # return n if n in (1, 2) else get_path(n - 1) + get_path(n - 2)    
 
+get_p = get_path()
 
-print(get_path())
+
+
+
+
+'''
+    Вводится список из целых чисел в одну строчку через пробел. Необходимо выполнить его сортировку по возрастанию с помощью алгоритма сортировки слиянием. 
+    Функция должна возвращать новый отсортированный список.
+    Вызовите результирующую функцию сортировки для введенного списка и отобразите результат на экран в виде последовательности чисел, записанных через пробел.
+    Для разбиения списка и его последующей сборки используйте рекурсивные функции. 
+'''
+#-------------------------------------------------
+# Сортировка слиянием
+#-------------------------------------------------
+
+# функция слияния двух отсортированных списков
+def merge_list(a, b):
+    c = []
+    N = len(a)
+    M = len(b)
+
+    i = 0
+    j = 0
+    while i < N and j < M:
+        if a[i] <= b[j]:
+            c.append(a[i])
+            i += 1
+        else:
+            c.append(b[j])
+            j += 1
+
+    c += a[i:] + b[j:]
+    return c
+
+# функция деления списка и слияния списков в общий отсортированный список
+def split_and_merge_list(a):
+    N1 = len(a) // 2
+    a1 = a[:N1]     # деление массива на два примерно равной длины
+    a2 = a[N1:]
+
+    if len(a1) > 1: # если длина 1-го списка больше 1, то делим дальше
+        a1 = split_and_merge_list(a1)
+    if len(a2) > 1: # если длина 2-го списка больше 1, то делим дальше
+        a2 = split_and_merge_list(a2)
+
+    return merge_list(a1, a2)   # слияние двух отсортированных списков в один
+
+
+a = [9, 5, -3, 4, 7, 8, -8]
+a = split_and_merge_list(a)
+
+
+
