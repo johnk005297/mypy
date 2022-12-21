@@ -1,7 +1,10 @@
 ##
+##
+
 import os
 import sys
 
+version = '104'
 
 
 def alter_yml():
@@ -22,7 +25,6 @@ def alter_yml():
 
     dictionary_of_services: dict = \
     {   
-        'ports:': 'ports',
         'bimeister_frontend:': ["80:5000", "443:5001"],
         'webapi:': "8081:5000",
         'spatialwebapi:': "8087:5000",
@@ -61,7 +63,7 @@ def alter_yml():
         'enterprise_asset_management_db:': "5444:5432"
     }
     
-    lst_for_check: list = []    # Generating list for checking the elements in the yml_file_as_list
+    lst_for_check: list = ['ports:']    # Generating list for checking the elements in the yml_file_as_list
     for value in dictionary_of_services.values():
         if isinstance(value, list):
             for x in value:
@@ -107,7 +109,6 @@ def alter_yml():
     except NameError as err:
         sys.exit(f"Can't find 'service:' block. Check {yml_file} file! Exit.")
 
-
     for index in range(len(yml_file_as_list)):
         current_str = yml_file_as_list[index].rstrip()   # current line from the .yml file without whitespaces from the right
 
@@ -120,7 +121,11 @@ def alter_yml():
         elif "SSL_CERTIFICATE_KEY:" in current_str:            
             yml_file_as_list[index] = (' ')*count_spaces_next_line_for_environ_block + "SSL_CERTIFICATE_KEY: '/etc/nginx/ssl/bimeister.io.key'\n"
 
-        if current_str in list_of_presented_services and dictionary_of_services.get(current_str.lstrip()) != None:    # If port isn't in dictionary_of_services, it stays closed.
+
+        ''' Main insert block. Needed values goes to the yml_file_as_list array.
+            If port isn't in dictionary_of_services, it stays closed.
+        '''
+        if current_str in list_of_presented_services and dictionary_of_services.get(current_str.lstrip()):
             if isinstance(dictionary_of_services.get(current_str.lstrip()), list):
                 for x in range(len(dictionary_of_services.get(current_str.lstrip())), 0, -1):
                     yml_file_as_list.insert(index+1, " "*count_spaces_next_line + f"- \"0.0.0.0:{dictionary_of_services.get(current_str.lstrip())[x-1]}\"\n")
@@ -134,11 +139,12 @@ def alter_yml():
             file.write(line)
     
     if os.path.isfile(yml_file_open_ports):
+        print(f"sprint-{version}")
         print(f'\nFile "{yml_file_open_ports}" is ready.')
     else:
         print("No file here")
     if sys.platform == 'win32':
         os.system('pause')
 
-if __name__ == "__main__":      
+if __name__ == "__main__":
     alter_yml()
