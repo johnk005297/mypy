@@ -3,6 +3,7 @@ import os
 import sys
 
 
+
 def alter_yml():
     
     yml_file = input("Enter the name of the .yml file: ")
@@ -17,46 +18,7 @@ def alter_yml():
 
     yml_file_as_list:list = []  # Creating a list of .yml file in format ['first string', 'second string', etc]
     list_of_presented_services: list = [] # Array to detect current services
-    array_for_exclude: tuple = ('ports:',
-                                    '80:5000',
-                                    '443:5001',
-                                    '8081:5000',
-                                    '8087:5000',
-                                    '8085:5000',
-                                    '8084:5000',
-                                    '8082:5000',
-                                    '8089:5000',
-                                    '5432:5432',
-                                    '5433:5432',
-                                    '8080:5000',
-                                    '9000:9000',
-                                    '5103:5000',
-                                    '5672:5672',
-                                    '15672:15672',
-                                    '6379:6379',
-                                    '5434:5432',
-                                    '8086:8086',
-                                    '5501:5000',
-                                    '8088:5000',
-                                    '7687:7687',
-                                    '7474:7474',
-                                    '5430:5432',
-                                    '7782:5000',
-                                    '8090:5000',
-                                    '8091:5000',
-                                    '8092:5000',
-                                    '10000:5000',
-                                    '10010:5000',
-                                    '10020:5000',
-                                    '10030:5000',
-                                    '10040:5000',
-                                    '10060:5000',
-                                    '5435:5432',
-                                    '5436:5432',
-                                    '5440:5432',
-                                    '5437:5432',
-                                    '5450:5432',
-                                    '5444:5432')
+
 
     dictionary_of_services: dict = \
     {   
@@ -92,29 +54,41 @@ def alter_yml():
         'ifc_converter:': "10040:5000",
         'collision_calculator:': "10060:5000",
         'spatiumdb:': "5435:5432",
+        'potential_failure_messages_db:': "5440:5432",
         'hangfiredb:': "5437:5432",                
         'timescaledb:': "5450:5432",        
         'nifi:': "8100:8080",                
         'enterprise_asset_management_db:': "5444:5432"
     }
+    lst_for_check: list = []
+    for value in dictionary_of_services.values():
+        if isinstance(value, list):
+            for x in value:
+                lst_for_check.append(x)
+        elif isinstance(value, str):
+            lst_for_check.append(value)
+        else:
+            print("Weird data type. Check .yml file!")
 
     try:
         with open(read_file, 'r', encoding='utf-8') as file:
             for line in file:
                 l = line.strip()
                 # If the line is empty/just whitespaces or contain any open ports - don't add in the yml_file_as_list
-                if not l: 
-                    continue
-                for item in array_for_exclude:
-                    if item in l:
+                flag_to_skip = False
+                for value in lst_for_check:
+                    if value in l:
+                        flag_to_skip = True
                         break
+
+                if not l or flag_to_skip:
+                    continue                
                 else:
                     yml_file_as_list.append(line)
         yml_file_as_list += ['\n'*2]  # Add two more empty elements to stay in the list range during future checks of the next lines. Precaution measure.
 
     except Exception as err:
             sys.exit("Error: ", err)
-
 
     count:int = 0
     ports:str = 'ports:\n'    
@@ -134,6 +108,7 @@ def alter_yml():
     except NameError as err:
         sys.exit(f"Can't find 'service:' block. Check {yml_file} file! Exit.")
 
+
     for index in range(len(yml_file_as_list)):
         current_str = yml_file_as_list[index].rstrip()   # current line from the .yml file without whitespaces from the right
 
@@ -146,11 +121,11 @@ def alter_yml():
         elif "SSL_CERTIFICATE_KEY:" in current_str:            
             yml_file_as_list[index] = (' ')*count_spaces_next_line_for_environ_block + "SSL_CERTIFICATE_KEY: '/etc/nginx/ssl/bimeister.io.key'\n"
 
-
         if current_str in list_of_presented_services:
             if isinstance(dictionary_of_services.get(current_str.lstrip()), list):
-                yml_file_as_list.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + f"- \"0.0.0.0:{dictionary_of_services.get(current_str.lstrip())[0]}\"\n" + 
-                " "*count_spaces_next_line + f"- \"0.0.0.0:{dictionary_of_services.get(current_str.lstrip())[1]}\"\n")
+                for x in range(len(dictionary_of_services.get(current_str.lstrip())), 0, -1):
+                    yml_file_as_list.insert(index+1, " "*count_spaces_next_line + f"- \"0.0.0.0:{dictionary_of_services.get(current_str.lstrip())[x-1]}\"\n")
+                yml_file_as_list.insert(index+1, " "*count_spaces_next_line + ports)  # line will be insterted in line+1, so it should be constructed in proper order. "ports:, - 0.0.0.0, etc."
             else:
                 yml_file_as_list.insert(index+1, " "*count_spaces_next_line + ports + " "*count_spaces_next_line + f"- \"0.0.0.0:{dictionary_of_services.get(current_str.lstrip())}\"\n")
 
@@ -167,4 +142,4 @@ def alter_yml():
         os.system('pause')
 
 if __name__ == "__main__":      
-    alter_yml()    
+    alter_yml()

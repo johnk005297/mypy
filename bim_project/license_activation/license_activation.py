@@ -568,3 +568,4 @@ if __name__ == "__main__":
             sys.exit()                                              # Thus, we need to remove newely created user and role after we done.
     else:
         sys.exit()
+
