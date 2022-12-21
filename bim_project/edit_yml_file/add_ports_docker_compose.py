@@ -60,15 +60,14 @@ def alter_yml():
         'nifi:': "8100:8080",                
         'enterprise_asset_management_db:': "5444:5432"
     }
-    lst_for_check: list = []
+    
+    lst_for_check: list = []    # Generating list for checking the elements in the yml_file_as_list
     for value in dictionary_of_services.values():
         if isinstance(value, list):
             for x in value:
                 lst_for_check.append(x)
-        elif isinstance(value, str):
-            lst_for_check.append(value)
         else:
-            print("Weird data type. Check .yml file!")
+            lst_for_check.append(value)
 
     try:
         with open(read_file, 'r', encoding='utf-8') as file:
@@ -121,7 +120,7 @@ def alter_yml():
         elif "SSL_CERTIFICATE_KEY:" in current_str:            
             yml_file_as_list[index] = (' ')*count_spaces_next_line_for_environ_block + "SSL_CERTIFICATE_KEY: '/etc/nginx/ssl/bimeister.io.key'\n"
 
-        if current_str in list_of_presented_services:
+        if current_str in list_of_presented_services and dictionary_of_services.get(current_str.lstrip()) != None:    # If port isn't in dictionary_of_services, it stays closed.
             if isinstance(dictionary_of_services.get(current_str.lstrip()), list):
                 for x in range(len(dictionary_of_services.get(current_str.lstrip())), 0, -1):
                     yml_file_as_list.insert(index+1, " "*count_spaces_next_line + f"- \"0.0.0.0:{dictionary_of_services.get(current_str.lstrip())[x-1]}\"\n")
