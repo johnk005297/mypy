@@ -2,7 +2,7 @@
 # 
 version = '1.10'
 '''
-    Script for work with license on the server. Activation, deactivation, check licenses, get serverID.
+    Script for work with license and some other small features.
     version for windows OS with colors.
 '''
 import os
