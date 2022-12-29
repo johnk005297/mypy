@@ -1,6 +1,6 @@
 #
 # 
-version = '1.9'
+version = '1.10'
 '''
     Script for work with license on the server. Activation, deactivation, check licenses, get serverID.
     version for windows OS with colors.
@@ -30,20 +30,41 @@ pwd = os.getcwd()
 ''''''''''''''''''''''''''''''''
 
 
-def define_purpose():
+def define_purpose_with_menu():
     ''' Define what the user would like to do '''
 
-    purpose = input("\nCheck licenses(1) || Get server ID(2) || Apply license(3) || Delete active license(4) || Exit(q)\nSelect one of the options: ").lower()
-    if purpose in ("1", "check",):
-        return 'check'
-    elif purpose in ("3", "update", "apply"):
-        return 'update'
-    elif purpose in ("4", "delete"):
-        return 'delete'
-    elif purpose in ("2", "id"):
+    command = input("\nCommand: (m for help)  ").lower()
+    menu =    "\n  License:                              \
+               \n   1  get list of licenses              \
+               \n   2  get serverId                      \
+               \n   3  apply new license                 \
+               \n   4  delete active license             \
+                                                         \
+             \n\n  bimeisterDB:                          \
+               \n   5  clean UserObjects table           \
+               \n   5i info about UserObjects table      \
+                                                         \
+             \n\n  Generic:                              \
+               \n   m  print this menu                   \
+               \n   q  exit"
+
+    if command == 'm':
+        print(menu)
+    elif command == '1':
+        return 'check_license'
+    elif command == '2':
         return 'server_id'
-    elif purpose in ("q", "Q"):
+    elif command == '3':
+        return 'apply_license'
+    elif command == '4':
+        return 'delete_active_license'
+    elif command == '5':
+        return 'truncate_user_objects'
+    elif command == '5i':
+        return 'truncate_user_objects_info'
+    elif command == 'q':
         return 'q'
+
 
 
 def get_license_token():
@@ -79,6 +100,25 @@ def get_current_user():
     return response
 
 
+def delete_user_objects():
+    '''
+        UserObjects – хранилище Frontend-данных на Backend.
+        Здесь хранятся всяческие кеши, черновики обходов, выбранные задачи и прочее.
+        Работа с хранилищем не предполагает валидацию, миграции и прочее. Таким образом, если модели данных меняются, работа с хранилищем, 
+        уже наполненным какими-то данными может привести к ошибкам. Чтобы уберечь пользователя от этого, необходимо очищать таблицу.
+    '''
+    headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
+    url_user_obj = f"{auth_data.credentials['url']}/api/UserObjects/all"
+    try:
+        user_obj_request = requests.delete(url_user_obj, headers=headers, verify=False)
+        if user_obj_request.status_code == 204:
+            print("\n  UserObjects table was cleaned successfully.")
+        else:
+            print("Something went wrong. Check the log.")
+    except auth_data.possible_request_errors as err:
+        logging.error(err)
+
+
 def check_active_license():
     ''' Get the list of licenses '''
 
@@ -105,9 +145,10 @@ def check_active_license():
     print("\n--- No active license on the server! Need to activate! ---")
     return False
 
+
 def check_user_privileges():
     '''
-        Users aren't authorized to create or edit their own system roles. Thus, need to check for {'name': 'Licenses', 'operation': 'Write'} privileges in system role.
+        Users aren't authorized to create or edit their own system roles. Thus, need to check for their privileges in system roles.
         If user doesn't have it, create another user, so we could be able to grant all privileges in system role for our current user.  
     '''
 
@@ -399,20 +440,20 @@ def display_licenses():
     count = 0
     for license in response:
         count+=1
-        print(f"\nLicense {count}:")
+        print(f"\n  License {count}:")
         if license['licenseID'] == '00000000-0000-0000-0000-000000000000':
             if license['until'] < str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
-                print(f" - System license from deploy\n - validation period: expired")
+                print(f"   - System license from deploy\n - validation period: expired")
                 continue
             else:
-                print(f" - System license from deploy\n - validation period: {license['until'][:19]}")
+                print(f"   - System license from deploy\n - validation period: {license['until'][:19]}")
                 continue
 
         for key, value in license.items():
             # Ternary operator. Made it just for exercise. It's hard to read, so we should aviod to use such constructions. 
             # Commented "if-elif-else" block below provides the same result, but way more readable.
-            print(f" - {key}: {Fore.GREEN + str(value)}" if value == True and key != 'activeUsers'
-                        else (f" - {key}: {Fore.RED + str(value)}" if value == False else f" - {key}: {value}"))
+            print(f"   - {key}: {Fore.GREEN + str(value)}" if value == True and key != 'activeUsers'
+                        else (f"   - {key}: {Fore.RED + str(value)}" if value == False else f"   - {key}: {value}"))
 
             # if value == True and key != 'activeUsers':
             #     print(f" - {key}: {Fore.GREEN + str(value)}")
@@ -462,7 +503,7 @@ def get_serverID():
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
-    print(f"\nServer ID: {response[-1]['serverId']}") 
+    print(f"\n  ServerID: {response[-1]['serverId']}") 
 
 
 def delete_license():
@@ -546,26 +587,27 @@ if __name__ == "__main__":
     check_active_lic = check_active_license()    
     if check_active_lic:
         check_privelege = check_user_privileges()
-    else:
-        print("Warning: There is no active license. Can't check users' permissions!")
     
     while True:
-        goal = define_purpose()
-        if goal == 'update':
-            put_license()
-        elif goal == 'check':
+        goal = define_purpose_with_menu()
+        if goal == 'check_license':
             display_licenses()
-        elif goal == 'delete':
-            delete_license()
         elif goal == 'server_id':
-            get_serverID()                
+            get_serverID() 
+        elif goal == 'apply_license':
+            put_license()
+        elif goal == 'delete_active_license':
+            delete_license()
+        elif goal == 'truncate_user_objects':
+            delete_user_objects()
+        elif goal == 'truncate_user_objects_info':
+            print(delete_user_objects.__doc__)
         elif goal == 'q':            
             break
-    
+
     if check_active_lic:
         if check_privelege != True:                                 # If user initially had no privileges to work with licenses, new user will be created, and check_user_privileges() never returns True.
             delete_created_system_role_and_user(check_privelege)    # It will always return {created_userName_userId_systemRoleId} dictionary instead.
             sys.exit()                                              # Thus, we need to remove newely created user and role after we done.
     else:
         sys.exit()
-

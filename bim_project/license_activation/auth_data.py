@@ -17,16 +17,23 @@ possible_request_errors: tuple = (  requests.exceptions.MissingSchema, requests.
                                     requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL, requests.JSONDecodeError  )
 ''''''''''''''''''''''''''''''
 
+
+def enable_logging():
+    logging.basicConfig(filename=f"{pwd}/license_log.txt", level=logging.DEBUG,
+                        format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
+
+
 def get_credentials():
     '''  1. Function prompts for login and password. It returns dictionary with creds. Ex: {"url": 'http://my-bimeister.io', "username": admin, "password": mypassword}.
          2. Provides provider ID for get_token() function.
     '''
 
-    # Enable logging
-    logging.basicConfig(filename=f"{pwd}/license_log.txt", level=logging.DEBUG,
-                        format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
-                        
     url = input("\nEnter URL: ").lower()
+    if url[:7] == 'http://' or url[:8] == 'https://':
+        pass
+    else:
+        print("Incorrect URL. Stop.")
+        sys.exit()
     url = url[:-1] if url[-1] == '/' else url
 
     confirm_name = input("Enter login(default, admin): ")
@@ -53,7 +60,7 @@ def get_credentials():
             continue
 
     response = check_url_request.json()
-    list_of_providersID: list = [dct['id'] for dct in response]     # This list with id's will be provided to get_token() function. It needs to receive a token.
+    list_of_providersID: list = [dct['id'] for dct in response]     # This list of id's will be provided to get_token() function. It needs to receive a token.
 
     credentials['url'] = url    # Apply correct value to credentials['url'] variable after all checks.
     return credentials, list_of_providersID
@@ -110,5 +117,6 @@ def get_token(url:str, username:str, password:str, provider_id:list):
 
 
 if __name__ == "auth_data":
+    enable_logging()
     credentials, provider_id = get_credentials()
     token = get_token(credentials['url'], credentials['username'], credentials['password'], provider_id)

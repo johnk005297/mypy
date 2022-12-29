@@ -63,13 +63,13 @@ def alter_yml():
         'enterprise_asset_management_db:': "5444:5432"
     }
     
-    lst_for_check: list = ['ports:']    # Generating list for checking the elements in the yml_file_as_list
+    array_to_exclude: list = ['ports:']    # Generating list for checking the elements in the yml_file_as_list
     for value in dictionary_of_services.values():
         if isinstance(value, list):
             for x in value:
-                lst_for_check.append(x)
+                array_to_exclude.append(x)
         else:
-            lst_for_check.append(value)
+            array_to_exclude.append(value)
 
     try:
         with open(read_file, 'r', encoding='utf-8') as file:
@@ -77,7 +77,7 @@ def alter_yml():
                 l = line.strip()
                 # If the line is empty/just whitespaces or contain any open ports - don't add in the yml_file_as_list
                 flag_to_skip = False
-                for value in lst_for_check:
+                for value in array_to_exclude:
                     if value in l:
                         flag_to_skip = True
                         break
