@@ -9,12 +9,13 @@ import requests
 import json
 
 
-
 '''   Global variables   '''
 headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
 pwd = os.getcwd()
 possible_request_errors: tuple = (  requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, 
-                                    requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL, requests.JSONDecodeError  )
+                                    requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL, 
+                                    requests.exceptions.InvalidJSONError, requests.exceptions.JSONDecodeError  
+                                 )
 ''''''''''''''''''''''''''''''
 
 
@@ -32,12 +33,12 @@ def get_credentials():
     if url[:7] == 'http://' or url[:8] == 'https://':
         pass
     else:
-        print("Incorrect URL. Stop.")
+        print("Incorrect URL.")
         sys.exit()
     url = url[:-1] if url[-1] == '/' else url
 
-    confirm_name = input("Enter login(default, admin): ")
-    confirm_pass = input("Enter password(default, Qwerty12345!): ")
+    confirm_name = input("Enter login(default admin): ")
+    confirm_pass = input("Enter password(default Qwerty12345!): ")
     username=confirm_name if confirm_name else 'admin'
     password=confirm_pass if confirm_pass else 'Qwerty12345!'
 

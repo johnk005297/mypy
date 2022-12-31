@@ -1,6 +1,6 @@
 #
 # 
-version = '1.10'
+version = '1.11'
 '''
     Script for work with license and some other small features.
     version for windows OS with colors.
@@ -30,22 +30,22 @@ pwd = os.getcwd()
 ''''''''''''''''''''''''''''''''
 
 
-def define_purpose_with_menu():
+def define_purpose_and_menu():
     ''' Define what the user would like to do '''
 
     command = input("\nCommand: (m for help)  ").lower()
-    menu =    "\n  License:                              \
-               \n   1  get list of licenses              \
-               \n   2  get serverId                      \
-               \n   3  apply new license                 \
-               \n   4  delete active license             \
-                                                         \
-             \n\n  bimeisterDB:                          \
-               \n   5  clean UserObjects table           \
-               \n   5i info about UserObjects table      \
-                                                         \
-             \n\n  Generic:                              \
-               \n   m  print this menu                   \
+    menu =    "\n  License:                                         \
+               \n   1  get list of licenses                         \
+               \n   2  get serverId                                 \
+               \n   3  apply new license                            \
+               \n   4  delete active license                        \
+               \n                                                   \
+               \n  db:                                              \
+               \n   5  clean bimeisterdb.UserObjects table          \
+               \n   5i info about UserObjects table                 \
+               \n                                                   \
+               \n  Generic:                                         \
+               \n   m  print this menu                              \
                \n   q  exit"
 
     if command == 'm':
@@ -76,9 +76,13 @@ def get_license_token():
         return license_token
     else:
         license_token = input("\nThere is no 'license.lic' file in the folder.\nEnter license token manually or 'q' for exit: ")
-        if license_token == 'q':
+        if len(license_token) < 10 or license_token.lower() == 'q':
+            print("No license token has been provided. Exit.\n")
             logging.info("No license token has been provided by the user.")
-            sys.exit()
+            if sys.platform == 'win32':
+                    os.system('pause')
+                    sys.exit()
+
         return license_token
 
 
@@ -120,29 +124,14 @@ def delete_user_objects():
 
 
 def check_active_license():
-    ''' Get the list of licenses '''
+    ''' Check if there is an active license. Return True/False '''
 
-    url_check_license = f"{url}/api/License"
-    headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
-    payload = {
-                "username": auth_data.credentials['username'],
-                "password": auth_data.credentials['password']
-              }
-    
-    request = requests.get(url_check_license, data=payload, headers=headers, verify=False)
-    request.raise_for_status()
-
-    # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
-    response = request.json()
-    for license in response:
+    licenses = get_licenses()
+    for license in licenses:
         if license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] > str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
             return True
-
-    for license in response:          
-        if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+        elif license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
             return True
-    
-    print("\n--- No active license on the server! Need to activate! ---")
     return False
 
 
@@ -152,7 +141,6 @@ def check_user_privileges():
         If user doesn't have it, create another user, so we could be able to grant all privileges in system role for our current user.  
     '''
 
-    
     url_users = f"{url}/api/Users"
 
     def check_user():
@@ -416,51 +404,42 @@ def delete_created_system_role_and_user(created_userName_userId_systemRoleId):
     delete_user()
 
 
-
 def display_licenses():
-    ''' Show all the licenses in the system '''
+    ''' Display the licenses '''
 
-    print()
-    url_show_license = f"{url}/api/License"
-    headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
-    payload = {
-                "username": auth_data.credentials['username'],
-                "password": auth_data.credentials['password']
-              }
-    
-    request = requests.get(url_show_license, data=payload, headers=headers, verify=False)
-    if request.status_code != 200:
-        logging.error(f"{request.text}")
-    request.raise_for_status()
+    licenses: list = get_licenses()
+    print("\n========================= Current licenses ==========================================")
+    if not check_active_license():
+        for number, license in enumerate(licenses, 1):
+            print(f"\n  License {number}:")
+            if license['licenseID'] == '00000000-0000-0000-0000-000000000000':
+                if license['until'] < str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
+                    print(f"   - trial deploy license\n   - validation period: expired")
+                    continue
+                else:
+                    print(f"   - trial deploy license\n   - validation period: {license['until'][:19]}")
+                    continue
 
-    # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
-    response = request.json()
-    print("========================= Current licenses ==========================================")
-    
-    count = 0
-    for license in response:
-        count+=1
-        print(f"\n  License {count}:")
-        if license['licenseID'] == '00000000-0000-0000-0000-000000000000':
-            if license['until'] < str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
-                print(f"   - System license from deploy\n - validation period: expired")
-                continue
-            else:
-                print(f"   - System license from deploy\n - validation period: {license['until'][:19]}")
-                continue
+            for key, value in license.items():
+                # Ternary operator. Made it just for exercise. It's hard to read, so we should aviod to use such constructions. 
+                # Commented "if-elif-else" block below provides the same result, but way more readable.
+                print(f"   - {key}: {Fore.GREEN + str(value)}" if value and key == 'isActive'   # "if value" by default means "if value is True"
+                            else (f"   - {key}: {Fore.RED + str(value)}" if value == False else f"   - {key}: {value}"))
 
-        for key, value in license.items():
-            # Ternary operator. Made it just for exercise. It's hard to read, so we should aviod to use such constructions. 
-            # Commented "if-elif-else" block below provides the same result, but way more readable.
-            print(f"   - {key}: {Fore.GREEN + str(value)}" if value == True and key != 'activeUsers'
-                        else (f"   - {key}: {Fore.RED + str(value)}" if value == False else f"   - {key}: {value}"))
-
-            # if value == True and key != 'activeUsers':
-            #     print(f" - {key}: {Fore.GREEN + str(value)}")
-            # elif value == False:
-            #     print(f" - {key}: {Fore.RED + str(value)}")
-            # else:
-            #     print(f" - {key}: {value}")
+                # if value and key == 'isActive':
+                #     print(f" - {key}: {Fore.GREEN + str(value)}")
+                # elif value == False:
+                #     print(f" - {key}: {Fore.RED + str(value)}")
+                # else:
+                #     print(f" - {key}: {value}")
+    else:
+        for license in licenses:
+            if license.get('isActive'):
+                print()
+                for key, value in license.items():
+                    print( f"   - {key}: {Fore.GREEN + str(value)}" if key == 'isActive' else f"   - {key}: {value}" )
+                break
+            
 
     print("=====================================================================================\n")
 
@@ -468,17 +447,17 @@ def display_licenses():
 def get_licenses():
     ''' Get all the licenses in the system '''
 
-    url_show_license = f"{url}/api/License"
+    url_get_license = f"{url}/api/License"
     headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
     payload = {
                 "username": auth_data.credentials['username'],
                 "password": auth_data.credentials['password']
-              }
-    
-    request = requests.get(url_show_license, data=payload, headers=headers, verify=False)
-    if request.status_code != 200:
-        logging.error(f"{request.text}")
-    request.raise_for_status()
+              }   
+    try:
+        request = requests.get(url_get_license, data=payload, headers=headers, verify=False)
+        request.raise_for_status()
+    except auth_data.possible_request_errors as err:
+        logging.error(f"{err}\n{request.text}")
 
     # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
     response = request.json()
@@ -487,23 +466,9 @@ def get_licenses():
 
 def get_serverID():
     ''' Get server ID '''
-
-    url_get_serverID = f"{url}/api/License"
-    headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
-    payload = {
-                "username": auth_data.credentials['username'],
-                "password": auth_data.credentials['password']
-              }
-    
-    try:
-        request = requests.get(url_get_serverID, data=payload, headers=headers, verify=False)
-        request.raise_for_status()
-    except auth_data.possible_request_errors as err:
-        logging.error(f"{err}\n{request.text}")
-
-    # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
-    response = request.json()
-    print(f"\n  ServerID: {response[-1]['serverId']}") 
+    licenses = get_licenses()
+    print(f"\n  ServerID: {licenses[-1]['serverId']}")
+    return licenses[-1]['serverId']
 
 
 def delete_license():
@@ -512,19 +477,21 @@ def delete_license():
     headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {auth_data.token}"}
 
     # Check if there are any active licenses
-    count = 0
-    for license in get_licenses():
+    isActive:bool = False
+    licenses = get_licenses()
+    for license in licenses:
         if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-            count += 1
+            isActive:bool = True
+            break
 
-    if count == 0:
-        print("No active licenses have been found in the system.")
+    if not isActive:
+        print("\nNo active licenses have been found in the system.")
     else:
         ''' 
             There is a default license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
             After new license will be applied, default lic will disappear automatically.
         '''
-        for license in get_licenses():
+        for license in licenses:
             if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                 url_delete_license = f"{url}/api/License/{license['licenseID']}" 
                 request = requests.delete(url_delete_license, headers=headers, verify=False)
@@ -584,12 +551,11 @@ if __name__ == "__main__":
     print(f"v{version}\nnote: applicable with BIM version 101 and higher.")
     import auth_data    # local module for authentication procedure
     url = auth_data.credentials['url']
-    check_active_lic = check_active_license()    
-    if check_active_lic:
-        check_privelege = check_user_privileges()
-    
+    check_active_lic = check_active_license()
+    check_privelege = check_user_privileges() if check_active_lic else print("\nWARN: No active license on the server!")
+
     while True:
-        goal = define_purpose_with_menu()
+        goal = define_purpose_and_menu()
         if goal == 'check_license':
             display_licenses()
         elif goal == 'server_id':
