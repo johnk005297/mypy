@@ -5,7 +5,7 @@ import os
 import sys
 
 version = '104'
-
+''''''''''''''''''''''''
 
 def alter_yml():
     
@@ -147,4 +147,5 @@ def alter_yml():
         os.system('pause')
 
 if __name__ == "__main__":
+    print(f"sprint-{version}")
     alter_yml()
