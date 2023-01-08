@@ -1,6 +1,6 @@
 #
 # 
-version = '1.12'
+version = '1.13'
 '''
     Script for work with license and some other small features.
 '''
@@ -139,7 +139,7 @@ class Auth:
             else:
                 logging.error(log_text)
                 return False
-        
+
         return self.token
 
 
@@ -668,6 +668,7 @@ class Export_data:
         self.workflowID_bimClassID_file:str               = 'workflowID_bimClassID_export_server.json'
         self.object_model_file:str                        = 'object_model_export_server.json'
         self.workflowsID_and_names_from_export_server:str = 'workflowsID_and_names_from_export_server.txt'  # Save it just in case if need to find a particular file among workflows or smth.
+        self.count_export_procedures:int                  = 0   # Needs for distinguish import behaviour.
 
 
     def create_folder_for_transfer_procedures(self):
@@ -691,7 +692,7 @@ class Export_data:
                 time.sleep(0.25)
                 os.mkdir(self.transfer_folder)
                 time.sleep(0.1)
-                print('   - transfer_files folder is empty.')
+                print('\n   - transfer_files folder is empty.')
             else:
                 print('   - no transfer_files folder was found.')
         except (OSError, FileExistsError, FileNotFoundError) as err:
@@ -727,14 +728,14 @@ class Export_data:
     def get_object_model(self, filename):    
         '''   Function gets object model from the server, and writes it in a file.   '''
 
-        # Need to delete object model file every time, if user have chosen 'export' from the menu.
-        if os.path.isfile(f"{self.transfer_folder}/{filename}"):
-            confirm_to_delete = input(f"There is an {filename} file already. Do you want to overwrite it?(y/n): ").lower()
-            if confirm_to_delete == 'y':
-                os.remove(f'{self.transfer_folder}/{filename}')
-            else:
-                print(f"First need to delete present {filename}.")
-                return False
+        if appMenu.menu_user_command not in ('8', '89'):    # Don't check or ask user about confirmation in case of import process.
+            if os.path.isfile(f"{self.transfer_folder}/{filename}"):
+                confirm_to_delete = input(f"There is an {filename} file already. Do you want to overwrite it?(y/n): ").lower()
+                if confirm_to_delete == 'y':
+                    os.remove(f'{self.transfer_folder}/{filename}')
+                else:
+                    print(f"First need to delete present {filename}.")
+                    return False
 
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {auth.token}"}
         url_get_object_model = f"{auth.url}/{self.api_Integration_ObjectModel_Export}"
@@ -939,7 +940,7 @@ class Export_data:
 
 
 
-class Import_data: # NEED TO FINISH THIS BLOCK
+class Import_data:
 
     def __init__(self):
         self.all_workflow_nodes_file:str            = 'all_workflow_nodes_import_server.json'
@@ -1178,7 +1179,7 @@ class AppMenu:
 
         self.menu_user_command = input("\nCommand (m for help): ").lower()
         main_menu              =       "\n  License:                                         \
-                                        \n   1  get list of licenses                         \
+                                        \n   1  check license                                \
                                         \n   2  get serverId                                 \
                                         \n   3  apply new license                            \
                                         \n   4  delete active license                        \
@@ -1197,6 +1198,7 @@ class AppMenu:
                                         \n                                                   \
                                         \n  Main:                                            \
                                         \n   m  print this menu                              \
+                                        \n   s  connect to another server                    \
                                         \n   q  exit"
 
         if self.menu_user_command == 'm':
@@ -1225,17 +1227,22 @@ class AppMenu:
             return 'import_object_model_and_workflows'
         elif self.menu_user_command == '09':
             return 'clean_transfer_files_directory'
+        elif self.menu_user_command == 's':
+            return 'connect_to_another_server'
         elif self.menu_user_command == 'q':
             return 'q'
 
 
-
-def main():    
+def main():
 
     appMenu.welcome_info_note()
-    auth.get_credentials()
-    auth.get_user_access_token(auth.url, auth.username, auth.password, auth.providerId)
-
+    try:
+        auth.get_credentials()
+        auth.get_user_access_token(auth.url, auth.username, auth.password, auth.providerId)
+    except (KeyboardInterrupt, KeyError, ValueError) as err:
+        print("\nWrong input. Exit.")
+        logging.error(err)
+        return False
     # checking if there is an active license on the server and user privileges needed for operation
     user_was_created:bool = False
     active_license:bool = license.check_active_license()
@@ -1250,21 +1257,28 @@ def main():
         goal = appMenu.define_purpose_and_menu()
         if goal == 'check_license':
             license.display_licenses()
+
         elif goal == 'server_id':
             print(f"\n   - serverId: {license.get_serverID()}")
+
         elif goal == 'apply_license':
             license.put_license()
+
         elif goal == 'delete_active_license':
             license.delete_license()
+
         elif goal == 'truncate_user_objects':
             user.delete_user_objects()
+
         elif goal == 'truncate_user_objects_info':
             print(user.delete_user_objects.__doc__)
+
         elif goal == 'export_object_model' or goal == 'export_workflows':
             if export_data.is_first_launch_export_data:
                 export_data.create_folder_for_transfer_procedures()
             if goal == 'export_object_model':
                 export_data.get_object_model(export_data.object_model_file)
+                export_data.count_export_procedures += 1
             elif goal == 'export_workflows':
                 export_data.create_workflows_directory()
                 export_data.get_all_workflow_nodes(export_data.all_workflow_nodes_file)
@@ -1272,27 +1286,44 @@ def main():
                     export_data.get_workflows()
                     export_data.get_workflow_xml()
                     export_data.get_workFlowId_and_bimClassId()
+                    export_data.count_export_procedures += 1
+
         elif goal == 'import_workflows':
-            if import_data.check_for_workflows_folder():
+            if import_data.check_for_workflows_folder() and export_data.count_export_procedures > 0:
                 export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
                 import_data.import_workflows()
+
+            elif import_data.check_for_workflows_folder() and export_data.count_export_procedures == 0:
+                export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
+                import_data.import_workflows()
+
         elif goal == 'import_object_model':
-            if import_data.check_for_object_model_file():
+            if import_data.check_for_object_model_file() and export_data.count_export_procedures > 0:
                 export_data.get_object_model(import_data.object_model_file)
                 import_data.prepare_object_model_file_for_import()
                 import_data.fix_defaulValues_in_object_model()
                 import_data.post_object_model()
+            
+            elif import_data.check_for_workflows_folder() and export_data.count_export_procedures == 0:
+                export_data.get_object_model(import_data.object_model_file)
+                import_data.prepare_object_model_file_for_import()
+                import_data.fix_defaulValues_in_object_model()
+                import_data.post_object_model()
+
         elif goal == 'import_object_model_and_workflows':
-            if import_data.check_for_workflows_folder():
-                export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
-                import_data.import_workflows()
-            if import_data.check_for_object_model_file():
-                export_data.get_object_model(import_data.object_model_file)
-                import_data.prepare_object_model_file_for_import()
-                import_data.fix_defaulValues_in_object_model()
-                import_data.post_object_model()
+            pass
+            # if import_data.check_for_workflows_folder() and export_data.count_export_procedures == 0:
+            #     export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
+            #     import_data.import_workflows()
+            # if import_data.check_for_object_model_file() and export_data.count_export_procedures == 0:
+            #     export_data.get_object_model(import_data.object_model_file)
+            #     import_data.prepare_object_model_file_for_import()
+            #     import_data.fix_defaulValues_in_object_model()
+            #     import_data.post_object_model()
         elif goal == 'clean_transfer_files_directory':
             export_data.clean_transfer_files_directory()
+        elif goal == 'connect_to_another_server':
+            pass
         elif goal == 'q':            
             break
 

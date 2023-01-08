@@ -15,17 +15,14 @@ py_course/Ex.6/.env
 py_course/test.py
 export_proj_venv
 export_task_backup
-.env
 bim_project/export_task/*.json
 bim_project/export_task/*.txt
 bim_project/tmp
 bim_project/auth_data.py
-bim_project/bak.json
 bim_project/export_task/from_export
 bim_project/export_task/files
 bim_project/license_activation/*.lic
 bim_project/license_activation/venv
-bim_project/license_activation/*.txt
-bim_project/license_activation/update_license_linux.py
+bim_project/license_activation/transfer_files
 bim_project/license_activation/archive
 
