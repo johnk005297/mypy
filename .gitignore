@@ -4,7 +4,7 @@ web_proj/web/
 *.log 
 tar_extract.py
 __pycache__
-env/
+venv/
 images/ 
 env_botProject/ 
 temp.py 

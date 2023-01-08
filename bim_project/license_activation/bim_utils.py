@@ -19,8 +19,8 @@ from colorama import init, Fore
 init(autoreset=True)
 from datetime import date
 from datetime import datetime
-import xml.etree.ElementTree as ET
 import shutil
+
 
 
 '''   Global variables   '''
@@ -32,19 +32,24 @@ pwd = os.getcwd()
 class Logs:
 
     def __init__(self):
-        self.bim_utils_log_file:str = f'{pwd}/bim_utils.log'    
-        logging.basicConfig(filename=self.bim_utils_log_file, level=logging.DEBUG,
-                            format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
+        self.bim_utils_log_file:str = f'{pwd}/bm_utils.log'
+        if not os.path.isfile(self.bim_utils_log_file):
+            logging.basicConfig(filename=self.bim_utils_log_file, level=logging.DEBUG,
+                                format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
+        else:
+            logging.basicConfig(filename=self.bim_utils_log_file, level=logging.DEBUG,
+                                format="%(asctime)s %(levelname)s - %(message)s", filemode="a", datefmt='%d-%b-%y %H:%M:%S')
+
 
 
 class Auth:
 
     def __init__(self):
         self.headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-        self.possible_request_errors: tuple = ( requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, 
+        self.possible_request_errors:tuple = (  requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, 
                                                 requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL, 
                                                 requests.exceptions.InvalidJSONError, requests.exceptions.JSONDecodeError  
-                                              )
+                                             )
         self.api_Providers: str  = 'api/Providers'
         self.api_Auth_Login: str = 'api/Auth/Login'
 
@@ -138,6 +143,7 @@ class Auth:
         return self.token
 
 
+
 class User:
 
     def __init__(self):
@@ -172,9 +178,9 @@ class User:
         ''' Getting info about current user. Response will provide a dictionary of values. '''
 
         url_get_current_user = f"{auth.url}/{self.api_Users_currentUser}"
-        headers_get_currect_user = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
+        headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
         try:
-            request = requests.get(url_get_current_user, headers=headers_get_currect_user, verify=False)
+            request = requests.get(url_get_current_user, headers=headers, verify=False)
             time.sleep(0.15)
             response = request.json()
             if request.status_code != 200:
@@ -217,8 +223,8 @@ class User:
         # user_names_and_system_roles_id: dict = {}    # dictionary to collect user's permissions.
         user_system_roles_id: list = []         # list to collect user's permissions
 
-        headers_get_users = {'Content-type':'text/plane', 'Authorization': f"Bearer {auth.token}"}
-        request = requests.get(url=f"{auth.url}/{self.api_Users}", headers=headers_get_users, verify=False)                                
+        headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {auth.token}"}
+        request = requests.get(url=f"{auth.url}/{self.api_Users}", headers=headers, verify=False)                                
         response = request.json()
         if request.status_code != 200:
             logging.error(f"{self.api_Users}: {request.text}")
@@ -237,7 +243,7 @@ class User:
 
         for id in user_system_roles_id:
             try:
-                request = requests.get(url=f"{auth.url}/{self.api_SystemRoles}/{id}", headers=headers_get_users, verify=False)
+                request = requests.get(url=f"{auth.url}/{self.api_SystemRoles}/{id}", headers=headers, verify=False)
                 response = request.json()
             except auth.possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
@@ -478,35 +484,36 @@ class User:
 
 class License:
 
+    def __init__(self):
+        self.api_License:str = "api/License"
+
+
     def get_license_token(self):
-        ''' Check if the *.lic file is in place '''
+        ''' Check if there is a license.lic file, or ask user for token. '''
 
         if os.path.isfile(f"{pwd}/license.lic"):
             with open("license.lic", "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
-                license_token = file.read().split()[0].strip("\"")
-            return license_token
+                self.license_token = file.read().split()[0].strip("\"")        
         else:
-            license_token = input("\nThere is no 'license.lic' file in the folder.\nEnter license token manually or 'q' for exit: ")
-            if len(license_token) < 10 or license_token.lower() == 'q':
-                print("No license token has been provided. Exit.\n")
+            self.license_token = input("\nThere is no 'license.lic' file in the folder.\nEnter license token manually or 'q' for exit: ")
+            if len(self.license_token) < 10 or self.license_token.lower() == 'q':
+                print("\n   - no license token has been provided. Exit.")
                 logging.info("No license token has been provided by the user.")
-                if sys.platform == 'win32':
-                    os.system('pause')
-                sys.exit()
+                return False
+        return True
 
-            return license_token
 
     def get_licenses(self):
         ''' Get all the licenses in the system '''
 
-        url_get_license = f"{auth.url}/api/License"
+        url_get_licenses:str = f'{auth.url}/{self.api_License}'
         headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {auth.token}"}
         payload = {
                     "username": auth.username,
                     "password": auth.password
-                }   
+                }
         try:
-            request = requests.get(url_get_license, data=payload, headers=headers, verify=False)
+            request = requests.get(url=url_get_licenses, data=payload, headers=headers, verify=False)
             request.raise_for_status()
         except auth.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
@@ -517,7 +524,7 @@ class License:
 
 
     def check_active_license(self):
-        ''' Check if there is an active license. Return True/False '''
+        ''' Check if there is an active license. Return True/False. '''
 
         licenses = self.get_licenses()
         for license in licenses:
@@ -574,30 +581,30 @@ class License:
 
         headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {auth.token}"}
 
-        # Check if there are any active licenses
+        # Check if there are any active licenses, except system trial license if it's active. 
+        # System trial license can't be deleted, so we can't use self.check_active_license function here.
         isActive:bool = False
         licenses = self.get_licenses()
         for license in licenses:
             if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                 isActive:bool = True
                 break
-
         if not isActive:
             print("\n   - no active licenses have been found in the system.")
         else:
             ''' 
-                There is a default license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
-                After new license will be applied, default lic will disappear automatically.
+                There is a default trial license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
+                After new license will be applied, system trial license will disappear automatically.
             '''
             for license in licenses:
-                if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-                    url_delete_license = f"{auth.url}/api/License/{license['licenseID']}" 
-                    request = requests.delete(url_delete_license, headers=headers, verify=False)
+                if license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+                    url_delete_license = f"{auth.url}/{self.api_License}/{license['licenseID']}" 
+                    request = requests.delete(url=url_delete_license, headers=headers, verify=False)
                     if request.status_code in (200, 201, 204,):
-                        print(Fore.GREEN + f"   License '{license['licenseID']}' has been deactivated!")
+                        print(Fore.GREEN + f"\n   - license '{license['licenseID']}' has been deactivated!")
                     else:
                         logging.error('%s', request.text)
-                        print(Fore.RED + f"   License '{license['licenseID']}' has not been deactivated!")
+                        print(Fore.RED + f"\n   - license '{license['licenseID']}' has not been deactivated! Check the logs.")
                         print(f"Error with deactivation: {request.status_code}")
 
 
@@ -605,116 +612,134 @@ class License:
 
         headers = {'accept': 'text/plane', 'Content-Type': 'application/json-patch+json', 
         'Authorization': f"Bearer {auth.token}"}
-        url_post_license = f"{auth.url}/api/License/"
         
-        data = json.dumps(self.get_license_token())
-        request = requests.post(url_post_license, headers=headers, data=data, verify=False)
-        response = request.json()
-        time.sleep(0.15)
-        if request.status_code in (200, 201, 204,):
-            print(Fore.GREEN + f"   New license has been posted successfully!")
-        else:
-            logging.error('%s', request.text)
-            print(Fore.RED + f"   Error: New license has not been posted!")
-
-        return response['licenseID']    
+        if self.get_license_token():
+            data = json.dumps(self.license_token)
+            request = requests.post(url=f'{auth.url}/{self.api_License}', headers=headers, data=data, verify=False)
+            response = request.json()
+            time.sleep(0.15)
+            if request.status_code in (200, 201, 204,):
+                self.new_licenseId:str = response['licenseID']
+                print(Fore.GREEN + f"\n   - new license has been posted successfully!")
+                return True
+            else:
+                logging.error('%s', request.text)
+                print(Fore.RED + f"\n   - new license has not been posted!")
+        return False
 
 
     def put_license(self):
         
-        put_license_result = False
         headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {auth.token}"}
-
         # all the active licenses will be deactivated, if user forgot to do it, and if there are any active
         for license in self.get_licenses():
             if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                 self.delete_license()
         
-        licenseID = self.post_license()   # function will post provided license, and return posted licenses ID
-        url_put_license = f"{auth.url}/api/License/active/{licenseID}"
-        payload = {}
-        request = requests.put(url_put_license, headers=headers, data=payload, verify=False)
-
-        if request.status_code in (200, 201, 204,):
-            put_license_result = True
-            print(Fore.GREEN + f"   New license has been activated successfully!")
-        else:
-            logging.error('%s', request.text)
-            print(Fore.RED + f"   Error: New license has not been activated!")
-
-        return put_license_result
+        if self.post_license():
+            url_put_license:str = f"{auth.url}/{self.api_License}/active/{self.new_licenseId}"
+            payload = {}
+            request = requests.put(url=url_put_license, headers=headers, data=payload, verify=False)
+            if request.status_code in (200, 201, 204,):
+                print(Fore.GREEN + f"   - new license has been activated successfully!")
+                return True
+            else:
+                logging.error('%s', request.text)
+                print(Fore.RED + f"   - error: New license has not been activated!")
+        return False
 
 
 
 class Export_data:
 
     def __init__(self):
-        self.transfer_files_folder:str                = f'{pwd}/transfer_files'
-        self.transfer_processes_folder:str            = f'{self.transfer_files_folder}/processes'
-        self.is_first_launch_export_data:bool         = True
-        self.api_Integration_ObjectModel_Export:str   = 'api/Integration/ObjectModel/Export'
-        self.api_WorkFlowNodes:str                    = 'api/WorkFlowNodes'
-        self.api_WorkFlows:str                        = 'api/WorkFlows'
-        self.api_Attachments:str                      = 'api/Attachments'
-        self.workflows_draft_file:str                 = 'Draft_workflows_export_server.json'
-        self.workflows_archived_file:str              = 'Archived_workflows_export_server.json'
-        self.workflows_active_file:str                = 'Active_workflows_export_server.json'
-        self.object_model_file:str                    = 'object_model_export_server.json'
-        self.exported_workflow_nodes_by_user_file:str = 'workflow_nodes_from_export.txt'
-        self.list_of_all_workflow_nodes_file:str      = 'list_of_all_workflow_nodes_export_server.json'
-        self.workflow_id_bimClass_id_file:str         = 'workflow_id_bimClass_id_export_server.json'
+        self.transfer_folder:str                          = f'{pwd}/transfer_files'
+        self.transfer_workflows_folder:str                = f'{self.transfer_folder}/workflows'
+        self.is_first_launch_export_data:bool             = True
+        self.api_Integration_ObjectModel_Export:str       = 'api/Integration/ObjectModel/Export'
+        self.api_WorkFlowNodes:str                        = 'api/WorkFlowNodes'
+        self.api_WorkFlows:str                            = 'api/WorkFlows'
+        self.api_Attachments:str                          = 'api/Attachments'
+        self.all_workflow_nodes_file:str                  = 'all_workflow_nodes_export_server.json'
+        self.workflows_draft_file:str                     = 'Draft_workflows_export_server.json'
+        self.workflows_archived_file:str                  = 'Archived_workflows_export_server.json'
+        self.workflows_active_file:str                    = 'Active_workflows_export_server.json'
+        self.selected_workflow_nodes_file:str             = 'workflow_nodes_to_import.txt'
+        self.workflowID_bimClassID_file:str               = 'workflowID_bimClassID_export_server.json'
+        self.object_model_file:str                        = 'object_model_export_server.json'
+        self.workflowsID_and_names_from_export_server:str = 'workflowsID_and_names_from_export_server.txt'  # Save it just in case if need to find a particular file among workflows or smth.
 
 
-    def create_folder_for_export_procedures(self):
-        ''' transfer_files_folder folder should be recreated only after first attempt to work with export procedure.
-            Afterwards, the directory should stay untouched.
-        '''
-        self.headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {auth.token}"}
+    def create_folder_for_transfer_procedures(self):
         try:
-            if os.path.isdir(self.transfer_files_folder):
-                shutil.rmtree(self.transfer_files_folder)
-                time.sleep(0.15)
-                os.mkdir(self.transfer_files_folder)
-            elif not os.path.isdir(self.transfer_files_folder):
-                os.mkdir(self.transfer_files_folder)
+            if not os.path.isdir(self.transfer_folder):
+                os.mkdir(self.transfer_folder)
+                time.sleep(0.1)
         except (OSError, FileExistsError, FileNotFoundError) as err:
             logging.error(err)
-            print(f"Smth is wrong with the {self.transfer_files_folder}. Check the logs.")
+            print(f"Smth is wrong with the {self.transfer_folder}. Check the logs.")
             return False
-
         self.is_first_launch_export_data = False
-        return True 
+        return True
 
 
-    def read_from_json(self, path_to_file, file_name):
-        ''' Read from JSON files, and provide dictionary in return. Need to pass two arguments in str format: path and file name. '''
-
-        file_name = file_name + '.json' if file_name[-5:] != '.json' else file_name
+    def clean_transfer_files_directory(self):
+        ''' Clean self.transfer folder option. '''        
         try:
-            with open(f'{path_to_file}/{file_name}', 'r', encoding='utf-8') as file:
-                data_from_json = json.load(file)
-        except (FileNotFoundError, json.JSONDecodeError) as err:
-            print(f"{file_name} file wasn't found. Check for it.")
-            logging.error(f"Error with {file_name}.\n{err}")
+            if os.path.isdir(self.transfer_folder):
+                shutil.rmtree(self.transfer_folder, ignore_errors=True)
+                time.sleep(0.25)
+                os.mkdir(self.transfer_folder)
+                time.sleep(0.1)
+                print('   - transfer_files folder is empty.')
+            else:
+                print('   - no transfer_files folder was found.')
+        except (OSError, FileExistsError, FileNotFoundError) as err:
+            logging.error(err)
+            print(f"Smth is wrong with the {self.transfer_folder}. Check the logs.")
             return False
-        return data_from_json
+        return True
 
 
-    def get_object_model_export(self):    
-        '''   Function gets model object from export server, and writes it in model_object_export_server.json file   '''
+    def read_file(self, path_to_file, filename):
+        ''' Read from text files. In .json case function returns a dictionary. Need to pass two arguments in str format: path and file name. '''
+        try:
+            if os.path.isfile(f'{path_to_file}/{filename}'):
+                if os.path.splitext(f'{path_to_file}/{filename}')[1] == '.json':    # checking extension of the file
+                    try:
+                        with open(f'{path_to_file}/{filename}', 'r', encoding='utf-8') as file:
+                            content = json.load(file)
+                    except json.JSONDecodeError as err:
+                        print(f"Error with the {filename} file. Check the logs.")
+                        logging.error(f"Error with {filename}.\n{err}")
+                        return False
+                    return content
+                else:
+                    with open(f"{path_to_file}/{filename}", 'r', encoding='utf-8') as file:
+                        content = file.read()
+                        return content
+        except (OSError, FileExistsError, FileNotFoundError) as err:
+            logging.error(err)
+            print(f"{filename} file wasn't found. Check for it.")
+            return False
+
+
+    def get_object_model(self, filename):    
+        '''   Function gets object model from the server, and writes it in a file.   '''
 
         # Need to delete object model file every time, if user have chosen 'export' from the menu.
-        if os.path.isfile(f"{self.transfer_files_folder}/{self.object_model_file}"):
-            confirm_to_delete = input("There is an model_object_export_server.json file already. Do you want to delete before export?(y/n): ").lower()
+        if os.path.isfile(f"{self.transfer_folder}/{filename}"):
+            confirm_to_delete = input(f"There is an {filename} file already. Do you want to overwrite it?(y/n): ").lower()
             if confirm_to_delete == 'y':
-                os.remove(f'{self.transfer_files_folder}/{self.object_model_file}')
+                os.remove(f'{self.transfer_folder}/{filename}')
             else:
-                print(f"First need to delete present {self.object_model_file}")
+                print(f"First need to delete present {filename}.")
                 return False
 
-        url_get_object_model_export = f"{auth.url}/{self.api_Integration_ObjectModel_Export}"
+        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {auth.token}"}
+        url_get_object_model = f"{auth.url}/{self.api_Integration_ObjectModel_Export}"
         try:
-            request = requests.get(url_get_object_model_export, headers=self.headers, verify=False)
+            request = requests.get(url_get_object_model, headers=headers, verify=False)
             response = request.json()
         except auth.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
@@ -722,58 +747,54 @@ class Export_data:
             return False
 
         try:
-            with open(f"{self.transfer_files_folder}/{self.object_model_file}", "w", encoding="utf-8") as json_file:
+            with open(f"{self.transfer_folder}/{filename}", "w", encoding="utf-8") as json_file:
                 json.dump(response, json_file, ensure_ascii=False, indent=4)
         except (FileNotFoundError, OSError) as err:
             logging.error(err)
-            print(f"'{self.transfer_files_folder}' folder doesn't exist.")
+            print(f"'{self.transfer_folder}' folder doesn't exist.")
             return False
 
-        logging.info(f"Object model has been exported. '{self.object_model_file}' file is ready.")
-        print(f"\n   - object model exported in '{self.object_model_file}' file.")
+        logging.info(f"Object model has been exported. '{filename}' file is ready.")
+        if appMenu.menu_user_command == '6':
+            print(f"\n   - object model exported in '{filename}' file.")
         return True
 
 
-    def create_folder_for_processes(self):
-        '''   Function creates a folder for processes in parent transfer_files_folder directory.   '''
+    def create_workflows_directory(self):
+        '''   Function creates a folder for workflows in parent transfer_folder directory.   '''
         try:
-            if not os.path.isdir(self.transfer_processes_folder):
-                os.mkdir(self.transfer_processes_folder)
+            if not os.path.isdir(self.transfer_workflows_folder):
+                os.mkdir(self.transfer_workflows_folder)
         except (OSError, FileExistsError, FileNotFoundError) as err:
             logging.error(err)
             return False
 
 
-    def define_workflow_node_export(self):
+    def select_workflow_nodes(self):
         '''   Function creates a file 'chosen_by_user_workflow_nodes_export' with chosen workflow nodes in it.   '''
 
         try:
-            if not os.path.isfile(f"{self.transfer_processes_folder}/{self.exported_workflow_nodes_by_user_file}"):
-                with open(f"{self.transfer_processes_folder}/{self.exported_workflow_nodes_by_user_file}", mode='w', encoding='utf-8'): pass
+            if not os.path.isfile(f"{self.transfer_workflows_folder}/{self.selected_workflow_nodes_file}"):
+                with open(f"{self.transfer_workflows_folder}/{self.selected_workflow_nodes_file}", mode='w', encoding='utf-8'): pass
         except (FileNotFoundError, OSError) as err:
-            print(f"'{self.transfer_processes_folder}' folder doesn't exist.")
-            logging.error(f"'{self.transfer_processes_folder}' folder doesn't exist.\n", err)
-            return
-        # Check if the 'workflow_nodes_filename_export' was created
-        if not os.path.isfile(f"{self.transfer_processes_folder}/{self.exported_workflow_nodes_by_user_file}"):
-            logging.error(f"File '{self.exported_workflow_nodes_by_user_file}' hasn't been created.")
-            print(f" File '{self.exported_workflow_nodes_by_user_file}' hasn't been created. Check logs.")
+            print(f"'{self.transfer_workflows_folder}' folder doesn't exist.")
+            logging.error(f"'{self.transfer_workflows_folder}' folder doesn't exist.\n", err)
             return
 
-        # This self.current_workflow_node_selection will only go further through the process of export. Import procedure will use 'self.exported_workflow_nodes_by_user_file' file.
-        self.current_workflow_node_selection: list = input("Choose nodes to export workflows from. Use whitespaces in-between to select more than one.  \
+        # This self.current_workflow_node_selection will only go further through the process of export. Import procedure will use 'self.selected_workflow_nodes_file' file.
+        self.current_workflow_node_selection:list = input("Choose nodes to export workflows from. Use whitespaces in-between to select more than one.  \
                                             \n(dr Draft, ar Archived, ac Active, q Quit): ").lower().split()
 
-        # if user chose anything but ('d', 'ar', 'ac'), func will return False, and no processes will be provided further
+        # if user chose anything but ('d', 'ar', 'ac'), func will return False, and no processes will go further
         if not [x for x in self.current_workflow_node_selection if x in ('dr', 'ar', 'ac')]:
             return False
         # Replacing user input to full names: Draft, Archived, Active
         self.current_workflow_node_selection:list = [x for x in self.current_workflow_node_selection if x in ('dr', 'ar', 'ac')]
         self.current_workflow_node_selection = ' '.join(self.current_workflow_node_selection).replace('dr', 'Draft').replace('ar', 'Archived').replace('ac', 'Active').split()
 
-        with open(f"{self.transfer_processes_folder}/{self.exported_workflow_nodes_by_user_file}", 'r', encoding='utf-8') as file:
+        with open(f"{self.transfer_workflows_folder}/{self.selected_workflow_nodes_file}", 'r', encoding='utf-8') as file:
             content = file.read()
-        with open(f"{self.transfer_processes_folder}/{self.exported_workflow_nodes_by_user_file}", 'a', encoding='utf-8') as file:
+        with open(f"{self.transfer_workflows_folder}/{self.selected_workflow_nodes_file}", 'a', encoding='utf-8') as file:
             for node in self.current_workflow_node_selection:
                 if node == 'Draft':
                     if self.workflows_draft_file not in content:
@@ -790,12 +811,15 @@ class Export_data:
         return True
 
 
-    def get_all_workflow_nodes_export(self):
-        '''  Getting Draft, Archived and Active nodes Id from 'list_of_workflow_nodes_export.json' file.  '''
+    def get_all_workflow_nodes(self, filename):
+        '''  Getting Draft, Archived and Active nodes from the server in .json file.  
+             Function holds a dictionary with all the nodes in format: {"NodeName": "NodeId"}.
+        '''
 
-        url_get_all_workflow_nodes_export = f"{auth.url}/{self.api_WorkFlowNodes}"
+        url_get_all_workflow_nodes = f"{auth.url}/{self.api_WorkFlowNodes}"
+        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {auth.token}"}
         try:
-            request = requests.get(url_get_all_workflow_nodes_export, headers=self.headers, verify=False)
+            request = requests.get(url=url_get_all_workflow_nodes, headers=headers, verify=False)
             response = request.json()
         except auth.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}") 
@@ -803,86 +827,89 @@ class Export_data:
             return False
 
         try:
-            if not os.path.isfile(f'{self.transfer_processes_folder}/{self.list_of_all_workflow_nodes_file}'):
-                with open(f'{self.transfer_processes_folder}/{self.list_of_all_workflow_nodes_file}', 'w', encoding='utf-8') as json_file:
+            if not os.path.isfile(f'{self.transfer_workflows_folder}/{filename}'):  # Need to keep exported file before during a single session, if it's there.
+                with open(f'{self.transfer_workflows_folder}/{filename}', 'w', encoding='utf-8') as json_file:
                     json.dump(response, json_file, ensure_ascii=False, indent=4)
+
+            # Creating a dictionary with all three nodes from the server in format: {"NodeName": "NodeId"}
+            self.workflow_nodes:dict = {}
+            for x in self.read_file(self.transfer_workflows_folder, self.all_workflow_nodes_file):
+                self.workflow_nodes[x['name']] = x['id']
+
         except (FileNotFoundError, OSError) as err:
             logging.error(err)
-            print(f"'{self.transfer_files_folder}' folder doesn't exist.")
+            print(f"'{self.transfer_folder}' folder doesn't exist.")
             return False
+
         return True
 
 
-    def get_workflows_export(self):
+    def get_workflows(self):
         ''' Get workflows from the chosen node. '''
 
-        try:
-            all_workflow_nodes = export_data.read_from_json(self.transfer_processes_folder, self.list_of_all_workflow_nodes_file)
-        except FileNotFoundError:
-            print(f"File wasn't found. Check '{self.transfer_files_folder}' folder.")
-            return False
-
-        for obj in range(len(all_workflow_nodes)):
-            node_name = all_workflow_nodes[obj]['name']
-            nodeId = all_workflow_nodes[obj]['id']            
-            if node_name not in self.current_workflow_node_selection:
+        for nodeName, nodeId in self.workflow_nodes.items():
+            if nodeName not in self.current_workflow_node_selection:
                 continue
-            url_get_workflows_export = f"{auth.url}/{self.api_WorkFlowNodes}/{nodeId}/children"
+
+            url_get_workflows = f"{auth.url}/{self.api_WorkFlowNodes}/{nodeId}/children"
+            headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {auth.token}"}
             try:
-                request = requests.get(url_get_workflows_export, headers=self.headers, verify=False)
+                request = requests.get(url_get_workflows, headers=headers, verify=False)
                 response = request.json()
             except auth.possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
                 return False
 
-            with open(f"{self.transfer_processes_folder}/{node_name}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
+            with open(f"{self.transfer_workflows_folder}/{nodeName}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
                 json.dump(response, json_file, ensure_ascii=False, indent=4)       
-            logging.info(f"'{node_name}_workflows_export_server.json' file is ready.")
+            logging.info(f"'{nodeName}_workflows_export_server.json' file is ready.")
         return True
 
 
-    def get_workflow_xml_from_export_server(self):
+    def get_workflow_xml(self):
         ''' XML for every workflow will be exported from the 'workflow_nodes_filename_export' file. '''
 
         # Transforming nodes variable into a list with workflows*.json filenames.
+        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {auth.token}"}
         nodes = ' '.join(self.current_workflow_node_selection).replace('Draft', self.workflows_draft_file).replace('Archived', self.workflows_archived_file).replace('Active', self.workflows_active_file).split()
         for node in nodes:
-            workflow_data = export_data.read_from_json(self.transfer_processes_folder, node)
+            workflow_data = export_data.read_file(self.transfer_workflows_folder, node)
             for line in workflow_data['workFlows']:
                 url_get_workflow_xml_export = f"{auth.url}/{self.api_Attachments}/{line['attachmentId']}"
-                request = requests.get(url_get_workflow_xml_export, headers=self.headers, verify=False)                
-                with open(f"{self.transfer_processes_folder}/{line['originalId']}.xml", 'wb') as file:
+                request = requests.get(url_get_workflow_xml_export, headers=headers, verify=False)                
+                with open(f"{self.transfer_workflows_folder}/{line['originalId']}.xml", 'wb') as file:
                     file.write(request.content)
                 time.sleep(0.1)
 
         return
 
 
-    def get_workFlowId_and_bimClassId_from_export_server(self):
+    def get_workFlowId_and_bimClassId(self):
         '''
             This function does mapping between workFlow_id and bimClass_id. 
             It uses list comprehension block for transformation list of objects into dictionary with {'workFlow_id': 'bimClass_id'} pairs.
         '''
+        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {auth.token}"}
 
         workFlow_id_bimClass_id_export: list = []  # temp list to store data
-        if not os.path.isfile(f"{self.transfer_processes_folder}/processes_names_with_id.txt"):
-            with open(f"{self.transfer_processes_folder}/processes_names_with_id.txt", 'w', encoding='utf-8') as file:
-                file.write('Process name and Id\n---------------------------------\n')            
+        if not os.path.isfile(f"{self.transfer_workflows_folder}/{self.workflowsID_and_names_from_export_server}"):
+            with open(f"{self.transfer_workflows_folder}/{self.workflowsID_and_names_from_export_server}", 'w', encoding='utf-8') as file:
+                file.write('Workflows: name and Id\n---------------------------------\n')            
 
         nodes = ' '.join(self.current_workflow_node_selection).replace('Draft', self.workflows_draft_file).replace('Archived', self.workflows_archived_file).replace('Active', self.workflows_active_file).split()
         for node in nodes:
-            workflow_data = export_data.read_from_json(f"{self.transfer_processes_folder}", node)
+            workflow_data = export_data.read_file(f"{self.transfer_workflows_folder}", node)
             if len(workflow_data['workFlows']) == 0:
                 print(f"   - No {node[:-19]}")
                 continue
 
             for line in workflow_data['workFlows']:
                 print(f"     {line['name']}")   # display the name of the process in the output
-                url_get_workFlowId_and_bimClassId_from_export_server = f"{auth.url}/{self.api_WorkFlows}/{line['originalId']}/BimClasses"
-                request = requests.get(url_get_workFlowId_and_bimClassId_from_export_server, headers=self.headers, verify=False)
+                url_get_workFlowId_and_bimClassId = f"{auth.url}/{self.api_WorkFlows}/{line['originalId']}/BimClasses"
+                request = requests.get(url_get_workFlowId_and_bimClassId, headers=headers, verify=False)
                 response = request.json()
                 
-                with open(f"{self.transfer_processes_folder}/{line['id']}.json", 'w', encoding='utf-8') as file:
+                with open(f"{self.transfer_workflows_folder}/{line['id']}.json", 'w', encoding='utf-8') as file:
                     json.dump(response, file, ensure_ascii=False, indent=4)
 
                 # write list with active workFlows BimClasses ID in format [workFlow_id, bimClass_id]
@@ -890,7 +917,7 @@ class Export_data:
                 workFlow_id_bimClass_id_export.append(response[0]['id'])
 
                 # saving processes name with corresponding Id
-                with open(f"{self.transfer_processes_folder}/processes_names_with_id.txt", 'a', encoding='utf-8') as file:
+                with open(f"{self.transfer_workflows_folder}/{self.workflowsID_and_names_from_export_server}", 'a', encoding='utf-8') as file:
                     file.write(f"{line['name']}\n{line['originalId']}\n\n")
 
         # List comprehension block for transformation list of values into {'workFlow_id': 'bimClass_id'} pairs.
@@ -899,12 +926,12 @@ class Export_data:
 
         workFlow_id_bimClass_id_export = dict(tmp)                                # transform tmp list from above to dictionary using dict() function in format {"workFlow_id": "bimClass_id"}
         
-        if not os.path.isfile(f"{self.transfer_processes_folder}/{self.workflow_id_bimClass_id_file}"):
-            with open(f"{self.transfer_processes_folder}/{self.workflow_id_bimClass_id_file}", 'w', encoding='utf-8') as file:
+        if not os.path.isfile(f"{self.transfer_workflows_folder}/{self.workflowID_bimClassID_file}"):
+            with open(f"{self.transfer_workflows_folder}/{self.workflowID_bimClassID_file}", 'w', encoding='utf-8') as file:
                 json.dump(workFlow_id_bimClass_id_export, file, ensure_ascii=False, indent=4)
         else:
             if workFlow_id_bimClass_id_export:  # if tmp list is True(not empty), append.
-                with open(f"{self.transfer_processes_folder}/{self.workflow_id_bimClass_id_file}", 'a', encoding='utf-8') as file:
+                with open(f"{self.transfer_workflows_folder}/{self.workflowID_bimClassID_file}", 'a', encoding='utf-8') as file:
                     json.dump(workFlow_id_bimClass_id_export, file, ensure_ascii=False, indent=4)
             
         logging.info("Mapping between workflow_ID and bimClass_ID: done. 'workFlow_id_bimClass_id_export.json' file is ready.")
@@ -912,22 +939,230 @@ class Export_data:
 
 
 
-class Import_data: # NEED TO DO THIS BLOCK
+class Import_data: # NEED TO FINISH THIS BLOCK
 
-    def create_folder_for_files_and_logs_import(self):
-        self.export_files_folder = 'transfer_files_folder'
-        if os.path.isdir(f"{pwd}/{self.export_files_folder}") is False:
-            logging.error("Folder 'files' for transferring data is missing.")
-            if sys.platform == 'win32':
-                os.system('pause')
-            sys.exit("Folder 'files' is missing. Exit.")
-        elif os.path.isdir(f"{pwd}/{self.export_files_folder}/logs") is False:
-            os.mkdir(f"{pwd}/{self.export_files_folder}/logs")
-        else: pass
+    def __init__(self):
+        self.all_workflow_nodes_file:str            = 'all_workflow_nodes_import_server.json'
+        self.object_model_file:str                  = 'object_model_import_server.json'
+        self.modified_object_model_file:str         = 'modified_object_model.json'
+        self.api_Integration_ObjectModel_Import:str = 'api/Integration/ObjectModel/Import'
 
-        # Enable logs
-        logging.basicConfig(filename=f"{pwd}/{self.export_files_folder}/logs/import_log.txt", level=logging.DEBUG,
-                            format="%(asctime)s %(levelname)s - %(message)s", filemode="w", datefmt='%d-%b-%y %H:%M:%S')
+
+    def replace_str_in_file(self, filename_2read, filename_2write, find, replace):
+        '''  Function takes 4 arguments: filename to read, filename to write, what to find, what to put instead of what to find.  '''
+
+        with open(f"{export_data.transfer_folder}/{filename_2read}", 'r', encoding='utf-8') as file:
+            new_json = file.read().replace(find, replace)      # find/replace vars must be string
+        with open(f"{export_data.transfer_folder}/{filename_2write}", 'w', encoding='utf-8') as file:
+            file.write(new_json)
+
+
+    def check_for_workflows_folder(self):
+        ## Temporary header placed here, so they could be used in all the import modules ##
+        return True if os.path.isdir(export_data.transfer_workflows_folder) else False
+
+
+    def get_BimClassId_of_current_process(self, workflowId):
+        ''' Function returns BimClass_id of provided workFlow proccess. '''
+
+        headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {auth.token}"}
+        url_get_BimClassID_of_current_process = f"{auth.url}/{export_data.api_WorkFlows}/{workflowId}/BimClasses"
+        request = requests.get(url=url_get_BimClassID_of_current_process, headers=headers_import, verify=False)
+        response = request.json()
+        for object in range(len(response)):
+            return response[object]['id']
+
+
+    def import_workflows(self):
+        
+        url_create_workflow_import = f"{auth.url}/{export_data.api_WorkFlows}"
+        headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {auth.token}"}
+
+        # Getting the id of the Draft node on import server
+        for obj in export_data.read_file(export_data.transfer_workflows_folder, self.all_workflow_nodes_file):
+            if obj['name'] == 'Draft':
+                import_server_draft_node_id:str = obj['id']
+                break
+        
+        '''  BEGIN of POST request to create workFlows  '''
+        nodes_for_import:list = export_data.read_file(export_data.transfer_workflows_folder, export_data.selected_workflow_nodes_file).split()
+        for node_workflows in nodes_for_import:
+            workflow_data = export_data.read_file(export_data.transfer_workflows_folder, node_workflows)
+            for workflow in workflow_data['workFlows']:
+                post_payload = {
+                                "name": workflow["name"],
+                                "workFlowNodeId": import_server_draft_node_id,
+                                "description": str(workflow["description"]),
+                                "elements": [],
+                                "type": workflow["type"]
+                                }
+                post_payload = json.dumps(post_payload)
+                try:
+                    post_request = requests.post(url=url_create_workflow_import, data=post_payload, headers=headers_import, verify=False)  # verify=False to eliminate SSL check which causes Error
+                    post_response = post_request.json()
+                except auth.possible_request_errors as err:
+                    logging.error(f"{err}\n{post_request.text}")
+                    return False
+
+                bimClass_id = self.get_BimClassId_of_current_process(post_response['originalId'])   # 
+                bimClass_list_id_export = export_data.read_file(export_data.transfer_workflows_folder, export_data.workflowID_bimClassID_file)                
+                time.sleep(0.2)
+                '''  END of POST request to create workFlows  '''
+
+
+                '''  BEGIN OF PUT REQUEST  '''
+                # adding 'elements': [], data from workFlows export into newly created workFlow
+                put_payload = {
+                                "name": workflow["name"],
+                                "workFlowNodeId": import_server_draft_node_id,    # 0: Draft; 1: Archived; 2: Active;
+                                "description": str(workflow["description"]),
+                                "elements": workflow['elements'],
+                                "type": workflow["type"]
+                                }
+                put_payload = json.dumps(put_payload)
+
+                # Replacement of workFlow_bimClass_ID from export server with bimClass_ID newly created workFlow on import server
+                changed_put_payload = put_payload.replace(bimClass_list_id_export[workflow["originalId"]], bimClass_id)
+
+                try:
+                    requests.put(url=f"{url_create_workflow_import}/{post_response['originalId']}", data=changed_put_payload, headers=headers_import, verify=False)  # /api/WorkFlows/{workFlowOriginalId}  
+                    time.sleep(0.2)
+                except auth.possible_request_errors as err:
+                    logging.error(err)
+                    logging.debug("Workflow name: " + workflow["name"])
+                    print(f"Error with the workflow {workflow['name']} import. Check the logs.")
+                    return False
+                '''  END OF PUT REQUEST  '''        
+
+                '''  BEGIN OF XML POST REQUEST  '''
+                headers_for_xml_import = {'accept': '*/*', 'Authorization': f"Bearer {auth.token}"}    # specific headers without 'Content-type' for import .xml file. Otherwise request doesn't work!
+                payload={}
+                files=[ ('file',(f'{workflow["originalId"]}.xml', open(f'{export_data.transfer_workflows_folder}/{workflow["originalId"]}.xml','rb'),'text/xml')) ]
+                try:           
+                    post_xml_request = requests.post(url=f"{url_create_workflow_import}/{post_response['originalId']}/Diagram?contentType=file", headers=headers_for_xml_import, data=payload, files=files, verify=False)
+                except auth.possible_request_errors as err:
+                    logging.error(f"{err}\n{post_xml_request.text}")
+
+                print("   - " + post_response['name'] + " " + ('' if post_xml_request.status_code == 200 else "  --->  error"))
+                time.sleep(0.2)
+                '''  END OF XML POST REQUEST  '''
+        return True
+
+
+    def check_for_object_model_file(self):
+        return True if os.path.isfile(f'{export_data.transfer_folder}/{export_data.object_model_file}') else False
+
+
+    def prepare_object_model_file_for_import(self):
+        '''
+            Function finds needed data(used two tuples as pointers: big_fish and small_fish) in object_model_import_server.json file, and place it in the object_model_export_server.json file.
+            Both servers use the same data structure with key-value pairs. Thus, they have identical keys and different values. We search for values we need in object_model_import_server.json file, 
+            and replace with it values in object_model_export_server.json file. Needed preparation are going to be end in modified_object_model.json file, which will be used further in import process.
+        '''
+        # Turn both .json files into dictionaries
+        data_obj_model_import = export_data.read_file(export_data.transfer_folder, self.object_model_file)
+        data_obj_model_export = export_data.read_file(export_data.transfer_folder, export_data.object_model_file)
+        
+        # Pointers to data we need to collect from the .json file
+        big_fish: tuple = ("bimPropertyTreeNodes", "bimInterfaceTreeNodes", "bimClassTreeNodes", "bimDirectoryTreeNodes", "bimStructureTreeNodes", "rootSystemBimClass", "systemBimInterfaces", 
+                            "systemBimProperties","secondLevelSystemBimClasses",)
+        small_fish: tuple = ("BimProperty", "BimInterface", "BimClass", "BimDirectory", "BimStructure", "FILE_INTERFACE", "WORK_DATES_INTERFACE", "COMMERCIAL_SECRET_BIM_INTERFACE","FILE_PROPERTY", 
+                            "PLANNED_START_PROPERTY","PLANNED_END_PROPERTY", "ACTUAL_START_PROPERTY", "ACTUAL_END_PROPERTY", "COMMERCIAL_SECRET_BIM_PROPERTY","ACTIVE_CLASS","FOLDER_CLASS", "DOCUMENT_CLASS",
+                            "WORK_CLASS", "Файл", "Даты работы", "Коммерческая тайна", "Планируемое начало", "Планируемое окончание", "Фактическое начало", "Фактическое окончание")
+
+        insert_data: dict = {}    # data that needs to be added to object_model_export_server.json file
+        replace_data: dict = {}   # data that needs to be removed from object_model_export_server.json file
+
+        # Collecting values from import model object .json file to put in export .json
+        for key in data_obj_model_import.keys():
+            if key in big_fish and isinstance(data_obj_model_import[key], list):
+                insert_data.setdefault(key, {})
+                for obj in data_obj_model_import[key]:
+                    if isinstance(obj, dict):
+                        for k,v in obj.items():
+                            if v in small_fish:
+                                # insert_data[key][k] = v
+                                # insert_data[key]['id'] = obj['id']
+                                insert_data[key][v] = obj['id']
+
+            elif key in big_fish and isinstance(data_obj_model_import[key], dict):
+                insert_data.setdefault(key, {data_obj_model_import[key]['name']: data_obj_model_import[key]['id']})
+       
+
+        # Collecting data from 'object_model_export_server.json' file to replace it with data from 'object_model_import_server.json'
+        for key in data_obj_model_export.keys():
+            if key in big_fish and isinstance(data_obj_model_export[key], list):
+                replace_data.setdefault(key, {})
+                for obj in data_obj_model_export[key]:
+                    if isinstance(obj, dict):
+                        for k,v in obj.items():
+                            if v in small_fish:
+                                # replace_data[key][k] = v
+                                # replace_data[key]['id'] = obj['id']
+                                replace_data[key][v] = obj['id']
+                               
+            elif key in big_fish and isinstance(data_obj_model_export[key], dict):
+                replace_data.setdefault(key, {data_obj_model_export[key]['name']: data_obj_model_export[key]['id']})
+
+        # Making a copy of the 'object_model_export_server.json' file which we will prepare for export
+        shutil.copyfile(f"{export_data.transfer_folder}/{export_data.object_model_file}", f"{export_data.transfer_folder}/{self.modified_object_model_file}")
+
+        # Replacement of values in .json file       
+        for key,value in replace_data.items():
+            for key_from_export_json, value_from_export_json in value.items():
+                try:
+                    self.replace_str_in_file(self.modified_object_model_file, self.modified_object_model_file, value_from_export_json, insert_data[key][key_from_export_json])
+                    time.sleep(0.1)
+                except (KeyError, ValueError, TypeError, UnicodeError, UnicodeDecodeError, UnicodeEncodeError, SyntaxError) as err:
+                    logging.error(err)
+                    return False
+
+        logging.info(f"Preparation object model file is finished. '{export_data.object_model_file}' was altered into a '{self.modified_object_model_file}' file.")
+        print("\n   - preparing object model file:        done")
+        return True
+
+
+    def fix_defaulValues_in_object_model(self):
+        '''  The function checks for 'defaultValues' keys in 'bimProperties'. If all values in the list are null, it will be replaced with an empty list [].  '''
+
+        modified_obj_model_json = export_data.read_file(export_data.transfer_folder, self.modified_object_model_file)
+        count = 0
+        with open(f"{export_data.transfer_folder}/{self.modified_object_model_file}", 'w', encoding='utf-8') as file:
+            for bimClasses_dict in modified_obj_model_json['bimClasses']:    # bimClasses - list with dictionaries inside
+                for bimProperties_dict in bimClasses_dict['bimProperties']:  # bimProperties - list with dictionaries inside               
+                    for defaultValues in bimProperties_dict.get('defaultValues'):                
+                        if all(value == None for value in defaultValues.values()):                    
+                            bimProperties_dict['defaultValues'] = []
+                            count += 1                    
+
+            json.dump(modified_obj_model_json, file, ensure_ascii=False, indent=4)
+        if count > 0:
+            print(f"   - corrupted 'defaultValues':       {count}")
+        logging.info(f"Fixing defaultValues in '{self.modified_object_model_file}' file is finished. Corrupted defaulValues: {count}")
+        return True
+
+
+    def post_object_model(self):
+
+        headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {auth.token}"}
+        url_post_object_model:str = f'{auth.url}/{self.api_Integration_ObjectModel_Import}'
+        with open(f"{export_data.transfer_folder}/{self.modified_object_model_file}", "r", encoding="utf-8") as file:
+            data = file.read()
+        # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file   
+        try:
+            post_request = requests.post(url=url_post_object_model, data=data.encode("utf-8"),  headers=headers_import, verify=False)
+        except auth.possible_request_errors as err:
+            logging.error(err)
+            print("Error with POST object model. Check the logs.")
+            return False
+
+        if post_request.status_code != 200:
+            logging.error(f"\n{post_request.text}")
+            print("   - post object model:                  error ", post_request.status_code)
+            return False
+        else:
+            print("   - post object model:                  done")
+            return True
 
 
 
@@ -941,53 +1176,56 @@ class AppMenu:
     def define_purpose_and_menu(self):
         ''' Define what the user would like to do '''
 
-        command = input("\nCommand (m for help): ").lower()
-        main_menu =   "\n  License:                                         \
-                       \n   1  get list of licenses                         \
-                       \n   2  get serverId                                 \
-                       \n   3  apply new license                            \
-                       \n   4  delete active license                        \
-                       \n                                                   \
-                       \n  Databases:                                       \
-                       \n   5  clean bimeisterdb.UserObjects table          \
-                       \n   5i info about UserObjects table                 \
-                       \n                                                   \
-                       \n  Transfer data:                                   \
-                       \n   6 export object model                           \
-                       \n   7 export processes                              \
-                       \n   8 import object model (not finished yet)        \
-                       \n   9 import processes    (not finished yet)        \
-                       \n  89 import all          (not finished yet)        \
-                       \n                                                   \
-                       \n  Main:                                            \
-                       \n   m  print this menu                              \
-                       \n   q  exit"
+        self.menu_user_command = input("\nCommand (m for help): ").lower()
+        main_menu              =       "\n  License:                                         \
+                                        \n   1  get list of licenses                         \
+                                        \n   2  get serverId                                 \
+                                        \n   3  apply new license                            \
+                                        \n   4  delete active license                        \
+                                        \n                                                   \
+                                        \n  Databases:                                       \
+                                        \n   5  clean bimeisterdb.UserObjects table          \
+                                        \n   5i info about UserObjects table                 \
+                                        \n                                                   \
+                                        \n  Transfer data:                                   \
+                                        \n   6 export object model                           \
+                                        \n   7 export workflows                              \
+                                        \n   8 import object model                           \
+                                        \n   9 import workflows                              \
+                                        \n  89 import all                                    \
+                                        \n  09 clean transfer_files folder                   \
+                                        \n                                                   \
+                                        \n  Main:                                            \
+                                        \n   m  print this menu                              \
+                                        \n   q  exit"
 
-        if command == 'm':
+        if self.menu_user_command == 'm':
             print(main_menu)
-        elif command == '1':
+        elif self.menu_user_command == '1':
             return 'check_license'
-        elif command == '2':
+        elif self.menu_user_command == '2':
             return 'server_id'
-        elif command == '3':
+        elif self.menu_user_command == '3':
             return 'apply_license'
-        elif command == '4':
+        elif self.menu_user_command == '4':
             return 'delete_active_license'
-        elif command == '5':
+        elif self.menu_user_command == '5':
             return 'truncate_user_objects'
-        elif command == '5i':
+        elif self.menu_user_command == '5i':
             return 'truncate_user_objects_info'
-        elif command == '6':
+        elif self.menu_user_command == '6':
             return 'export_object_model'
-        elif command == '7':
-            return 'export_processes'
-        elif command == '8':
+        elif self.menu_user_command == '7':
+            return 'export_workflows'
+        elif self.menu_user_command == '8':
             return 'import_object_model'
-        elif command == '9':
-            return 'import_processes'
-        elif command == '89':
-            return 'import_object_model_and_processes'
-        elif command == 'q':
+        elif self.menu_user_command == '9':
+            return 'import_workflows'
+        elif self.menu_user_command == '89':
+            return 'import_object_model_and_workflows'
+        elif self.menu_user_command == '09':
+            return 'clean_transfer_files_directory'
+        elif self.menu_user_command == 'q':
             return 'q'
 
 
@@ -1022,20 +1260,39 @@ def main():
             user.delete_user_objects()
         elif goal == 'truncate_user_objects_info':
             print(user.delete_user_objects.__doc__)
-        elif goal == 'export_object_model' or goal == 'export_processes':
+        elif goal == 'export_object_model' or goal == 'export_workflows':
             if export_data.is_first_launch_export_data:
-                export_data.create_folder_for_export_procedures()
+                export_data.create_folder_for_transfer_procedures()
             if goal == 'export_object_model':
-                export_data.get_object_model_export()
-            elif goal == 'export_processes':
-                export_data.create_folder_for_processes()
-                export_data.get_all_workflow_nodes_export()
-                if export_data.define_workflow_node_export():
-                    export_data.get_workflows_export()
-                    export_data.get_workflow_xml_from_export_server()
-                    export_data.get_workFlowId_and_bimClassId_from_export_server()
-        elif goal == 'import':
-            pass
+                export_data.get_object_model(export_data.object_model_file)
+            elif goal == 'export_workflows':
+                export_data.create_workflows_directory()
+                export_data.get_all_workflow_nodes(export_data.all_workflow_nodes_file)
+                if export_data.select_workflow_nodes():
+                    export_data.get_workflows()
+                    export_data.get_workflow_xml()
+                    export_data.get_workFlowId_and_bimClassId()
+        elif goal == 'import_workflows':
+            if import_data.check_for_workflows_folder():
+                export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
+                import_data.import_workflows()
+        elif goal == 'import_object_model':
+            if import_data.check_for_object_model_file():
+                export_data.get_object_model(import_data.object_model_file)
+                import_data.prepare_object_model_file_for_import()
+                import_data.fix_defaulValues_in_object_model()
+                import_data.post_object_model()
+        elif goal == 'import_object_model_and_workflows':
+            if import_data.check_for_workflows_folder():
+                export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
+                import_data.import_workflows()
+            if import_data.check_for_object_model_file():
+                export_data.get_object_model(import_data.object_model_file)
+                import_data.prepare_object_model_file_for_import()
+                import_data.fix_defaulValues_in_object_model()
+                import_data.post_object_model()
+        elif goal == 'clean_transfer_files_directory':
+            export_data.clean_transfer_files_directory()
         elif goal == 'q':            
             break
 
@@ -1054,5 +1311,3 @@ if __name__=='__main__':
     import_data = Import_data()
 
     main()
-    
-'''   Need to finish: 1. Import   '''    
