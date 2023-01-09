@@ -1,6 +1,6 @@
 #
 # 
-version = '1.13'
+version = '1.14'
 '''
     Script for work with license and some other small features.
 '''
@@ -668,7 +668,7 @@ class Export_data:
         self.workflowID_bimClassID_file:str               = 'workflowID_bimClassID_export_server.json'
         self.object_model_file:str                        = 'object_model_export_server.json'
         self.workflowsID_and_names_from_export_server:str = 'workflowsID_and_names_from_export_server.txt'  # Save it just in case if need to find a particular file among workflows or smth.
-        self.count_export_procedures:int                  = 0   # Needs for distinguish import behaviour.
+        self.export_server_info_file:str                  = 'export_server_info.txt'  # Needs for separation import procedures on export server during one session.
 
 
     def create_folder_for_transfer_procedures(self):
@@ -939,6 +939,13 @@ class Export_data:
         return True
 
 
+    def export_server_info(self):
+        serverId:str = license.get_serverID()
+        with open(f'{self.transfer_folder}/{self.export_server_info_file}', 'w', encoding='utf-8') as file:
+            file.write(f'{auth.url}\n')
+            file.write(serverId)
+
+
 
 class Import_data:
 
@@ -956,6 +963,14 @@ class Import_data:
             new_json = file.read().replace(find, replace)      # find/replace vars must be string
         with open(f"{export_data.transfer_folder}/{filename_2write}", 'w', encoding='utf-8') as file:
             file.write(new_json)
+
+
+    def validate_import_server(self):
+        ''' Function needs to protect from import procedure on export server during a single user session. '''
+        self.export_serverId = export_data.read_file(export_data.transfer_folder, export_data.export_server_info_file).split()[1]
+        if license.get_serverID() == self.export_serverId:
+            return False
+        return True
 
 
     def check_for_workflows_folder(self):
@@ -1198,7 +1213,6 @@ class AppMenu:
                                         \n                                                   \
                                         \n  Main:                                            \
                                         \n   m  print this menu                              \
-                                        \n   s  connect to another server                    \
                                         \n   q  exit"
 
         if self.menu_user_command == 'm':
@@ -1227,8 +1241,6 @@ class AppMenu:
             return 'import_object_model_and_workflows'
         elif self.menu_user_command == '09':
             return 'clean_transfer_files_directory'
-        elif self.menu_user_command == 's':
-            return 'connect_to_another_server'
         elif self.menu_user_command == 'q':
             return 'q'
 
@@ -1276,9 +1288,9 @@ def main():
         elif goal == 'export_object_model' or goal == 'export_workflows':
             if export_data.is_first_launch_export_data:
                 export_data.create_folder_for_transfer_procedures()
+                export_data.export_server_info()
             if goal == 'export_object_model':
                 export_data.get_object_model(export_data.object_model_file)
-                export_data.count_export_procedures += 1
             elif goal == 'export_workflows':
                 export_data.create_workflows_directory()
                 export_data.get_all_workflow_nodes(export_data.all_workflow_nodes_file)
@@ -1286,44 +1298,37 @@ def main():
                     export_data.get_workflows()
                     export_data.get_workflow_xml()
                     export_data.get_workFlowId_and_bimClassId()
-                    export_data.count_export_procedures += 1
 
         elif goal == 'import_workflows':
-            if import_data.check_for_workflows_folder() and export_data.count_export_procedures > 0:
+            validation:bool = import_data.validate_import_server()
+            if import_data.check_for_workflows_folder() and validation:
                 export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
                 import_data.import_workflows()
-
-            elif import_data.check_for_workflows_folder() and export_data.count_export_procedures == 0:
-                export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
-                import_data.import_workflows()
+            else:
+                print("Can't perform import procedure on the export server." if not validation else "No workflows for import.")
 
         elif goal == 'import_object_model':
-            if import_data.check_for_object_model_file() and export_data.count_export_procedures > 0:
+            validation:bool = import_data.validate_import_server()
+            if import_data.check_for_object_model_file() and validation:
                 export_data.get_object_model(import_data.object_model_file)
                 import_data.prepare_object_model_file_for_import()
                 import_data.fix_defaulValues_in_object_model()
                 import_data.post_object_model()
-            
-            elif import_data.check_for_workflows_folder() and export_data.count_export_procedures == 0:
+            else:
+                print("Can't perform import procedure on the export server." if not validation else "No object model for import.")
+
+        elif goal == 'import_object_model_and_workflows':
+            if import_data.check_for_workflows_folder():
+                export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
+                import_data.import_workflows()
+            if import_data.check_for_object_model_file():
                 export_data.get_object_model(import_data.object_model_file)
                 import_data.prepare_object_model_file_for_import()
                 import_data.fix_defaulValues_in_object_model()
                 import_data.post_object_model()
 
-        elif goal == 'import_object_model_and_workflows':
-            pass
-            # if import_data.check_for_workflows_folder() and export_data.count_export_procedures == 0:
-            #     export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
-            #     import_data.import_workflows()
-            # if import_data.check_for_object_model_file() and export_data.count_export_procedures == 0:
-            #     export_data.get_object_model(import_data.object_model_file)
-            #     import_data.prepare_object_model_file_for_import()
-            #     import_data.fix_defaulValues_in_object_model()
-            #     import_data.post_object_model()
         elif goal == 'clean_transfer_files_directory':
             export_data.clean_transfer_files_directory()
-        elif goal == 'connect_to_another_server':
-            pass
         elif goal == 'q':            
             break
 
