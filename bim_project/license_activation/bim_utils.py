@@ -1,6 +1,6 @@
 #
 # 
-version = '1.14'
+version = '1.15'
 '''
     Script for work with license and some other small features.
 '''
@@ -55,18 +55,11 @@ class Auth:
 
 
     def get_credentials(self):
-        '''  1. Function prompts for login and password. It returns dictionary with creds. Ex: {"url": 'http://my-bimeister.io', "username": admin, "password": mypassword}.
+        '''  1. Function prompts for login and password. It returns dictionary with creds. Ex: {"url": 'http://myaddress.io', "username": admin, "password": mypassword}.
              2. Provides provider ID for get_user_access_token() function.
         '''
-
         self.url = input("\nEnter URL: ").lower()
-        if len(self.url)==0:
-            print("Incorrect URL.")
-            if sys.platform == 'win32':
-                os.system('pause')            
-            sys.exit()
-
-        self.url = self.url[:-1] if self.url[-1] == '/' else self.url
+        self.url:str = self.url[:-1] if self.url[-1] == '/' else self.url
 
         confirm_name = input("Enter login(default, admin): ")
         confirm_pass = input("Enter password(default, Qwerty12345!): ")
@@ -95,7 +88,9 @@ class Auth:
 
 
     def get_user_access_token(self, url:str, username:str, password:str, providerId:list):
-        '''  Function to get bearer token from the server   '''
+        '''  Function to get bearer token from the server. 
+             It does not use name of class instance, because passing parameters will be different, as we need to get different token in return every time.  
+        '''
 
         for id in providerId:
             payload = {
@@ -141,6 +136,16 @@ class Auth:
                 return False
 
         return self.token
+
+
+    def connect(self):
+        try:
+            url, username, password, providerId = self.get_credentials()
+            self.get_user_access_token(url, username, password, providerId)
+            return True
+        except (KeyboardInterrupt, KeyError, ValueError, AttributeError, TypeError, IndexError, UnboundLocalError) as err:
+            print("\nWrong input.")
+            return False
 
 
 
@@ -694,7 +699,7 @@ class Export_data:
                 time.sleep(0.1)
                 print('\n   - transfer_files folder is empty.')
             else:
-                print('   - no transfer_files folder was found.')
+                print('\n   - no transfer_files folder was found.')
         except (OSError, FileExistsError, FileNotFoundError) as err:
             logging.error(err)
             print(f"Smth is wrong with the {self.transfer_folder}. Check the logs.")
@@ -705,23 +710,22 @@ class Export_data:
     def read_file(self, path_to_file, filename):
         ''' Read from text files. In .json case function returns a dictionary. Need to pass two arguments in str format: path and file name. '''
         try:
-            if os.path.isfile(f'{path_to_file}/{filename}'):
-                if os.path.splitext(f'{path_to_file}/{filename}')[1] == '.json':    # checking extension of the file
-                    try:
-                        with open(f'{path_to_file}/{filename}', 'r', encoding='utf-8') as file:
-                            content = json.load(file)
-                    except json.JSONDecodeError as err:
-                        print(f"Error with the {filename} file. Check the logs.")
-                        logging.error(f"Error with {filename}.\n{err}")
-                        return False
+            if os.path.splitext(f'{path_to_file}/{filename}')[1] == '.json':    # checking extension of the file
+                try:
+                    with open(f'{path_to_file}/{filename}', 'r', encoding='utf-8') as file:
+                        content = json.load(file)
+                except json.JSONDecodeError as err:
+                    print(f"Error with the {filename} file. Check the logs.")
+                    logging.error(f"Error with {filename}.\n{err}")
+                    return False
+                return content
+            else:
+                with open(f"{path_to_file}/{filename}", 'r', encoding='utf-8') as file:
+                    content = file.read()
                     return content
-                else:
-                    with open(f"{path_to_file}/{filename}", 'r', encoding='utf-8') as file:
-                        content = file.read()
-                        return content
         except (OSError, FileExistsError, FileNotFoundError) as err:
             logging.error(err)
-            print(f"{filename} file wasn't found. Check for it.")
+            # print(f"{filename} file wasn't found. Check for it.")
             return False
 
 
@@ -942,8 +946,20 @@ class Export_data:
     def export_server_info(self):
         serverId:str = license.get_serverID()
         with open(f'{self.transfer_folder}/{self.export_server_info_file}', 'w', encoding='utf-8') as file:
-            file.write(f'{auth.url}\n')
+            file.write("{0}\n".format(auth.url.split('//')[1]))
             file.write(serverId)
+
+
+    def export_workflows(self):
+        export_data.create_workflows_directory()
+        export_data.get_all_workflow_nodes(export_data.all_workflow_nodes_file)
+        if export_data.select_workflow_nodes():
+            export_data.get_workflows()
+            export_data.get_workflow_xml()
+            export_data.get_workFlowId_and_bimClassId()
+            return True
+        else:
+            return False
 
 
 
@@ -967,14 +983,18 @@ class Import_data:
 
     def validate_import_server(self):
         ''' Function needs to protect from import procedure on export server during a single user session. '''
-        self.export_serverId = export_data.read_file(export_data.transfer_folder, export_data.export_server_info_file).split()[1]
-        if license.get_serverID() == self.export_serverId:
+
+        check_server_info = export_data.read_file(export_data.transfer_folder, export_data.export_server_info_file)
+        if check_server_info and check_server_info.split()[1] == license.get_serverID():
             return False
-        return True
+        elif not check_server_info:
+            return False
+        else:
+            self.export_serverId = check_server_info.split()[1]
+            return True
 
 
     def check_for_workflows_folder(self):
-        ## Temporary header placed here, so they could be used in all the import modules ##
         return True if os.path.isdir(export_data.transfer_workflows_folder) else False
 
 
@@ -989,7 +1009,7 @@ class Import_data:
             return response[object]['id']
 
 
-    def import_workflows(self):
+    def post_workflows(self):
         
         url_create_workflow_import = f"{auth.url}/{export_data.api_WorkFlows}"
         headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {auth.token}"}
@@ -1181,6 +1201,32 @@ class Import_data:
             return True
 
 
+    def import_object_model(self):
+        server_validation:bool = import_data.validate_import_server()
+        object_model_file_exists:bool = import_data.check_for_object_model_file()
+        if object_model_file_exists and server_validation:
+            export_data.get_object_model(import_data.object_model_file)
+            import_data.prepare_object_model_file_for_import()
+            import_data.fix_defaulValues_in_object_model()
+            import_data.post_object_model()
+            return True
+        else:
+            print("No object_model for import." if not import_data.check_for_object_model_file() else "Can't perform import procedure on the export server.")
+            return False
+
+
+    def import_workflows(self):
+        server_validation:bool = import_data.validate_import_server()
+        workflows_folder_exists:bool = import_data.check_for_workflows_folder()
+        if workflows_folder_exists and server_validation:
+            export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
+            import_data.post_workflows()
+            return True
+        else:
+            print("No workflows for import." if not import_data.check_for_workflows_folder() else "Can't perform import procedure on the export server.")
+            return False
+
+
 
 class AppMenu:
 
@@ -1208,7 +1254,6 @@ class AppMenu:
                                         \n   7 export workflows                              \
                                         \n   8 import object model                           \
                                         \n   9 import workflows                              \
-                                        \n  89 import all                                    \
                                         \n  09 clean transfer_files folder                   \
                                         \n                                                   \
                                         \n  Main:                                            \
@@ -1237,8 +1282,8 @@ class AppMenu:
             return 'import_object_model'
         elif self.menu_user_command == '9':
             return 'import_workflows'
-        elif self.menu_user_command == '89':
-            return 'import_object_model_and_workflows'
+        # elif self.menu_user_command == '89':
+        #     return 'import_object_model_and_workflows'
         elif self.menu_user_command == '09':
             return 'clean_transfer_files_directory'
         elif self.menu_user_command == 'q':
@@ -1248,13 +1293,9 @@ class AppMenu:
 def main():
 
     appMenu.welcome_info_note()
-    try:
-        auth.get_credentials()
-        auth.get_user_access_token(auth.url, auth.username, auth.password, auth.providerId)
-    except (KeyboardInterrupt, KeyError, ValueError) as err:
-        print("\nWrong input. Exit.")
-        logging.error(err)
+    if not auth.connect():  # if connection was not established, do not continue
         return False
+
     # checking if there is an active license on the server and user privileges needed for operation
     user_was_created:bool = False
     active_license:bool = license.check_active_license()
@@ -1267,21 +1308,17 @@ def main():
 
     while True:
         goal = appMenu.define_purpose_and_menu()
+        
         if goal == 'check_license':
             license.display_licenses()
-
         elif goal == 'server_id':
             print(f"\n   - serverId: {license.get_serverID()}")
-
         elif goal == 'apply_license':
             license.put_license()
-
         elif goal == 'delete_active_license':
             license.delete_license()
-
         elif goal == 'truncate_user_objects':
             user.delete_user_objects()
-
         elif goal == 'truncate_user_objects_info':
             print(user.delete_user_objects.__doc__)
 
@@ -1292,40 +1329,12 @@ def main():
             if goal == 'export_object_model':
                 export_data.get_object_model(export_data.object_model_file)
             elif goal == 'export_workflows':
-                export_data.create_workflows_directory()
-                export_data.get_all_workflow_nodes(export_data.all_workflow_nodes_file)
-                if export_data.select_workflow_nodes():
-                    export_data.get_workflows()
-                    export_data.get_workflow_xml()
-                    export_data.get_workFlowId_and_bimClassId()
+                export_data.export_workflows()
 
         elif goal == 'import_workflows':
-            validation:bool = import_data.validate_import_server()
-            if import_data.check_for_workflows_folder() and validation:
-                export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
-                import_data.import_workflows()
-            else:
-                print("Can't perform import procedure on the export server." if not validation else "No workflows for import.")
-
+            import_data.import_workflows()
         elif goal == 'import_object_model':
-            validation:bool = import_data.validate_import_server()
-            if import_data.check_for_object_model_file() and validation:
-                export_data.get_object_model(import_data.object_model_file)
-                import_data.prepare_object_model_file_for_import()
-                import_data.fix_defaulValues_in_object_model()
-                import_data.post_object_model()
-            else:
-                print("Can't perform import procedure on the export server." if not validation else "No object model for import.")
-
-        elif goal == 'import_object_model_and_workflows':
-            if import_data.check_for_workflows_folder():
-                export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file)
-                import_data.import_workflows()
-            if import_data.check_for_object_model_file():
-                export_data.get_object_model(import_data.object_model_file)
-                import_data.prepare_object_model_file_for_import()
-                import_data.fix_defaulValues_in_object_model()
-                import_data.post_object_model()
+            import_data.import_object_model()
 
         elif goal == 'clean_transfer_files_directory':
             export_data.clean_transfer_files_directory()
