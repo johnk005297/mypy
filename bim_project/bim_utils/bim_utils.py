@@ -850,7 +850,7 @@ class Export_data:
 
 
     def get_workflows(self):
-        ''' Get workflows from the chosen node. '''
+        ''' Get all workflows from the chosen node. '''
 
         for nodeName, nodeId in self.workflow_nodes.items():
             if nodeName not in self.current_workflow_node_selection:
@@ -1325,10 +1325,11 @@ def main():
         elif goal == 'export_object_model' or goal == 'export_workflows':
             if export_data.is_first_launch_export_data:
                 export_data.create_folder_for_transfer_procedures()
-                export_data.export_server_info()
             if goal == 'export_object_model':
+                export_data.export_server_info()
                 export_data.get_object_model(export_data.object_model_file)
             elif goal == 'export_workflows':
+                export_data.export_server_info()
                 export_data.export_workflows()
 
         elif goal == 'import_workflows':
