@@ -43,14 +43,15 @@ class Logs:
 
 class Auth:
 
+    api_Providers: str  = 'api/Providers'
+    api_Auth_Login: str = 'api/Auth/Login'
+    headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
+    possible_request_errors:tuple = (  requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, 
+                                            requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL, 
+                                            requests.exceptions.InvalidJSONError, requests.exceptions.JSONDecodeError  )
+
     def __init__(self):
-        self.headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-        self.possible_request_errors:tuple = (  requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout, 
-                                                requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL, 
-                                                requests.exceptions.InvalidJSONError, requests.exceptions.JSONDecodeError  
-                                             )
-        self.api_Providers: str  = 'api/Providers'
-        self.api_Auth_Login: str = 'api/Auth/Login'
+        pass
 
 
     def get_credentials(self):
@@ -155,13 +156,15 @@ class Auth:
 
 class User:
 
+    api_UserObjects_all: str        = "api/UserObjects/all"
+    api_Users_currentUser: str      = 'api/Users/current-user'
+    api_Users: str                  = 'api/Users'
+    api_SystemRoles: str            = 'api/SystemRoles'
+    api_Users_AddSystemRole: str    = 'api/Users/AddSystemRole'
+    api_Users_RemoveSystemRole: str = 'api/Users/RemoveSystemRole'
+
     def __init__(self):
-        self.api_UserObjects_all: str        = "api/UserObjects/all"
-        self.api_Users_currentUser: str      = 'api/Users/current-user'
-        self.api_Users: str                  = 'api/Users'
-        self.api_SystemRoles: str            = 'api/SystemRoles'
-        self.api_Users_AddSystemRole: str    = 'api/Users/AddSystemRole'
-        self.api_Users_RemoveSystemRole: str = 'api/Users/RemoveSystemRole'
+        pass
 
 
     def delete_user_objects(self):
@@ -237,9 +240,9 @@ class User:
         response = request.json()
         if request.status_code != 200:
             logging.error(f"{self.api_Users}: {request.text}")
-            return True
+            return False
         
-        '''   Check if the user has needed permissions in his system roles already. # {'name': 'Licenses', 'operation': 'Write'}   '''
+        '''   Check if the user has needed permissions in his system roles already. Selecting roles from the tuple_of_needed_permissions.   '''
         # response is a nested array, list with dictionaries inside.
         for x in range(len(response)):
             if auth.username == response[x].get('userName'):
@@ -251,6 +254,7 @@ class User:
                     # user_names_and_system_roles_id.setdefault(username, []).append(role.get('id'))                                                   # Option one                                                                                                            
                     # user_names_and_system_roles_id[username] = user_names_and_system_roles_id.get(username, []) + [role.get('id')]    # Option two
 
+        # Return from this loop will close the current function.
         for id in user_system_roles_id:
             try:
                 request = requests.get(url=f"{auth.url}/{self.api_SystemRoles}/{id}", headers=headers, verify=False)
@@ -258,12 +262,12 @@ class User:
             except auth.possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
 
-            for needed_permission in tuple_of_needed_permissions:
-                if needed_permission in response['permissions']:
+            for permission in tuple_of_needed_permissions:
+                if permission in response['permissions']:
                     continue
                 else:
                     return False
-        return True
+            return True          
 
 
     def create_name_for_new_user(self):
@@ -272,7 +276,7 @@ class User:
         return new_username
 
 
-    def create_new_user_new_role_and_submitting_roles(self):
+    def create_new_user_new_role_submit_new_role(self):
 
         '''  Create a new user  '''
         self.created_user_name: str = user.create_name_for_new_user()
@@ -308,7 +312,7 @@ class User:
                 return False
             else:
                 if count == 10:
-                    logging.error("No USERs were created! Error.")
+                    logging.error("No user was created! Error.")
                     break
                 altered_data = data.replace(self.created_user_name, user.create_name_for_new_user())
                 request = requests.post(url=f"{auth.url}/{self.api_Users}", headers=headers_create_user_and_system_role, data=altered_data, verify=False)                
@@ -494,8 +498,10 @@ class User:
 
 class License:
 
+    api_License:str = "api/License"
+
     def __init__(self):
-        self.api_License:str = "api/License"
+        pass
 
 
     def get_license_token(self):
@@ -533,13 +539,14 @@ class License:
         return response
 
 
-    def check_active_license(self):
+    def get_license_status(self):
         ''' Check if there is an active license. Return True/False. '''
 
         licenses = self.get_licenses()
         for license in licenses:
-            if license['isActive'] and license['activeUsers'] > license['activeUsersLimit']:
-                print("Users limit was exceeded!")
+            if license['activeUsers'] > license['activeUsersLimit']:
+                logging.error(f"Users limit was exceeded! Active users: {license['activeUsers']}. Users limit: {license['activeUsersLimit']}")
+                print("Users limit is exceeded!")
                 return False
             elif license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] > str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
                 return True
@@ -557,7 +564,7 @@ class License:
         ''' Display the licenses '''
 
         licenses: list = self.get_licenses()
-        if not self.check_active_license():
+        if not self.get_license_status():
             for number, license in enumerate(licenses, 1):
                 print(f"\n  License {number}:")
                 if license['licenseID'] == '00000000-0000-0000-0000-000000000000':
@@ -567,7 +574,9 @@ class License:
                     else:
                         print(f"   - trial deploy license\n   - validation period: {license['until'][:19]}")
                         continue
-
+                elif license['activeUsers'] > license['activeUsersLimit']:  # need to show license details in case where activeUsers are exceeded UsersLimit.
+                    print(f"   - {key}: {value}")
+                    continue
                 for key, value in license.items():
                     # Ternary operator. Made it just for exercise. It's hard to read, so we should aviod to use such constructions. 
                     # Commented "if-elif-else" block below provides the same result, but way more readable.
@@ -579,14 +588,20 @@ class License:
                     # elif not value:
                     #     print(f" - {key}: {Fore.RED + str(value)}")
                     # else:
-                    #     print(f" - {key}: {value}")
-        else:
+                    #     print(f" - {key}: {value}")        
+        elif self.get_license_status():
             for license in licenses:
                 if license.get('isActive'):
-                    print()
-                    for key, value in license.items():
-                        print( f"   - {key}: {Fore.GREEN + str(value)}" if key == 'isActive' else f"   - {key}: {value}" )
+                    if license.get('licenseID') == '00000000-0000-0000-0000-000000000000':
+                        print(f"\n   - trial deploy license\n   - validation period: {license['until'][:19]}")
+                    else:
+                        print()
+                        for key, value in license.items():
+                            print( f"   - {key}: {Fore.GREEN + str(value)}" if key == 'isActive' else f"   - {key}: {value}" )
                     break
+                else: continue
+        else:
+            logging.error("Unpredictable behaviour(license status) in License class.")
 
 
     def delete_license(self):
@@ -595,7 +610,7 @@ class License:
         headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {auth.token}"}
 
         # Check if there are any active licenses, except system trial license if it's active. 
-        # System trial license can't be deleted, so we can't use self.check_active_license function here.
+        # System trial license can't be deleted, so we can't use self.get_license_status function here.
         isActive:bool = False
         licenses = self.get_licenses()
         for license in licenses:
@@ -665,23 +680,24 @@ class License:
 
 class Export_data:
 
+    transfer_folder:str                          = f'{pwd}/transfer_files'
+    transfer_workflows_folder:str                = f'{transfer_folder}/workflows'
+    api_Integration_ObjectModel_Export:str       = 'api/Integration/ObjectModel/Export'
+    api_WorkFlowNodes:str                        = 'api/WorkFlowNodes'
+    api_WorkFlows:str                            = 'api/WorkFlows'
+    api_Attachments:str                          = 'api/Attachments'
+    all_workflow_nodes_file:str                  = 'all_workflow_nodes_export_server.json'
+    workflows_draft_file:str                     = 'Draft_workflows_export_server.json'
+    workflows_archived_file:str                  = 'Archived_workflows_export_server.json'
+    workflows_active_file:str                    = 'Active_workflows_export_server.json'
+    selected_workflow_nodes_file:str             = 'workflow_nodes_to_import.txt'
+    workflowID_bimClassID_file:str               = 'workflowID_bimClassID_export_server.json'
+    object_model_file:str                        = 'object_model_export_server.json'
+    workflowsID_and_names_from_export_server:str = 'workflowsID_and_names_from_export_server.txt'  # Save it just in case if need to find a particular file among workflows or smth.
+    export_server_info_file:str                  = 'export_server_info.txt'  # Needs for separation import procedures on export server during one session.
+
     def __init__(self):
-        self.transfer_folder:str                          = f'{pwd}/transfer_files'
-        self.transfer_workflows_folder:str                = f'{self.transfer_folder}/workflows'
-        self.is_first_launch_export_data:bool             = True
-        self.api_Integration_ObjectModel_Export:str       = 'api/Integration/ObjectModel/Export'
-        self.api_WorkFlowNodes:str                        = 'api/WorkFlowNodes'
-        self.api_WorkFlows:str                            = 'api/WorkFlows'
-        self.api_Attachments:str                          = 'api/Attachments'
-        self.all_workflow_nodes_file:str                  = 'all_workflow_nodes_export_server.json'
-        self.workflows_draft_file:str                     = 'Draft_workflows_export_server.json'
-        self.workflows_archived_file:str                  = 'Archived_workflows_export_server.json'
-        self.workflows_active_file:str                    = 'Active_workflows_export_server.json'
-        self.selected_workflow_nodes_file:str             = 'workflow_nodes_to_import.txt'
-        self.workflowID_bimClassID_file:str               = 'workflowID_bimClassID_export_server.json'
-        self.object_model_file:str                        = 'object_model_export_server.json'
-        self.workflowsID_and_names_from_export_server:str = 'workflowsID_and_names_from_export_server.txt'  # Save it just in case if need to find a particular file among workflows or smth.
-        self.export_server_info_file:str                  = 'export_server_info.txt'  # Needs for separation import procedures on export server during one session.
+        self.is_first_launch_export_data:bool = True
 
 
     def create_folder_for_transfer_procedures(self):
@@ -733,7 +749,6 @@ class Export_data:
                     return content
         except (OSError, FileExistsError, FileNotFoundError) as err:
             logging.error(err)
-            # print(f"{filename} file wasn't found. Check for it.")
             return False
 
 
@@ -746,7 +761,6 @@ class Export_data:
                 if confirm_to_delete == 'y':
                     os.remove(f'{self.transfer_folder}/{filename}')
                 else:
-                    print(f"First need to delete present {filename}.")
                     return False
 
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {auth.token}"}
@@ -973,11 +987,13 @@ class Export_data:
 
 class Import_data:
 
+    all_workflow_nodes_file:str            = 'all_workflow_nodes_import_server.json'
+    object_model_file:str                  = 'object_model_import_server.json'
+    modified_object_model_file:str         = 'modified_object_model.json'
+    api_Integration_ObjectModel_Import:str = 'api/Integration/ObjectModel/Import'
+
     def __init__(self):
-        self.all_workflow_nodes_file:str            = 'all_workflow_nodes_import_server.json'
-        self.object_model_file:str                  = 'object_model_import_server.json'
-        self.modified_object_model_file:str         = 'modified_object_model.json'
-        self.api_Integration_ObjectModel_Import:str = 'api/Integration/ObjectModel/Import'
+        pass
 
 
     def replace_str_in_file(self, filename_2read, filename_2write, find, replace):
@@ -1306,17 +1322,16 @@ def main():
 
     # checking if there is an active license on the server and user privileges needed for operation
     user_was_created:bool = False
-    active_license:bool = license.check_active_license()
+    active_license:bool = license.get_license_status()
     if active_license:
         # if there is a license, need to check user's privileges
         if not user.check_user_privileges():
-            user_was_created = user.create_new_user_new_role_and_submitting_roles()
+            user_was_created = user.create_new_user_new_role_submit_new_role()
     else:
         print("\nWARN: No active license on the server!")
 
     while True:
-        goal = appMenu.define_purpose_and_menu()
-        
+        goal = appMenu.define_purpose_and_menu()        
         if goal == 'check_license':
             license.display_licenses()
         elif goal == 'server_id':
