@@ -1,6 +1,6 @@
 #
 # 
-version = '1.15'
+version = '1.16'
 '''
     Script for work with license and some other small features.
 '''
@@ -20,7 +20,6 @@ init(autoreset=True)
 from datetime import date
 from datetime import datetime
 import shutil
-
 
 
 '''   Global variables   '''
@@ -79,7 +78,12 @@ class Auth:
                 logging.error(f"Connection error via '{self.url[:self.url.index(':')]}':\n{err}.")
                 self.url = self.url[:4] + self.url[5:] if self.url[4] == 's' else self.url[:4] + 's' + self.url[4:]
                 if x == 1:
-                    logging.error(f"Check host connection to {self.url}.")
+                    message:str = "Error: Check connection to host."
+                    print(message)
+                    logging.error(f"{err}\n{message}")
+                    if sys.platform == 'win32':
+                        os.system('pause')
+                    sys.exit()
                 continue
 
         response = check_url_request.json()
@@ -233,6 +237,7 @@ class User:
         response = request.json()
         if request.status_code != 200:
             logging.error(f"{self.api_Users}: {request.text}")
+            return True
         
         '''   Check if the user has needed permissions in his system roles already. # {'name': 'Licenses', 'operation': 'Write'}   '''
         # response is a nested array, list with dictionaries inside.
@@ -533,12 +538,15 @@ class License:
 
         licenses = self.get_licenses()
         for license in licenses:
-            if license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] > str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
+            if license['isActive'] and license['activeUsers'] > license['activeUsersLimit']:
+                print("Users limit was exceeded!")
+                return False
+            elif license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] > str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
                 return True
             elif license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                 return True
         return False
-    
+
 
     def get_serverID(self):
         licenses = self.get_licenses()
