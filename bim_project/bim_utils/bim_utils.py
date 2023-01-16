@@ -1,6 +1,6 @@
 #
 # 
-version = '1.16'
+version = '1.17'
 '''
     Script for work with license and some other small features.
 '''
@@ -370,6 +370,7 @@ class User:
                              \nSystem role '{self.created_system_role_id}' to user '{self.created_user_name}' added successfully.")
             else:
                 logging.error(request.text)
+                return False
         except auth.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
@@ -401,9 +402,8 @@ class User:
         except auth.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
             return False
-
         return True
-    
+
 
     def delete_created_system_role_and_user(self):
 
@@ -430,7 +430,6 @@ class User:
                     return True
                 else:
                     logging.error(request.text)
-                    return False
             except auth.possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
                 return False
@@ -456,7 +455,8 @@ class User:
                     logging.error(request.text)
             except auth.possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
-
+                return False
+            return True
 
         def delete_system_role():
             ''' Delete created system role '''
@@ -472,6 +472,8 @@ class User:
                     logging.error(request.text)
             except auth.possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
+                return False
+            return True
 
 
         def delete_user():
@@ -488,6 +490,8 @@ class User:
                     logging.error(request.text)
             except auth.possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
+                return False
+            return True
 
         remove_role_from_current_user()
         remove_role_from_created_user()
@@ -675,6 +679,10 @@ class License:
                 logging.error('%s', request.text)
                 print(Fore.RED + f"   - error: New license has not been activated!")
         return False
+    
+
+    def general_check_for_license_and_permissions(self):
+        return user.create_new_user_new_role_submit_new_role() if license.get_license_status() and not user.check_user_privileges() else False
 
 
 
@@ -1006,7 +1014,7 @@ class Import_data:
 
 
     def validate_import_server(self):
-        ''' Function needs to protect from import procedure on export server during a single user session. '''
+        ''' Function needs to protect export server from import procedure during a single user session. '''
 
         check_server_info = export_data.read_file(export_data.transfer_folder, export_data.export_server_info_file)
         if check_server_info and check_server_info.split()[1] == license.get_serverID():
@@ -1282,6 +1290,7 @@ class AppMenu:
                                         \n                                                   \
                                         \n  Main:                                            \
                                         \n   m  print this menu                              \
+                                        \n   c  connect to another server                    \
                                         \n   q  exit"
 
         if self.menu_user_command == 'm':
@@ -1306,10 +1315,10 @@ class AppMenu:
             return 'import_object_model'
         elif self.menu_user_command == '9':
             return 'import_workflows'
-        # elif self.menu_user_command == '89':
-        #     return 'import_object_model_and_workflows'
         elif self.menu_user_command == '09':
             return 'clean_transfer_files_directory'
+        elif self.menu_user_command == 'c':
+            return 'connect_to_another_server'
         elif self.menu_user_command == 'q':
             return 'q'
 
@@ -1320,53 +1329,52 @@ def main():
     if not auth.connect():  # if connection was not established, do not continue
         return False
 
-    # checking if there is an active license on the server and user privileges needed for operation
-    user_was_created:bool = False
-    active_license:bool = license.get_license_status()
-    if active_license:
-        # if there is a license, need to check user's privileges
-        if not user.check_user_privileges():
-            user_was_created = user.create_new_user_new_role_submit_new_role()
-    else:
-        print("\nWARN: No active license on the server!")
+    privileges_where_granted:bool = license.general_check_for_license_and_permissions()
 
     while True:
-        goal = appMenu.define_purpose_and_menu()        
-        if goal == 'check_license':
+        command = appMenu.define_purpose_and_menu()
+        if command == 'check_license':
             license.display_licenses()
-        elif goal == 'server_id':
+        elif command == 'server_id':
             print(f"\n   - serverId: {license.get_serverID()}")
-        elif goal == 'apply_license':
+        elif command == 'apply_license':
             license.put_license()
-        elif goal == 'delete_active_license':
+        elif command == 'delete_active_license':
             license.delete_license()
-        elif goal == 'truncate_user_objects':
+        elif command == 'truncate_user_objects':
             user.delete_user_objects()
-        elif goal == 'truncate_user_objects_info':
+        elif command == 'truncate_user_objects_info':
             print(user.delete_user_objects.__doc__)
 
-        elif goal == 'export_object_model' or goal == 'export_workflows':
+        elif command == 'export_object_model' or command == 'export_workflows':
             if export_data.is_first_launch_export_data:
                 export_data.create_folder_for_transfer_procedures()
-            if goal == 'export_object_model':
+            if command == 'export_object_model':
                 export_data.export_server_info()
                 export_data.get_object_model(export_data.object_model_file)
-            elif goal == 'export_workflows':
+            elif command == 'export_workflows':
                 export_data.export_server_info()
                 export_data.export_workflows()
 
-        elif goal == 'import_workflows':
+        elif command == 'import_workflows':
             import_data.import_workflows()
-        elif goal == 'import_object_model':
+        elif command == 'import_object_model':
             import_data.import_object_model()
 
-        elif goal == 'clean_transfer_files_directory':
+        elif command == 'clean_transfer_files_directory':
             export_data.clean_transfer_files_directory()
-        elif goal == 'q':            
-            break
 
-    if user_was_created:
-        user.delete_created_system_role_and_user()
+        elif command == 'q':
+            if privileges_where_granted:
+                user.delete_created_system_role_and_user()
+            break
+        elif command == 'connect_to_another_server':
+            if privileges_where_granted:
+                user.delete_created_system_role_and_user()
+                privileges_where_granted = False
+            if not auth.connect():
+                return False
+            privileges_where_granted:bool = license.general_check_for_license_and_permissions()
 
 
 if __name__=='__main__':
