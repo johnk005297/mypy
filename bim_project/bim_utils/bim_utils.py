@@ -548,7 +548,7 @@ class License:
 
         licenses = self.get_licenses()
         for license in licenses:
-            if license['activeUsers'] > license['activeUsersLimit']:
+            if license['activeUsers'] > license['activeUsersLimit'] and license['isActive']:
                 logging.error(f"Users limit was exceeded! Active users: {license['activeUsers']}. Users limit: {license['activeUsersLimit']}")
                 print("Users limit is exceeded!")
                 return False
@@ -578,30 +578,18 @@ class License:
                     else:
                         print(f"   - trial deploy license\n   - validation period: {license['until'][:19]}")
                         continue
-                elif license['activeUsers'] > license['activeUsersLimit']:  # need to show license details in case where activeUsers are exceeded UsersLimit.
-                    print(f"   - {key}: {value}")
-                    continue
                 for key, value in license.items():
-                    # Ternary operator. Made it just for exercise. It's hard to read, so we should aviod to use such constructions. 
-                    # Commented "if-elif-else" block below provides the same result, but way more readable.
-                    print(f"   - {key}: {Fore.GREEN + str(value)}" if value and key == 'isActive'   # "if value" by default means "if value is True"
-                                else (f"   - {key}: {Fore.RED + str(value)}" if not value else f"   - {key}: {value}"))
+                    print(f"   - {key}: {Fore.RED + str(value)}" if not value and key == 'isActive' else f"   - {key}: {value}")
 
-                    # if value and key == 'isActive':
-                    #     print(f" - {key}: {Fore.GREEN + str(value)}")
-                    # elif not value:
-                    #     print(f" - {key}: {Fore.RED + str(value)}")
-                    # else:
-                    #     print(f" - {key}: {value}")        
         elif self.get_license_status():
             for license in licenses:
                 if license.get('isActive'):
+                    print()
                     if license.get('licenseID') == '00000000-0000-0000-0000-000000000000':
-                        print(f"\n   - trial deploy license\n   - validation period: {license['until'][:19]}")
+                        print(f"   - trial deploy license\n   - validation period: {license['until'][:19]}")
                     else:
-                        print()
                         for key, value in license.items():
-                            print( f"   - {key}: {Fore.GREEN + str(value)}" if key == 'isActive' else f"   - {key}: {value}" )
+                            print( f"   - {key}: {Fore.GREEN + str(value)}" if value and key == 'isActive' else f"   - {key}: {value}" )
                     break
                 else: continue
         else:
