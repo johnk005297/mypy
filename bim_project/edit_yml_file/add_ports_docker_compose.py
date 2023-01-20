@@ -4,7 +4,7 @@
 import os
 import sys
 
-version = '104'
+version = '106'
 ''''''''''''''''''''''''
 
 def alter_yml():
@@ -38,7 +38,7 @@ def alter_yml():
         'minio:': "9000:9000",
         'ldapwebapi:': "5103:5000",
         'rabbitmq:': ["5672:5672", "15672:15672"],
-        'redis:': "6379:6379",
+        'keydb:': "6379:6379",
         'spatialdb:': "5434:5432",
         'influxdb:': "8086:8086",
         'license-service:': "5501:5000",
@@ -56,7 +56,6 @@ def alter_yml():
         'ifc_converter:': "10040:5000",
         'collision_calculator:': "10060:5000",
         'spatiumdb:': "5435:5432",
-        'potential_failure_messages_db:': "5440:5432",
         'hangfiredb:': "5437:5432",                
         'timescaledb:': "5450:5432",        
         'nifi:': "8100:8080",                
