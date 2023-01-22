@@ -14,7 +14,7 @@ def alter_yml():
     # check if the file exists
     if not os.path.isfile(f"{os.getcwd()}/{yml_file}"):
         print("No .yml file has been found. Exit!")
-        sys.exit()
+        return False
 
     read_file = os.getcwd() + "\\" + yml_file
     yml_file_open_ports = yml_file[:-4] +'_open_ports.yml'
@@ -88,7 +88,8 @@ def alter_yml():
         yml_file_as_list += ['\n'*2]  # Add two more empty elements to stay in the list range during future checks of the next lines. Precaution measure.
 
     except Exception as err:
-            sys.exit("Error: ", err)
+            print("Error: ", err)
+            return False
 
     count:int = 0
     ports:str = 'ports:\n'    
@@ -106,7 +107,8 @@ def alter_yml():
     try:
         spaces_before_service_name
     except NameError as err:
-        sys.exit(f"Can't find 'service:' block. Check {yml_file} file! Exit.")
+        print(f"Can't find 'service:' block. Check {yml_file} file! Exit.")
+        return False
 
     for index in range(len(yml_file_as_list)):
         current_str = yml_file_as_list[index].rstrip()   # current line from the .yml file without whitespaces from the right
