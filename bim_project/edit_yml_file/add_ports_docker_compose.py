@@ -103,7 +103,7 @@ def alter_yml():
                     list_of_presented_services.append(yml_file_as_list[num].rstrip())
                 num += 1
             break
-    
+
     try:
         spaces_before_service_name
     except NameError as err:
