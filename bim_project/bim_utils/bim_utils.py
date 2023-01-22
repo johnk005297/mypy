@@ -220,8 +220,8 @@ class User:
                                                 # 'ProcessesWrite',
                                                 # 'GroupsRead',
                                                 # 'GroupsWrite',
-                                                'LicensesRead',
-                                                'LicensesWrite',
+                                                # 'LicensesRead',
+                                                # 'LicensesWrite',
                                                 # 'UsersRead',
                                                 # 'UsersWrite',
                                                 # 'RolesWrite',
@@ -730,17 +730,16 @@ class Export_data:
     def read_file(self, path_to_file, filename):
         ''' Read from text files. In .json case function returns a dictionary. Need to pass two arguments in str format: path and file name. '''
         try:
-            if os.path.splitext(f'{path_to_file}/{filename}')[1] == '.json':    # checking extension of the file
-                try:
-                    with open(f'{path_to_file}/{filename}', 'r', encoding='utf-8') as file:
+            with open(f"{path_to_file}/{filename}", 'r', encoding='utf-8') as file:
+                if os.path.splitext(f'{path_to_file}/{filename}')[1] == '.json':    # checking extension of the file
+                    try:
                         content = json.load(file)
-                except json.JSONDecodeError as err:
-                    print(f"Error with the {filename} file. Check the logs.")
-                    logging.error(f"Error with {filename}.\n{err}")
-                    return False
-                return content
-            else:
-                with open(f"{path_to_file}/{filename}", 'r', encoding='utf-8') as file:
+                    except json.JSONDecodeError as err:
+                        print(f"Error with the {filename} file. Check the logs.")
+                        logging.error(f"Error with {filename}.\n{err}")
+                        return False
+                    return content
+                else:
                     content = file.read()
                     return content
         except (OSError, FileExistsError, FileNotFoundError) as err:
@@ -1321,6 +1320,7 @@ def main():
 
     while True:
         command = appMenu.define_purpose_and_menu()
+        # License
         if command == 'check_license':
             license.display_licenses()
         elif command == 'server_id':
@@ -1329,11 +1329,12 @@ def main():
             license.put_license()
         elif command == 'delete_active_license':
             license.delete_license()
+        # UserObjects table
         elif command == 'truncate_user_objects':
             user.delete_user_objects()
         elif command == 'truncate_user_objects_info':
             print(user.delete_user_objects.__doc__)
-
+        # Export
         elif command == 'export_object_model' or command == 'export_workflows':
             if export_data.is_first_launch_export_data:
                 export_data.create_folder_for_transfer_procedures()
@@ -1343,15 +1344,14 @@ def main():
             elif command == 'export_workflows':
                 export_data.export_server_info()
                 export_data.export_workflows()
-
+        # Import
         elif command == 'import_workflows':
             import_data.import_workflows()
         elif command == 'import_object_model':
             import_data.import_object_model()
-
+        # Generic
         elif command == 'clean_transfer_files_directory':
             export_data.clean_transfer_files_directory()
-
         elif command == 'q':
             if privileges_where_granted:
                 user.delete_created_system_role_and_user()
