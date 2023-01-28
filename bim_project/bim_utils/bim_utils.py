@@ -1,6 +1,6 @@
 #
 # 
-version = '1.18'
+version = '1.19'
 '''
     Script for work with license and some other small features.
 '''
@@ -128,6 +128,7 @@ class Auth:
 
 
     def get_user_access_token(self, url, username, password, providerId):
+        ''' Basically this is a login into system, after what we get an access token. '''
 
         payload = {
                     "username":   username,
@@ -163,14 +164,12 @@ class Auth:
                 return False
         elif auth_request.status_code  in (200, 201, 204):
             self.token = response['access_token']
-            # self.user = User()
             return True
         else:
             logging.error(log)
             return False
 
 
-        
 
 class User:
 
@@ -182,6 +181,7 @@ class User:
     api_Users_AddSystemRole:str    = 'api/Users/AddSystemRole'
     api_Users_RemoveSystemRole:str = 'api/Users/RemoveSystemRole'
     auth02 = Auth()
+
     def __init__(self):
         pass
 
@@ -230,10 +230,7 @@ class User:
     
 
     def check_user_privileges(self, url, token, username, permissions_to_check:tuple):
-        '''
-            There is a tuple of needed permissions. Need to uncomment wanted of them to check the appropriate permissions.
-            If the user doesn't have required permissions -> create another user and assing him a system role.
-        '''
+        ''' Function requires to pass permissions needed to be checked, along with url, token and username. '''
 
         tuple_of_needed_permissions:tuple = (
                                                 # 'MailServerRead',
@@ -258,8 +255,7 @@ class User:
                                                 # 'CreateProject'
                                             )
     
-        # user_names_and_system_roles_id: dict = {}    # dictionary to collect user's permissions.
-        user_system_roles_id: list = []         # list to collect user's permissions
+        user_system_roles_id: list = []  # list to collect user's system roles Id.
 
         headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
         request = requests.get(url=f"{url}/{self.api_Users}", headers=headers, verify=False)                                
@@ -279,7 +275,7 @@ class User:
 
                     ''' We're taking userName and fill our dictionary with it. In format {'userName': [systemRoles_id1, systemRoles_id2, ...}
                         Two options to create a dictionary we need. '''
-                    # user_names_and_system_roles_id.setdefault(username, []).append(role.get('id'))                                                   # Option one                                                                                                            
+                    # user_names_and_system_roles_id.setdefault(username, []).append(role.get('id'))                                    # Option one                                                                                                            
                     # user_names_and_system_roles_id[username] = user_names_and_system_roles_id.get(username, []) + [role.get('id')]    # Option two
 
         # Return from this loop will close the current function.
@@ -408,8 +404,11 @@ class User:
         '''
         self.current_user:dict = self.get_current_user(url, token)
 
+
         ''' Adding created role to current user '''
-        self.auth02.get_user_access_token(auth.url, self.created_user_name, password, auth.providerId)
+
+        # logging in with newly created user account
+        self.auth02.get_user_access_token(url, self.created_user_name, password, auth.providerId)
   
         headers_add_system_role_to_current_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {self.auth02.token}"}
         payload_add_system_role = {
@@ -423,7 +422,7 @@ class User:
             time.sleep(0.15)
             if request.status_code in (201, 204):
                 logging.info(f"Adding created role to current user. \
-                             \nSystem role '{self.created_system_role_id}' to user <{auth.username}> added successfully.")
+                             \nSystem role '{self.created_system_role_id}' to user '{auth.username}' added successfully.")
             else:
                 logging.error(request.text)
         except auth.possible_request_errors as err:
@@ -432,7 +431,7 @@ class User:
         return True
 
 
-    def delete_created_system_role_and_user(self, url, password):
+    def delete_created_system_role_and_user(self, url):
 
         def remove_role_from_current_user():
             ''' Remove created role from the current user. Otherwise, the role cannot be deleted. '''
@@ -461,6 +460,8 @@ class User:
         def remove_role_from_created_user():
             ''' Remove created role from created user. '''
 
+            # this function implements loging procedure, so we need to re-login as current user again
+            auth.get_user_access_token(url, auth.username, auth.password, auth.providerId)
             headers_remove_system_role_from_created_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {auth.token}" }
             payload_remove_system_role = {
                                             "systemRoleId": self.created_system_role_id,
@@ -484,7 +485,7 @@ class User:
         def delete_system_role():
             ''' Delete created system role '''
 
-            url_delete_system_role = f"{auth.url}/{self.api_SystemRoles}/{self.created_system_role_id}"
+            url_delete_system_role = f"{url}/{self.api_SystemRoles}/{self.created_system_role_id}"
             headers = {'accept': '*/*', 'Authorization': f"Bearer {auth.token}"}
             try:
                 request = requests.delete(url=url_delete_system_role, headers=headers, verify=False)
@@ -503,7 +504,7 @@ class User:
             ''' Delete created user '''
 
             headers = {'accept': '*/*', 'Authorization': f"Bearer {auth.token}"}
-            url_delete_user = f"{auth.url}/{self.api_Users}/{self.created_user_id}"
+            url_delete_user = f"{url}/{self.api_Users}/{self.created_user_id}"
             try:
                 request = requests.delete(url=url_delete_user, headers=headers, verify=False)
                 if request.status_code in (201, 204):
@@ -539,14 +540,14 @@ class License:
             return False
         elif not is_active_license:
             logging.info("No active license. Can't perform privileges check.")
-            return True
+            return True  # Need to return True, because without an active license it isn't possible to perform any check
         else:
             return True
 
 
     def grant_privileges(self, url, token, username, password):
-        if not self.check_permissions(url, token, username, password):
-            return user.create_new_user_new_role_submit_new_role(url, token, password)
+
+        return user.create_new_user_new_role_submit_new_role(url, token, password) if not self.check_permissions(url, token, username, password) else False
 
 
     def read_license_token(self):
@@ -1394,13 +1395,12 @@ def main():
         elif command == 'clean_transfer_files_directory':
             export_data.clean_transfer_files_directory()
         elif command == 'q':
-            # auth02 = Auth()  # Creating another class instanse to get a new token
             if privileges_were_granted:
-                user.delete_created_system_role_and_user(auth.url, auth.password)
+                user.delete_created_system_role_and_user(auth.url)
             break
         elif command == 'connect_to_another_server':
             if privileges_were_granted:
-                user.delete_created_system_role_and_user(auth.url, auth.password)
+                user.delete_created_system_role_and_user(auth.url)
                 privileges_were_granted = False
             if not auth.establish_connection():
                 return False
