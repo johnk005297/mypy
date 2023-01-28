@@ -21,8 +21,7 @@ if has_discount:
 
 
 print("# Соц. карта:", "Да" if has_discount else "Нет")
-print("# Скидка: {}", )
-print("# Итоговая цена: {}", final_price)
-
+print("# Скидка: {}".format(round(total_price-final_price, 2)) )
+print("# Итоговая цена: {}".format(final_price))
 
 

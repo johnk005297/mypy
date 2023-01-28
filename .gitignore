@@ -5,7 +5,8 @@ web_proj/web/
 tar_extract.py
 __pycache__
 venv/
-images/ 
+images/
+copy_files/
 env_botProject/ 
 temp.py 
 bim_project/.env
