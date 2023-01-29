@@ -723,10 +723,10 @@ class Export_data:
     workflows_draft_file:str                     = 'Draft_workflows_export_server.json'
     workflows_archived_file:str                  = 'Archived_workflows_export_server.json'
     workflows_active_file:str                    = 'Active_workflows_export_server.json'
-    selected_workflow_nodes_file:str             = 'workflow_nodes_to_import.txt'
+    selected_workflow_nodes_file:str             = 'workflow_nodes_to_import.list'
     workflowID_bimClassID_file:str               = 'workflowID_bimClassID_export_server.json'
     object_model_file:str                        = 'object_model_export_server.json'
-    workflowsID_and_names_from_export_server:str = 'workflowsID_and_names_from_export_server.txt'  # Save it just in case if need to find a particular file among workflows or smth.
+    workflowsID_and_names_from_export_server:str = 'workflowsID_and_names_from_export_server.list'  # Save it just in case if need to find a particular file among workflows or smth.
     export_server_info_file:str                  = 'export_server_info.txt'  # Needs for separation import procedures on export server during one session.
 
     def __init__(self):
@@ -754,7 +754,7 @@ class Export_data:
                 time.sleep(0.25)
                 os.mkdir(self.transfer_folder)
                 time.sleep(0.1)
-                print('\n   - transfer_files folder is empty.')
+                print('\n   - transfer_files folder is now empty.')
             else:
                 print('\n   - no transfer_files folder was found.')
         except (OSError, FileExistsError, FileNotFoundError) as err:
@@ -785,18 +785,15 @@ class Export_data:
 
 
     def get_object_model(self, filename, url, token):    
-        '''   Function gets object model from the server, and writes it in a file.   '''
+        '''   Function gets object model from the server, and writes it into a file.   '''
 
-        if appMenu.menu_user_command not in ('8', '89'):    # Don't check or ask user about confirmation in case of import process.
+        if appMenu.menu_user_command != '8':    # Don't check or ask user about confirmation in case of import procedure.
             if os.path.isfile(f"{self.transfer_folder}/{filename}"):
                 confirm_to_delete = input(f"There is an {filename} file already. Do you want to overwrite it?(y/n): ").lower()
-                if confirm_to_delete == 'y':
-                    os.remove(f'{self.transfer_folder}/{filename}')
-                else:
-                    return False
+                os.remove(f'{self.transfer_folder}/{filename}') if confirm_to_delete == 'y' else False
 
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-        url_get_object_model = f"{url}/{self.api_Integration_ObjectModel_Export}"
+        url_get_object_model:str = url + '/' + self.api_Integration_ObjectModel_Export
         try:
             request = requests.get(url_get_object_model, headers=headers, verify=False)
             response = request.json()
@@ -833,8 +830,9 @@ class Export_data:
         '''   Function creates a file 'chosen_by_user_workflow_nodes_export' with chosen workflow nodes in it.   '''
 
         try:
-            if not os.path.isfile(f"{self.transfer_workflows_folder}/{self.selected_workflow_nodes_file}"):
-                with open(f"{self.transfer_workflows_folder}/{self.selected_workflow_nodes_file}", mode='w', encoding='utf-8'): pass
+            file_path = self.transfer_workflows_folder + '/' + self.selected_workflow_nodes_file
+            if not os.path.isfile(file_path):
+                with open(file_path, mode='w', encoding='utf-8'): pass
         except (FileNotFoundError, OSError) as err:
             print(f"'{self.transfer_workflows_folder}' folder doesn't exist.")
             logging.error(f"'{self.transfer_workflows_folder}' folder doesn't exist.\n", err)
@@ -844,16 +842,16 @@ class Export_data:
         self.current_workflow_node_selection:list = input("Choose nodes to export workflows from. Use whitespaces in-between to select more than one.  \
                                             \n(dr Draft, ar Archived, ac Active, q Quit): ").lower().split()
 
-        # if user chose anything but ('d', 'ar', 'ac'), func will return False, and no processes will go further
+        # if user chose anything but ('dr', 'ar', 'ac'), func will return False, and no processes will go further
         if not [x for x in self.current_workflow_node_selection if x in ('dr', 'ar', 'ac')]:
             return False
-        # Replacing user input to full names: Draft, Archived, Active
+        # Replacing user input with full names: Draft, Archived, Active
         self.current_workflow_node_selection:list = [x for x in self.current_workflow_node_selection if x in ('dr', 'ar', 'ac')]
         self.current_workflow_node_selection = ' '.join(self.current_workflow_node_selection).replace('dr', 'Draft').replace('ar', 'Archived').replace('ac', 'Active').split()
 
-        with open(f"{self.transfer_workflows_folder}/{self.selected_workflow_nodes_file}", 'r', encoding='utf-8') as file:
+        with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
-        with open(f"{self.transfer_workflows_folder}/{self.selected_workflow_nodes_file}", 'a', encoding='utf-8') as file:
+        with open(file_path, 'a', encoding='utf-8') as file:
             for node in self.current_workflow_node_selection:
                 if node == 'Draft':
                     if self.workflows_draft_file not in content:
@@ -875,7 +873,8 @@ class Export_data:
              Function holds a dictionary with all the nodes in format: {"NodeName": "NodeId"}.
         '''
 
-        url_get_all_workflow_nodes = f"{url}/{self.api_WorkFlowNodes}"
+        # url_get_all_workflow_nodes = f"{url}/{self.api_WorkFlowNodes}"
+        url_get_all_workflow_nodes = url + '/' + self.api_WorkFlowNodes
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
         try:
             request = requests.get(url=url_get_all_workflow_nodes, headers=headers, verify=False)
