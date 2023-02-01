@@ -1,6 +1,6 @@
 #
 # 
-version = '1.20'
+version = '1.21'
 '''
     Script for work with license and some other small features.
 '''
@@ -61,6 +61,7 @@ class Auth:
         try:
             self.url:str = input("\nEnter URL: ").lower()
             self.url     = self.url[:-1] if self.url[-1] == '/' else self.url
+            self.url     = self.url[:-5] if self.url[-4:] == 'auth' else self.url
         except IndexError:
             message:str = 'Wrong input.'
             print(message)
@@ -698,6 +699,9 @@ class License:
                 return True
             elif license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                 return True
+            else:
+                logging.warning('Unknown case in get_license_status module.')
+                return False
         return False
 
 
