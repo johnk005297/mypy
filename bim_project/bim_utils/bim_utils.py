@@ -1,6 +1,6 @@
 #
 # 
-version = '1.19'
+version = '1.20'
 '''
     Script for work with license and some other small features.
 '''
@@ -180,7 +180,7 @@ class User:
     api_SystemRoles:str            = 'api/SystemRoles'
     api_Users_AddSystemRole:str    = 'api/Users/AddSystemRole'
     api_Users_RemoveSystemRole:str = 'api/Users/RemoveSystemRole'
-    auth02 = Auth()
+    superuser = Auth()
 
     def __init__(self):
         pass
@@ -231,29 +231,6 @@ class User:
 
     def check_user_privileges(self, url, token, username, permissions_to_check:tuple):
         ''' Function requires to pass permissions needed to be checked, along with url, token and username. '''
-
-        tuple_of_needed_permissions:tuple = (
-                                                # 'MailServerRead',
-                                                # 'MailServerWrite',
-                                                # 'ObjectModelsRead',
-                                                # 'ObjectModelsWrite',
-                                                # 'SecurityRead',
-                                                # 'SecurityWrite',
-                                                # 'ProcessesRead',
-                                                # 'ProcessesWrite',
-                                                # 'GroupsRead',
-                                                # 'GroupsWrite',
-                                                # 'LicensesRead',
-                                                # 'LicensesWrite',
-                                                # 'UsersRead',
-                                                # 'UsersWrite',
-                                                # 'RolesWrite',
-                                                # 'RolesRead',
-                                                # 'LdapRead',
-                                                # 'LdapWrite',
-                                                # 'OrgStructureWrite',
-                                                # 'CreateProject'
-                                            )
     
         user_system_roles_id: list = []  # list to collect user's system roles Id.
 
@@ -263,7 +240,7 @@ class User:
         if request.status_code != 200:
             logging.error(f"{self.api_Users}: {request.text}")
             return False
-        
+
         '''   Check if the user has needed permissions in his system roles already. Selecting roles from the tuple_of_needed_permissions.   '''
         # response is a nested array, list with dictionaries inside.
         for x in range(len(response)):
@@ -275,7 +252,7 @@ class User:
 
                     ''' We're taking userName and fill our dictionary with it. In format {'userName': [systemRoles_id1, systemRoles_id2, ...}
                         Two options to create a dictionary we need. '''
-                    # user_names_and_system_roles_id.setdefault(username, []).append(role.get('id'))                                    # Option one                                                                                                            
+                    # user_names_and_system_roles_id.setdefault(username, []).append(role.get('id'))                                    # Option one
                     # user_names_and_system_roles_id[username] = user_names_and_system_roles_id.get(username, []) + [role.get('id')]    # Option two
 
         # Return from this loop will close the current function.
@@ -291,60 +268,60 @@ class User:
                     continue
                 else:
                     return False
-            return True       
+            return True
 
 
-    def create_name_for_new_user(self):
-        ''' Create a random name for a new user '''            
-        new_username: str = ''.join(random.choice(string.ascii_letters) for x in range(15))
-        return new_username
+    def create_random_name(self):
+        random_name: str = ''.join(random.choice(string.ascii_letters) for x in range(20))
+        return random_name
 
 
-    def create_new_user_new_role_submit_new_role(self, url, token, password):
+    def create_or_activate_superuser(self, url, token):
+        '''  Function checks for a special user with super privileges. If there is a needed user it will pass, if there isn't or deactivated, it will be created/activated.  '''
 
-        '''  Create a new user  '''
-        self.created_user_name:str = self.create_name_for_new_user()
         headers_create_user_and_system_role = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
+
+        self.superuser.username:str = 'johnny_mnemonic'
+        self.superuser.password:str  = 'Qwerty12345!'
         payload_create_user = {
                                 "firstName": "Johnny",
                                 "lastName": "Mnemonic",
-                                "middleName": "superuser",
-                                "userName": self.created_user_name,
+                                "middleName": "no_middle_name",
+                                "userName": self.superuser.username,
                                 "displayName": "Johnny_Mnemonic",
-                                "password": password,
+                                "password": self.superuser.password,
                                 "phoneNumber": "+71234567890",
                                 "email": "the_matrix@exists.neo",
                                 "birthday": "1964-09-02T07:15:07.731Z",
                                 "position": "The_one"
-                }
+                              }
         data = json.dumps(payload_create_user)
 
-        count = 0   # counter to protect while loop from infinite iteration
-        request = requests.post(url=f"{url}/{self.api_Users}", headers=headers_create_user_and_system_role, data=data, verify=False)
-        time.sleep(0.15)
-        while True:
-            count += 1
-            if request.status_code == 201:
-                response = request.json()
-                logging.info(f"Create a new user  \
-                             \nNew <{response['userName']}> user was created successfully.")
-                self.created_user_name:str = response['userName']
-                self.created_user_id:str = response['id']
-                break
-            elif request.status_code == 403:
-                print("Current user don't have privileges for required procedure. Also don't have permissions to create users, so it could be temporary avoided.")
-                return False
-            else:
-                if count == 10:
-                    logging.error("No user was created! Error.")
+        all_users:list = self.get_all_users(url, token)        
+        post_user_request = requests.post(url=url + '/' + self.api_Users, headers=headers_create_user_and_system_role, data=data, verify=False)
+        if post_user_request.status_code == 201:
+            self.superuser_id:str = post_user_request.json()['id']
+        elif post_user_request.status_code == 409 and post_user_request.json()['error']['key'] == 'Auth.AlreadyExists.User.UserAlreadyExists':
+            for user in all_users:
+                if user.get('userName') == self.superuser.username and (user.get('isDeleted') or user.get('isDisabled')):
+                    self.superuser_id = user.get('id')
+                    put_request = requests.put(url=f"{url}/{self.api_Users}/{user.get('id')}/activate", headers=headers_create_user_and_system_role)
+                    if not put_request.status_code in (200, 201):
+                        logging.error(f"'{self.superuser.username}' user wasn't activated")
+                        return False
+                elif user.get('userName') == self.superuser.username:
+                    self.superuser_id = user.get('id')
                     break
-                altered_data = data.replace(self.created_user_name, user.create_name_for_new_user())
-                request = requests.post(url=f"{url}/{self.api_Users}", headers=headers_create_user_and_system_role, data=altered_data, verify=False)
+        elif post_user_request.status_code == 403:
+            print("Current user don't have privileges for required procedure. Also don't have permissions to create users, so it could be temporary avoided.")
+            logging.error(post_user_request.text)
+            return False
 
         '''  Create a new system role  '''
+        temp_system_role_name:str = self.create_random_name()
         payload_create_system_role = {
-                            "name": self.created_user_name,
-                            "permissions": [
+                                        "name": temp_system_role_name,
+                                        "permissions": [
                                             'MailServerRead',
                                             'MailServerWrite',
                                             'ObjectModelsRead',
@@ -367,88 +344,81 @@ class User:
                                             'CreateProject'
                                             ]
                                     }
-
         data = json.dumps(payload_create_system_role)
         try:
-            request = requests.post(url=f"{url}/{self.api_SystemRoles}", headers=headers_create_user_and_system_role, data=data, verify=False)
-            time.sleep(0.15)
-            response = self.created_system_role_id = request.json()
-            if request.status_code == 201:
-                logging.info("System role was created successfully.")
-            else:
-                logging.error(request.text)
+            request = requests.post(url=url + '/' + self.api_SystemRoles, headers=headers_create_user_and_system_role, data=data, verify=False)
+            if request.status_code == 409 and request.json()['error']['key'] == 'Auth.AlreadyExists.SystemRole':
+                logging.warning("Superuser system role already exists.")
+                altered_data = data.replace(temp_system_role_name, self.create_random_name())
+                request = requests.post(url=url + '/' + self.api_SystemRoles, headers=headers_create_user_and_system_role, data=altered_data, verify=False)
+            time.sleep(0.05)
+            self.temp_system_role_id = request.json()
+            logging.info("System role was created successfully.") if request.status_code == 201 else logging.error(request.text)
         except auth.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
+            return False
 
-        ''' Add a new system role to a new user '''
+        ''' Add a new system role to a superuser '''
         payload_add_system_role = {
-                                    "systemRoleId": self.created_system_role_id,
-                                    "userId": self.created_user_id
+                                    "systemRoleId": self.temp_system_role_id, 
+                                    "userId": self.superuser_id
                                   }
         data = json.dumps(payload_add_system_role)
         try:
-            request = requests.post(f"{url}/{self.api_Users_AddSystemRole}", headers=headers_create_user_and_system_role, data=data, verify=False)
-            time.sleep(0.15)
-            if request.status_code in (201, 204):
-                logging.info(f"Add a new system role to a new user.     \
-                             \nSystem role '{self.created_system_role_id}' to user '{self.created_user_name}' added successfully.")
-            else:
-                logging.error(request.text)
-                return False
+            request = requests.post(url=url + '/' + self.api_Users_AddSystemRole, headers=headers_create_user_and_system_role, data=data, verify=False)
+            if request.status_code != 204:
+                pass
+            time.sleep(0.05)
+            logging.info(f"Add a new system role to a new user. \
+                          \nSystem role '{self.temp_system_role_id}' to user '{self.superuser.username}' added successfully.") if request.status_code in (201, 204) else logging.error(request.text)
         except auth.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
 
         ''' 
-            Using credentianls of the new user, up privileges for current user we are working under(default, admin).
+            Using credentianls of the superuser, up privileges for current user we are working under(default, admin).
             Need to create all we need to manipulate with roles and users.
         '''
-        self.current_user:dict = self.get_current_user(url, token)
-
+        self.initial_user:dict = self.get_current_user(url, token)
 
         ''' Adding created role to current user '''
-
-        # logging in with newly created user account
-        self.auth02.get_user_access_token(url, self.created_user_name, password, auth.providerId)
+        self.superuser.get_user_access_token(url, self.superuser.username, self.superuser.password, auth.providerId) # logging in under superuser account
   
-        headers_add_system_role_to_current_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {self.auth02.token}"}
+        headers_add_system_role_to_current_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {self.superuser.token}"}
         payload_add_system_role = {
-                                    "systemRoleId": self.created_system_role_id,
-                                    "userId": self.current_user['id']
-                                    }
-        data = json.dumps(payload_add_system_role)  
-                                
+                                    "systemRoleId": self.temp_system_role_id,
+                                    "userId": self.initial_user['id']
+                                  }
+        data = json.dumps(payload_add_system_role)                                
         try:
             request = requests.post(f"{url}/{self.api_Users_AddSystemRole}", headers=headers_add_system_role_to_current_user, data=data, verify=False)
-            time.sleep(0.15)
-            if request.status_code in (201, 204):
-                logging.info(f"Adding created role to current user. \
-                             \nSystem role '{self.created_system_role_id}' to user '{auth.username}' added successfully.")
-            else:
-                logging.error(request.text)
+            time.sleep(0.05)         
+            logging.info(f"Adding created role to current user. \
+                            \nSystem role '{self.temp_system_role_id}' to user '{self.initial_user['userName']}' added successfully.") if request.status_code in (201, 204) else logging.error(request.text)
         except auth.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
             return False
+
         return True
 
-
-    def delete_created_system_role_and_user(self, url):
+    
+    def delete_created_system_role_and_delete_user(self, url):
 
         def remove_role_from_current_user():
             ''' Remove created role from the current user. Otherwise, the role cannot be deleted. '''
 
-            headers_remove_system_role_from_current_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {self.auth02.token}"}
+            headers_remove_system_role_from_current_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {self.superuser.token}"}
 
             payload_remove_system_role = {
-                                            "systemRoleId": self.created_system_role_id,
-                                            "userId": self.current_user['id']
+                                            "systemRoleId": self.temp_system_role_id,
+                                            "userId": self.initial_user['id']
                                             }
             data = json.dumps(payload_remove_system_role)
             try:
-                request = requests.post(url=f"{url}/{self.api_Users_RemoveSystemRole}", headers=headers_remove_system_role_from_current_user, data=data, verify=False)
+                request = requests.post(url=url + '/' + self.api_Users_RemoveSystemRole, headers=headers_remove_system_role_from_current_user, data=data, verify=False)
                 time.sleep(0.10)
                 if request.status_code in (201, 204):
                     logging.info(f"Remove created role from the current user. \
-                                 \nSystem role '{self.created_system_role_id}' from user '{auth.username}' removed successfully.")
+                                 \nSystem role '{self.temp_system_role_id}' from user '{auth.username}' removed successfully.")
                     return True
                 else:
                     logging.error(request.text)
@@ -458,22 +428,22 @@ class User:
 
 
         def remove_role_from_created_user():
-            ''' Remove created role from created user. '''
+            ''' Remove created role from superuser. '''
 
-            # this function implements loging procedure, so we need to re-login as current user again
+            # this function implements logon procedure, so we need to re-login as current user again
             auth.get_user_access_token(url, auth.username, auth.password, auth.providerId)
             headers_remove_system_role_from_created_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {auth.token}" }
             payload_remove_system_role = {
-                                            "systemRoleId": self.created_system_role_id,
-                                            "userId": self.created_user_id
+                                            "systemRoleId": self.temp_system_role_id,
+                                            "userId": self.superuser_id
                                             }
             data = json.dumps(payload_remove_system_role)
             try:
-                request = requests.post(url=f"{auth.url}/{self.api_Users_RemoveSystemRole}", headers=headers_remove_system_role_from_created_user, data=data, verify=False)
+                request = requests.post(url=auth.url + '/' + self.api_Users_RemoveSystemRole, headers=headers_remove_system_role_from_created_user, data=data, verify=False)
                 time.sleep(0.15)
                 if request.status_code in (201, 204):
                     logging.info(f"Remove created role from created user. \
-                                 \nSystem role '{self.created_system_role_id}' from user '{self.created_user_name}' removed successfully.")
+                                 \nSystem role '{self.temp_system_role_id}' from user '{self.superuser.username}' removed successfully.")
                 else:
                     logging.error(request.text)
             except auth.possible_request_errors as err:
@@ -485,13 +455,13 @@ class User:
         def delete_system_role():
             ''' Delete created system role '''
 
-            url_delete_system_role = f"{url}/{self.api_SystemRoles}/{self.created_system_role_id}"
+            url_delete_system_role = f"{url}/{self.api_SystemRoles}/{self.temp_system_role_id}"
             headers = {'accept': '*/*', 'Authorization': f"Bearer {auth.token}"}
             try:
                 request = requests.delete(url=url_delete_system_role, headers=headers, verify=False)
                 if request.status_code in (201, 204):
                     logging.info(f"Deletion created system role.   \
-                                 \nNew role '{self.created_system_role_id}' was deleted successfully.")
+                                 \nNew role '{self.temp_system_role_id}' was deleted successfully.")
                 else:
                     logging.error(request.text)
             except auth.possible_request_errors as err:
@@ -504,12 +474,12 @@ class User:
             ''' Delete created user '''
 
             headers = {'accept': '*/*', 'Authorization': f"Bearer {auth.token}"}
-            url_delete_user = f"{url}/{self.api_Users}/{self.created_user_id}"
+            url_delete_user = f"{url}/{self.api_Users}/{self.superuser_id}"
             try:
                 request = requests.delete(url=url_delete_user, headers=headers, verify=False)
                 if request.status_code in (201, 204):
                     logging.info(f"Delete created user  \
-                                 \nNew user <{self.created_user_name}> was deleted successfully.")
+                                 \nNew user <{self.superuser_id}> was deleted successfully.")
                 else:
                     logging.error(request.text)
             except auth.possible_request_errors as err:
@@ -521,6 +491,137 @@ class User:
         remove_role_from_created_user()
         delete_system_role()
         delete_user()
+
+
+    # def create_new_user_new_role_submit_new_role(self, url, token, password):
+
+    #     '''  Create a new user  '''
+    #     self.created_user_name:str = self.create_random_name()
+    #     headers_create_user_and_system_role = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
+    #     payload_create_user = {
+    #                             "firstName": "Johnny",
+    #                             "lastName": "Mnemonic",
+    #                             "middleName": "superuser",
+    #                             "userName": self.created_user_name,
+    #                             "displayName": "Johnny_Mnemonic",
+    #                             "password": password,
+    #                             "phoneNumber": "+71234567890",
+    #                             "email": "the_matrix@exists.neo",
+    #                             "birthday": "1964-09-02T07:15:07.731Z",
+    #                             "position": "The_one"
+    #             }
+    #     data = json.dumps(payload_create_user)
+
+    #     count = 0   # counter to protect while loop from infinite iteration
+    #     request = requests.post(url=f"{url}/{self.api_Users}", headers=headers_create_user_and_system_role, data=data, verify=False)
+    #     time.sleep(0.15)
+    #     while True:
+    #         count += 1
+    #         if request.status_code == 201:
+    #             response = request.json()
+    #             logging.info(f"Create a new user  \
+    #                          \nNew <{response['userName']}> user was created successfully.")
+    #             self.created_user_name:str = response['userName']
+    #             self.created_user_id:str = response['id']
+    #             break
+    #         elif request.status_code == 403:
+    #             print("Current user don't have privileges for required procedure. Also don't have permissions to create users, so it could be temporary avoided.")
+    #             return False
+    #         else:
+    #             if count == 10:
+    #                 logging.error("No user was created! Error.")
+    #                 break
+    #             altered_data = data.replace(self.created_user_name, user.create_random_name())
+    #             request = requests.post(url=f"{url}/{self.api_Users}", headers=headers_create_user_and_system_role, data=altered_data, verify=False)
+
+    #     '''  Create a new system role  '''
+    #     payload_create_system_role = {
+    #                         "name": self.created_user_name,
+    #                         "permissions": [
+    #                                         'MailServerRead',
+    #                                         'MailServerWrite',
+    #                                         'ObjectModelsRead',
+    #                                         'ObjectModelsWrite',
+    #                                         'SecurityRead',
+    #                                         'SecurityWrite',
+    #                                         'ProcessesRead',
+    #                                         'ProcessesWrite',
+    #                                         'GroupsRead',
+    #                                         'GroupsWrite',
+    #                                         'LicensesRead',
+    #                                         'LicensesWrite',
+    #                                         'UsersRead',
+    #                                         'UsersWrite',
+    #                                         'RolesWrite',
+    #                                         'RolesRead',
+    #                                         'LdapRead',
+    #                                         'LdapWrite',
+    #                                         'OrgStructureWrite',
+    #                                         'CreateProject'
+    #                                         ]
+    #                                 }
+
+    #     data = json.dumps(payload_create_system_role)
+    #     try:
+    #         request = requests.post(url=f"{url}/{self.api_SystemRoles}", headers=headers_create_user_and_system_role, data=data, verify=False)
+    #         time.sleep(0.15)
+    #         response = self.created_system_role_id = request.json()
+    #         if request.status_code == 201:
+    #             logging.info("System role was created successfully.")
+    #         else:
+    #             logging.error(request.text)
+    #     except auth.possible_request_errors as err:
+    #         logging.error(f"{err}\n{request.text}")
+
+    #     ''' Add a new system role to a new user '''
+    #     payload_add_system_role = {
+    #                                 "systemRoleId": self.created_system_role_id,
+    #                                 "userId": self.created_user_id
+    #                               }
+    #     data = json.dumps(payload_add_system_role)
+    #     try:
+    #         request = requests.post(f"{url}/{self.api_Users_AddSystemRole}", headers=headers_create_user_and_system_role, data=data, verify=False)
+    #         time.sleep(0.15)
+    #         if request.status_code in (201, 204):
+    #             logging.info(f"Add a new system role to a new user.     \
+    #                          \nSystem role '{self.created_system_role_id}' to user '{self.created_user_name}' added successfully.")
+    #         else:
+    #             logging.error(request.text)
+    #             return False
+    #     except auth.possible_request_errors as err:
+    #         logging.error(f"{err}\n{request.text}")
+
+    #     ''' 
+    #         Using credentianls of the new user, up privileges for current user we are working under(default, admin).
+    #         Need to create all we need to manipulate with roles and users.
+    #     '''
+    #     self.current_user:dict = self.get_current_user(url, token)
+
+
+    #     ''' Adding created role to current user '''
+
+    #     # logging in with newly created user account
+    #     self.superuser.get_user_access_token(url, self.created_user_name, password, auth.providerId)
+  
+    #     headers_add_system_role_to_current_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {self.superuser.token}"}
+    #     payload_add_system_role = {
+    #                                 "systemRoleId": self.created_system_role_id,
+    #                                 "userId": self.current_user['id']
+    #                                 }
+    #     data = json.dumps(payload_add_system_role)  
+                                
+    #     try:
+    #         request = requests.post(f"{url}/{self.api_Users_AddSystemRole}", headers=headers_add_system_role_to_current_user, data=data, verify=False)
+    #         time.sleep(0.15)
+    #         if request.status_code in (201, 204):
+    #             logging.info(f"Adding created role to current user. \
+    #                          \nSystem role '{self.created_system_role_id}' to user '{auth.username}' added successfully.")
+    #         else:
+    #             logging.error(request.text)
+    #     except auth.possible_request_errors as err:
+    #         logging.error(f"{err}\n{request.text}")
+    #         return False
+    #     return True
 
 
 
@@ -546,8 +647,7 @@ class License:
 
 
     def grant_privileges(self, url, token, username, password):
-
-        return user.create_new_user_new_role_submit_new_role(url, token, password) if not self.check_permissions(url, token, username, password) else False
+        return user.create_or_activate_superuser(url, token) if not self.check_permissions(url, token, username, password) else False
 
 
     def read_license_token(self):
@@ -1350,7 +1450,7 @@ def main():
 
     if not auth.establish_connection():  # if connection was not established, do not continue
         return False
-    
+
     # remember if the privileges where granted, to restore initial state after the finish
     privileges_were_granted:bool = license.grant_privileges(auth.url, auth.token, auth.username, auth.password)
 
@@ -1395,12 +1495,13 @@ def main():
             export_data.clean_transfer_files_directory()
         elif command == 'q':
             if privileges_were_granted:
-                user.delete_created_system_role_and_user(auth.url)
+                user.delete_created_system_role_and_delete_user(auth.url)
             break
         elif command == 'connect_to_another_server':
             if privileges_were_granted:
-                user.delete_created_system_role_and_user(auth.url)
+                user.delete_created_system_role_and_delete_user(auth.url)
                 privileges_were_granted = False
+            
             if not auth.establish_connection():
                 return False
             privileges_were_granted = license.grant_privileges(auth.url, auth.token, auth.username, auth.password)
