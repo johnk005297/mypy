@@ -1,13 +1,13 @@
 #
 # 
-version = '1.21'
+version = '1.22'
 '''
     Script for work with license and some other small features.
 '''
 import os
+import sys
 import json
 import requests
-import sys
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
@@ -59,16 +59,16 @@ class Auth:
 
     def establish_connection(self):
         try:
-            self.url:str = input("\nEnter URL: ").lower()
-            self.url     = self.url[:-1] if self.url[-1] == '/' else self.url
-            self.url     = self.url[:-5] if self.url[-4:] == 'auth' else self.url
+            self.url = input("\nEnter URL: ").lower()
+            self.url = self.url[:-1] if self.url[-1] == '/' else self.url
+            self.url = self.url[:-5] if self.url[-4:] == 'auth' else self.url
         except IndexError:
             message:str = 'Wrong input.'
             print(message)
             logging.info(message)
             return False
         except KeyboardInterrupt:
-            logging.info('Interrupted by user')
+            print('\nInterrupted by the user.')
             return False
         if not self.url_validation():
             return False
@@ -122,10 +122,14 @@ class Auth:
 
 
     def get_login_password(self):
-        confirm_name = input("Enter login(default, admin): ")
-        confirm_pass = input("Enter password(default, Qwerty12345!): ")
-        self.username=confirm_name if confirm_name else 'admin'
-        self.password=confirm_pass if confirm_pass else 'Qwerty12345!'
+        try:
+            confirm_name = input("Enter login(default, admin): ")
+            confirm_pass = input("Enter password(default, Qwerty12345!): ")
+            self.username=confirm_name if confirm_name else 'admin'
+            self.password=confirm_pass if confirm_pass else 'Qwerty12345!'
+        except KeyboardInterrupt:
+            print('\nInterrupted by the user.')
+            sys.exit()
 
 
     def get_user_access_token(self, url, username, password, providerId):
@@ -306,7 +310,7 @@ class User:
             for user in all_users:
                 if user.get('userName') == self.superuser.username and (user.get('isDeleted') or user.get('isDisabled')):
                     self.superuser_id = user.get('id')
-                    put_request = requests.put(url=f"{url}/{self.api_Users}/{user.get('id')}/activate", headers=headers_create_user_and_system_role)
+                    put_request = requests.put(url=f"{url}/{self.api_Users}/{user.get('id')}/activate", headers=headers_create_user_and_system_role, verify=False)
                     if not put_request.status_code in (200, 201):
                         logging.error(f"'{self.superuser.username}' user wasn't activated")
                         return False
@@ -494,137 +498,6 @@ class User:
         delete_user()
 
 
-    # def create_new_user_new_role_submit_new_role(self, url, token, password):
-
-    #     '''  Create a new user  '''
-    #     self.created_user_name:str = self.create_random_name()
-    #     headers_create_user_and_system_role = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
-    #     payload_create_user = {
-    #                             "firstName": "Johnny",
-    #                             "lastName": "Mnemonic",
-    #                             "middleName": "superuser",
-    #                             "userName": self.created_user_name,
-    #                             "displayName": "Johnny_Mnemonic",
-    #                             "password": password,
-    #                             "phoneNumber": "+71234567890",
-    #                             "email": "the_matrix@exists.neo",
-    #                             "birthday": "1964-09-02T07:15:07.731Z",
-    #                             "position": "The_one"
-    #             }
-    #     data = json.dumps(payload_create_user)
-
-    #     count = 0   # counter to protect while loop from infinite iteration
-    #     request = requests.post(url=f"{url}/{self.api_Users}", headers=headers_create_user_and_system_role, data=data, verify=False)
-    #     time.sleep(0.15)
-    #     while True:
-    #         count += 1
-    #         if request.status_code == 201:
-    #             response = request.json()
-    #             logging.info(f"Create a new user  \
-    #                          \nNew <{response['userName']}> user was created successfully.")
-    #             self.created_user_name:str = response['userName']
-    #             self.created_user_id:str = response['id']
-    #             break
-    #         elif request.status_code == 403:
-    #             print("Current user don't have privileges for required procedure. Also don't have permissions to create users, so it could be temporary avoided.")
-    #             return False
-    #         else:
-    #             if count == 10:
-    #                 logging.error("No user was created! Error.")
-    #                 break
-    #             altered_data = data.replace(self.created_user_name, user.create_random_name())
-    #             request = requests.post(url=f"{url}/{self.api_Users}", headers=headers_create_user_and_system_role, data=altered_data, verify=False)
-
-    #     '''  Create a new system role  '''
-    #     payload_create_system_role = {
-    #                         "name": self.created_user_name,
-    #                         "permissions": [
-    #                                         'MailServerRead',
-    #                                         'MailServerWrite',
-    #                                         'ObjectModelsRead',
-    #                                         'ObjectModelsWrite',
-    #                                         'SecurityRead',
-    #                                         'SecurityWrite',
-    #                                         'ProcessesRead',
-    #                                         'ProcessesWrite',
-    #                                         'GroupsRead',
-    #                                         'GroupsWrite',
-    #                                         'LicensesRead',
-    #                                         'LicensesWrite',
-    #                                         'UsersRead',
-    #                                         'UsersWrite',
-    #                                         'RolesWrite',
-    #                                         'RolesRead',
-    #                                         'LdapRead',
-    #                                         'LdapWrite',
-    #                                         'OrgStructureWrite',
-    #                                         'CreateProject'
-    #                                         ]
-    #                                 }
-
-    #     data = json.dumps(payload_create_system_role)
-    #     try:
-    #         request = requests.post(url=f"{url}/{self.api_SystemRoles}", headers=headers_create_user_and_system_role, data=data, verify=False)
-    #         time.sleep(0.15)
-    #         response = self.created_system_role_id = request.json()
-    #         if request.status_code == 201:
-    #             logging.info("System role was created successfully.")
-    #         else:
-    #             logging.error(request.text)
-    #     except auth.possible_request_errors as err:
-    #         logging.error(f"{err}\n{request.text}")
-
-    #     ''' Add a new system role to a new user '''
-    #     payload_add_system_role = {
-    #                                 "systemRoleId": self.created_system_role_id,
-    #                                 "userId": self.created_user_id
-    #                               }
-    #     data = json.dumps(payload_add_system_role)
-    #     try:
-    #         request = requests.post(f"{url}/{self.api_Users_AddSystemRole}", headers=headers_create_user_and_system_role, data=data, verify=False)
-    #         time.sleep(0.15)
-    #         if request.status_code in (201, 204):
-    #             logging.info(f"Add a new system role to a new user.     \
-    #                          \nSystem role '{self.created_system_role_id}' to user '{self.created_user_name}' added successfully.")
-    #         else:
-    #             logging.error(request.text)
-    #             return False
-    #     except auth.possible_request_errors as err:
-    #         logging.error(f"{err}\n{request.text}")
-
-    #     ''' 
-    #         Using credentianls of the new user, up privileges for current user we are working under(default, admin).
-    #         Need to create all we need to manipulate with roles and users.
-    #     '''
-    #     self.current_user:dict = self.get_current_user(url, token)
-
-
-    #     ''' Adding created role to current user '''
-
-    #     # logging in with newly created user account
-    #     self.superuser.get_user_access_token(url, self.created_user_name, password, auth.providerId)
-  
-    #     headers_add_system_role_to_current_user = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {self.superuser.token}"}
-    #     payload_add_system_role = {
-    #                                 "systemRoleId": self.created_system_role_id,
-    #                                 "userId": self.current_user['id']
-    #                                 }
-    #     data = json.dumps(payload_add_system_role)  
-                                
-    #     try:
-    #         request = requests.post(f"{url}/{self.api_Users_AddSystemRole}", headers=headers_add_system_role_to_current_user, data=data, verify=False)
-    #         time.sleep(0.15)
-    #         if request.status_code in (201, 204):
-    #             logging.info(f"Adding created role to current user. \
-    #                          \nSystem role '{self.created_system_role_id}' to user '{auth.username}' added successfully.")
-    #         else:
-    #             logging.error(request.text)
-    #     except auth.possible_request_errors as err:
-    #         logging.error(f"{err}\n{request.text}")
-    #         return False
-    #     return True
-
-
 
 class License:
 
@@ -695,9 +568,9 @@ class License:
                 logging.error(f"Users limit was exceeded! Active users: {license['activeUsers']}. Users limit: {license['activeUsersLimit']}")
                 print("Users limit is exceeded!")
                 return False
-            elif license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] > str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
-                return True
             elif license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+                return True
+            elif license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] > str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
                 return True
             else:
                 logging.warning('Unknown case in get_license_status module.')

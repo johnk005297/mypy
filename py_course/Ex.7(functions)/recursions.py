@@ -126,8 +126,9 @@ def split_and_merge_list(a):
         a1 = split_and_merge_list(a1)
     if len(a2) > 1: # если длина 2-го списка больше 1, то делим дальше
         a2 = split_and_merge_list(a2)
-
-    return merge_list(a1, a2)   # слияние двух отсортированных списков в один
+    print(a1)
+    print(a2)
+    # return merge_list(a1, a2)   # слияние двух отсортированных списков в один
 
 
 a = [9, 5, -3, 4, 7, 8, -8]
