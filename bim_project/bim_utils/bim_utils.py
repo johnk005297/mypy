@@ -1,6 +1,6 @@
 #
 # 
-version = '1.22'
+version = '1.23'
 '''
     Script for work with license and some other small features.
 '''
@@ -501,7 +501,8 @@ class User:
 
 class License:
 
-    api_License:str = "api/License"
+    api_License:str            = "api/License"
+    api_License_serverId:str   = "api/License/serverId"
     permissions_to_check:tuple = ('LicensesRead', 'LicensesWrite')
 
     def __init__(self):
@@ -578,9 +579,13 @@ class License:
         return False
 
 
-    def get_serverID(self, url, token, username, password):
-        licenses = self.get_licenses(url, token, username, password)
-        return licenses[-1]['serverId']
+    def get_serverID(self, url, token):
+
+        headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
+        url_get_serverId:str = url + '/' + self.api_License_serverId
+        request = requests.get(url=url_get_serverId, data="", headers=headers, verify=False)
+        return request.text
+        
 
 
     def display_licenses(self, url, token, username, password):
@@ -650,7 +655,7 @@ class License:
 
         headers = {'accept': 'text/plane', 'Content-Type': 'application/json-patch+json', 
         'Authorization': f"Bearer {token}"}
-        
+
         if self.read_license_token():
             data = json.dumps(self.license_token)
             request = requests.post(url=f'{url}/{self.api_License}', headers=headers, data=data, verify=False)
@@ -974,7 +979,7 @@ class Export_data:
 
 
     def export_server_info(self, url, token, username, password):
-        serverId:str = license.get_serverID(url, token, username, password)
+        serverId:str = license.get_serverID(url, token)
         with open(f'{self.transfer_folder}/{self.export_server_info_file}', 'w', encoding='utf-8') as file:
             file.write("{0}\n".format(auth.url.split('//')[1]))
             file.write(serverId)
@@ -1017,7 +1022,7 @@ class Import_data:
         ''' Function needs to protect export server from import procedure during a single user session. '''
 
         check_server_info = export_data.read_file(export_data.transfer_folder, export_data.export_server_info_file)
-        if check_server_info and check_server_info.split()[1] == license.get_serverID(url, token, username, password):
+        if check_server_info and check_server_info.split()[1] == license.get_serverID(url, token):
             return False
         elif not check_server_info:
             return False
@@ -1338,7 +1343,7 @@ def main():
         if command == 'check_license':
             license.display_licenses(auth.url, auth.token, auth.username, auth.password)
         elif command == 'server_id':
-            print(f"\n   - serverId: {license.get_serverID(auth.url, auth.token, auth.username, auth.password)}")
+            print(f"\n   - serverId: {license.get_serverID(auth.url, auth.token)}")
         elif command == 'apply_license':
             license.put_license(auth.url, auth.token, auth.username, auth.password)
         elif command == 'delete_active_license':
