@@ -1,6 +1,6 @@
 #
 # 
-version = '1.23'
+version = '1.24'
 '''
     Script for work with license and some other small features.
 '''
@@ -738,7 +738,7 @@ class Export_data:
                 time.sleep(0.1)
                 print('\n   - transfer_files folder is now empty.')
             else:
-                print('\n   - no transfer_files folder was found.')
+                print('\nNo transfer_files folder was found.')
         except (OSError, FileExistsError, FileNotFoundError) as err:
             logging.error(err)
             print(f"Smth is wrong with the {self.transfer_folder}. Check the logs.")
@@ -1018,12 +1018,13 @@ class Import_data:
             file.write(new_json)
 
 
-    def validate_import_server(self, url, token, username, password):
+    def validate_import_server(self, url, token):
         ''' Function needs to protect export server from import procedure during a single user session. '''
 
         check_server_info = export_data.read_file(export_data.transfer_folder, export_data.export_server_info_file)
         if check_server_info and check_server_info.split()[1] == license.get_serverID(url, token):
-            return False
+            ask_for_confirmation:bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
+            return True if ask_for_confirmation == 'y' else False
         elif not check_server_info:
             return False
         else:
@@ -1238,9 +1239,10 @@ class Import_data:
             return True
 
 
-    def import_object_model(self, url, token, username, password):
-        server_validation:bool = import_data.validate_import_server(url, token, username, password)
+    def import_object_model(self, url, token):
+        server_validation:bool = import_data.validate_import_server(url, token)
         object_model_file_exists:bool = import_data.check_for_object_model_file()
+
         if object_model_file_exists and server_validation:
             export_data.get_object_model(import_data.object_model_file, url, token)
             import_data.prepare_object_model_file_for_import()
@@ -1248,19 +1250,19 @@ class Import_data:
             import_data.post_object_model()
             return True
         else:
-            print("No object_model for import." if not import_data.check_for_object_model_file() else "Can't perform import procedure on the export server.")
+            print("No object_model for import." if not import_data.check_for_object_model_file() else "")
             return False
 
 
-    def import_workflows(self, url, token, username, password):
-        server_validation:bool = import_data.validate_import_server(url, token, username, password)
+    def import_workflows(self, url, token):
+        server_validation:bool = import_data.validate_import_server(url, token)
         workflows_folder_exists:bool = import_data.check_for_workflows_folder()
         if workflows_folder_exists and server_validation:
             export_data.get_all_workflow_nodes(import_data.all_workflow_nodes_file, url, token)
             import_data.post_workflows()
             return True
         else:
-            print("No workflows for import." if not import_data.check_for_workflows_folder() else "Can't perform import procedure on the export server.")
+            print("No workflows for import." if not import_data.check_for_workflows_folder() else "")
             return False
 
 
@@ -1368,9 +1370,9 @@ def main():
 
         # Import
         elif command == 'import_workflows':
-            import_data.import_workflows(auth.url, auth.token, auth.username, auth.password)
+            import_data.import_workflows(auth.url, auth.token)
         elif command == 'import_object_model':
-            import_data.import_object_model(auth.url, auth.token, auth.username, auth.password)
+            import_data.import_object_model(auth.url, auth.token)
 
         # Generic
         elif command == 'clean_transfer_files_directory':
