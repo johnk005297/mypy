@@ -81,7 +81,7 @@ def get_path(n=6):
     # just another form of writing as above.
     # return n if n in (1, 2) else get_path(n - 1) + get_path(n - 2)    
 
-get_p = get_path()
+
 
 
 
@@ -114,6 +114,7 @@ def merge_list(a, b):
             j += 1
 
     c += a[i:] + b[j:]
+
     return c
 
 # функция деления списка и слияния списков в общий отсортированный список
@@ -122,17 +123,37 @@ def split_and_merge_list(a):
     a1 = a[:N1]     # деление массива на два примерно равной длины
     a2 = a[N1:]
 
+
     if len(a1) > 1: # если длина 1-го списка больше 1, то делим дальше
         a1 = split_and_merge_list(a1)
     if len(a2) > 1: # если длина 2-го списка больше 1, то делим дальше
         a2 = split_and_merge_list(a2)
-    print(a1)
-    print(a2)
-    # return merge_list(a1, a2)   # слияние двух отсортированных списков в один
+    # print(a1)
+    # print(a2)
+    return merge_list(a1, a2)   # слияние двух отсортированных списков в один
+    
 
 
-a = [9, 5, -3, 4, 7, 8, -8]
+a = [8, 11, -6, 3, 0, 1, 1]
 a = split_and_merge_list(a)
+# print(*a)
 
 
 
+#-------------------------------------------------
+# Иное решение
+#-------------------------------------------------
+array = list(map(int, input().split()))
+
+
+def quicksort(array):
+    if len(array) < 2:
+        return array
+    else:
+        pivot = array[0]
+        less = [i for i in array[1:] if i <= pivot]
+        greater = [i for i in array[1:] if i > pivot]
+        return quicksort(less) + [pivot] + quicksort(greater)
+
+
+# print(*quicksort(array))
