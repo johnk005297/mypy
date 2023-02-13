@@ -23,11 +23,10 @@ def main():
     Export_data_main = export_data.Export_data()
     Import_data_main = import_data.Import_data()
 
+
     AppMenu_main.welcome_info_note()
     if not Auth_main.establish_connection():  # if connection was not established, do not continue
         return False
-
-
 
     while True:
         command = AppMenu_main.define_purpose_and_menu()
@@ -59,14 +58,14 @@ def main():
         ### EXPORT BEGIN###
         elif command == 'export_object_model' or command == 'export_workflows':
             if Export_data_main.is_first_launch_export_data:
-                Folder.create_folder(os.getcwd(), Export_data_main.transfer_folder)
+                Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
                 Export_data_main.is_first_launch_export_data = False
             if command == 'export_object_model':
-                Folder.create_folder(os.getcwd() + '/' + Export_data_main.transfer_folder, Export_data_main.object_model_folder)
+                Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._object_model_folder)
                 Export_data_main.export_server_info(Auth_main.url, Auth_main.token)
-                Export_data_main.get_object_model(Export_data_main.object_model_file, Auth_main.url, Auth_main.token)
+                Export_data_main.get_object_model(Export_data_main._object_model_file, Auth_main.url, Auth_main.token)
             elif command == 'export_workflows':
-                Folder.create_folder(os.getcwd() + '/' + Export_data_main.transfer_folder, Export_data_main.workflows_folder)
+                Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._workflows_folder)
                 Export_data_main.export_server_info(Auth_main.url, Auth_main.token)
                 Export_data_main.export_workflows(Auth_main.url, Auth_main.token)
         ### THE END OF EXPORT ###
@@ -80,7 +79,7 @@ def main():
 
         ### GENERIC ###
         elif command == 'clean_transfer_files_directory':
-            Folder.clean_folder(os.getcwd() + '/' + Export_data_main.transfer_folder)        
+            Folder.clean_folder(os.getcwd() + '/' + Export_data_main._transfer_folder)        
         elif command in ('q', 'connect_to_another_server'):
             if License_main.privileges_granted:
                 User_main.delete_superuser_system_role_and_delete_superuser(Auth_main.url, Auth_main.username, Auth_main.password, Auth_main.providerId)

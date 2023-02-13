@@ -55,7 +55,7 @@ class File:
                 else:
                     content = file.read()
                     return content
-        except (OSError, FileExistsError, FileNotFoundError) as err:
+        except OSError as err:
             logging.error(err)
             return False
 

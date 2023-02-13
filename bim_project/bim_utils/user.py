@@ -11,17 +11,17 @@ import auth
 
 class User:
 
-    api_UserObjects_all:str        = 'api/UserObjects/all'
-    api_Users_currentUser:str      = 'api/Users/current-user'
-    api_Users:str                  = 'api/Users'
-    api_Users_full:str             = 'api/Users/full'
-    api_SystemRoles:str            = 'api/SystemRoles'
-    api_Users_AddSystemRole:str    = 'api/Users/AddSystemRole'
-    api_Users_RemoveSystemRole:str = 'api/Users/RemoveSystemRole'
-    Auth_superuser                 = auth.Auth(username='johnny_mnemonic', password='Qwerty12345!') # Create Auth class instance for new user
-    possible_request_errors        = Auth_superuser.possible_request_errors
-    su_system_role_id              = None
-    su_system_role_name            = None
+    __api_UserObjects_all:str        = 'api/UserObjects/all'
+    __api_Users_currentUser:str      = 'api/Users/current-user'
+    __api_Users:str                  = 'api/Users'
+    __api_Users_full:str             = 'api/Users/full'
+    __api_SystemRoles:str            = 'api/SystemRoles'
+    __api_Users_AddSystemRole:str    = 'api/Users/AddSystemRole'
+    __api_Users_RemoveSystemRole:str = 'api/Users/RemoveSystemRole'
+    Auth_superuser                   = auth.Auth(username='johnny_mnemonic', password='Qwerty12345!') # Create Auth class instance for new user
+    possible_request_errors          = Auth_superuser.possible_request_errors
+    _su_system_role_id               = None
+    _su_system_role_name             = None
 
 
     def __init__(self):
@@ -32,8 +32,7 @@ class User:
 
 
     def __getattr__(self, item):
-        print("User class instance has no such attribute: " + item)
-        return False
+        raise AttributeError("User class has no such attribute: " + item)
 
 
     def delete_user_objects(self, url, token):
@@ -46,7 +45,7 @@ class User:
         
         headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
         try:
-            user_obj_request = requests.delete(url=f"{url}/{self.api_UserObjects_all}", headers=headers, verify=False)
+            user_obj_request = requests.delete(url=f"{url}/{self.__api_UserObjects_all}", headers=headers, verify=False)
             if user_obj_request.status_code == 204:
                 print("\n   - bimeisterdb.UserObjects table was cleaned successfully.")
             else:
@@ -57,7 +56,7 @@ class User:
 
     def get_all_users(self, url, token):
         headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
-        request = requests.get(url=f"{url}/{self.api_Users_full}", headers=headers, verify=False)
+        request = requests.get(url=f"{url}/{self.__api_Users_full}", headers=headers, verify=False)
         users = request.json()
         return users # list with dictionaries inside
 
@@ -65,7 +64,7 @@ class User:
     def get_current_user(self, url, token):
         ''' Getting info about current user. Response will provide a dictionary of values. '''
 
-        url_get_current_user = f"{url}/{self.api_Users_currentUser}"
+        url_get_current_user = f"{url}/{self.__api_Users_currentUser}"
         headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
         try:
             request = requests.get(url_get_current_user, headers=headers, verify=False)
@@ -85,10 +84,10 @@ class User:
         user_system_roles_id: list = []  # list to collect user's system roles Id.
 
         headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
-        request = requests.get(url=f"{url}/{self.api_Users}", headers=headers, verify=False)                                
+        request = requests.get(url=f"{url}/{self.__api_Users}", headers=headers, verify=False)                                
         response = request.json()
         if request.status_code != 200:
-            logging.error(f"{self.api_Users}: {request.text}")
+            logging.error(f"{self.__api_Users}: {request.text}")
             return False
 
         '''   Check if the user has needed permissions in his system roles already. Selecting roles from the tuple_of_needed_permissions.   '''
@@ -108,7 +107,7 @@ class User:
         # Return from this loop will close the current function.
         for id in user_system_roles_id:
             try:
-                request = requests.get(url=f"{url}/{self.api_SystemRoles}/{id}", headers=headers, verify=False)
+                request = requests.get(url=f"{url}/{self.__api_SystemRoles}/{id}", headers=headers, verify=False)
                 response = request.json()
             except self.possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
@@ -147,14 +146,14 @@ class User:
         data = json.dumps(payload_create_user)
 
         all_users:list = self.get_all_users(url, token)
-        post_superuser_request = requests.post(url=url + '/' + self.api_Users, headers=headers_create_user_and_system_role, data=data, verify=False)
+        post_superuser_request = requests.post(url=url + '/' + self.__api_Users, headers=headers_create_user_and_system_role, data=data, verify=False)
         if post_superuser_request.status_code == 201:
             self.superuser = post_superuser_request.json()
         elif post_superuser_request.status_code == 409 and post_superuser_request.json()['error']['key'] == 'Auth.AlreadyExists.User.UserAlreadyExists':
             for user in all_users:
                 if user.get('userName') == self.Auth_superuser.username and (user.get('isDeleted') or user.get('isDisabled')):
                     self.superuser = user
-                    put_request = requests.put(url=f"{url}/{self.api_Users}/{user.get('id')}/activate", headers=headers_create_user_and_system_role, verify=False)
+                    put_request = requests.put(url=f"{url}/{self.__api_Users}/{user.get('id')}/activate", headers=headers_create_user_and_system_role, verify=False)
                     if not put_request.status_code in (200, 201):
                         logging.error(f"'{self.Auth_superuser.username}' user wasn't activated")
                         return False
@@ -195,11 +194,11 @@ class User:
                                     }
         data = json.dumps(payload_create_system_role)
         try:
-            request = requests.post(url=url + '/' + self.api_SystemRoles, headers=headers_create_user_and_system_role, data=data, verify=False)
+            request = requests.post(url=url + '/' + self.__api_SystemRoles, headers=headers_create_user_and_system_role, data=data, verify=False)
             if request.status_code == 409 and request.json()['error']['key'] == 'Auth.AlreadyExists.SystemRole':
                 logging.warning("Superuser system role already exists.")
                 altered_data = data.replace(self.su_system_role_name, self.create_random_name())
-                request = requests.post(url=url + '/' + self.api_SystemRoles, headers=headers_create_user_and_system_role, data=altered_data, verify=False)
+                request = requests.post(url=url + '/' + self.__api_SystemRoles, headers=headers_create_user_and_system_role, data=altered_data, verify=False)
             time.sleep(0.05)
             self.su_system_role_id = request.json()
             logging.info("System role was created successfully.") if request.status_code == 201 else logging.error(request.text)
@@ -214,7 +213,7 @@ class User:
                                   }
         data = json.dumps(payload_add_system_role)
         try:
-            request = requests.post(url=url + '/' + self.api_Users_AddSystemRole, headers=headers_create_user_and_system_role, data=data, verify=False)
+            request = requests.post(url=url + '/' + self.__api_Users_AddSystemRole, headers=headers_create_user_and_system_role, data=data, verify=False)
             if request.status_code != 204:
                 pass
             time.sleep(0.05)
@@ -244,7 +243,7 @@ class User:
                                   }
         data = json.dumps(payload_add_system_role)                                
         try:
-            request = requests.post(f"{url}/{self.api_Users_AddSystemRole}", headers=headers_add_system_role_to_current_user, data=data, verify=False)
+            request = requests.post(f"{url}/{self.__api_Users_AddSystemRole}", headers=headers_add_system_role_to_current_user, data=data, verify=False)
             time.sleep(0.05)         
             logging.info(f"Adding created role to current user. \
                             \nSystem role '{self.su_system_role_id}' to user '{self.initial_user['userName']}' added successfully.") if request.status_code in (201, 204) else logging.error(request.text)
@@ -268,7 +267,7 @@ class User:
                                             }
             data = json.dumps(payload_remove_role_from_user)
             try:
-                request = requests.post(url=url + '/' + self.api_Users_RemoveSystemRole, headers=headers_remove_role_from_user, data=data, verify=False)
+                request = requests.post(url=url + '/' + self.__api_Users_RemoveSystemRole, headers=headers_remove_role_from_user, data=data, verify=False)
                 time.sleep(0.10)
                 if request.status_code in (201, 204):
                     logging.info(f"System role '{system_role_id}' from user '{username}' removed successfully.")
@@ -280,7 +279,7 @@ class User:
         def delete_system_role():
             ''' Delete created system role '''
 
-            url_delete_system_role = f"{url}/{self.api_SystemRoles}/{self.su_system_role_id}"
+            url_delete_system_role = f"{url}/{self.__api_SystemRoles}/{self.su_system_role_id}"
             headers = {'accept': '*/*', 'Authorization': f"Bearer {self.token}"}
             try:
                 request = requests.delete(url=url_delete_system_role, headers=headers, verify=False)
@@ -299,7 +298,7 @@ class User:
             ''' Delete created user '''
 
             headers = {'accept': '*/*', 'Authorization': f"Bearer {self.token}"}
-            url_delete_user = f"{url}/{self.api_Users}/{self.superuser['id']}"
+            url_delete_user = f"{url}/{self.__api_Users}/{self.superuser['id']}"
             try:
                 request = requests.delete(url=url_delete_user, headers=headers, verify=False)
                 if request.status_code in (201, 204):

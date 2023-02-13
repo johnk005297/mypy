@@ -10,8 +10,8 @@ import time
 
 class Auth:
 
-    api_Providers:str  = 'api/Providers'
-    api_Auth_Login:str = 'api/Auth/Login'
+    __api_Providers:str  = 'api/Providers'
+    __api_Auth_Login:str = 'api/Auth/Login'
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
     possible_request_errors:tuple = (  requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout,
                                        requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL,
@@ -27,9 +27,7 @@ class Auth:
 
 
     def __getattr__(self, item):
-        print("Auth class instance has no such attribute: " + item)
-        return False
-
+        raise AttributeError("Auth class instance has no such attribute: " + item)
 
 
     def establish_connection(self):
@@ -58,7 +56,7 @@ class Auth:
         # Check both ports: 80 and 443
         for x in range(2):
             try:
-                check_url_request = requests.get(url=f"{self.url}/{self.api_Providers}", verify=False, allow_redirects=False, timeout=2)
+                check_url_request = requests.get(url=f"{self.url}/{self.__api_Providers}", verify=False, allow_redirects=False, timeout=2)
                 if check_url_request.status_code == 200:
                     self.api_providers_response = check_url_request.json()
                     return True
@@ -79,7 +77,7 @@ class Auth:
 
 
     def get_local_providerId(self, url):
-        api_providers_response = requests.get(url=f"{url}/{self.api_Providers}", verify=False)
+        api_providers_response = requests.get(url=f"{url}/{self.__api_Providers}", verify=False)
         providers:list = api_providers_response.json()
         for provider in providers:
             if provider.get('name') == 'Local':
@@ -124,7 +122,7 @@ class Auth:
                     "providerId": providerId
                   }
         data = json.dumps(payload)
-        auth_request = requests.post(url=f"{url}/{self.api_Auth_Login}", data=data, headers=self.headers, verify=False)
+        auth_request = requests.post(url=f"{url}/{self.__api_Auth_Login}", data=data, headers=self.headers, verify=False)
         response = auth_request.json()
         time.sleep(0.07)
         '''  

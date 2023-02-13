@@ -1,5 +1,5 @@
 class AppMenu:
-    version = '1.25'
+    version = '1.26'
 
 
     # def __getattr__(self, item):

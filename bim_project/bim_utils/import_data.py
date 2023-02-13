@@ -14,17 +14,17 @@ import license
 
 class Import_data:
 
-    _api_WorkFlows:str                        = 'api/WorkFlows'
-    _api_Integration_ObjectModel_Import:str   = 'api/Integration/ObjectModel/Import'
-    _transfer_folder:str                      = 'transfer_files'
-    _workflows_folder:str                     = 'workflows'
-    _all_workflow_nodes_file:str              = 'all_workflow_nodes_import_server.json'
-    _object_model_folder:str                  = 'object_model'
-    _object_model_file:str                    = 'object_model_import_server.json'
-    _modified_object_model_file:str           = 'modified_object_model.json'
-    _Export_data                              = export_data.Export_data()
-    _License                                  = license.License()
-    possible_request_errors                   = auth.Auth().possible_request_errors
+    __api_WorkFlows:str                        = 'api/WorkFlows'
+    __api_Integration_ObjectModel_Import:str   = 'api/Integration/ObjectModel/Import'
+    __transfer_folder:str                      = 'transfer_files'
+    __workflows_folder:str                     = 'workflows'
+    __all_workflow_nodes_file:str              = 'all_workflow_nodes_import_server.json'
+    __object_model_folder:str                  = 'object_model'
+    __object_model_file:str                    = 'object_model_import_server.json'
+    __modified_object_model_file:str           = 'modified_object_model.json'
+    Export_data                                = export_data.Export_data()
+    License                                    = license.License()
+    possible_request_errors                    = auth.Auth().possible_request_errors
 
 
     def __init__(self):
@@ -34,8 +34,8 @@ class Import_data:
     def validate_import_server(self, url, token):
         ''' Function needs to protect export server from import procedure during a single user session. '''
 
-        check_server_info = File.read_file(self._transfer_folder, self._Export_data.export_server_info_file)
-        if check_server_info and check_server_info.split()[1] == self._License.get_serverID(url, token):
+        check_server_info = File.read_file(self.__transfer_folder, self.Export_data._export_server_info_file)
+        if check_server_info and check_server_info.split()[1] == self.License.get_serverID(url, token):
             ask_for_confirmation:bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
             return True if ask_for_confirmation == 'y' else False
         elif not check_server_info:
@@ -45,15 +45,11 @@ class Import_data:
             return True
 
 
-    # def check_for_workflows_folder(self):
-    #     return True if os.path.isdir(export_data.transfer_workflows_folder) else False
-
-
     def get_BimClassId_of_current_process(self, workflowId, url, token):
         ''' Function returns BimClass_id of provided workFlow proccess. '''
 
         headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-        url_get_BimClassID_of_current_process = f"{url}/{self._api_WorkFlows}/{workflowId}/BimClasses"
+        url_get_BimClassID_of_current_process = f"{url}/{self.__api_WorkFlows}/{workflowId}/BimClasses"
         request = requests.get(url=url_get_BimClassID_of_current_process, headers=headers_import, verify=False)
         response = request.json()
         for object in range(len(response)):
@@ -64,19 +60,19 @@ class Import_data:
         ''' Function to make a post request from exported files. '''
 
         # vars to work within this function
-        workflows_folder = self._transfer_folder + '/' + self._workflows_folder
+        workflows_folder = self.__transfer_folder + '/' + self.__workflows_folder
 
-        url_create_workflow_import = f"{url}/{self._api_WorkFlows}"
+        url_create_workflow_import = f"{url}/{self.__api_WorkFlows}"
         headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
 
         # Getting the id of the Draft node on import server
-        for obj in File.read_file(workflows_folder, self._all_workflow_nodes_file):
+        for obj in File.read_file(workflows_folder, self.__all_workflow_nodes_file):
             if obj['name'] == 'Draft':
                 import_server_draft_node_id:str = obj['id']
                 break
         
         '''  BEGIN of POST request to create workFlows  '''
-        nodes_for_import:list = File.read_file(workflows_folder, self._Export_data.selected_workflow_nodes_file).split()
+        nodes_for_import:list = File.read_file(workflows_folder, self.Export_data._selected_workflow_nodes_file).split()
         for node_workflows in nodes_for_import:
             workflow_data = File.read_file(workflows_folder, node_workflows)
             for workflow in workflow_data['workFlows']:
@@ -96,7 +92,7 @@ class Import_data:
                     return False
 
                 bimClass_id = self.get_BimClassId_of_current_process(post_response['originalId'], url, token)   # 
-                bimClass_list_id_export = File.read_file(workflows_folder, self._Export_data.workflowID_bimClassID_file)                
+                bimClass_list_id_export = File.read_file(workflows_folder, self.Export_data._workflowID_bimClassID_file)                
                 time.sleep(0.2)
                 '''  END of POST request to create workFlows  '''
 
@@ -147,8 +143,8 @@ class Import_data:
             and replace with it values in object_model_export_server.json file. Needed preparation are going to be end in modified_object_model.json file, which will be used further in import process.
         '''
         # Turn both .json files into dictionaries
-        data_obj_model_import = File.read_file(self._transfer_folder + '/' + self._Export_data.object_model_folder, self._object_model_file)
-        data_obj_model_export = File.read_file(self._transfer_folder + '/' + self._Export_data.object_model_folder, self._Export_data.object_model_file)
+        data_obj_model_import = File.read_file(self.__transfer_folder + '/' + self.__object_model_folder, self.__object_model_file)
+        data_obj_model_export = File.read_file(self.__transfer_folder + '/' + self.Export_data._object_model_folder, self.Export_data._object_model_file)
         
         # Pointers to data we need to collect from the .json file
         big_fish: tuple = ("bimPropertyTreeNodes", "bimInterfaceTreeNodes", "bimClassTreeNodes", "bimDirectoryTreeNodes", "bimStructureTreeNodes", "rootSystemBimClass", "systemBimInterfaces", 
@@ -199,10 +195,10 @@ class Import_data:
             return
 
         # Making a copy of the 'object_model_export_server.json' file which we will prepare for export
-        shutil.copyfile(f"{self._transfer_folder}/{self._object_model_folder}/{self._Export_data.object_model_file}", f"{self._transfer_folder}/{self._object_model_folder}/{self._modified_object_model_file}")
+        shutil.copyfile(f"{self.__transfer_folder}/{self.__object_model_folder}/{self.Export_data._object_model_file}", f"{self.__transfer_folder}/{self.__object_model_folder}/{self.__modified_object_model_file}")
 
         # Replacement of values in .json file
-        modified_OM_file:str = f'{self._transfer_folder}/{self._object_model_folder}/{self._modified_object_model_file}'
+        modified_OM_file:str = f'{self.__transfer_folder}/{self.__object_model_folder}/{self.__modified_object_model_file}'
         for key,value in replace_data.items():
             for key_from_export_json, value_from_export_json in value.items():
                 try:
@@ -212,7 +208,7 @@ class Import_data:
                     logging.error(err)
                     return False
 
-        logging.info(f"Preparation object model file is finished. '{self._Export_data.object_model_file}' was altered into a '{self._modified_object_model_file}' file.")
+        logging.info(f"Preparation object model file is finished. '{self.Export_data._object_model_file}' was altered into a '{self.__modified_object_model_file}' file.")
         print("\n   - preparing object model file:        done")
         return True
 
@@ -220,11 +216,11 @@ class Import_data:
     def fix_defaulValues_in_object_model(self):
         '''  The function checks for 'defaultValues' keys in 'bimProperties'. If all values in the list are null, it will be replaced with an empty list [].  '''
 
-        modified_obj_model_json = File.read_file(self._transfer_folder + '/' + self._object_model_folder, self._modified_object_model_file)
+        modified_obj_model_json = File.read_file(self.__transfer_folder + '/' + self.__object_model_folder, self.__modified_object_model_file)
 
         if modified_obj_model_json:
             count = 0
-            with open(f"{self._transfer_folder}/{self._object_model_folder}/{self._modified_object_model_file}", 'w', encoding='utf-8') as file:
+            with open(f"{self.__transfer_folder}/{self.__object_model_folder}/{self.__modified_object_model_file}", 'w', encoding='utf-8') as file:
                 for bimClasses_dict in modified_obj_model_json['bimClasses']:    # bimClasses - list with dictionaries inside
                     for bimProperties_dict in bimClasses_dict['bimProperties']:  # bimProperties - list with dictionaries inside               
                         for defaultValues in bimProperties_dict.get('defaultValues'):                
@@ -235,7 +231,7 @@ class Import_data:
                 json.dump(modified_obj_model_json, file, ensure_ascii=False, indent=4)
             if count > 0:
                 print(f"   - corrupted 'defaultValues':       {count}")
-            logging.info(f"Fixing defaultValues in '{self._modified_object_model_file}' file is finished. Corrupted defaulValues: {count}")
+            logging.info(f"Fixing defaultValues in '{self.__modified_object_model_file}' file is finished. Corrupted defaulValues: {count}")
             return True
         else:
             return False
@@ -244,8 +240,8 @@ class Import_data:
     def post_object_model(self, url, token):
 
         headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-        url_post_object_model:str = f'{url}/{self._api_Integration_ObjectModel_Import}'
-        with open(f"{self._transfer_folder}/{self._object_model_folder}/{self._modified_object_model_file}", "r", encoding="utf-8") as file:
+        url_post_object_model:str = f'{url}/{self.__api_Integration_ObjectModel_Import}'
+        with open(f"{self.__transfer_folder}/{self.__object_model_folder}/{self.__modified_object_model_file}", "r", encoding="utf-8") as file:
             data = file.read()
         # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file   
         try:
@@ -266,25 +262,25 @@ class Import_data:
 
     def import_object_model(self, url, token):
         server_validation:bool = self.validate_import_server(url, token)
-        object_model_file_exists:bool = os.path.isfile(f'{self._transfer_folder}/{self._Export_data.object_model_folder}/{self._Export_data.object_model_file}')
+        object_model_file_exists:bool = os.path.isfile(f'{self.__transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}')
         if object_model_file_exists and server_validation:
-            self._Export_data.get_object_model(self._object_model_file, url, token)
+            self.Export_data.get_object_model(self.__object_model_file, url, token)
             self.prepare_object_model_file_for_import()
             self.fix_defaulValues_in_object_model()
             self.post_object_model(url, token)
             return True
         else:
-            print("No object_model for import." if not os.path.isfile(f'{self._transfer_folder}/{self._Export_data.object_model_folder}/{self._Export_data.object_model_file}') else "Can't perform import procedure on the export server.")
+            print("No object_model for import." if not os.path.isfile(f'{self.__transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}') else "Can't perform import procedure on the export server.")
             return False
 
 
     def import_workflows(self, url, token):
         server_validation:bool = self.validate_import_server(url, token)
-        workflows_folder_exists:bool = os.path.isdir(self._transfer_folder + '/' + self._workflows_folder)
+        workflows_folder_exists:bool = os.path.isdir(self.__transfer_folder + '/' + self.__workflows_folder)
         if workflows_folder_exists and server_validation:
-            self._Export_data.get_all_workflow_nodes(self._all_workflow_nodes_file, url, token)
+            self.Export_data.get_all_workflow_nodes(self.__all_workflow_nodes_file, url, token)
             self.post_workflows(url, token)
             return True
         else:
-            print("No workflows for import." if not os.path.isdir(f'{self._transfer_folder}/{self._workflows_folder}') else "Can't perform import procedure on the export server.")
+            print("No workflows for import." if not os.path.isdir(f'{self.__transfer_folder}/{self.__workflows_folder}') else "Can't perform import procedure on the export server.")
             return False

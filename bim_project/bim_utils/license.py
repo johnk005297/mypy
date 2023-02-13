@@ -15,11 +15,11 @@ import user
 
 class License:
 
-    api_License:str               = "api/License"
-    api_License_serverId:str      = "api/License/serverId"
-    permissions_to_check:tuple    = ('LicensesRead', 'LicensesWrite')
-    possible_request_errors:tuple = auth.Auth().possible_request_errors
-    User                          = user.User()
+    __api_License:str               = "api/License"
+    __api_License_serverId:str      = "api/License/serverId"
+    __permissions_to_check:tuple   = ('LicensesRead', 'LicensesWrite')
+    possible_request_errors:tuple  = auth.Auth().possible_request_errors
+    User                           = user.User()
 
 
     def __init__(self):
@@ -28,14 +28,13 @@ class License:
 
 
     def __getattr__(self, item):
-        print("License class instance has no such attribute: " + item)
-        return False
+        raise AttributeError('License class has no such attribute: ' + item)
 
 
     def check_permissions(self, url, token, username, password):
 
         is_active_license:bool = self.get_license_status(url, token, username, password)
-        if is_active_license and not self.User.check_user_privileges(url, token, username, self.permissions_to_check):
+        if is_active_license and not self.User.check_user_privileges(url, token, username, self.__permissions_to_check):
             return False
         elif not is_active_license:
             logging.info("No active license. Can't perform privileges check.")
@@ -62,7 +61,7 @@ class License:
     def get_licenses(self, url, token, username, password):
         ''' Get all the licenses in the system '''
 
-        url_get_licenses:str = f'{url}/{self.api_License}'
+        url_get_licenses:str = f'{url}/{self.__api_License}'
         headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
         payload = {
                     "username": username,
@@ -101,7 +100,7 @@ class License:
     def get_serverID(self, url, token):
 
         headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
-        url_get_serverId:str = url + '/' + self.api_License_serverId
+        url_get_serverId:str = url + '/' + self.__api_License_serverId
         request = requests.get(url=url_get_serverId, data="", headers=headers, verify=False)
         return request.text
         
@@ -161,7 +160,7 @@ class License:
             '''
             for license in licenses:
                 if license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-                    url_delete_license = f"{url}/{self.api_License}/{license['licenseID']}" 
+                    url_delete_license = f"{url}/{self.__api_License}/{license['licenseID']}" 
                     request = requests.delete(url=url_delete_license, headers=headers, verify=False)
                     if request.status_code in (200, 201, 204,):
                         print(Fore.GREEN + f"\n   - license '{license['licenseID']}' has been deactivated!")
@@ -177,7 +176,7 @@ class License:
 
         if self.read_license_token():
             data = json.dumps(self.license_token)
-            request = requests.post(url=f'{url}/{self.api_License}', headers=headers, data=data, verify=False)
+            request = requests.post(url=f'{url}/{self.__api_License}', headers=headers, data=data, verify=False)
             response = request.json()
             time.sleep(0.15)
             if request.status_code in (200, 201, 204,):
@@ -199,7 +198,7 @@ class License:
                 self.delete_license(url, token, username, password)
         
         if self.post_license(url, token):
-            url_put_license:str = f"{url}/{self.api_License}/active/{self.new_licenseId}"
+            url_put_license:str = f"{url}/{self.__api_License}/active/{self.new_licenseId}"
             payload = {}
             request = requests.put(url=url_put_license, headers=headers, data=payload, verify=False)
             if request.status_code in (200, 201, 204,):
