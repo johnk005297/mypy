@@ -6,7 +6,6 @@ tar_extract.py
 __pycache__
 venv/
 images/
-copy_replace_files/
 env_botProject/
 temp.py
 bim_project/.env
