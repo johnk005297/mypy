@@ -61,7 +61,7 @@ def alter_yml():
         'nifi:': "8100:8080",                
         'enterprise_asset_management_db:': "5444:5432"
     }
-    
+
     array_to_exclude: list = ['ports:']    # Generating list for checking the elements in the yml_file_as_list
     for value in dictionary_of_services.values():
         if isinstance(value, list):
@@ -82,7 +82,7 @@ def alter_yml():
                         break
 
                 if not l or flag_to_skip:
-                    continue                
+                    continue
                 else:
                     yml_file_as_list.append(line)
         yml_file_as_list += ['\n'*2]  # Add two more empty elements to stay in the list range during future checks of the next lines. Precaution measure.
@@ -92,7 +92,7 @@ def alter_yml():
             return False
 
     count:int = 0
-    ports:str = 'ports:\n'    
+    ports:str = 'ports:\n'
     for num, line in enumerate(yml_file_as_list):
         if line.strip() == 'services:':
             num += 1
