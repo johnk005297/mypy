@@ -37,8 +37,26 @@ def main():
             if License_main.privileges_check_count == 1 and not License_main.check_permissions(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password):
                 License_main.privileges_granted = User_main.create_or_activate_superuser(Auth_main.url, Auth_main.token)
 
-        ### LICENSE BLOCK BEGIN ###
-        if command == 'check_license':
+
+
+        # ----------Generic BEGIN---------------
+        if command == 'main_menu':
+            print(AppMenu_main._main_menu)
+        elif command in ('q', 'connect_to_another_server'):
+            if License_main.privileges_granted:
+                User_main.delete_superuser_system_role_and_delete_superuser(Auth_main.url, Auth_main.username, Auth_main.password, Auth_main.providerId)
+            if command == 'q':
+                break   # Close the menu and exit from the script.
+            else:
+                License_main.privileges_granted = False
+                License_main.privileges_check_count = 0
+                if not Auth_main.establish_connection():
+                    return False
+        # ----------Generic END-----------------
+
+
+        # ----------License BEGIN---------------
+        elif command == 'check_license':
             License_main.display_licenses(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
         elif command == 'server_id':
             print(f"\n   - serverId: {License_main.get_serverID(Auth_main.url, Auth_main.token)}")
@@ -46,16 +64,20 @@ def main():
             License_main.put_license(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
         elif command == 'delete_active_license':
             License_main.delete_license(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
-        ### THE END OF LICENSE BLOCK ###
+        # ----------License END-----------------
 
-        ### USER OBJECTS TABLE BEGIN ###
+
+        # ----------User objects BEGIN----------
         elif command == 'truncate_user_objects':
             User_main.delete_user_objects(Auth_main.url, Auth_main.token)
         elif command == 'truncate_user_objects_info':
             print(User_main.delete_user_objects.__doc__)
-        ### THE END OF USER OBJECTS ###
+        # ----------User objects END------------
 
-        ### EXPORT BEGIN###
+
+        # --------Transfer data BEGIN-----------
+
+            # Export data
         elif command == 'export_object_model' or command == 'export_workflows':
             if Export_data_main.is_first_launch_export_data:
                 Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
@@ -68,27 +90,22 @@ def main():
                 Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._workflows_folder)
                 Export_data_main.export_server_info(Auth_main.url, Auth_main.token)
                 Export_data_main.export_workflows(Auth_main.url, Auth_main.token)
-        ### THE END OF EXPORT ###
 
-        ### IMPORT BEGIN ###
+            # Import data
         elif command == 'import_workflows':
             Import_data_main.import_workflows(Auth_main.url, Auth_main.token)
         elif command == 'import_object_model':
             Import_data_main.import_object_model(Auth_main.url, Auth_main.token)
-        ### THE END OF IMPORT ###
 
-        ### GENERIC ###
+            # Clean transfer data storage
         elif command == 'clean_transfer_files_directory':
-            Folder.clean_folder(os.getcwd() + '/' + Export_data_main._transfer_folder)        
-        elif command in ('q', 'connect_to_another_server'):
-            if License_main.privileges_granted:
-                User_main.delete_superuser_system_role_and_delete_superuser(Auth_main.url, Auth_main.username, Auth_main.password, Auth_main.providerId)
-            if command == 'q':
-                break
-            else:
-                License_main.privileges_granted = False
-                if not Auth_main.establish_connection():
-                    return False
+            Folder.clean_folder(os.getcwd() + '/' + Export_data_main._transfer_folder)
+        # --------Transfer data END-------------
+
+
+        # User
+        elif command == 'user_access_token':
+            print(Auth_main.token)
 
 
 

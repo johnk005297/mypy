@@ -28,8 +28,8 @@ class Export_data:
     _selected_workflow_nodes_file:str              = 'workflow_nodes_to_import.list'
     _workflowID_bimClassID_file:str                = 'workflowID_bimClassID_export_server.json'
     _object_model_file:str                         = 'object_model_export_server.json'
-    _workflowsID_and_names_from_export_server:str  = 'workflowsID_and_names_from_export_server.list'  # Save it just in case if need to find a particular file among workflows or smth.
-    _export_server_info_file:str                   = 'export_server_info.txt'  # Needs for separation import procedures on export server during one session.
+    _exported_workflows_list:str                   = 'exported_workflows.list'  # Save it just in case if need to find a particular file among workflows or smth.
+    _export_server_info_file:str                   = 'export_server.info'  # Needs for separation import procedures on export server during one session.
     AppMenu                                        = app_menu.AppMenu()
     possible_request_errors                        = auth.Auth().possible_request_errors
     License                                        = license.License()
@@ -176,6 +176,10 @@ class Export_data:
         pass
 
 
+    def delete_workflows(self):
+        pass
+
+
     def get_workflow_xml(self, url, token):
         ''' XML for every workflow will be exported from the current_workflow_node_selection list. '''
 
@@ -201,8 +205,8 @@ class Export_data:
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
 
         workFlow_id_bimClass_id_export: list = []  # temp list to store data
-        if not os.path.isfile(f"{self._transfer_folder}/{self._workflows_folder}/{self._workflowsID_and_names_from_export_server}"):
-            with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._workflowsID_and_names_from_export_server}", 'w', encoding='utf-8') as file:
+        if not os.path.isfile(f"{self._transfer_folder}/{self._workflows_folder}/{self._exported_workflows_list}"):
+            with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._exported_workflows_list}", 'w', encoding='utf-8') as file:
                 file.write('Workflows: name and Id\n---------------------------------\n')            
 
         nodes = ' '.join(self.current_workflow_node_selection).replace('Draft', self._workflows_draft_file).replace('Archived', self._workflows_archived_file).replace('Active', self._workflows_active_file).split()
@@ -226,7 +230,7 @@ class Export_data:
                 workFlow_id_bimClass_id_export.append(response[0]['id'])
 
                 # saving processes name with corresponding Id
-                with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._workflowsID_and_names_from_export_server}", 'a', encoding='utf-8') as file:
+                with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._exported_workflows_list}", 'a', encoding='utf-8') as file:
                     file.write(f"{line['name']}\n{line['originalId']}\n\n")
 
         # List comprehension block for transformation list of values into {'workFlow_id': 'bimClass_id'} pairs.
