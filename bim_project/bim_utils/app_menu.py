@@ -1,6 +1,6 @@
 #
 class AppMenu:
-    version = '1.26'
+    version = '1.27'
 
 
     def __getattr__(self, item):
@@ -21,6 +21,7 @@ class AppMenu:
                                         \n   2  get serverId                                 \
                                         \n   3  apply new license                            \
                                         \n   4  delete active license                        \
+                                        \n 112  check_serverId_consistency                   \
                                         \n                                                   \
                                         \n  Databases:                                       \
                                         \n   5  clean bimeisterdb.UserObjects table          \
@@ -31,6 +32,7 @@ class AppMenu:
                                         \n   7 export workflows                              \
                                         \n   8 import object model                           \
                                         \n   9 import workflows                              \
+                                        \n  dw display workflows(name, id)                   \
                                         \n  09 clean transfer_files folder                   \
                                         \n                                                   \
                                         \n  User:                                            \
@@ -41,12 +43,9 @@ class AppMenu:
                                         \n   q  exit"
                                       # \n   c  connect to another server                    \  # Need to figure out the way to add connect to another server without re-running the script
 
-        # Main menu
-        if self.menu_user_command == 'm':
-            return 'main_menu'
 
         # License
-        elif self.menu_user_command == '1':
+        if self.menu_user_command   == '1':
             return 'check_license'
         elif self.menu_user_command == '2':
             return 'server_id'
@@ -54,31 +53,41 @@ class AppMenu:
             return 'apply_license'
         elif self.menu_user_command == '4':
             return 'delete_active_license'
+        elif self.menu_user_command == '112':
+            return 'check_serverId_validation'
 
-        # Database
+        # Databases
         elif self.menu_user_command == '5':
             return 'truncate_user_objects'
         elif self.menu_user_command == '5i':
             return 'truncate_user_objects_info'
         
-        # Export data
+        # Transfer data
         elif self.menu_user_command == '6':
             return 'export_object_model'
         elif self.menu_user_command == '7':
             return 'export_workflows'
-        
-        # Import data
         elif self.menu_user_command == '8':
             return 'import_object_model'
         elif self.menu_user_command == '9':
             return 'import_workflows'
+        elif self.menu_user_command == 'dw':
+            return 'display_workflows'
         elif self.menu_user_command == '09':
             return 'clean_transfer_files_directory'
 
-        # Generic
-        elif self.menu_user_command == 'c':
-            return 'connect_to_another_server'
+        # User
         elif self.menu_user_command == 't':
             return 'user_access_token'
+
+        # Main
+        if self.menu_user_command == 'm':
+            return 'main_menu'
         elif self.menu_user_command == 'q':
             return 'q'
+
+        # To do list
+        elif self.menu_user_command == '':
+            return 'get_list_of_workflows'        
+        elif self.menu_user_command == 'c':
+            return 'connect_to_another_server'

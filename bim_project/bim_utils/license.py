@@ -78,6 +78,17 @@ class License:
         return response
 
 
+    def serverId_validation(self, url, token, username, password):
+        ''' Check for a known bag with different serverId in serverInfo in Minio. ServerId should be the same in all licenses.'''
+
+        licenses = self.get_licenses(url, token, username, password)
+        serverId = self.get_serverID(url, token)
+        for license in licenses:
+            if serverId != license['serverId']:
+                return False
+        return True       
+
+
     def get_license_status(self, url, token, username, password):
         ''' Check if there is an active license. Return True/False. '''
 
@@ -92,8 +103,7 @@ class License:
             elif license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] > str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
                 return True
             else:
-                logging.warning('Unknown case in get_license_status module.')
-                return False
+                continue
         return False
 
 

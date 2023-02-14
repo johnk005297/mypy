@@ -62,6 +62,8 @@ class Auth:
                     return True
                 elif check_url_request.status_code in (301, 302):   # This part needs to fix issues if the redirect is set up.
                     self.url = self.url[:4] + self.url[5:] if self.url[4] == 's' else self.url[:4] + 's' + self.url[4:]
+                elif check_url_request.status_code == 500:
+                    print('Error 500: Check connection to host.')
             except requests.exceptions.MissingSchema:
                 print('Invalid URL')
                 return False

@@ -28,6 +28,25 @@ def main():
     if not Auth_main.establish_connection():  # if connection was not established, do not continue
         return False
 
+
+# ---------------------------------------------------------
+#   TEST ZONE
+# ---------------------------------------------------------
+    # Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
+    # Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder+'/'+Export_data_main._workflows_folder)
+
+    
+    
+
+
+
+
+
+
+# ---------------------------------------------------------
+# http://10.168.23.161
+# ---------------------------------------------------------
+
     while True:
         command = AppMenu_main.define_purpose_and_menu()
 
@@ -36,7 +55,6 @@ def main():
             License_main.privileges_check_count += 1
             if License_main.privileges_check_count == 1 and not License_main.check_permissions(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password):
                 License_main.privileges_granted = User_main.create_or_activate_superuser(Auth_main.url, Auth_main.token)
-
 
 
         # ----------Generic BEGIN---------------
@@ -64,6 +82,11 @@ def main():
             License_main.put_license(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
         elif command == 'delete_active_license':
             License_main.delete_license(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
+        elif command == 'check_serverId_validation':
+            if License_main.serverId_validation(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password):
+                print("ServerId is correct.")
+            else:
+                print("System has licenses with different server_id. Need to report to administrator.")
         # ----------License END-----------------
 
 
@@ -96,6 +119,10 @@ def main():
             Import_data_main.import_workflows(Auth_main.url, Auth_main.token)
         elif command == 'import_object_model':
             Import_data_main.import_object_model(Auth_main.url, Auth_main.token)
+
+            # Display workflows
+        elif command == 'display_workflows':
+            Export_data_main.display_list_of_workflowsNames_and_workflowsIds(Auth_main.url, Auth_main.token)
 
             # Clean transfer data storage
         elif command == 'clean_transfer_files_directory':

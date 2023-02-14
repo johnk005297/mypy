@@ -172,8 +172,45 @@ class Export_data:
         return True
 
 
-    def get_list_of_workflowsNames_and_workflowsIds(self):
-        pass
+    def display_list_of_workflowsNames_and_workflowsIds(self, url, token):
+
+        ### Function isn't finished ###
+        self.get_all_workflow_nodes(self._all_workflow_nodes_file, url, token) # getting list of nodes in self.workflow_nodes variable
+        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
+
+        draftNode_id, activeNode_id, archivedNode_id = self.workflow_nodes['Draft'], self.workflow_nodes['Active'], self.workflow_nodes['Archived']
+        selected_node:list = list(map(str, input("Choose nodes to display workflows from. Use whitespaces in-between to select more than one.\n dr Draft, ac, Active, ar Archived, all: ").split()))
+        selected_node = [x for x in selected_node if x in ('dr', 'ac', 'ar', 'all')] # drop anything except 0, 1, 2, 3 values from the selected node list
+
+        # replacing selected values with correspondent id's in selected node list
+        for x in range(len(selected_node)):
+            if selected_node[x] == 'dr':
+                selected_node[x] = draftNode_id
+            elif selected_node[x] == 'ac':
+                selected_node[x] = activeNode_id
+            elif selected_node[x] == 'ar':
+                selected_node[x] = archivedNode_id
+            else:
+                selected_node = [draftNode_id, activeNode_id, archivedNode_id]
+                break
+        print()
+        for id in selected_node:
+            if id == draftNode_id:
+                node_name = 'Draft'
+            elif id == activeNode_id:
+                node_name = 'Active'
+            elif id == archivedNode_id:
+                node_name = 'Archived'
+
+            url_get_workflows = f"{url}/{self.__api_WorkFlowNodes}/{id}/children"
+            try:
+                request = requests.get(url_get_workflows, headers=headers, verify=False)
+                response = request.json()
+            except self.possible_request_errors as err:
+                logging.error(f"{err}\n{request.text}")
+
+            for workflow in response['workFlows']:
+                print(f"{node_name}: {workflow['name']}: {workflow['id']}")
 
 
     def delete_workflows(self):
