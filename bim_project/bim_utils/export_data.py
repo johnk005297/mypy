@@ -193,7 +193,7 @@ class Export_data:
                 else:
                     selected_node = [draftNode_id, activeNode_id, archivedNode_id]
                     break
-
+            print()
             count = 1 # count for workflows
             for id in selected_node:
                 if id == draftNode_id:
