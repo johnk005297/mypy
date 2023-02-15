@@ -26,17 +26,17 @@ class AppMenu:
                                         \n     112   check_serverId_consistency                    \
                                         \n                                                         \
                                         \n   Databases                                             \
-                                        \n       5   clean bimeisterdb.UserObjects table           \
-                                        \n      5i   info about UserObjects table                  \
+                                        \n drop uo   clean bimeisterdb.UserObjects table           \
+                                        \n info uo   info about UserObjects table                  \
                                         \n                                                         \
                                         \n   Transfer data                                         \
-                                        \n       6   export object model                           \
-                                        \n       7   export workflows                              \
-                                        \n       8   import object model                           \
-                                        \n       9   import workflows                              \
-                                        \n   dsp_w   display workflows(name, id)                   \
-                                        \n   del_w   delete workflows                              \
-                                        \n      09   clean transfer_files folder                   \
+                                        \n  exp om   export object model                           \
+                                        \n  exp wf   export workflows                              \
+                                        \n  imp om   import object model                           \
+                                        \n  imp wf   import workflows                              \
+                                        \n   ls wf   display workflows(name, id)                   \
+                                        \n  del wf   delete workflows                              \
+                                        \n  del tf   clean transfer_files folder                   \
                                         \n                                                         \
                                         \n   User:                                                 \
                                         \n       t   get user access token                         \
@@ -60,25 +60,25 @@ class AppMenu:
             return 'check_serverId_validation'
 
         # Databases
-        elif self.menu_user_command == '5':
+        elif self.menu_user_command == 'drop uo':
             return 'truncate_user_objects'
-        elif self.menu_user_command == '5i':
+        elif self.menu_user_command == 'info uo':
             return 'truncate_user_objects_info'
         
         # Transfer data
-        elif self.menu_user_command == '6':
+        elif self.menu_user_command == 'exp om':
             return 'export_object_model'
-        elif self.menu_user_command == '7':
+        elif self.menu_user_command == 'exp wf':
             return 'export_workflows'
-        elif self.menu_user_command == '8':
+        elif self.menu_user_command == 'imp om':
             return 'import_object_model'
-        elif self.menu_user_command == '9':
+        elif self.menu_user_command == 'imp wf':
             return 'import_workflows'
-        elif self.menu_user_command == 'dsp_w':
+        elif self.menu_user_command == 'ls wf':
             return 'display_workflows'
-        elif self.menu_user_command == 'del_w':
+        elif self.menu_user_command == 'del wf':
             return 'delete_workflows'
-        elif self.menu_user_command == '09':
+        elif self.menu_user_command == 'del tf':
             return 'clean_transfer_files_directory'
 
         # User
