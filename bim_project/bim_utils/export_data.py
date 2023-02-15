@@ -172,14 +172,61 @@ class Export_data:
         return True
 
 
-    def display_list_of_workflowsNames_and_workflowsIds(self, url, token):
+    def display_list_of_workflowsName_and_workflowsId(self, url, token):
+        ''' Function to display workFlows on the screen and save that info to a file. '''
 
-        ### Function isn't finished ###
         self.get_all_workflow_nodes(self._all_workflow_nodes_file, url, token) # getting list of nodes in self.workflow_nodes variable
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
 
         draftNode_id, activeNode_id, archivedNode_id = self.workflow_nodes['Draft'], self.workflow_nodes['Active'], self.workflow_nodes['Archived']
-        selected_node:list = list(map(str, input("Choose nodes to display workflows from. Use whitespaces in-between to select more than one.\n dr Draft, ac, Active, ar Archived, all: ").split()))
+        selected_node:list = list(map(str, input("Choose nodes to display workflows from. Use whitespaces in-between to select more than one.\ndr Draft, ac, Active, ar Archived, all: ").split()))
+        selected_node = [x for x in selected_node if x in ('dr', 'ac', 'ar', 'all')] # drop anything except 0, 1, 2, 3 values from the selected node list
+
+        # creating a file workFlows.list
+        with open(f'{self._transfer_folder}/{self._workflows_folder}/workFlows.list', mode='a', encoding='utf-8') as file:
+
+            # replacing selected values with correspondent id's in selected node list
+            for x in range(len(selected_node)):
+                if selected_node[x] == 'dr':
+                    selected_node[x] = draftNode_id
+                elif selected_node[x] == 'ac':
+                    selected_node[x] = activeNode_id
+                elif selected_node[x] == 'ar':
+                    selected_node[x] = archivedNode_id
+                else:
+                    selected_node = [draftNode_id, activeNode_id, archivedNode_id]
+                    break
+            print()
+            for id in selected_node:
+                if id == draftNode_id:
+                    node_name = 'Draft'
+                elif id == activeNode_id:
+                    node_name = 'Active'
+                elif id == archivedNode_id:
+                    node_name = 'Archived'
+
+                url_get_workflows = f"{url}/{self.__api_WorkFlowNodes}/{id}/children"
+                try:
+                    request = requests.get(url_get_workflows, headers=headers, verify=False)
+                    response = request.json()
+                except self.possible_request_errors as err:
+                    logging.error(f"{err}\n{request.text}")
+
+                for workflow in response['workFlows']:
+                    result = f"{node_name}: {workflow['name']}  id: {workflow['id']}"
+                    print(result)
+                    file.write(result + '\n')
+
+
+    def delete_workflows(self, url, token):
+        ''' Function to delete workFlows from a certain node, or all at once. '''
+
+        ### Function isn't finished yet ###
+        self.get_all_workflow_nodes(self._all_workflow_nodes_file, url, token) # getting list of nodes in self.workflow_nodes variable
+        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
+
+        draftNode_id, activeNode_id, archivedNode_id = self.workflow_nodes['Draft'], self.workflow_nodes['Active'], self.workflow_nodes['Archived']
+        selected_node:list = list(map(str, input("Choose nodes to delete workflows from. Use whitespaces in-between to select more than one.\ndr Draft, ac, Active, ar Archived, all: ").split()))
         selected_node = [x for x in selected_node if x in ('dr', 'ac', 'ar', 'all')] # drop anything except 0, 1, 2, 3 values from the selected node list
 
         # replacing selected values with correspondent id's in selected node list
@@ -193,7 +240,8 @@ class Export_data:
             else:
                 selected_node = [draftNode_id, activeNode_id, archivedNode_id]
                 break
-        print()
+
+        workflows_to_delete:list = []
         for id in selected_node:
             if id == draftNode_id:
                 node_name = 'Draft'
@@ -210,11 +258,17 @@ class Export_data:
                 logging.error(f"{err}\n{request.text}")
 
             for workflow in response['workFlows']:
-                print(f"{node_name}: {workflow['name']}: {workflow['id']}")
-
-
-    def delete_workflows(self):
-        pass
+                workflows_to_delete.append([node_name, workflow['name'], workflow['id']])
+        print()
+        for number, workflow in enumerate(workflows_to_delete, 1):
+            try:
+                url_delete_workflow = f"{url}/{self.__api_WorkFlows}/{workflow[2]}"
+                request = requests.delete(url_delete_workflow, headers=headers, verify=False)
+                logging.info(f'Deleted workflow: {workflow[0]}: {workflow[2]}')
+                print(f'{number}) {workflow[0]}: {workflow[1]}')
+            except self.possible_request_errors as err:
+                logging.error(f"{err}\n{request.text}")
+        workflows_to_delete.clear()
 
 
     def get_workflow_xml(self, url, token):

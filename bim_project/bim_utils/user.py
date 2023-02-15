@@ -7,6 +7,7 @@ import json
 import random
 import string
 import auth
+import license
 
 
 class User:
@@ -19,6 +20,7 @@ class User:
     __api_Users_AddSystemRole:str    = 'api/Users/AddSystemRole'
     __api_Users_RemoveSystemRole:str = 'api/Users/RemoveSystemRole'
     Auth_superuser                   = auth.Auth(username='johnny_mnemonic', password='Qwerty12345!') # Create Auth class instance for new user
+    License                          = license.License()
     possible_request_errors          = Auth_superuser.possible_request_errors
     _su_system_role_id               = None
     _su_system_role_name             = None
@@ -33,6 +35,18 @@ class User:
 
     def __getattr__(self, item):
         raise AttributeError("User class has no such attribute: " + item)
+
+
+    def check_permissions(self, url, token, username, password, permissions_to_check):
+
+        is_active_license:bool = self.License.get_license_status(url, token, username, password)
+        if is_active_license and not self.check_user_privileges(url, token, username, permissions_to_check):
+            return False
+        elif not is_active_license:
+            logging.info("No active license. Can't perform privileges check.")
+            return True  # Need to return True, because without an active license it isn't possible to perform any check
+        else:
+            return True
 
 
     def delete_user_objects(self, url, token):

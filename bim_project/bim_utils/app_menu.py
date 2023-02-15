@@ -1,6 +1,6 @@
 #
 class AppMenu:
-    version = '1.27'
+    version = '1.28'
 
 
     def __getattr__(self, item):
@@ -16,31 +16,34 @@ class AppMenu:
         ''' Define what the user would like to do '''
 
         self.menu_user_command = input("\nCommand (m for help): ").lower().strip()
-        self._main_menu        =       "\n  License:                                         \
-                                        \n   1  check license                                \
-                                        \n   2  get serverId                                 \
-                                        \n   3  apply new license                            \
-                                        \n   4  delete active license                        \
-                                        \n 112  check_serverId_consistency                   \
-                                        \n                                                   \
-                                        \n  Databases:                                       \
-                                        \n   5  clean bimeisterdb.UserObjects table          \
-                                        \n   5i info about UserObjects table                 \
-                                        \n                                                   \
-                                        \n  Transfer data:                                   \
-                                        \n   6 export object model                           \
-                                        \n   7 export workflows                              \
-                                        \n   8 import object model                           \
-                                        \n   9 import workflows                              \
-                                        \n  dw display workflows(name, id)                   \
-                                        \n  09 clean transfer_files folder                   \
-                                        \n                                                   \
-                                        \n  User:                                            \
-                                        \n   t  get user access token                        \
-                                        \n                                                   \
-                                        \n  Main:                                            \
-                                        \n   m  print this menu                              \
-                                        \n   q  exit"
+        self._main_menu        =       "\nHelp:                                                    \
+                                        \n                                                         \
+                                        \n   License                                               \
+                                        \n       1   check license                                 \
+                                        \n       2   get serverId                                  \
+                                        \n       3   apply new license                             \
+                                        \n       4   delete active license                         \
+                                        \n     112   check_serverId_consistency                    \
+                                        \n                                                         \
+                                        \n   Databases                                             \
+                                        \n       5   clean bimeisterdb.UserObjects table           \
+                                        \n      5i   info about UserObjects table                  \
+                                        \n                                                         \
+                                        \n   Transfer data                                         \
+                                        \n       6   export object model                           \
+                                        \n       7   export workflows                              \
+                                        \n       8   import object model                           \
+                                        \n       9   import workflows                              \
+                                        \n   dsp_w   display workflows(name, id)                   \
+                                        \n   del_w   delete workflows                              \
+                                        \n      09   clean transfer_files folder                   \
+                                        \n                                                         \
+                                        \n   User:                                                 \
+                                        \n       t   get user access token                         \
+                                        \n                                                         \
+                                        \n   Main:                                                 \
+                                        \n       m   print this menu                               \
+                                        \n       q   exit"
                                       # \n   c  connect to another server                    \  # Need to figure out the way to add connect to another server without re-running the script
 
 
@@ -71,8 +74,10 @@ class AppMenu:
             return 'import_object_model'
         elif self.menu_user_command == '9':
             return 'import_workflows'
-        elif self.menu_user_command == 'dw':
+        elif self.menu_user_command == 'dsp_w':
             return 'display_workflows'
+        elif self.menu_user_command == 'del_w':
+            return 'delete_workflows'
         elif self.menu_user_command == '09':
             return 'clean_transfer_files_directory'
 
@@ -86,8 +91,8 @@ class AppMenu:
         elif self.menu_user_command == 'q':
             return 'q'
 
-        # To do list
-        elif self.menu_user_command == '':
-            return 'get_list_of_workflows'        
+
+
+        ### To do list ###      
         elif self.menu_user_command == 'c':
             return 'connect_to_another_server'

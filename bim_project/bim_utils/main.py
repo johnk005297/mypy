@@ -32,8 +32,6 @@ def main():
 # ---------------------------------------------------------
 #   TEST ZONE
 # ---------------------------------------------------------
-    # Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
-    # Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder+'/'+Export_data_main._workflows_folder)
 
     
     
@@ -51,16 +49,27 @@ def main():
         command = AppMenu_main.define_purpose_and_menu()
 
         # check privileges for everything related in tuple below
-        if command in ('check_license', 'server_id', 'apply_license', 'delete_active_license', 'export_workflows', 'export_object_model', 'import_workflows', 'import_object_model'):
+        if command in (
+                        'check_license'
+                        ,'server_id'
+                        ,'check_serverId_validation'
+                        ,'apply_license'
+                        ,'delete_active_license'
+                        ,'export_workflows'
+                        ,'export_object_model'
+                        ,'display_workflows'
+                        ,'import_workflows'
+                        'import_object_model'
+                      ):
             License_main.privileges_check_count += 1
-            if License_main.privileges_check_count == 1 and not License_main.check_permissions(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password):
+            if License_main.privileges_check_count == 1 and not User_main.check_permissions(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password, License_main._permissions_to_check):
                 License_main.privileges_granted = User_main.create_or_activate_superuser(Auth_main.url, Auth_main.token)
 
 
         # ----------Generic BEGIN---------------
         if command == 'main_menu':
             print(AppMenu_main._main_menu)
-        elif command in ('q', 'connect_to_another_server'):
+        elif command in ('q', 'connect_to_another_server'): # connect to another server isn't realized yet
             if License_main.privileges_granted:
                 User_main.delete_superuser_system_role_and_delete_superuser(Auth_main.url, Auth_main.username, Auth_main.password, Auth_main.providerId)
             if command == 'q':
@@ -101,18 +110,22 @@ def main():
         # --------Transfer data BEGIN-----------
 
             # Export data
-        elif command == 'export_object_model' or command == 'export_workflows':
+        elif command == 'export_object_model' or command == 'export_workflows' or command == 'display_workflows':
             if Export_data_main.is_first_launch_export_data:
                 Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
+                Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._workflows_folder)
+                Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._object_model_folder)
                 Export_data_main.is_first_launch_export_data = False
             if command == 'export_object_model':
-                Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._object_model_folder)
                 Export_data_main.export_server_info(Auth_main.url, Auth_main.token)
                 Export_data_main.get_object_model(Export_data_main._object_model_file, Auth_main.url, Auth_main.token)
             elif command == 'export_workflows':
-                Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._workflows_folder)
                 Export_data_main.export_server_info(Auth_main.url, Auth_main.token)
                 Export_data_main.export_workflows(Auth_main.url, Auth_main.token)
+            elif command == 'display_workflows':
+                Export_data_main.display_list_of_workflowsName_and_workflowsId(Auth_main.url, Auth_main.token)
+        elif command == 'delete_workflows':
+            Export_data_main.delete_workflows(Auth_main.url, Auth_main.token)
 
             # Import data
         elif command == 'import_workflows':
@@ -120,15 +133,10 @@ def main():
         elif command == 'import_object_model':
             Import_data_main.import_object_model(Auth_main.url, Auth_main.token)
 
-            # Display workflows
-        elif command == 'display_workflows':
-            Export_data_main.display_list_of_workflowsNames_and_workflowsIds(Auth_main.url, Auth_main.token)
-
             # Clean transfer data storage
         elif command == 'clean_transfer_files_directory':
             Folder.clean_folder(os.getcwd() + '/' + Export_data_main._transfer_folder)
         # --------Transfer data END-------------
-
 
         # User
         elif command == 'user_access_token':

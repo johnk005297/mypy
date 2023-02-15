@@ -11,15 +11,13 @@ init(autoreset=True)
 from datetime import date
 from datetime import datetime
 import auth
-import user
 
 class License:
 
-    __api_License:str               = "api/License"
-    __api_License_serverId:str      = "api/License/serverId"
-    __permissions_to_check:tuple   = ('LicensesRead', 'LicensesWrite')
+    __api_License:str              = "api/License"
+    __api_License_serverId:str     = "api/License/serverId"
+    _permissions_to_check:tuple    = ('LicensesRead', 'LicensesWrite')
     possible_request_errors:tuple  = auth.Auth().possible_request_errors
-    User                           = user.User()
 
 
     def __init__(self):
@@ -29,18 +27,6 @@ class License:
 
     def __getattr__(self, item):
         raise AttributeError('License class has no such attribute: ' + item)
-
-
-    def check_permissions(self, url, token, username, password):
-
-        is_active_license:bool = self.get_license_status(url, token, username, password)
-        if is_active_license and not self.User.check_user_privileges(url, token, username, self.__permissions_to_check):
-            return False
-        elif not is_active_license:
-            logging.info("No active license. Can't perform privileges check.")
-            return True  # Need to return True, because without an active license it isn't possible to perform any check
-        else:
-            return True
 
 
     def read_license_token(self):
