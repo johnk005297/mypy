@@ -19,15 +19,16 @@ def copy_files():
     data = read_excel_file()
     if not data:
         return
-    filenames_column:str          = data[data.columns.ravel()[0]] # Первая колонка. data['Name']
-    start_fileLocation_column:str = data[data.columns.ravel()[1]] # Вторая колонка. data['Folder Path']
-    end_fileLocation_column:str   = data[data.columns.ravel()[2]] # Третья колонка. data['Итоговая папка']
+    filenames_column:str          = data[data.columns.ravel()[0]] # First column. data['Name']
+    start_fileLocation_column:str = data[data.columns.ravel()[1]] # Second column. data['Folder Path']
+    end_fileLocation_column:str   = data[data.columns.ravel()[2]] # Third column. data['Итоговая папка']
 
     # Creating a file to check the progress/result
     result_filename:str = 'copy_results.log'
     if os.path.isfile(result_filename):
         os.remove(result_filename)
     files_copied:int = 0
+    ext:str = '.pdf'
     with open(result_filename, 'a', encoding='utf-8') as file:
         for line in range(len(start_fileLocation_column)):
 
@@ -35,15 +36,15 @@ def copy_files():
             if pd.isna(start_fileLocation_column[line]):
                 continue
 
-            # Проверка слэша в конце указанного пути эксель файла(Откуда и Куда)
+            # Check out the slash at the end of the string in both locations
             start_fileLocation:str = \
                 start_fileLocation_column[line] if start_fileLocation_column[line][-1] == '\\' else start_fileLocation_column[line] + '\\'
             end_fileLocation:str   = \
                 end_fileLocation_column[line] if end_fileLocation_column[line][-1] == '\\' else end_fileLocation_column[line] + '\\'
             
-            # Проверка расширения файла. Если расширение не указано, добавляется. Иначе, пропускаем.
+            # Check out the extension of the file
             filename:str = \
-                filenames_column[line] if os.path.splitext(filenames_column[line][1]) == '.pdf' else filenames_column[line] + '.pdf'
+                filenames_column[line] if os.path.splitext(filenames_column[line][1]) == ext else filenames_column[line] + ext
 
             check_file_at_start:bool  = os.path.isfile(start_fileLocation + filename)
             check_file_at_finish:bool = os.path.isfile(end_fileLocation + filename)
@@ -67,7 +68,7 @@ def copy_files():
                 file.write(message + '\n')
                 print(message)
             else:
-                print("PIZDEC")
+                print("Unpredictable behaviour.")
                 return False
 
         print("\nTotal files copied: " + str(files_copied))
@@ -81,9 +82,9 @@ def rename_files():
     data = read_excel_file()
     if not data:
         return
-    old_filenames_column:str  = data[data.columns.ravel()[0]] # Содержимое первой колонки
-    new_filenames_column:str  = data[data.columns.ravel()[1]] # Содержимое второй колонки
-    fileLocation_column:str   = data[data.columns.ravel()[2]] # Содержимое третьей колонки
+    old_filenames_column:str  = data[data.columns.ravel()[0]] # First column data
+    new_filenames_column:str  = data[data.columns.ravel()[1]] # Second column data
+    fileLocation_column:str   = data[data.columns.ravel()[2]] # Third column data
     
     # Creating a file to check the progress/result
     result_filename:str = 'rename_results.log'
@@ -99,17 +100,17 @@ def rename_files():
             if pd.isna(new_filenames_column[line]) or pd.isna(old_filenames_column[line]) or pd.isna(fileLocation_column[line]):
                 continue
 
-            # Проверка слэша в конце указанного пути расположения файла. Если слэш отсутвует, добавляем.
+            # Check out the slash at the end of the string in both locations
             fileLocation:str = fileLocation_column[line] if fileLocation_column[line][-1] == '\\' else fileLocation_column[line] + '\\'
 
-            # Проверка расширения имён файлов. Если расширение не указано, добавляется. Иначе, пропускаем.
+            # Check out the extension of the file
             old_filename:str = old_filenames_column[line]
             new_filename:str = new_filenames_column[line]
 
             old_filename = old_filename if os.path.splitext(old_filename)[1] == ext else old_filename + ext
             new_filename = new_filename if os.path.splitext(new_filename)[1] == ext else new_filename + ext
 
-            # Проверка наличия файла.
+            # Check if the file exists
             check_file_exists:bool  = os.path.isfile(fileLocation + old_filename)
             if check_file_exists:
                 try:
