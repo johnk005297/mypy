@@ -91,7 +91,8 @@ class Import_data:
                     logging.error(f"{err}\n{post_request.text}")
                     return False
 
-                bimClass_id = self.get_BimClassId_of_current_process(post_response['originalId'], url, token)   # 
+
+                bimClass_id = self.get_BimClassId_of_current_process(post_response['originalId'], url, token)
                 bimClass_list_id_export = File.read_file(workflows_folder, self.Export_data._workflowID_bimClassID_file)                
                 time.sleep(0.2)
                 '''  END of POST request to create workFlows  '''
@@ -110,7 +111,6 @@ class Import_data:
 
                 # Replacement of workFlow_bimClass_ID from export server with bimClass_ID newly created workFlow on import server
                 changed_put_payload = put_payload.replace(bimClass_list_id_export[workflow["originalId"]], bimClass_id)
-
                 try:
                     requests.put(url=f"{url_create_workflow_import}/{post_response['originalId']}", data=changed_put_payload, headers=headers_import, verify=False)  # /api/WorkFlows/{workFlowOriginalId}  
                     time.sleep(0.2)

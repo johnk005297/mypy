@@ -132,9 +132,8 @@ class Export_data:
 
         try:
             path = f'{self._transfer_folder}/{self._workflows_folder}/{filename}'
-            if not os.path.isfile(path):  # Need to keep exported file during a single session.
-                with open(path, 'w', encoding='utf-8') as json_file:
-                    json.dump(response, json_file, ensure_ascii=False, indent=4)
+            with open(path, mode='w', encoding='utf-8') as json_file:
+                json.dump(response, json_file, ensure_ascii=False, indent=4)
 
             # Creating a dictionary with all three nodes from the server in format: {"NodeName": "NodeId"}
             self.workflow_nodes:dict = {}
@@ -145,7 +144,6 @@ class Export_data:
             logging.error(err)
             print('Error occured. Check the logs.')
             return False
-
         return True
 
 
@@ -184,7 +182,6 @@ class Export_data:
 
         # creating a file workFlows.list
         with open(f'{self._transfer_folder}/{self._workflows_folder}/workFlows.list', mode='a', encoding='utf-8') as file:
-
             # replacing selected values with correspondent id's in selected node list
             for x in range(len(selected_node)):
                 if selected_node[x] == 'dr':
@@ -196,7 +193,8 @@ class Export_data:
                 else:
                     selected_node = [draftNode_id, activeNode_id, archivedNode_id]
                     break
-            print()
+
+            count = 1 # count for workflows
             for id in selected_node:
                 if id == draftNode_id:
                     node_name = 'Draft'
@@ -211,10 +209,13 @@ class Export_data:
                     response = request.json()
                 except self.possible_request_errors as err:
                     logging.error(f"{err}\n{request.text}")
-
+                if not response['workFlows']:
+                    print(f'No workflows in {node_name}')
+                    continue
                 for workflow in response['workFlows']:
                     result = f"{node_name}: {workflow['name']}  id: {workflow['id']}"
-                    print(result)
+                    print(f'{count}){result}')
+                    count+=1
                     file.write(result + '\n')
 
 
@@ -257,6 +258,9 @@ class Export_data:
             except self.possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
 
+            if not response['workFlows']:
+                print(f'No workflows in {node_name}')
+                continue
             for workflow in response['workFlows']:
                 workflows_to_delete.append([node_name, workflow['name'], workflow['id']])
         print()
