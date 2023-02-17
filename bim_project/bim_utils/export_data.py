@@ -20,12 +20,14 @@ class Export_data:
     __api_Attachments:str                          = 'api/Attachments'
     _transfer_folder:str                           = 'transfer_files'
     _workflows_folder:str                          = 'workflows'
+    _workflows_folder_path:str                     = f'{_transfer_folder}/{_workflows_folder}'
     _object_model_folder:str                       = 'object_model'
     _all_workflow_nodes_file:str                   = 'all_workflow_nodes_export_server.json'
     _workflows_draft_file:str                      = 'Draft_workflows_export_server.json'
     _workflows_archived_file:str                   = 'Archived_workflows_export_server.json'
     _workflows_active_file:str                     = 'Active_workflows_export_server.json'
     _selected_workflow_nodes_file:str              = 'workflow_nodes_to_import.list'
+    _exported_workflowsId_file:str                 = 'exported_workFlowsId.list'
     _workflowID_bimClassID_file:str                = 'workflowID_bimClassID_export_server.json'
     _object_model_file:str                         = 'object_model_export_server.json'
     _exported_workflows_list:str                   = 'exported_workflows.list'  # Save it just in case if need to find a particular file among workflows or smth.
@@ -148,26 +150,125 @@ class Export_data:
 
 
     def get_workflows(self, url, token):
-        ''' Get all workflows from the chosen node. '''
+            ''' Get all workflows from the chosen node. '''
 
-        for nodeName, nodeId in self.workflow_nodes.items():
-            if nodeName not in self.current_workflow_node_selection:
+            for nodeName, nodeId in self.workflow_nodes.items():
+                if nodeName not in self.current_workflow_node_selection:
+                    continue
+
+                url_get_workflows = f"{url}/{self.__api_WorkFlowNodes}/{nodeId}/children"
+                headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
+                try:
+                    request = requests.get(url_get_workflows, headers=headers, verify=False)
+                    response = request.json()
+                    time.sleep(0.1)
+                except self.possible_request_errors as err:
+                    logging.error(f"{err}\n{request.text}")
+                    return False
+
+                with open(f"{self._transfer_folder}/{self._workflows_folder}/{nodeName}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
+                    json.dump(response, json_file, ensure_ascii=False, indent=4)       
+                logging.info(f"'{nodeName}_workflows_export_server.json' file is ready.")
+            return True
+
+
+    def collect_workflows_data(self, url, token):
+        ''' Function for collecting data using /api/Integration/WorkFlow/{workflow_id}/Export method. 
+            This method's response needs to be saved as a zip file for each process.
+        '''
+
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        count = 1 # count workflows
+        for nodeName in self.current_workflow_node_selection:
+            workflow_data = File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', f'{nodeName}_workflows_export_server.json')
+            for workflow in workflow_data['workFlows']:
+                url_export = f"{url}/api/Integration/WorkFlow/{workflow['id']}/Export"
+                request = requests.get(url=url_export, headers=headers, verify=False)
+                print(f"   {count}){nodeName}: {workflow['name']}")   # display the name of the process in the output
+                count+=1
+                time.sleep(0.1)
+                try:
+                    with open(f"{self._workflows_folder_path}/{workflow['name']}.zip", mode='wb') as zip_file, \
+                         open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as text_file:
+                        zip_file.write(request.content)
+                        text_file.write(workflow['name']+'\n')
+                except OSError as err:
+                    logging.error(err)
+                    continue
+
+        return True
+
+
+    def get_workflow_xml(self, url, token):
+        ''' XML for every workflow will be exported from the current_workflow_node_selection list. '''
+
+        # Transforming nodes variable into a list with workflows*.json filenames.
+        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
+        nodes = ' '.join(self.current_workflow_node_selection).replace('Draft', self._workflows_draft_file).replace('Archived', self._workflows_archived_file).replace('Active', self._workflows_active_file).split()
+        for node in nodes:
+            workflow_data = File.read_file(self._transfer_folder + '/' + self._workflows_folder, node)
+            for line in workflow_data['workFlows']:
+                url_get_workflow_xml_export = f"{url}/{self.__api_Attachments}/{line['attachmentId']}"
+                request = requests.get(url_get_workflow_xml_export, headers=headers, verify=False)                
+                with open(f"{self._transfer_folder}/{self._workflows_folder}/{line['originalId']}.xml", 'wb') as file:
+                    file.write(request.content)
+                time.sleep(0.15)
+        return
+
+
+    def get_workFlowId_and_bimClassId(self, url, token):
+        '''
+            This function does mapping between workFlow_id and bimClass_id. 
+            It uses list comprehension block for transformation list of objects into dictionary with {'workFlow_id': 'bimClass_id'} pairs.
+        '''
+        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
+
+        workFlow_id_bimClass_id_export: list = []  # temp list to store data
+        if not os.path.isfile(f"{self._transfer_folder}/{self._workflows_folder}/{self._exported_workflows_list}"):
+            with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._exported_workflows_list}", 'w', encoding='utf-8') as file:
+                file.write('Workflows: name and Id\n---------------------------------\n')            
+
+        nodes = ' '.join(self.current_workflow_node_selection).replace('Draft', self._workflows_draft_file).replace('Archived', self._workflows_archived_file).replace('Active', self._workflows_active_file).split()
+        for node in nodes:
+            workflow_data = File.read_file(f"{self._transfer_folder}/{self._workflows_folder}", node)
+            if len(workflow_data['workFlows']) == 0:
+                print(f"   - No {node[:-19]}")
                 continue
 
-            url_get_workflows = f"{url}/{self.__api_WorkFlowNodes}/{nodeId}/children"
-            headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-            try:
-                request = requests.get(url_get_workflows, headers=headers, verify=False)
+            for workflow in workflow_data['workFlows']:
+                print(f"     {workflow['name']}")   # display the name of the process in the output
+                url_get_workFlowId_and_bimClassId = f"{url}/{self.__api_WorkFlows}/{workflow['originalId']}/BimClasses"
+                request = requests.get(url_get_workFlowId_and_bimClassId, headers=headers, verify=False)
                 response = request.json()
-                time.sleep(0.1)
-            except self.possible_request_errors as err:
-                logging.error(f"{err}\n{request.text}")
-                return False
 
-            with open(f"{self._transfer_folder}/{self._workflows_folder}/{nodeName}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
-                json.dump(response, json_file, ensure_ascii=False, indent=4)       
-            logging.info(f"'{nodeName}_workflows_export_server.json' file is ready.")
+                with open(f"{self._transfer_folder}/{self._workflows_folder}/{workflow['originalId']}.json", 'w', encoding='utf-8') as file:
+                    json.dump(response, file, ensure_ascii=False, indent=4)
+
+                # write list with active workFlows BimClasses ID in format [workFlow_id, bimClass_id]
+                workFlow_id_bimClass_id_export.append(workflow['originalId'])
+                workFlow_id_bimClass_id_export.append(response[0]['originalId'])
+
+                # saving processes name with corresponding Id
+                with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._exported_workflows_list}", 'a', encoding='utf-8') as file:
+                    file.write(f"{workflow['name']}\n{workflow['originalId']}\n\n")
+
+        # List comprehension block for transformation list of values into {'workFlow_id': 'bimClass_id'} pairs.
+        tmp = workFlow_id_bimClass_id_export
+        tmp:list = [ [tmp[x-1]] + [tmp[x]] for x in range(1, len(tmp), 2) ]       # generation list in format [ ['a', 'b'], ['c', 'd'], ['e', 'f'] ]
+
+        workFlow_id_bimClass_id_export = dict(tmp)                                # transform tmp list from above to dictionary using dict() function in format {"workFlow_id": "bimClass_id"}
+        
+        if not os.path.isfile(f"{self._transfer_folder}/{self._workflows_folder}/{self._workflowID_bimClassID_file}"):
+            with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._workflowID_bimClassID_file}", 'w', encoding='utf-8') as file:
+                json.dump(workFlow_id_bimClass_id_export, file, ensure_ascii=False, indent=4)
+        else:
+            if workFlow_id_bimClass_id_export:  # if tmp list is True(not empty), append.
+                with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._workflowID_bimClassID_file}", 'a', encoding='utf-8') as file:
+                    json.dump(workFlow_id_bimClass_id_export, file, ensure_ascii=False, indent=4)
+            
+        logging.info("Mapping between workflow_ID and bimClass_ID: done. 'workFlow_id_bimClass_id_export.json' file is ready.")
         return True
+
 
 
     def display_list_of_workflowsName_and_workflowsId(self, url, token):
@@ -275,77 +376,6 @@ class Export_data:
         workflows_to_delete.clear()
 
 
-    def get_workflow_xml(self, url, token):
-        ''' XML for every workflow will be exported from the current_workflow_node_selection list. '''
-
-        # Transforming nodes variable into a list with workflows*.json filenames.
-        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-        nodes = ' '.join(self.current_workflow_node_selection).replace('Draft', self._workflows_draft_file).replace('Archived', self._workflows_archived_file).replace('Active', self._workflows_active_file).split()
-        for node in nodes:
-            workflow_data = File.read_file(self._transfer_folder + '/' + self._workflows_folder, node)
-            for line in workflow_data['workFlows']:
-                url_get_workflow_xml_export = f"{url}/{self.__api_Attachments}/{line['attachmentId']}"
-                request = requests.get(url_get_workflow_xml_export, headers=headers, verify=False)                
-                with open(f"{self._transfer_folder}/{self._workflows_folder}/{line['originalId']}.xml", 'wb') as file:
-                    file.write(request.content)
-                time.sleep(0.15)
-        return
-
-
-    def get_workFlowId_and_bimClassId(self, url, token):
-        '''
-            This function does mapping between workFlow_id and bimClass_id. 
-            It uses list comprehension block for transformation list of objects into dictionary with {'workFlow_id': 'bimClass_id'} pairs.
-        '''
-        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-
-        workFlow_id_bimClass_id_export: list = []  # temp list to store data
-        if not os.path.isfile(f"{self._transfer_folder}/{self._workflows_folder}/{self._exported_workflows_list}"):
-            with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._exported_workflows_list}", 'w', encoding='utf-8') as file:
-                file.write('Workflows: name and Id\n---------------------------------\n')            
-
-        nodes = ' '.join(self.current_workflow_node_selection).replace('Draft', self._workflows_draft_file).replace('Archived', self._workflows_archived_file).replace('Active', self._workflows_active_file).split()
-        for node in nodes:
-            workflow_data = File.read_file(f"{self._transfer_folder}/{self._workflows_folder}", node)
-            if len(workflow_data['workFlows']) == 0:
-                print(f"   - No {node[:-19]}")
-                continue
-
-            for line in workflow_data['workFlows']:
-                print(f"     {line['name']}")   # display the name of the process in the output
-                url_get_workFlowId_and_bimClassId = f"{url}/{self.__api_WorkFlows}/{line['originalId']}/BimClasses"
-                request = requests.get(url_get_workFlowId_and_bimClassId, headers=headers, verify=False)
-                response = request.json()
-
-                with open(f"{self._transfer_folder}/{self._workflows_folder}/{line['id']}.json", 'w', encoding='utf-8') as file:
-                    json.dump(response, file, ensure_ascii=False, indent=4)
-
-                # write list with active workFlows BimClasses ID in format [workFlow_id, bimClass_id]
-                workFlow_id_bimClass_id_export.append(line['originalId'])
-                workFlow_id_bimClass_id_export.append(response[0]['id'])
-
-                # saving processes name with corresponding Id
-                with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._exported_workflows_list}", 'a', encoding='utf-8') as file:
-                    file.write(f"{line['name']}\n{line['originalId']}\n\n")
-
-        # List comprehension block for transformation list of values into {'workFlow_id': 'bimClass_id'} pairs.
-        tmp = workFlow_id_bimClass_id_export
-        tmp:list = [ [tmp[x-1]] + [tmp[x]] for x in range(1, len(tmp), 2) ]       # generation list in format [ ['a', 'b'], ['c', 'd'], ['e', 'f'] ]
-
-        workFlow_id_bimClass_id_export = dict(tmp)                                # transform tmp list from above to dictionary using dict() function in format {"workFlow_id": "bimClass_id"}
-        
-        if not os.path.isfile(f"{self._transfer_folder}/{self._workflows_folder}/{self._workflowID_bimClassID_file}"):
-            with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._workflowID_bimClassID_file}", 'w', encoding='utf-8') as file:
-                json.dump(workFlow_id_bimClass_id_export, file, ensure_ascii=False, indent=4)
-        else:
-            if workFlow_id_bimClass_id_export:  # if tmp list is True(not empty), append.
-                with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._workflowID_bimClassID_file}", 'a', encoding='utf-8') as file:
-                    json.dump(workFlow_id_bimClass_id_export, file, ensure_ascii=False, indent=4)
-            
-        logging.info("Mapping between workflow_ID and bimClass_ID: done. 'workFlow_id_bimClass_id_export.json' file is ready.")
-        return True
-
-
     def export_server_info(self, url, token):
         serverId:str = self.License.get_serverID(url, token)
         with open(f'{self._transfer_folder}/{self._export_server_info_file}', 'w', encoding='utf-8') as file:
@@ -357,8 +387,11 @@ class Export_data:
         self.get_all_workflow_nodes(self._all_workflow_nodes_file, url, token)
         if self.select_workflow_nodes():
             self.get_workflows(url, token)
-            self.get_workflow_xml(url, token)
-            self.get_workFlowId_and_bimClassId(url, token)
+            self.collect_workflows_data(url, token)
+
+            ### Need to disable this block to test another API method for transferring process ###
+            # self.get_workflow_xml(url, token)
+            # self.get_workFlowId_and_bimClassId(url, token)
             return True
         else:
             return False

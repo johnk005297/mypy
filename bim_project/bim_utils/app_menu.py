@@ -1,6 +1,6 @@
 #
 class AppMenu:
-    version = '1.29'
+    version = '1.30'
 
 
     def __getattr__(self, item):
@@ -19,31 +19,31 @@ class AppMenu:
         self._main_menu        =       "\nHelp:                                                    \
                                         \n                                                         \
                                         \n   License                                               \
-                                        \n       1   check license                                 \
-                                        \n       2   get serverId                                  \
-                                        \n       3   apply new license                             \
-                                        \n       4   delete active license                         \
-                                        \n     112   check_serverId_consistency                    \
+                                        \n           1   check license                             \
+                                        \n           2   get serverId                              \
+                                        \n           3   apply new license                         \
+                                        \n           4   delete active license                     \
+                                        \n         112   check_serverId_consistency                \
                                         \n                                                         \
                                         \n   Databases                                             \
-                                        \n drop uo   clean bimeisterdb.UserObjects table           \
-                                        \n info uo   info about UserObjects table                  \
+                                        \n     drop uo   clean bimeisterdb.UserObjects table       \
+                                        \n     info uo   info about UserObjects table              \
                                         \n                                                         \
                                         \n   Transfer data                                         \
-                                        \n  exp om   export object model                           \
-                                        \n  exp wf   export workflows                              \
-                                        \n  imp om   import object model                           \
-                                        \n  imp wf   import workflows                              \
-                                        \n   ls wf   display workflows(name, id)                   \
-                                        \n  del wf   delete workflows                              \
-                                        \n  del tf   clean transfer_files folder                   \
+                                        \n      exp om   export object model                       \
+                                        \n      exp wf   export workflows                          \
+                                        \n      imp om   import object model                       \
+                                        \n      imp wf   import workflows                          \
+                                        \n       ls wf   display workflows(name, id)               \
+                                        \n      del wf   delete workflows                          \
+                                        \n    clean tf   clean transfer_files folder               \
                                         \n                                                         \
-                                        \n   User:                                                 \
-                                        \n       t   get user access token                         \
+                                        \n   User                                                  \
+                                        \n           t   get user access token                     \
                                         \n                                                         \
-                                        \n   Main:                                                 \
-                                        \n       m   print this menu                               \
-                                        \n       q   exit"
+                                        \n   Main                                                  \
+                                        \n           m   print this menu                           \
+                                        \n           q   exit"
                                       # \n   c  connect to another server                    \  # Need to figure out the way to add connect to another server without re-running the script
 
 
@@ -78,7 +78,7 @@ class AppMenu:
             return 'display_workflows'
         elif self.menu_user_command == 'del wf':
             return 'delete_workflows'
-        elif self.menu_user_command == 'del tf':
+        elif self.menu_user_command == 'clean tf':
             return 'clean_transfer_files_directory'
 
         # User

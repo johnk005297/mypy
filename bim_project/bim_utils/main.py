@@ -28,13 +28,10 @@ def main():
     if not Auth_main.establish_connection():  # if connection was not established, do not continue
         return False
 
-
 # ---------------------------------------------------------
 #   TEST ZONE
 # ---------------------------------------------------------
 
-    
-    
 
 
 
@@ -110,7 +107,7 @@ def main():
         # --------Transfer data BEGIN-----------
 
             # Export data
-        elif command == 'export_object_model' or command == 'export_workflows' or command == 'display_workflows':
+        elif command in ('export_object_model', 'export_workflows', 'display_workflows', 'delete_workflows'):
             if Export_data_main.is_first_launch_export_data:
                 Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
                 Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._workflows_folder)
@@ -124,8 +121,8 @@ def main():
                 Export_data_main.export_workflows(Auth_main.url, Auth_main.token)
             elif command == 'display_workflows':
                 Export_data_main.display_list_of_workflowsName_and_workflowsId(Auth_main.url, Auth_main.token)
-        elif command == 'delete_workflows':
-            Export_data_main.delete_workflows(Auth_main.url, Auth_main.token)
+            elif command == 'delete_workflows':
+                Export_data_main.delete_workflows(Auth_main.url, Auth_main.token)
 
             # Import data
         elif command == 'import_workflows':

@@ -16,6 +16,7 @@ class Import_data:
 
     __api_WorkFlows:str                       = 'api/WorkFlows'
     __api_Integration_ObjectModel_Import:str  = 'api/Integration/ObjectModel/Import'
+    __api_Integration_WorkFlow_Import:str     = 'api/Integration/WorkFlow/Import'
     _transfer_folder:str                      = 'transfer_files'
     _workflows_folder:str                     = 'workflows'
     _all_workflow_nodes_file:str              = 'all_workflow_nodes_import_server.json'
@@ -56,6 +57,23 @@ class Import_data:
             return response[object]['id']
 
 
+    # Difference between post_wofkflow below is that it uses another api method.
+    def post_workflows_new(self, url, token):
+        ''' Function to post workflows using .zip archives data from the export procedure. Workflows id's are taking from exported_workflows.list file.'''
+
+        url_import = f'{url}/{self.__api_Integration_WorkFlow_Import}'
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+
+        # Read the file with workflows in the list without blank lines
+        workflows_list = [x for x in File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', self.Export_data._exported_workflows_list).split('\n') if x.split()]
+        for number, name in enumerate(workflows_list, 1):
+            with open(f'{self._transfer_folder}/{self._workflows_folder}/{name}.zip', mode='rb') as file:        
+                requests.post(url=url_import, headers=headers, files={'file': file}, verify=False)
+                print(f"   {number}) {name}")   # display the name of the process in the output
+
+
+
+
     def post_workflows(self, url, token):
         ''' Function to make a post request from exported files. '''
 
@@ -66,16 +84,16 @@ class Import_data:
         headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
 
         # Getting the id of the Draft node on import server
-        for obj in File.read_file(workflows_folder, self._all_workflow_nodes_file):
+        for obj in File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', self._all_workflow_nodes_file):
             if obj['name'] == 'Draft':
                 import_server_draft_node_id:str = obj['id']
                 break
         
         '''  BEGIN of POST request to create workFlows  '''
-        nodes_for_import:list = File.read_file(workflows_folder, self.Export_data._selected_workflow_nodes_file).split()
+        nodes_for_import:list = File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', self.Export_data._selected_workflow_nodes_file).split()
         for node_workflows in nodes_for_import:
-            workflow_data = File.read_file(workflows_folder, node_workflows)
-            for workflow in workflow_data['workFlows']:
+            workflow_data = File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', node_workflows)
+            for workflow in workflow_data['workFlows']: # workflow type:dict
                 post_payload = {
                                 "name": workflow["name"],
                                 "workFlowNodeId": import_server_draft_node_id,
@@ -91,9 +109,9 @@ class Import_data:
                     logging.error(f"{err}\n{post_request.text}")
                     return False
 
-
                 bimClass_id = self.get_BimClassId_of_current_process(post_response['originalId'], url, token)
-                bimClass_list_id_export = File.read_file(workflows_folder, self.Export_data._workflowID_bimClassID_file)                
+                bimClass_list_id_export = File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', self.Export_data._workflowID_bimClassID_file)
+
                 time.sleep(0.2)
                 '''  END of POST request to create workFlows  '''
 
@@ -110,16 +128,17 @@ class Import_data:
                 put_payload = json.dumps(put_payload)
 
                 # Replacement of workFlow_bimClass_ID from export server with bimClass_ID newly created workFlow on import server
+
                 changed_put_payload = put_payload.replace(bimClass_list_id_export[workflow["originalId"]], bimClass_id)
                 try:
-                    requests.put(url=f"{url_create_workflow_import}/{post_response['originalId']}", data=changed_put_payload, headers=headers_import, verify=False)  # /api/WorkFlows/{workFlowOriginalId}  
+                    requests.put(url=f"{url_create_workflow_import}/{post_response['originalId']}", data=changed_put_payload, headers=headers_import, verify=False)  # /api/WorkFlows/{workFlowOriginalId}
                     time.sleep(0.2)
                 except self.possible_request_errors as err:
                     logging.error(err)
                     logging.debug("Workflow name: " + workflow["name"])
                     print(f"Error with the workflow {workflow['name']} import. Check the logs.")
                     return False
-                '''  END OF PUT REQUEST  '''        
+                '''  END OF PUT REQUEST  '''
 
                 '''  BEGIN OF XML POST REQUEST  '''
                 headers_for_xml_import = {'accept': '*/*', 'Authorization': f"Bearer {token}"}    # specific headers without 'Content-type' for import .xml file. Otherwise request doesn't work!
@@ -283,7 +302,10 @@ class Import_data:
         workflows_folder_exists:bool = os.path.isdir(self._transfer_folder + '/' + self._workflows_folder)
         if workflows_folder_exists and server_validation:
             self.Export_data.get_all_workflow_nodes(self._all_workflow_nodes_file, url, token)
-            self.post_workflows(url, token)
+            self.post_workflows_new(url, token)
+
+            ### Need to disable this block to test another API method for transferring process ###
+            # self.post_workflows(url, token)
             return True
         else:
             print("No workflows for import." if not os.path.isdir(f'{self._transfer_folder}/{self._workflows_folder}') else "Can't perform import procedure on the export server.")
