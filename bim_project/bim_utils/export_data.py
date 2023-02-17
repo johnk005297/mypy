@@ -10,7 +10,7 @@ import app_menu
 import auth
 import license
 from tools import File
-
+from tools import Tools
 
 class Export_data:
 
@@ -27,7 +27,6 @@ class Export_data:
     _workflows_archived_file:str                   = 'Archived_workflows_export_server.json'
     _workflows_active_file:str                     = 'Active_workflows_export_server.json'
     _selected_workflow_nodes_file:str              = 'workflow_nodes_to_import.list'
-    _exported_workflowsId_file:str                 = 'exported_workFlowsId.list'
     _workflowID_bimClassID_file:str                = 'workflowID_bimClassID_export_server.json'
     _object_model_file:str                         = 'object_model_export_server.json'
     _exported_workflows_list:str                   = 'exported_workflows.list'  # Save it just in case if need to find a particular file among workflows or smth.
@@ -35,6 +34,7 @@ class Export_data:
     AppMenu                                        = app_menu.AppMenu()
     possible_request_errors                        = auth.Auth().possible_request_errors
     License                                        = license.License()
+
 
     def __init__(self):
         self.is_first_launch_export_data:bool = True
@@ -166,7 +166,7 @@ class Export_data:
                     logging.error(f"{err}\n{request.text}")
                     return False
 
-                with open(f"{self._transfer_folder}/{self._workflows_folder}/{nodeName}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
+                with open(f"{self._workflows_folder_path}/{nodeName}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
                     json.dump(response, json_file, ensure_ascii=False, indent=4)       
                 logging.info(f"'{nodeName}_workflows_export_server.json' file is ready.")
             return True
@@ -177,21 +177,20 @@ class Export_data:
             This method's response needs to be saved as a zip file for each process.
         '''
 
+        count = Tools.counter()
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
-        count = 1 # count workflows
         for nodeName in self.current_workflow_node_selection:
             workflow_data = File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', f'{nodeName}_workflows_export_server.json')
             for workflow in workflow_data['workFlows']:
                 url_export = f"{url}/api/Integration/WorkFlow/{workflow['id']}/Export"
                 request = requests.get(url=url_export, headers=headers, verify=False)
-                print(f"   {count}){nodeName}: {workflow['name']}")   # display the name of the process in the output
-                count+=1
+                print(f"   {count()}){nodeName}: {workflow['name']}")   # display the name of the process in the output
                 time.sleep(0.1)
                 try:
-                    with open(f"{self._workflows_folder_path}/{workflow['name']}.zip", mode='wb') as zip_file, \
-                         open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as text_file:
-                        zip_file.write(request.content)
-                        text_file.write(workflow['name']+'\n')
+                    with open(f"{self._workflows_folder_path}/{workflow['id']}.zip", mode='wb') as zip_file, \
+                         open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as wf_name_id:
+                         zip_file.write(request.content)
+                         wf_name_id.write("{0}: {1}\n".format(workflow['name'], workflow['id']))
                 except OSError as err:
                     logging.error(err)
                     continue
@@ -282,6 +281,7 @@ class Export_data:
         selected_node = [x for x in selected_node if x in ('dr', 'ac', 'ar', 'all')] # drop anything except 0, 1, 2, 3 values from the selected node list
 
         # creating a file workFlows.list
+        count = Tools.counter()
         with open(f'{self._transfer_folder}/{self._workflows_folder}/workFlows.list', mode='a', encoding='utf-8') as file:
             # replacing selected values with correspondent id's in selected node list
             for x in range(len(selected_node)):
@@ -295,7 +295,6 @@ class Export_data:
                     selected_node = [draftNode_id, activeNode_id, archivedNode_id]
                     break
             print()
-            count = 1 # count for workflows
             for id in selected_node:
                 if id == draftNode_id:
                     node_name = 'Draft'
@@ -315,8 +314,8 @@ class Export_data:
                     continue
                 for workflow in response['workFlows']:
                     result = f"{node_name}: {workflow['name']}  id: {workflow['id']}"
-                    print(f'{count}){result}')
-                    count+=1
+                    time.sleep(0.05)
+                    print(f'{count()}){result}')
                     file.write(result + '\n')
 
 
@@ -369,11 +368,15 @@ class Export_data:
             try:
                 url_delete_workflow = f"{url}/{self.__api_WorkFlows}/{workflow[2]}"
                 request = requests.delete(url_delete_workflow, headers=headers, verify=False)
+                if request.status_code != 204:
+                    print(f"Error: {workflow[0]} wasn't removed. Status code: {request.status_code}. Check the log.")
+                    logging.error(f"{workflow[0]}: {request.status_code}\n{request.text}")
                 logging.info(f'Deleted workflow: {workflow[0]}: {workflow[2]}')
                 print(f'{number}) {workflow[0]}: {workflow[1]}')
             except self.possible_request_errors as err:
                 logging.error(f"{err}\n{request.text}")
         workflows_to_delete.clear()
+        return True
 
 
     def export_server_info(self, url, token):

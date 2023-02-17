@@ -9,8 +9,10 @@ import time
 import shutil
 import export_data
 from tools import File
+from tools import Tools
 import auth
 import license
+
 
 class Import_data:
 
@@ -58,23 +60,27 @@ class Import_data:
 
 
     # Difference between post_wofkflow below is that it uses another api method.
-    def post_workflows_new(self, url, token):
+    def post_workflows_short_way(self, url, token):
         ''' Function to post workflows using .zip archives data from the export procedure. Workflows id's are taking from exported_workflows.list file.'''
 
         url_import = f'{url}/{self.__api_Integration_WorkFlow_Import}'
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
 
         # Read the file with workflows in the list without blank lines
-        workflows_list = [x for x in File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', self.Export_data._exported_workflows_list).split('\n') if x.split()]
-        for number, name in enumerate(workflows_list, 1):
-            with open(f'{self._transfer_folder}/{self._workflows_folder}/{name}.zip', mode='rb') as file:        
-                requests.post(url=url_import, headers=headers, files={'file': file}, verify=False)
-                print(f"   {number}) {name}")   # display the name of the process in the output
+        count = Tools.counter()
+        workflows = [x for x in File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', self.Export_data._exported_workflows_list).split('\n') if x.split()]
+        for workflow in workflows:
+            name = workflow.split(':')[0].strip()
+            id = workflow.split(':')[1].strip()
+            with open(f'{self._transfer_folder}/{self._workflows_folder}/{id}.zip', mode='rb') as file:
+                post_request = requests.post(url=url_import, headers=headers, files={'file': file}, verify=False)
+                logging.info(post_request.status_code)
+                print(f"   {count()}) {name}")   # display the name of the process in the output
+
+        return 
 
 
-
-
-    def post_workflows(self, url, token):
+    def post_workflows_full_way(self, url, token):
         ''' Function to make a post request from exported files. '''
 
         # vars to work within this function
@@ -302,10 +308,10 @@ class Import_data:
         workflows_folder_exists:bool = os.path.isdir(self._transfer_folder + '/' + self._workflows_folder)
         if workflows_folder_exists and server_validation:
             self.Export_data.get_all_workflow_nodes(self._all_workflow_nodes_file, url, token)
-            self.post_workflows_new(url, token)
+            self.post_workflows_short_way(url, token)
 
             ### Need to disable this block to test another API method for transferring process ###
-            # self.post_workflows(url, token)
+            # self.post_workflows_full_way(url, token)
             return True
         else:
             print("No workflows for import." if not os.path.isdir(f'{self._transfer_folder}/{self._workflows_folder}') else "Can't perform import procedure on the export server.")

@@ -1,9 +1,7 @@
 #
 # Script for work with license and some other small features.
-
-from urllib3.exceptions import InsecureRequestWarning
-from urllib3 import disable_warnings
-disable_warnings(InsecureRequestWarning)
+import os
+import time
 import app_menu
 import auth
 import user
@@ -12,7 +10,7 @@ import export_data
 import import_data
 from tools import Folder
 import logs # activates with import
-import os
+
 
 def main():
 
@@ -31,7 +29,6 @@ def main():
 # ---------------------------------------------------------
 #   TEST ZONE
 # ---------------------------------------------------------
-
 
 
 
@@ -110,8 +107,11 @@ def main():
         elif command in ('export_object_model', 'export_workflows', 'display_workflows', 'delete_workflows'):
             if Export_data_main.is_first_launch_export_data:
                 Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
+                time.sleep(0.1)
                 Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._workflows_folder)
+                time.sleep(0.1)
                 Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._object_model_folder)
+                time.sleep(0.1)
                 Export_data_main.is_first_launch_export_data = False
             if command == 'export_object_model':
                 Export_data_main.export_server_info(Auth_main.url, Auth_main.token)

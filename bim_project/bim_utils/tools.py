@@ -68,3 +68,14 @@ class File:
         with open(filepath_2write, 'w', encoding='utf-8') as file:
             file.write(new_json)
 
+
+class Tools:
+
+    # Function closure
+    def counter(start=0):
+        def start_count():
+            nonlocal start
+            start += 1
+            return start
+
+        return start_count
