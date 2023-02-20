@@ -1,10 +1,13 @@
 #
 # Tool modules to work with folders and files
 import os
+import sys
 import logging
 import json
 import shutil
 import time
+import random
+import string
 
 class Folder:
 
@@ -77,5 +80,16 @@ class Tools:
             nonlocal start
             start += 1
             return start
-
         return start_count
+
+
+    def is_windows():
+        ''' Check if OS is windows or not. '''
+        return True if sys.platform == 'win32' else False
+
+
+    def create_random_name():
+        ''' Create random string of 20 characters. '''
+
+        random_name: str = ''.join(random.choice(string.ascii_letters) for x in range(20))
+        return random_name

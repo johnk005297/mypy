@@ -21,8 +21,8 @@ class License:
 
 
     def __init__(self):
-        self.privileges_granted:bool    = False
-        self.privileges_check_count:int = 0
+        self.privileges_granted:bool = False
+        self.privileges_checked:bool = False
 
 
     def __getattr__(self, item):

@@ -1,6 +1,6 @@
 #
 class AppMenu:
-    version = '1.30b'
+    version = '1.31'
 
 
     def __getattr__(self, item):
@@ -36,10 +36,10 @@ class AppMenu:
                                         \n      imp wf   import workflows                          \
                                         \n       ls wf   display workflows(name, id)               \
                                         \n      del wf   delete workflows                          \
-                                        \n    clean tf   clean transfer_files folder               \
+                                        \n    rm files   clean bim_utils local files               \
                                         \n                                                         \
                                         \n   User                                                  \
-                                        \n           t   get user access token                     \
+                                        \n       token   get user access token                     \
                                         \n                                                         \
                                         \n   Main                                                  \
                                         \n           m   print this menu                           \
@@ -78,11 +78,11 @@ class AppMenu:
             return 'display_workflows'
         elif self.menu_user_command == 'del wf':
             return 'delete_workflows'
-        elif self.menu_user_command == 'clean tf':
+        elif self.menu_user_command == 'rm files':
             return 'clean_transfer_files_directory'
 
         # User
-        elif self.menu_user_command == 't':
+        elif self.menu_user_command == 'token':
             return 'user_access_token'
 
         # Main

@@ -9,6 +9,7 @@ import license
 import export_data
 import import_data
 from tools import Folder
+import logging
 import logs # activates with import
 
 
@@ -42,7 +43,7 @@ def main():
     while True:
         command = AppMenu_main.define_purpose_and_menu()
 
-        # check privileges for everything related in tuple below
+        ''' Check user privileges for everything related in the tuple below. '''
         if command in (
                         'check_license'
                         ,'server_id'
@@ -55,22 +56,49 @@ def main():
                         ,'import_workflows'
                         'import_object_model'
                       ):
-            License_main.privileges_check_count += 1
-            if License_main.privileges_check_count == 1 and not User_main.check_permissions(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password, License_main._permissions_to_check):
-                License_main.privileges_granted = User_main.create_or_activate_superuser(Auth_main.url, Auth_main.token)
+            if not License_main.privileges_checked and not User_main.check_user_privileges(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password, License_main._permissions_to_check):
+                License_main.privileges_checked = True
+
+                ''' Create user with all the privileges. '''
+
+                # Create/activate user
+                Auth_superuser = auth.Auth(username='johnny_mnemonic', password='Qwerty12345!') # Create Auth class instance for new user
+                try:
+                    License_main.privileges_granted, superuser = User_main.create_or_activate_superuser(Auth_main.url, Auth_main.token, Auth_superuser.username, Auth_superuser.password)
+                except TypeError:
+                    continue
+                # Create system role
+                su_system_role_id = User_main.create_system_role(Auth_main.url, Auth_main.token)
+                # Add system role to created user
+                User_main.add_system_role_to_user(Auth_main.url, Auth_main.token, superuser['id'], superuser['userName'], su_system_role_id)
+                # Save data about current user we are working under
+                initial_user = User_main.get_current_user(Auth_main.url, Auth_main.token)
+                # Add created role to current user
+                Auth_superuser.providerId = Auth_main.get_local_providerId(Auth_main.url)  # getting provider id for created user for logon
+                Auth_superuser.get_user_access_token(Auth_main.url, Auth_superuser.username, Auth_superuser.password, Auth_superuser.providerId) # logging in under superuser account
+                # Add system role to initial user we connected
+                User_main.add_system_role_to_user(Auth_main.url, Auth_superuser.token, initial_user['id'], Auth_main.username, su_system_role_id)
 
 
         # ----------Generic BEGIN---------------
         if command == 'main_menu':
             print(AppMenu_main._main_menu)
         elif command in ('q', 'connect_to_another_server'): # connect to another server isn't realized yet
+
+            ''' Delete created user with privileges. '''
             if License_main.privileges_granted:
-                User_main.delete_superuser_system_role_and_delete_superuser(Auth_main.url, Auth_main.username, Auth_main.password, Auth_main.providerId)
+                User_main.remove_system_role_from_user(Auth_main.url, Auth_superuser.token, initial_user['id'], initial_user['userName'], su_system_role_id)
+                Auth_main.get_user_access_token(Auth_main.url, Auth_main.username, Auth_main.password, Auth_main.providerId)
+                User_main.remove_system_role_from_user(Auth_main.url, Auth_main.token, superuser['id'], superuser['userName'], su_system_role_id)
+                User_main.delete_system_role(Auth_main.url, su_system_role_id, Auth_main.token)
+                User_main.delete_user(Auth_main.url, Auth_main.token, superuser['id'], superuser['userName'])
+
+
             if command == 'q':
                 break   # Close the menu and exit from the script.
             else:
                 License_main.privileges_granted = False
-                License_main.privileges_check_count = 0
+                License_main.privileges_checked = False
                 if not Auth_main.establish_connection():
                     return False
         # ----------Generic END-----------------
@@ -140,8 +168,6 @@ def main():
             print(Auth_main.token)
 
 
-
-
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
 

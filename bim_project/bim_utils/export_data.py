@@ -341,7 +341,7 @@ class Export_data:
             else:
                 selected_node = [draftNode_id, activeNode_id, archivedNode_id]
                 break
-
+        print()
         workflows_to_delete:list = []
         for id in selected_node:
             if id == draftNode_id:
@@ -363,7 +363,7 @@ class Export_data:
                 continue
             for workflow in response['workFlows']:
                 workflows_to_delete.append([node_name, workflow['name'], workflow['id']])
-        print()
+
         for number, workflow in enumerate(workflows_to_delete, 1):
             try:
                 url_delete_workflow = f"{url}/{self.__api_WorkFlows}/{workflow[2]}"
