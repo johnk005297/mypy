@@ -73,7 +73,7 @@ class User:
         return response
 
 
-    def check_user_privileges(self, url, token, username, password, permissions_to_check:tuple):
+    def check_user_permissions(self, url, token, username, password, permissions_to_check:tuple):
         ''' Function requires to pass permissions needed to be checked, along with url, token and username. '''
 
         # If there is no active license on the server, no privileges checks could be made.

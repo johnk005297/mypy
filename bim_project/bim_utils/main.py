@@ -56,7 +56,7 @@ def main():
                         ,'import_workflows'
                         'import_object_model'
                       ):
-            if not License_main.privileges_checked and not User_main.check_user_privileges(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password, License_main._permissions_to_check):
+            if not License_main.privileges_checked and not User_main.check_user_permissions(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password, License_main._permissions_to_check):
                 License_main.privileges_checked = True
 
                 ''' Create user with all the privileges. '''
@@ -108,7 +108,8 @@ def main():
         elif command == 'check_license':
             License_main.display_licenses(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
         elif command == 'server_id':
-            print(f"\n   - serverId: {License_main.get_serverID(Auth_main.url, Auth_main.token)}")
+            response = License_main.get_serverID(Auth_main.url, Auth_main.token)
+            print("\n   - serverId: ", response)
         elif command == 'apply_license':
             License_main.put_license(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
         elif command == 'delete_active_license':

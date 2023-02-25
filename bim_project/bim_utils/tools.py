@@ -20,7 +20,7 @@ class Folder:
             return False
 
 
-    def clean_folder(path_to_folder):
+    def clean_folder(path_to_folder:str):
         ''' Function removes everything in provided directory. '''
 
         filename:str = path_to_folder.split('/')[-1]

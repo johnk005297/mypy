@@ -98,7 +98,8 @@ class License:
         headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
         url_get_serverId:str = url + '/' + self.__api_License_serverId
         request = requests.get(url=url_get_serverId, data="", headers=headers, verify=False)
-        return request.text
+        message:str = "Current user don't have sufficient privileges."
+        return request.text if request.status_code == 200 else message
         
 
 
