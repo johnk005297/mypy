@@ -76,12 +76,12 @@ class User:
     def check_user_permissions(self, url, token, username, password, permissions_to_check:tuple):
         ''' Function requires to pass permissions needed to be checked, along with url, token and username. '''
 
+        self.License.privileges_checked:bool = True
         # If there is no active license on the server, no privileges checks could be made.
         if not self.License.get_license_status(url, token, username, password):
-            message = "No active license. Can't perform privileges check."
+            message = "No active license on the server. Can't perform privileges check."
             logging.info(message)
-            print(message)
-            return
+            return True # Can't perform check, so need to return True
 
         user_system_roles_id: list = []  # list to collect user's system roles Id.
 

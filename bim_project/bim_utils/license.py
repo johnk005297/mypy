@@ -18,11 +18,12 @@ class License:
     __api_License_serverId:str     = "api/License/serverId"
     _permissions_to_check:tuple    = ('LicensesRead', 'LicensesWrite')
     possible_request_errors:tuple  = auth.Auth().possible_request_errors
+    privileges_granted:bool = False
+    privileges_checked:bool = False
 
 
     def __init__(self):
-        self.privileges_granted:bool = False
-        self.privileges_checked:bool = False
+        pass
 
 
     def __getattr__(self, item):
@@ -79,14 +80,15 @@ class License:
         ''' Check if there is an active license. Return True/False. '''
 
         licenses = self.get_licenses(url, token, username, password)
+        valid_date:str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
         for license in licenses:
-            if license['activeUsers'] > license['activeUsersLimit'] and license['isActive']:
+            if license['activeUsers'] > license['activeUsersLimit'] and license['isActive'] and license['until'] > valid_date:
                 logging.error(f"Users limit was exceeded! Active users: {license['activeUsers']}. Users limit: {license['activeUsersLimit']}")
                 print("Users limit is exceeded!")
                 return False
-            elif license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+            elif license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000' and license['until'] > valid_date:
                 return True
-            elif license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] > str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
+            elif license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] > valid_date:
                 return True
             else:
                 continue

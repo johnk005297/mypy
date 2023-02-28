@@ -34,8 +34,6 @@ def main():
 
 
 
-
-
 # ---------------------------------------------------------
 # http://10.168.23.161
 # ---------------------------------------------------------
@@ -55,10 +53,9 @@ def main():
                         ,'display_workflows'
                         ,'import_workflows'
                         'import_object_model'
-                      ):
+                      ):            
             if not License_main.privileges_checked and not User_main.check_user_permissions(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password, License_main._permissions_to_check):
-                License_main.privileges_checked = True
-
+                
                 ''' Create user with all the privileges. '''
 
                 # Create/activate user
