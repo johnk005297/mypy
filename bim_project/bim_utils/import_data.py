@@ -37,14 +37,14 @@ class Import_data:
     def validate_import_server(self, url, token):
         ''' Function needs to protect export server from import procedure during a single user session. '''
 
-        check_server_info = File.read_file(self._transfer_folder, self.Export_data._export_server_info_file)
-        if check_server_info and check_server_info.split()[1] == self.License.get_serverID(url, token):
+        server_info = File.read_file(self._transfer_folder, self.Export_data._export_server_info_file)
+        if server_info and server_info.split()[1] == self.License.get_serverID(url, token):
             ask_for_confirmation:bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
             return True if ask_for_confirmation == 'y' else False
-        elif not check_server_info:
+        elif not server_info:
             return False
         else:
-            self.export_serverId = check_server_info.split()[1]
+            self.export_serverId = server_info.split()[1]
             return True
 
 
@@ -90,10 +90,8 @@ class Import_data:
         headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
 
         # Getting the id of the Draft node on import server
-        for obj in File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', self._all_workflow_nodes_file):
-            if obj['name'] == 'Draft':
-                import_server_draft_node_id:str = obj['id']
-                break
+        workflow_nodes = self.Export_data.get_workflow_nodes_id(url,token)
+        import_server_draft_node_id = workflow_nodes.get('Draft')
         
         '''  BEGIN of POST request to create workFlows  '''
         nodes_for_import:list = File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', self.Export_data._selected_workflow_nodes_file).split()
@@ -307,12 +305,11 @@ class Import_data:
         server_validation:bool = self.validate_import_server(url, token)
         workflows_folder_exists:bool = os.path.isdir(self._transfer_folder + '/' + self._workflows_folder)
         if workflows_folder_exists and server_validation:
-            self.Export_data.get_all_workflow_nodes(self._all_workflow_nodes_file, url, token)
             self.post_workflows_short_way(url, token)
 
             ### Need to disable this block to test another API method for transferring process ###
             # self.post_workflows_full_way(url, token)
             return True
         else:
-            print("No workflows for import." if not os.path.isdir(f'{self._transfer_folder}/{self._workflows_folder}') else "Can't perform import procedure on the export server.")
+            print("No workflows for import." if not os.listdir(f'{self._transfer_folder}/{self._workflows_folder}') else "Can't perform import procedure on the export server.")
             return False

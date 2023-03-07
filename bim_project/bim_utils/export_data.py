@@ -29,7 +29,7 @@ class Export_data:
     _selected_workflow_nodes_file:str              = 'workflow_nodes_to_import.list'
     _workflowID_bimClassID_file:str                = 'workflowID_bimClassID_export_server.json'
     _object_model_file:str                         = 'object_model_export_server.json'
-    _exported_workflows_list:str                   = 'exported_workflows.list'  # Save it just in case if need to find a particular file among workflows or smth.
+    _exported_workflows_list:str                   = 'exported_workflows.list'
     _export_server_info_file:str                   = 'export_server.info'  # Needs for separation import procedures on export server during one session.
     AppMenu                                        = app_menu.AppMenu()
     possible_request_errors                        = auth.Auth().possible_request_errors
@@ -117,10 +117,41 @@ class Export_data:
         return True
 
 
-    def get_all_workflow_nodes(self, filename, url, token):
-        '''  Getting Draft, Archived and Active nodes from the server in .json file.  
-             Function holds a dictionary with all the nodes in format: {"NodeName": "NodeId"}.
-        '''
+    # def get_all_workflow_nodes(self, filename, url, token):
+    #     '''  Getting Draft, Archived and Active nodes from the server in .json file.  
+    #          Function holds a dictionary with all the nodes in format: {"NodeName": "NodeId"}.
+    #     '''
+
+    #     url_get_all_workflow_nodes = url + '/' + self.__api_WorkFlowNodes
+    #     headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
+    #     try:
+    #         request = requests.get(url=url_get_all_workflow_nodes, headers=headers, verify=False)
+    #         response = request.json()
+    #     except self.possible_request_errors as err:
+    #         logging.error(f"{err}\n{request.text}") 
+    #         print(f"Error: Couldn't export workFlow nodes. Check the logs.")
+    #         return False
+
+    #     try:
+    #         path = f'{self._transfer_folder}/{self._workflows_folder}/{filename}'
+    #         with open(path, mode='w', encoding='utf-8') as json_file:
+    #             json.dump(response, json_file, ensure_ascii=False, indent=4)
+
+    #         # Creating a dictionary with all three nodes from the server in format: {"NodeName": "NodeId"}
+    #         self.workflow_nodes:dict = {}
+    #         for x in File.read_file(self._transfer_folder + '/' + self._workflows_folder, self._all_workflow_nodes_file):
+    #             self.workflow_nodes[x['name']] = x['id']
+
+    #     except OSError as err:
+    #         logging.error(err)
+    #         print('Error occured. Check the logs.')
+    #         return False
+    #     return True
+
+
+    
+    def get_workflow_nodes_id(self, url, token):
+        ''' Function returns a dictionary with all the nodes in format: {"NodeName": "NodeId"}. '''
 
         url_get_all_workflow_nodes = url + '/' + self.__api_WorkFlowNodes
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
@@ -132,27 +163,17 @@ class Export_data:
             print(f"Error: Couldn't export workFlow nodes. Check the logs.")
             return False
 
-        try:
-            path = f'{self._transfer_folder}/{self._workflows_folder}/{filename}'
-            with open(path, mode='w', encoding='utf-8') as json_file:
-                json.dump(response, json_file, ensure_ascii=False, indent=4)
+        # Creating a dictionary with all three nodes from the server in format: {"NodeName": "NodeId"}        
+        workflow_nodes:dict = {obj['name']: obj['id'] for obj in response}
 
-            # Creating a dictionary with all three nodes from the server in format: {"NodeName": "NodeId"}
-            self.workflow_nodes:dict = {}
-            for x in File.read_file(self._transfer_folder + '/' + self._workflows_folder, self._all_workflow_nodes_file):
-                self.workflow_nodes[x['name']] = x['id']
-
-        except OSError as err:
-            logging.error(err)
-            print('Error occured. Check the logs.')
-            return False
-        return True
+        return workflow_nodes
 
 
     def get_workflows(self, url, token):
             ''' Get all workflows from the chosen node. '''
 
-            for nodeName, nodeId in self.workflow_nodes.items():
+            workflow_nodes = self.get_workflow_nodes_id(url, token)
+            for nodeName, nodeId in workflow_nodes.items():
                 if nodeName not in self.current_workflow_node_selection:
                     continue
 
@@ -180,7 +201,7 @@ class Export_data:
         count = Tools.counter()
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         for nodeName in self.current_workflow_node_selection:
-            workflow_data = File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', f'{nodeName}_workflows_export_server.json')
+            workflow_data = File.read_file(f'{self._workflows_folder_path}', f'{nodeName}_workflows_export_server.json')
             for workflow in workflow_data['workFlows']:
                 url_export = f"{url}/api/Integration/WorkFlow/{workflow['id']}/Export"
                 request = requests.get(url=url_export, headers=headers, verify=False)
@@ -273,16 +294,16 @@ class Export_data:
     def display_list_of_workflowsName_and_workflowsId(self, url, token):
         ''' Function to display workFlows on the screen and save that info to a file. '''
 
-        self.get_all_workflow_nodes(self._all_workflow_nodes_file, url, token) # getting list of nodes in self.workflow_nodes variable
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
 
-        draftNode_id, activeNode_id, archivedNode_id = self.workflow_nodes['Draft'], self.workflow_nodes['Active'], self.workflow_nodes['Archived']
+        workflow_nodes = self.get_workflow_nodes_id(url, token)
+        draftNode_id, activeNode_id, archivedNode_id = workflow_nodes['Draft'], workflow_nodes['Active'], workflow_nodes['Archived']
         selected_node:list = list(map(str, input("Choose nodes to display workflows from. Use whitespaces in-between to select more than one.\ndr Draft, ac, Active, ar Archived, all: ").split()))
         selected_node = [x for x in selected_node if x in ('dr', 'ac', 'ar', 'all')] # drop anything except 0, 1, 2, 3 values from the selected node list
 
         # creating a file workFlows.list
         count = Tools.counter()
-        with open(f'{self._transfer_folder}/{self._workflows_folder}/workFlows.list', mode='a', encoding='utf-8') as file:
+        with open(f'{self._workflows_folder_path}/workFlows.list', mode='a', encoding='utf-8') as file:
             # replacing selected values with correspondent id's in selected node list
             for x in range(len(selected_node)):
                 if selected_node[x] == 'dr':
@@ -322,11 +343,10 @@ class Export_data:
     def delete_workflows(self, url, token):
         ''' Function to delete workFlows from a certain node, or all at once. '''
 
-        ### Function isn't finished yet ###
-        self.get_all_workflow_nodes(self._all_workflow_nodes_file, url, token) # getting list of nodes in self.workflow_nodes variable
+        workflow_nodes = self.get_workflow_nodes_id(url, token) # getting list of nodes in self.workflow_nodes variable
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
 
-        draftNode_id, activeNode_id, archivedNode_id = self.workflow_nodes['Draft'], self.workflow_nodes['Active'], self.workflow_nodes['Archived']
+        draftNode_id, activeNode_id, archivedNode_id = workflow_nodes['Draft'], workflow_nodes['Active'], workflow_nodes['Archived']
         selected_node:list = list(map(str, input("Choose nodes to delete workflows from. Use whitespaces in-between to select more than one.\ndr Draft, ac, Active, ar Archived, all: ").split()))
         selected_node = [x for x in selected_node if x in ('dr', 'ac', 'ar', 'all')] # drop anything except 0, 1, 2, 3 values from the selected node list
 
@@ -387,7 +407,6 @@ class Export_data:
 
 
     def export_workflows(self, url, token):
-        self.get_all_workflow_nodes(self._all_workflow_nodes_file, url, token)
         if self.select_workflow_nodes():
             self.get_workflows(url, token)
             self.collect_workflows_data(url, token)

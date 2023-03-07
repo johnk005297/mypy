@@ -6,6 +6,8 @@ from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 import logging
 import time
+from getpass import getpass
+import maskpass
 
 
 class Auth:
@@ -107,7 +109,8 @@ class Auth:
     def get_login_password(self):
         try:
             confirm_name = input("Enter login(default, admin): ")
-            confirm_pass = input("Enter password(default, Qwerty12345!): ")
+            # confirm_pass = getpass("Enter password(default, Qwerty12345!): ") # first option to conceal the password
+            confirm_pass = maskpass.askpass(prompt="Enter password(default, Qwerty12345!): ", mask='*')
             self.username=confirm_name if confirm_name else 'admin'
             self.password=confirm_pass if confirm_pass else 'Qwerty12345!'
         except KeyboardInterrupt:

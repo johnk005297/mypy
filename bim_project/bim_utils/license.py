@@ -102,7 +102,6 @@ class License:
         request = requests.get(url=url_get_serverId, data="", headers=headers, verify=False)
         message:str = "Current user don't have sufficient privileges."
         return request.text if request.status_code == 200 else message
-        
 
 
     def display_licenses(self, url, token, username, password):

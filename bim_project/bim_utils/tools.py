@@ -72,6 +72,11 @@ class File:
             file.write(new_json)
 
 
+    def remove_file(path_to_file):
+        if os.path.isfile(path_to_file):
+            os.remove(path_to_file)
+
+
 class Tools:
 
     # Function closure

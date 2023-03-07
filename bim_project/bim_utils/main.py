@@ -2,13 +2,14 @@
 # Script for work with license and some other small features.
 import os
 import time
+from pathlib import Path
 import app_menu
 import auth
 import user
 import license
 import export_data
 import import_data
-from tools import Folder
+from tools import Folder, File
 import logging
 import logs # activates with import
 
@@ -30,7 +31,6 @@ def main():
 # ---------------------------------------------------------
 #   TEST ZONE
 # ---------------------------------------------------------
-
 
 
 
@@ -106,7 +106,7 @@ def main():
             License_main.display_licenses(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
         elif command == 'server_id':
             response = License_main.get_serverID(Auth_main.url, Auth_main.token)
-            print("\n   - serverId: ", response)
+            print("\n   - serverId:", response)
         elif command == 'apply_license':
             License_main.put_license(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
         elif command == 'delete_active_license':
@@ -158,7 +158,10 @@ def main():
 
             # Clean transfer data storage
         elif command == 'clean_transfer_files_directory':
-            Folder.clean_folder(os.getcwd() + '/' + Export_data_main._transfer_folder)
+            Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._object_model_folder}")
+            Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._workflows_folder}")
+            File.remove_file(f"{os.getcwd()}/{Export_data_main._transfer_folder}/export_server.info")
+
         # --------Transfer data END-------------
 
         # User
