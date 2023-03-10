@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+import base64
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
@@ -30,14 +31,28 @@ class License:
         raise AttributeError('License class has no such attribute: ' + item)
 
 
-    def read_license_token(self):
+    def decode_base64(self, encoded_string):
+        ''' Function decodes base64 encoded string and returns dictionary of values in format: 
+            {
+             'version': '1', 'LicenseID': 'a7bfd7df-6b90-4ca1-b40e-07d99f38308f', 'ServerID': 'eeaa4ad2-28b7-4eb7-8bfb-3fdd40d257a5', 'From': '10.03.2023 00:00:01', 
+             'Until': '25.12.2023 23:59:59', 'NumberOfUsers': '100', 'NumberOfIpConnectionsPerUser': '0', 'Product': 'BimeisterEDMS', 'LicenceType': 'Trial', 
+             'ActivationType': 'Offline', 'Client': 'Rupert Pupkin', 'ClientEmail': 'Rupert.Pupkin@fun.org', 'Organisation': 'sandbox-3.imp.bimeister.io',
+             'IsOrganisation': 'False', 'OrderId': 'Стенд для демо', 'CrmOrderId': 'IMSD-604', 'sign': '<activation_key>'
+            }
+        '''
+        decoded_string = base64.b64decode(encoded_string).decode('utf-8')
+        return dict([ [x.split('=', 1)[0].strip(), x.split('=', 1)[1].strip()] for x in decoded_string ])
+
+
+    def read_license_token(self, filename=''):
         ''' Check if there is a license.lic file, or ask user for token. '''
 
-        if os.path.isfile(f"{os.getcwd()}/license.lic"):
-            with open("license.lic", "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
+        if os.path.isfile(f"{os.getcwd()}/{filename}"):
+            with open(filename, "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
                 self.license_token = file.read().split()[0].strip("\"")
         else:
-            self.license_token = input("\nThere is no 'license.lic' file in the folder.\nEnter license token manually or 'q' for exit: ")
+            self.license_token = input("\nThere is no 'license.lic' file in the folder. \
+                                        \nEnter license token manually or 'q' for exit: ")
             if len(self.license_token) < 10 or self.license_token.lower() == 'q':
                 print("\nNo license token has been provided. Exit.")
                 logging.info("No license token has been provided by the user.")
@@ -80,15 +95,15 @@ class License:
         ''' Check if there is an active license. Return True/False. '''
 
         licenses = self.get_licenses(url, token, username, password)
-        valid_date:str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
+        current_date:str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
         for license in licenses:
-            if license['activeUsers'] > license['activeUsersLimit'] and license['isActive'] and license['until'] > valid_date:
+            if license['activeUsers'] > license['activeUsersLimit'] and license['isActive'] and license['until'] > current_date:
                 logging.error(f"Users limit was exceeded! Active users: {license['activeUsers']}. Users limit: {license['activeUsersLimit']}")
                 print("Users limit is exceeded!")
                 return False
-            elif license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000' and license['until'] > valid_date:
+            elif license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000' and license['until'] > current_date:
                 return True
-            elif license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] > valid_date:
+            elif license['licenseID'] == '00000000-0000-0000-0000-000000000000' and license['until'] > current_date:
                 return True
             else:
                 continue
@@ -130,10 +145,41 @@ class License:
                     else:
                         for key, value in license.items():
                             print( f"   - {key}: {Fore.GREEN + str(value)}" if value and key == 'isActive' else f"   - {key}: {value}" )
-                    break
+
                 else: continue
         else:
             logging.error("Unpredictable behaviour(license status) in License class.")
+
+
+    # def delete_license(self, url, token, username, password):
+    #     '''   Delete active license, if there is one.   '''    
+
+    #     headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
+
+    #     # Check if there are any active licenses, except system trial license if it's active. 
+    #     # System trial license can't be deleted, so we can't use self.get_license_status function here.
+    #     isActive:bool = False
+    #     licenses = self.get_licenses(url, token, username, password)
+    #     for license in licenses:
+    #         if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+    #             isActive:bool = True
+    #             break
+    #     if not isActive:
+    #         print("\n   - no active licenses have been found in the system.")
+    #     else:
+    #         ''' 
+    #             There is a default trial license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
+    #             After new license will be applied, system trial license will disappear automatically.
+    #         '''
+    #         for license in licenses:
+    #             if license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+    #                 url_delete_license = f"{url}/{self.__api_License}/{license['licenseID']}" 
+    #                 request = requests.delete(url=url_delete_license, headers=headers, verify=False)
+    #                 if request.status_code in (200, 201, 204,):
+    #                     print(Fore.GREEN + f"\n   - license '{license['name']}: {license['licenseID']}' has been deactivated!")
+    #                 else:
+    #                     logging.error('%s', request.text)
+    #                     print(Fore.RED + f"\n   - license '{license['name']}: {license['licenseID']}' has not been deactivated! Check the logs.")
 
 
     def delete_license(self, url, token, username, password):
@@ -143,13 +189,18 @@ class License:
 
         # Check if there are any active licenses, except system trial license if it's active. 
         # System trial license can't be deleted, so we can't use self.get_license_status function here.
-        isActive:bool = False
+
         licenses = self.get_licenses(url, token, username, password)
+        active_licenses = dict()
         for license in licenses:
             if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-                isActive:bool = True
-                break
-        if not isActive:
+                active_licenses.setdefault(license['name'], license['licenseID'])
+        
+        if not active_licenses:
+            return
+        print(active_licenses)
+        return
+        if not active_licenses:
             print("\n   - no active licenses have been found in the system.")
         else:
             ''' 
@@ -161,13 +212,16 @@ class License:
                     url_delete_license = f"{url}/{self.__api_License}/{license['licenseID']}" 
                     request = requests.delete(url=url_delete_license, headers=headers, verify=False)
                     if request.status_code in (200, 201, 204,):
-                        print(Fore.GREEN + f"\n   - license '{license['licenseID']}' has been deactivated!")
+                        print(Fore.GREEN + f"\n   - license '{license['name']}: {license['licenseID']}' has been deactivated!")
                     else:
                         logging.error('%s', request.text)
-                        print(Fore.RED + f"\n   - license '{license['licenseID']}' has not been deactivated! Check the logs.")
+                        print(Fore.RED + f"\n   - license '{license['name']}: {license['licenseID']}' has not been deactivated! Check the logs.")
+
+
 
 
     def post_license(self, url, token):
+        ''' Function returns a tuple of license id and license name if post was successful. '''
 
         headers = {'accept': 'text/plane', 'Content-Type': 'application/json-patch+json', 
         'Authorization': f"Bearer {token}"}
@@ -178,31 +232,36 @@ class License:
             response = request.json()
             time.sleep(0.15)
             if request.status_code in (200, 201, 204,):
-                self.new_licenseId:str = response['licenseID']
-                print(Fore.GREEN + f"\n   - new license has been posted successfully!")
-                return True
+                print(Fore.GREEN + f"\n   - new license {response['product']} has been posted successfully!")
+                # {'product': 'BimeisterEDMS', 'licenseID': '', 'serverID': '', 'isActive': True, 'until': '2023-12-25T23:59:59', 'numberOfUsers': 50, 'numberOfIpConnectionsPerUser': 0}
+                return response['licenseID'], response['product']
             else:
                 logging.error('%s', request.text)
                 print(Fore.RED + f"\n   - new license has not been posted!")
-        return False
+                return False
 
 
-    def put_license(self, url, token, username, password):
-        
+    def put_license(self, url, token, license_id=''):
+
         headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
         # all the active licenses will be deactivated, if user forgot to do it, and if there are any active
-        for license in self.get_licenses(url, token, username, password):
-            if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-                self.delete_license(url, token, username, password)
-        
-        if self.post_license(url, token):
-            url_put_license:str = f"{url}/{self.__api_License}/active/{self.new_licenseId}"
-            payload = {}
-            request = requests.put(url=url_put_license, headers=headers, data=payload, verify=False)
-            if request.status_code in (200, 201, 204,):
-                print(Fore.GREEN + f"   - new license has been activated successfully!")
-                return True
-            else:
-                logging.error('%s', request.text)
-                print(Fore.RED + f"   - error: New license has not been activated!")
+        # for license in self.get_licenses(url, token, username, password):
+        #     if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
+                # print("There is an active license. You should deactivate it first.")
+                # return
+                # self.delete_license(url, token, username, password)
+                # pass
+
+        url_put_license:str = f"{url}/{self.__api_License}/active/{license_id}"
+        payload = {}
+        request = requests.put(url=url_put_license, headers=headers, data=payload, verify=False)
+        if request.status_code in (200, 201, 204,):
+            print(Fore.GREEN + f"   - new license has been activated successfully!")
+            return True
+        else:
+            logging.error('%s', request.text)
+            print(Fore.RED + f"   - error: New license has not been activated!")
         return False
+
+
+

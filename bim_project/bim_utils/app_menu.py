@@ -1,6 +1,6 @@
 #
 class AppMenu:
-    version = '1.31с'
+    version = '1.32a'
 
 
     def __getattr__(self, item):
@@ -34,7 +34,7 @@ class AppMenu:
                                         \n      exp wf   export workflows                          \
                                         \n      imp om   import object model                       \
                                         \n      imp wf   import workflows                          \
-                                        \n       ls wf   display workflows(name, id)               \
+                                        \n       ls wf   display workflows(name: id)               \
                                         \n      del wf   delete workflows                          \
                                         \n    rm files   clean bim_utils local files               \
                                         \n                                                         \

@@ -28,12 +28,12 @@ def main():
     if not Auth_main.establish_connection():  # if connection was not established, do not continue
         return False
 
+    url, token, username, password = Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password
 # ---------------------------------------------------------
 #   TEST ZONE
 # ---------------------------------------------------------
 
-
-
+    # {'product': 'BimeisterEDMS', 'licenseID': '', 'serverID': '', 'isActive': True, 'until': '2023-12-25T23:59:59', 'numberOfUsers': 50, 'numberOfIpConnectionsPerUser': 0}
 # ---------------------------------------------------------
 # http://10.168.23.161
 # ---------------------------------------------------------
@@ -77,7 +77,7 @@ def main():
                 User_main.add_system_role_to_user(Auth_main.url, Auth_superuser.token, initial_user['id'], Auth_main.username, su_system_role_id)
 
 
-        # ----------Generic BEGIN---------------
+        
         if command == 'main_menu':
             print(AppMenu_main._main_menu)
         elif command in ('q', 'connect_to_another_server'): # connect to another server isn't realized yet
@@ -98,17 +98,17 @@ def main():
                 License_main.privileges_checked = False
                 if not Auth_main.establish_connection():
                     return False
-        # ----------Generic END-----------------
 
+            ''' === LICENSE BLOCK === '''
 
-        # ----------License BEGIN---------------
         elif command == 'check_license':
             License_main.display_licenses(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
         elif command == 'server_id':
             response = License_main.get_serverID(Auth_main.url, Auth_main.token)
             print("\n   - serverId:", response)
         elif command == 'apply_license':
-            License_main.put_license(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
+            license_id:str = License_main.post_license(url, token)
+            License_main.put_license(url, token, license_id=license_id[0]) if license_id else print("Post license wasn't successful. Check the logs.")
         elif command == 'delete_active_license':
             License_main.delete_license(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
         elif command == 'check_serverId_validation':
@@ -116,18 +116,17 @@ def main():
                 print("ServerId is correct.")
             else:
                 print("System has licenses with different server_id. Need to report to administrator.")
-        # ----------License END-----------------
 
 
-        # ----------User objects BEGIN----------
+            ''' === User objects BLOCK === '''
+
         elif command == 'truncate_user_objects':
             User_main.delete_user_objects(Auth_main.url, Auth_main.token)
         elif command == 'truncate_user_objects_info':
             print(User_main.delete_user_objects.__doc__)
-        # ----------User objects END------------
 
 
-        # --------Transfer data BEGIN-----------
+            ''' === TRANSFER DATA BLOCK === '''
 
             # Export data
         elif command in ('export_object_model', 'export_workflows', 'display_workflows', 'delete_workflows'):
