@@ -18,6 +18,9 @@ class License:
     __api_License:str              = "api/License"
     __api_License_serverId:str     = "api/License/serverId"
     _permissions_to_check:tuple    = ('LicensesRead', 'LicensesWrite')
+
+    # This SUID and UPP licenses are actually two parts of one license. Have know idea why it was designed that way.
+    __UPP_SUID_lic:tuple = ('Платформа BIMeister, Bimeister УПП', 'Платформа BIMeister, Bimeister СУИД')
     possible_request_errors:tuple  = auth.Auth().possible_request_errors
     privileges_granted:bool = False
     privileges_checked:bool = False
@@ -32,7 +35,7 @@ class License:
 
 
     def decode_base64(self, encoded_string):
-        ''' Function decodes base64 encoded string and returns dictionary of values in format: 
+        ''' Function decodes base64 encoded string and returns dictionary of values. Current version example of license data: 
             {
              'version': '1', 'LicenseID': 'a7bfd7df-6b90-4ca1-b40e-07d99f38308f', 'ServerID': 'eeaa4ad2-28b7-4eb7-8bfb-3fdd40d257a5', 'From': '10.03.2023 00:00:01', 
              'Until': '25.12.2023 23:59:59', 'NumberOfUsers': '100', 'NumberOfIpConnectionsPerUser': '0', 'Product': 'BimeisterEDMS', 'LicenceType': 'Trial', 
@@ -151,73 +154,42 @@ class License:
             logging.error("Unpredictable behaviour(license status) in License class.")
 
 
-    # def delete_license(self, url, token, username, password):
-    #     '''   Delete active license, if there is one.   '''    
-
-    #     headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
-
-    #     # Check if there are any active licenses, except system trial license if it's active. 
-    #     # System trial license can't be deleted, so we can't use self.get_license_status function here.
-    #     isActive:bool = False
-    #     licenses = self.get_licenses(url, token, username, password)
-    #     for license in licenses:
-    #         if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-    #             isActive:bool = True
-    #             break
-    #     if not isActive:
-    #         print("\n   - no active licenses have been found in the system.")
-    #     else:
-    #         ''' 
-    #             There is a default trial license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
-    #             After new license will be applied, system trial license will disappear automatically.
-    #         '''
-    #         for license in licenses:
-    #             if license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-    #                 url_delete_license = f"{url}/{self.__api_License}/{license['licenseID']}" 
-    #                 request = requests.delete(url=url_delete_license, headers=headers, verify=False)
-    #                 if request.status_code in (200, 201, 204,):
-    #                     print(Fore.GREEN + f"\n   - license '{license['name']}: {license['licenseID']}' has been deactivated!")
-    #                 else:
-    #                     logging.error('%s', request.text)
-    #                     print(Fore.RED + f"\n   - license '{license['name']}: {license['licenseID']}' has not been deactivated! Check the logs.")
-
-
     def delete_license(self, url, token, username, password):
         '''   Delete active license, if there is one.   '''    
 
         headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
-
-        # Check if there are any active licenses, except system trial license if it's active. 
-        # System trial license can't be deleted, so we can't use self.get_license_status function here.
-
         licenses = self.get_licenses(url, token, username, password)
         active_licenses = dict()
+        ''' 
+            There is a default trial license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
+            After new license will be applied, system trial license will disappear automatically.
+        '''
         for license in licenses:
             if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                 active_licenses.setdefault(license['name'], license['licenseID'])
-        
-        if not active_licenses:
-            return
-        print(active_licenses)
-        return
+
         if not active_licenses:
             print("\n   - no active licenses have been found in the system.")
         else:
-            ''' 
-                There is a default trial license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
-                After new license will be applied, system trial license will disappear automatically.
-            '''
-            for license in licenses:
-                if license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-                    url_delete_license = f"{url}/{self.__api_License}/{license['licenseID']}" 
-                    request = requests.delete(url=url_delete_license, headers=headers, verify=False)
-                    if request.status_code in (200, 201, 204,):
-                        print(Fore.GREEN + f"\n   - license '{license['name']}: {license['licenseID']}' has been deactivated!")
+            for lic in self.__UPP_SUID_lic:
+                if active_licenses.get(lic):
+                    request = requests.delete(url=f"{url}/{self.__api_License}/{active_licenses[lic]}", headers=headers, verify=False)
+                    if request.status_code in (200, 201, 204):
+                        print(Fore.GREEN + f"   - license '{lic}': {active_licenses.pop(lic)} has been deactivated!")
                     else:
                         logging.error('%s', request.text)
-                        print(Fore.RED + f"\n   - license '{license['name']}: {license['licenseID']}' has not been deactivated! Check the logs.")
+                        print(Fore.RED + f"   - license '{lic}' has not been deactivated! Check the logs.")
 
-
+            if not active_licenses:
+                return
+            for name, id in active_licenses.items():
+                url_delete_license = f"{url}/{self.__api_License}/{id}"
+                request = requests.delete(url=url_delete_license, headers=headers, verify=False)
+                if request.status_code in (200, 201, 204):
+                    print(Fore.GREEN + f"   - license '{name}': {id} has been deactivated!")
+                else:
+                    logging.error('%s', request.text)
+                    print(Fore.RED + f"   - license '{name}': {id} has not been deactivated! Check the logs.")
 
 
     def post_license(self, url, token):
