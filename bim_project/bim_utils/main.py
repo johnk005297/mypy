@@ -33,7 +33,11 @@ def main():
 #   TEST ZONE
 # ---------------------------------------------------------
 
-    # {'product': 'BimeisterEDMS', 'licenseID': '', 'serverID': '', 'isActive': True, 'until': '2023-12-25T23:59:59', 'numberOfUsers': 50, 'numberOfIpConnectionsPerUser': 0}
+
+
+            
+        
+
 # ---------------------------------------------------------
 # http://10.168.23.161
 # ---------------------------------------------------------
@@ -54,27 +58,27 @@ def main():
                         ,'import_workflows'
                         'import_object_model'
                       ):            
-            if not License_main.privileges_checked and not User_main.check_user_permissions(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password, License_main._permissions_to_check):
+            if not License_main.privileges_checked and not User_main.check_user_permissions(url, token, username, password, License_main._permissions_to_check):
                 
                 ''' Create user with all the privileges. '''
 
                 # Create/activate user
                 Auth_superuser = auth.Auth(username='johnny_mnemonic', password='Qwerty12345!') # Create Auth class instance for new user
                 try:
-                    License_main.privileges_granted, superuser = User_main.create_or_activate_superuser(Auth_main.url, Auth_main.token, Auth_superuser.username, Auth_superuser.password)
+                    License_main.privileges_granted, superuser = User_main.create_or_activate_superuser(url, token, Auth_superuser.username, Auth_superuser.password)
                 except TypeError:
                     continue
                 # Create system role
-                su_system_role_id = User_main.create_system_role(Auth_main.url, Auth_main.token)
+                su_system_role_id = User_main.create_system_role(url, token)
                 # Add system role to created user
-                User_main.add_system_role_to_user(Auth_main.url, Auth_main.token, superuser['id'], superuser['userName'], su_system_role_id)
+                User_main.add_system_role_to_user(url, token, superuser['id'], superuser['userName'], su_system_role_id)
                 # Save data about current user we are working under
-                initial_user = User_main.get_current_user(Auth_main.url, Auth_main.token)
+                initial_user = User_main.get_current_user(url, token)
                 # Add created role to current user
-                Auth_superuser.providerId = Auth_main.get_local_providerId(Auth_main.url)  # getting provider id for created user for logon
-                Auth_superuser.get_user_access_token(Auth_main.url, Auth_superuser.username, Auth_superuser.password, Auth_superuser.providerId) # logging in under superuser account
+                Auth_superuser.providerId = Auth_main.get_local_providerId(url)  # getting provider id for created user for logon
+                Auth_superuser.get_user_access_token(url, Auth_superuser.username, Auth_superuser.password, Auth_superuser.providerId) # logging in under superuser account
                 # Add system role to initial user we connected
-                User_main.add_system_role_to_user(Auth_main.url, Auth_superuser.token, initial_user['id'], Auth_main.username, su_system_role_id)
+                User_main.add_system_role_to_user(url, Auth_superuser.token, initial_user['id'], username, su_system_role_id)
 
 
         
@@ -84,11 +88,11 @@ def main():
 
             ''' Delete created user with privileges. '''
             if License_main.privileges_granted:
-                User_main.remove_system_role_from_user(Auth_main.url, Auth_superuser.token, initial_user['id'], initial_user['userName'], su_system_role_id)
-                Auth_main.get_user_access_token(Auth_main.url, Auth_main.username, Auth_main.password, Auth_main.providerId)
-                User_main.remove_system_role_from_user(Auth_main.url, Auth_main.token, superuser['id'], superuser['userName'], su_system_role_id)
-                User_main.delete_system_role(Auth_main.url, su_system_role_id, Auth_main.token)
-                User_main.delete_user(Auth_main.url, Auth_main.token, superuser['id'], superuser['userName'])
+                User_main.remove_system_role_from_user(url, token, initial_user['id'], initial_user['userName'], su_system_role_id)
+                Auth_main.get_user_access_token(url, username, password, Auth_main.providerId)
+                User_main.remove_system_role_from_user(url, token, superuser['id'], superuser['userName'], su_system_role_id)
+                User_main.delete_system_role(url, su_system_role_id, token)
+                User_main.delete_user(url, token, superuser['id'], superuser['userName'])
 
 
             if command == 'q':
@@ -102,17 +106,18 @@ def main():
             ''' === LICENSE BLOCK === '''
 
         elif command == 'check_license':
-            License_main.display_licenses(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
+            License_main.display_licenses(url, token, username, password)
         elif command == 'server_id':
-            response = License_main.get_serverID(Auth_main.url, Auth_main.token)
+            response = License_main.get_serverID(url, token)
             print("\n   - serverId:", response)
         elif command == 'apply_license':
-            license_id:str = License_main.post_license(url, token)
-            License_main.put_license(url, token, license_id=license_id[0]) if license_id else print("Post license wasn't successful. Check the logs.")
+            License_main.post_license(url, token, username, password)
+            # license_id:str = License_main.post_license_new(url, token, username, password)
+            # License_main.put_license(url, token, license_id=license_id[0]) if license_id else print("Post license wasn't successful. Check the logs.")
         elif command == 'delete_active_license':
-            License_main.delete_license(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password)
+            License_main.delete_license(url, token, username, password)
         elif command == 'check_serverId_validation':
-            if License_main.serverId_validation(Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password):
+            if License_main.serverId_validation(url, token, username, password):
                 print("ServerId is correct.")
             else:
                 print("System has licenses with different server_id. Need to report to administrator.")
@@ -121,7 +126,7 @@ def main():
             ''' === User objects BLOCK === '''
 
         elif command == 'truncate_user_objects':
-            User_main.delete_user_objects(Auth_main.url, Auth_main.token)
+            User_main.delete_user_objects(url, token)
         elif command == 'truncate_user_objects_info':
             print(User_main.delete_user_objects.__doc__)
 
@@ -139,21 +144,21 @@ def main():
                 time.sleep(0.1)
                 Export_data_main.is_first_launch_export_data = False
             if command == 'export_object_model':
-                Export_data_main.export_server_info(Auth_main.url, Auth_main.token)
+                Export_data_main.export_server_info(url, token)
                 Export_data_main.get_object_model(Export_data_main._object_model_file, Auth_main.url, Auth_main.token)
             elif command == 'export_workflows':
-                Export_data_main.export_server_info(Auth_main.url, Auth_main.token)
-                Export_data_main.export_workflows(Auth_main.url, Auth_main.token)
+                Export_data_main.export_server_info(url, token)
+                Export_data_main.export_workflows(url, token)
             elif command == 'display_workflows':
-                Export_data_main.display_list_of_workflowsName_and_workflowsId(Auth_main.url, Auth_main.token)
+                Export_data_main.display_list_of_workflowsName_and_workflowsId(url, token)
             elif command == 'delete_workflows':
-                Export_data_main.delete_workflows(Auth_main.url, Auth_main.token)
+                Export_data_main.delete_workflows(url, token)
 
             # Import data
         elif command == 'import_workflows':
-            Import_data_main.import_workflows(Auth_main.url, Auth_main.token)
+            Import_data_main.import_workflows(url, token)
         elif command == 'import_object_model':
-            Import_data_main.import_object_model(Auth_main.url, Auth_main.token)
+            Import_data_main.import_object_model(url, token)
 
             # Clean transfer data storage
         elif command == 'clean_transfer_files_directory':
@@ -165,7 +170,7 @@ def main():
 
         # User
         elif command == 'user_access_token':
-            print(Auth_main.token)
+            print(token)
 
 
 if __name__ == '__main__':

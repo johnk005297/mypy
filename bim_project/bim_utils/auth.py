@@ -7,7 +7,7 @@ disable_warnings(InsecureRequestWarning)
 import logging
 import time
 from getpass import getpass
-import maskpass
+# import maskpass
 
 
 class Auth:
@@ -109,8 +109,8 @@ class Auth:
     def get_login_password(self):
         try:
             confirm_name = input("Enter login(default, admin): ")
-            # confirm_pass = getpass("Enter password(default, Qwerty12345!): ") # first option to conceal the password
-            confirm_pass = maskpass.askpass(prompt="Enter password(default, Qwerty12345!): ", mask='*')
+            confirm_pass = getpass("Enter password(default, Qwerty12345!): ") # first option to conceal the password
+            # confirm_pass = maskpass.askpass(prompt="Enter password(default, Qwerty12345!): ", mask='*')  # have some issues with installing it on linux python3.6.8
             self.username=confirm_name if confirm_name else 'admin'
             self.password=confirm_pass if confirm_pass else 'Qwerty12345!'
         except KeyboardInterrupt:

@@ -7,11 +7,14 @@ from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 import logging
 import time
+import binascii
 from colorama import init, Fore
 init(autoreset=True)
 from datetime import date
 from datetime import datetime
 import auth
+from tools import Tools
+
 
 class License:
 
@@ -40,27 +43,57 @@ class License:
              'version': '1', 'LicenseID': 'a7bfd7df-6b90-4ca1-b40e-07d99f38308f', 'ServerID': 'eeaa4ad2-28b7-4eb7-8bfb-3fdd40d257a5', 'From': '10.03.2023 00:00:01', 
              'Until': '25.12.2023 23:59:59', 'NumberOfUsers': '100', 'NumberOfIpConnectionsPerUser': '0', 'Product': 'BimeisterEDMS', 'LicenceType': 'Trial', 
              'ActivationType': 'Offline', 'Client': 'Rupert Pupkin', 'ClientEmail': 'Rupert.Pupkin@fun.org', 'Organisation': 'sandbox-3.imp.bimeister.io',
-             'IsOrganisation': 'False', 'OrderId': 'Стенд для демо', 'CrmOrderId': 'IMSD-604', 'sign': '<activation_key>'
+             'IsOrganisation': 'False', 'OrderId': 'Стенд для демо', 'CrmOrderId': 'IMSD-604', 'sign': '<activation_key>', 'base64_token':'<base64_encoded_token>'
             }
         '''
         decoded_string = base64.b64decode(encoded_string).decode('utf-8')
-        return dict([ [x.split('=', 1)[0].strip(), x.split('=', 1)[1].strip()] for x in decoded_string ])
+        data = dict([ [x.split('=', 1)[0].strip(), x.split('=', 1)[1].strip()] for x in tuple(x for x in decoded_string.split('\n') if x) ])
+        return data
 
 
-    def read_license_token(self, filename=''):
-        ''' Check if there is a license.lic file, or ask user for token. '''
+    def read_license_token(self):
+        ''' Check if there is a license.lic file, or ask user for token. Function returns a list of dictionaries with license data, if everything is correct. '''
 
-        if os.path.isfile(f"{os.getcwd()}/{filename}"):
-            with open(filename, "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
-                self.license_token = file.read().split()[0].strip("\"")
+        data = input('Enter the filename containing token or token itself: ').strip()
+        if len(data) < 4:
+            print('Incorrect input data.')
+            return False
+        err_message:str = 'Error with decoding the string. Check the log.'
+        list_of_lic_data:list = [] # list where to put all the decoded token data
+        is_file:bool = os.path.splitext(data)[1] == '.lic'
+        is_file_in_place:bool = os.path.isfile(f"{os.getcwd()}/{data}")
+        count = Tools.counter()
+
+        if is_file and not is_file_in_place:
+            no_file_message:str = f"Error: No such file '{data}' in the current folder. Check for it."
+            logging.error(no_file_message)
+            print(no_file_message)
+            return False
+
+        elif is_file and is_file_in_place:
+            with open(data, "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
+                data = [line for line in file.read().split('\n') if line]
+            for x in data:
+                try:
+                    list_of_lic_data.append(self.decode_base64(x))
+                    list_of_lic_data[count()-1]['base64_token'] = x
+                except (binascii.Error, ValueError):
+                    pass
+        
         else:
-            self.license_token = input("\nThere is no 'license.lic' file in the folder. \
-                                        \nEnter license token manually or 'q' for exit: ")
-            if len(self.license_token) < 10 or self.license_token.lower() == 'q':
-                print("\nNo license token has been provided. Exit.")
-                logging.info("No license token has been provided by the user.")
+            try:
+                list_of_lic_data.append(self.decode_base64(data))
+                list_of_lic_data[0]['base64_token'] = data
+            except binascii.Error:
+                logging.error(f"Binascii error with decoding the string: {binascii.Error}")
+                print(err_message)
                 return False
-        return True
+            except ValueError:
+                logging.error(f"Value error with decoding the string: {ValueError}")
+                print(err_message)
+                return False
+
+        return list_of_lic_data
 
 
     def get_licenses(self, url, token, username, password):
@@ -192,37 +225,44 @@ class License:
                     print(Fore.RED + f"   - license '{name}': {id} has not been deactivated! Check the logs.")
 
 
-    def post_license(self, url, token):
-        ''' Function returns a tuple of license id and license name if post was successful. '''
+    def post_license(self, url, token, username, password):
 
-        headers = {'accept': 'text/plane', 'Content-Type': 'application/json-patch+json', 
-        'Authorization': f"Bearer {token}"}
+        headers = {'accept': 'text/plane', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
+        licenses_id = tuple(x.get('licenseID', False) for x in self.get_licenses(url, token, username, password))
+        new_license_data:list = self.read_license_token()
+        if not new_license_data:
+            return False
 
-        if self.read_license_token():
-            data = json.dumps(self.license_token)
-            request = requests.post(url=f'{url}/{self.__api_License}', headers=headers, data=data, verify=False)
-            response = request.json()
-            time.sleep(0.15)
-            if request.status_code in (200, 201, 204,):
-                print(Fore.GREEN + f"\n   - new license {response['product']} has been posted successfully!")
-                # {'product': 'BimeisterEDMS', 'licenseID': '', 'serverID': '', 'isActive': True, 'until': '2023-12-25T23:59:59', 'numberOfUsers': 50, 'numberOfIpConnectionsPerUser': 0}
-                return response['licenseID'], response['product']
+        for license in new_license_data:
+            if license['LicenseID'] in licenses_id:
+                self.put_license(url, token, license['LicenseID'])
             else:
-                logging.error('%s', request.text)
-                print(Fore.RED + f"\n   - new license has not been posted!")
-                return False
+                data = json.dumps(license['base64_token'])
+                request = requests.post(url=f'{url}/{self.__api_License}', headers=headers, data=data, verify=False)
+                response = request.json()
+                time.sleep(0.15)
+                if request.status_code in (200, 201, 204,):
+                    print(Fore.GREEN + f"\n   - new license {response['product']} has been posted successfully!")
+                    self.put_license(url, token, license['LicenseID'])
+                    time.sleep(0.15)
+                else:
+                    logging.error('%s', request.text)
+                    print(Fore.RED + f"\n   - new license has not been posted!")
+                    return False
+        
+        return True
 
 
-    def put_license(self, url, token, license_id=''):
+    def put_license(self, url, token, license_id):
 
         headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
         # all the active licenses will be deactivated, if user forgot to do it, and if there are any active
         # for license in self.get_licenses(url, token, username, password):
         #     if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
-                # print("There is an active license. You should deactivate it first.")
-                # return
-                # self.delete_license(url, token, username, password)
-                # pass
+        #         print("There is an active license. You should deactivate it first.")
+        #         return
+        #         self.delete_license(url, token, username, password)
+        #         pass
 
         url_put_license:str = f"{url}/{self.__api_License}/active/{license_id}"
         payload = {}
