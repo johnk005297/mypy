@@ -34,7 +34,7 @@ def main():
 # ---------------------------------------------------------
 
 
-
+    
             
         
 
@@ -52,6 +52,7 @@ def main():
                         ,'check_serverId_validation'
                         ,'apply_license'
                         ,'delete_active_license'
+                        ,'activate_license'
                         ,'export_workflows'
                         ,'export_object_model'
                         ,'display_workflows'
@@ -116,6 +117,9 @@ def main():
             # License_main.put_license(url, token, license_id=license_id[0]) if license_id else print("Post license wasn't successful. Check the logs.")
         elif command == 'delete_active_license':
             License_main.delete_license(url, token, username, password)
+        elif command == 'activate_license':
+            license_id:str = input("Enter license id: ")
+            License_main.put_license(url, token, license_id)
         elif command == 'check_serverId_validation':
             if License_main.serverId_validation(url, token, username, password):
                 print("ServerId is correct.")

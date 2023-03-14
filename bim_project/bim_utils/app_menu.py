@@ -1,6 +1,6 @@
 #
 class AppMenu:
-    version = '1.32a'
+    version = '1.32c'
 
 
     def __getattr__(self, item):
@@ -23,6 +23,7 @@ class AppMenu:
                                         \n           2   get serverId                              \
                                         \n           3   apply new license                         \
                                         \n           4   delete active license                     \
+                                        \n           5   activate uploaded license                 \
                                         \n         112   check_serverId_consistency                \
                                         \n                                                         \
                                         \n   Databases                                             \
@@ -58,6 +59,8 @@ class AppMenu:
             return 'delete_active_license'
         elif self.menu_user_command == '112':
             return 'check_serverId_validation'
+        elif self.menu_user_command == '5':
+            return 'activate_license'
 
         # Databases
         elif self.menu_user_command == 'drop uo':

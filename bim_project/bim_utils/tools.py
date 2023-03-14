@@ -32,7 +32,7 @@ class Folder:
                 time.sleep(0.10)
                 print(f'\n   - {filename} folder is now empty.')
             else:
-                print(f'\n   - no {filename} folder was found.')
+                print(f'   - no {filename} folder was found.')
         except OSError as err:
             logging.error(err)
             print("Error occured. Check the logs.")

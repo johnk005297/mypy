@@ -24,7 +24,7 @@ class License:
 
     # This SUID and UPP licenses are actually two parts of one license. Have know idea why it was designed that way.
     __UPP_SUID_lic:tuple = ('Платформа BIMeister, Bimeister УПП', 'Платформа BIMeister, Bimeister СУИД')
-    possible_request_errors:tuple  = auth.Auth().possible_request_errors
+    possible_request_errors:tuple = auth.Auth().possible_request_errors
     privileges_granted:bool = False
     privileges_checked:bool = False
 
@@ -38,10 +38,10 @@ class License:
 
 
     def decode_base64(self, encoded_string):
-        ''' Function decodes base64 encoded string and returns dictionary of values. Current version example of license data: 
+        ''' Function decodes base64 encoded string and returns dictionary of values. Current version example of license data:
             {
-             'version': '1', 'LicenseID': 'a7bfd7df-6b90-4ca1-b40e-07d99f38308f', 'ServerID': 'eeaa4ad2-28b7-4eb7-8bfb-3fdd40d257a5', 'From': '10.03.2023 00:00:01', 
-             'Until': '25.12.2023 23:59:59', 'NumberOfUsers': '100', 'NumberOfIpConnectionsPerUser': '0', 'Product': 'BimeisterEDMS', 'LicenceType': 'Trial', 
+             'version': '1', 'LicenseID': 'a7bfd7df-6b90-4ca1-b40e-07d99f38308f', 'ServerID': 'eeaa4ad2-28b7-4eb7-8bfb-3fdd40d257a5', 'From': '10.03.2023 00:00:01',
+             'Until': '25.12.2023 23:59:59', 'NumberOfUsers': '100', 'NumberOfIpConnectionsPerUser': '0', 'Product': 'BimeisterEDMS', 'LicenceType': 'Trial',
              'ActivationType': 'Offline', 'Client': 'Rupert Pupkin', 'ClientEmail': 'Rupert.Pupkin@fun.org', 'Organisation': 'sandbox-3.imp.bimeister.io',
              'IsOrganisation': 'False', 'OrderId': 'Стенд для демо', 'CrmOrderId': 'IMSD-604', 'sign': '<activation_key>', 'base64_token':'<base64_encoded_token>'
             }
@@ -72,14 +72,20 @@ class License:
 
         elif is_file and is_file_in_place:
             with open(data, "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
-                data = [line for line in file.read().split('\n') if line]
-            for x in data:
+                content = [line for line in file.read().split('\n') if line]
+            for x in content:
+                is_present:bool = False
                 try:
-                    list_of_lic_data.append(self.decode_base64(x))
-                    list_of_lic_data[count()-1]['base64_token'] = x
+                    data = self.decode_base64(x)
                 except (binascii.Error, ValueError):
-                    pass
-        
+                    continue
+                for obj in list_of_lic_data:
+                    if obj.get('LicenseID') == data['LicenseID']:
+                        is_present = True
+                if not is_present:
+                    list_of_lic_data.append(data)
+                    list_of_lic_data[count()-1]['base64_token'] = x
+
         else:
             try:
                 list_of_lic_data.append(self.decode_base64(data))
@@ -92,6 +98,19 @@ class License:
                 logging.error(f"Value error with decoding the string: {ValueError}")
                 print(err_message)
                 return False
+        
+        ### Since EDMS and EPMM license could be applied in strict order, we need to make that order correct.
+        EDMS:int = -1
+        EPMM:int = -1
+        for lic in range(len(list_of_lic_data)):
+            if list_of_lic_data[lic]['Product'] == 'BimeisterEDMS':
+                EDMS = lic
+                continue
+            elif list_of_lic_data[lic]['Product'] == 'BimeisterEPMM':
+                EPMM = lic
+                continue
+        if (EDMS >= 0 and EPMM >= 0) and (EDMS > EPMM):
+            list_of_lic_data[EDMS], list_of_lic_data[EPMM] = list_of_lic_data[EPMM], list_of_lic_data[EDMS]
 
         return list_of_lic_data
 
@@ -174,15 +193,14 @@ class License:
 
         elif self.get_license_status(url, token, username, password):
             for license in licenses:
-                if license.get('isActive'):
-                    print()
-                    if license.get('licenseID') == '00000000-0000-0000-0000-000000000000':
-                        print(f"   - trial deploy license\n   - validation period: {license['until'][:19]}")
-                    else:
-                        for key, value in license.items():
-                            print( f"   - {key}: {Fore.GREEN + str(value)}" if value and key == 'isActive' else f"   - {key}: {value}" )
+                # if license.get('isActive'):   # if we want to display only active licenses
+                print()
+                if license.get('licenseID') == '00000000-0000-0000-0000-000000000000':
+                    print(f"   - trial deploy license\n   - validation period: {license['until'][:19]}")
+                else:
+                    for key, value in license.items():
+                        print( f"   - {key}: {Fore.GREEN + str(value)}" if value and key == 'isActive' else f"   - {key}: {value}" )
 
-                else: continue
         else:
             logging.error("Unpredictable behaviour(license status) in License class.")
 
@@ -242,7 +260,7 @@ class License:
                 response = request.json()
                 time.sleep(0.15)
                 if request.status_code in (200, 201, 204,):
-                    print(Fore.GREEN + f"\n   - new license {response['product']} has been posted successfully!")
+                    print(Fore.GREEN + f"\n   - new license '{response['product']}' has been posted successfully!")
                     self.put_license(url, token, license['LicenseID'])
                     time.sleep(0.15)
                 else:
@@ -253,7 +271,7 @@ class License:
         return True
 
 
-    def put_license(self, url, token, license_id):
+    def put_license(self, url:str, token:str, license_id:str):
 
         headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
         # all the active licenses will be deactivated, if user forgot to do it, and if there are any active
@@ -263,16 +281,18 @@ class License:
         #         return
         #         self.delete_license(url, token, username, password)
         #         pass
-
+        if len(license_id.strip()) == 0:
+            print('No license id was provided.')
+            return False
         url_put_license:str = f"{url}/{self.__api_License}/active/{license_id}"
         payload = {}
         request = requests.put(url=url_put_license, headers=headers, data=payload, verify=False)
         if request.status_code in (200, 201, 204,):
-            print(Fore.GREEN + f"   - new license has been activated successfully!")
+            print(Fore.GREEN + f"   - license '{license_id}' has been activated successfully!")
             return True
         else:
             logging.error('%s', request.text)
-            print(Fore.RED + f"   - error: New license has not been activated!")
+            print(Fore.RED + f"   - error: license '{license_id}' has not been activated!")
         return False
 
 
