@@ -298,7 +298,7 @@ class Export_data:
 
         workflow_nodes = self.get_workflow_nodes_id(url, token)
         draftNode_id, activeNode_id, archivedNode_id = workflow_nodes['Draft'], workflow_nodes['Active'], workflow_nodes['Archived']
-        selected_node:list = list(map(str, input("Choose nodes to display workflows from. Use whitespaces in-between to select more than one.\ndr Draft, ac, Active, ar Archived, all: ").split()))
+        selected_node:list = list(map(str, input("Choose nodes to display workflows from. Use whitespaces in-between to select more than one.\ndr Draft, ac, Active, ar Archived, all: ").strip().lower().split()))
         selected_node = [x for x in selected_node if x in ('dr', 'ac', 'ar', 'all')] # drop anything except 0, 1, 2, 3 values from the selected node list
 
         # creating a file workFlows.list
@@ -315,7 +315,8 @@ class Export_data:
                 else:
                     selected_node = [draftNode_id, activeNode_id, archivedNode_id]
                     break
-            print()
+            if selected_node:
+                print()
             for id in selected_node:
                 if id == draftNode_id:
                     node_name = 'Draft'
@@ -331,12 +332,12 @@ class Export_data:
                 except self.possible_request_errors as err:
                     logging.error(f"{err}\n{request.text}")
                 if not response['workFlows']:
-                    print(f'No workflows in {node_name}')
+                    print(f'   No workflows in {node_name}')
                     continue
                 for workflow in response['workFlows']:
                     result = f"{node_name}: {workflow['name']}  id: {workflow['id']}"
                     time.sleep(0.05)
-                    print(f'{count()}){result}')
+                    print(f'   {count()}){result}')
                     file.write(result + '\n')
 
 
@@ -347,7 +348,7 @@ class Export_data:
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
 
         draftNode_id, activeNode_id, archivedNode_id = workflow_nodes['Draft'], workflow_nodes['Active'], workflow_nodes['Archived']
-        selected_node:list = list(map(str, input("Choose nodes to delete workflows from. Use whitespaces in-between to select more than one.\ndr Draft, ac, Active, ar Archived, all: ").split()))
+        selected_node = list(map(str, input("Choose nodes to delete workflows from. Use whitespaces in-between to select more than one.\ndr Draft, ac, Active, ar Archived, all: ").strip().lower().split()))
         selected_node = [x for x in selected_node if x in ('dr', 'ac', 'ar', 'all')] # drop anything except 0, 1, 2, 3 values from the selected node list
 
         # replacing selected values with correspondent id's in selected node list
@@ -361,7 +362,8 @@ class Export_data:
             else:
                 selected_node = [draftNode_id, activeNode_id, archivedNode_id]
                 break
-        print()
+        if selected_node:
+            print()
         workflows_to_delete:list = []
         for id in selected_node:
             if id == draftNode_id:

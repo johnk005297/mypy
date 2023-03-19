@@ -2,16 +2,16 @@
 # Script for work with license and some other small features.
 import os
 import time
-from pathlib import Path
+import platform
 import app_menu
 import auth
 import user
 import license
 import export_data
 import import_data
-from tools import Folder, File
-import logging
+from tools import Folder, File, Tools
 import logs # activates with import
+import mydocker
 
 
 def main():
@@ -22,6 +22,7 @@ def main():
     License_main     = license.License()
     Export_data_main = export_data.Export_data()
     Import_data_main = import_data.Import_data()
+    Docker           = mydocker.Docker()
 
 
     AppMenu_main.welcome_info_note()
@@ -34,34 +35,34 @@ def main():
 # ---------------------------------------------------------
 
 
-    
-            
-        
+
+
 
 # ---------------------------------------------------------
 # http://10.168.23.161
 # ---------------------------------------------------------
 
     while True:
-        command = AppMenu_main.define_purpose_and_menu()
+        user_command = AppMenu_main.get_user_command()
+        if not user_command:    # if nothing to check, loop over.
+            continue
 
         ''' Check user privileges for everything related in the tuple below. '''
-        if command in (
-                        'check_license'
-                        ,'server_id'
-                        ,'check_serverId_validation'
-                        ,'apply_license'
-                        ,'delete_active_license'
-                        ,'activate_license'
-                        ,'export_workflows'
-                        ,'export_object_model'
-                        ,'display_workflows'
-                        ,'import_workflows'
-                        'import_object_model'
-                      ):            
+        if user_command in (
+                         ['check_license']
+                        ,['server_id']
+                        ,['check_serverId_validation']
+                        ,['apply_license']
+                        ,['delete_active_license']
+                        ,['activate_license']
+                        ,['exp', 'wf']                   # export workFlows
+                        ,['exp', 'om']                   # export object model
+                        ,['list', 'wf']                  # display workFlows
+                        ,['del', 'wf']                   # delete workFlows
+                        ,['imp', 'wf']                   # import workFlows
+                        ,['imp', 'om']                   # import object model
+                        ):
             if not License_main.privileges_checked and not User_main.check_user_permissions(url, token, username, password, License_main._permissions_to_check):
-                
-                ''' Create user with all the privileges. '''
 
                 # Create/activate user
                 Auth_superuser = auth.Auth(username='johnny_mnemonic', password='Qwerty12345!') # Create Auth class instance for new user
@@ -82,10 +83,10 @@ def main():
                 User_main.add_system_role_to_user(url, Auth_superuser.token, initial_user['id'], username, su_system_role_id)
 
 
-        
-        if command == 'main_menu':
+            ''' =============================================================================== MAIN BLOCK =============================================================================== '''
+        if user_command == ['main_menu']:
             print(AppMenu_main._main_menu)
-        elif command in ('q', 'connect_to_another_server'): # connect to another server isn't realized yet
+        elif user_command in (['quit'], ['connect_to_another_server']): # connect to another server isn't realized yet
 
             ''' Delete created user with privileges. '''
             if License_main.privileges_granted:
@@ -96,7 +97,7 @@ def main():
                 User_main.delete_user(url, token, superuser['id'], superuser['userName'])
 
 
-            if command == 'q':
+            if user_command == ['quit']:
                 break   # Close the menu and exit from the script.
             else:
                 License_main.privileges_granted = False
@@ -104,41 +105,42 @@ def main():
                 if not Auth_main.establish_connection():
                     return False
 
-            ''' === LICENSE BLOCK === '''
 
-        elif command == 'check_license':
+            ''' =============================================================================== LICENSE BLOCK =============================================================================== '''
+
+        elif user_command == ['check_license']:
             License_main.display_licenses(url, token, username, password)
-        elif command == 'server_id':
+        elif user_command == ['server_id']:
             response = License_main.get_serverID(url, token)
             print("\n   - serverId:", response)
-        elif command == 'apply_license':
+        elif user_command == ['apply_license']:
             License_main.post_license(url, token, username, password)
             # license_id:str = License_main.post_license_new(url, token, username, password)
             # License_main.put_license(url, token, license_id=license_id[0]) if license_id else print("Post license wasn't successful. Check the logs.")
-        elif command == 'delete_active_license':
+        elif user_command == ['delete_active_license']:
             License_main.delete_license(url, token, username, password)
-        elif command == 'activate_license':
-            license_id:str = input("Enter license id: ")
-            License_main.put_license(url, token, license_id)
-        elif command == 'check_serverId_validation':
+        elif user_command == ['activate_license']:
+            license_id:str = input("Enter license id: ").strip()
+            License_main.put_license(url, token, username, password, license_id)
+        elif user_command == ['check_serverId_validation']:
             if License_main.serverId_validation(url, token, username, password):
                 print("ServerId is correct.")
             else:
                 print("System has licenses with different server_id. Need to report to administrator.")
 
 
-            ''' === User objects BLOCK === '''
+            ''' =============================================================================== User objects BLOCK =============================================================================== '''
 
-        elif command == 'truncate_user_objects':
+        elif user_command == ['drop', 'uo']:
             User_main.delete_user_objects(url, token)
-        elif command == 'truncate_user_objects_info':
+        elif user_command == ['drop', 'uo', '-h']:
             print(User_main.delete_user_objects.__doc__)
 
 
-            ''' === TRANSFER DATA BLOCK === '''
+            ''' =============================================================================== TRANSFER DATA BLOCK =============================================================================== '''
 
-            # Export data
-        elif command in ('export_object_model', 'export_workflows', 'display_workflows', 'delete_workflows'):
+            # Export data and display/remove workFlows
+        elif user_command in (['exp', 'om'], ['exp', 'wf'], ['list', 'wf'], ['del', 'wf']):
             if Export_data_main.is_first_launch_export_data:
                 Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
                 time.sleep(0.1)
@@ -147,34 +149,60 @@ def main():
                 Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._object_model_folder)
                 time.sleep(0.1)
                 Export_data_main.is_first_launch_export_data = False
-            if command == 'export_object_model':
+            if user_command == ['exp', 'om']:
                 Export_data_main.export_server_info(url, token)
                 Export_data_main.get_object_model(Export_data_main._object_model_file, Auth_main.url, Auth_main.token)
-            elif command == 'export_workflows':
+            elif user_command == ['exp', 'wf']:
                 Export_data_main.export_server_info(url, token)
                 Export_data_main.export_workflows(url, token)
-            elif command == 'display_workflows':
+            elif user_command == ['list', 'wf']:
                 Export_data_main.display_list_of_workflowsName_and_workflowsId(url, token)
-            elif command == 'delete_workflows':
+            elif user_command == ['del', 'wf']:
                 Export_data_main.delete_workflows(url, token)
 
             # Import data
-        elif command == 'import_workflows':
+        elif user_command == ['imp', 'wf']:
             Import_data_main.import_workflows(url, token)
-        elif command == 'import_object_model':
+        elif user_command == ['imp', 'om']:
             Import_data_main.import_object_model(url, token)
 
             # Clean transfer data storage
-        elif command == 'clean_transfer_files_directory':
+        elif user_command == ['rm', 'files']:
             Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._object_model_folder}")
             Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._workflows_folder}")
             File.remove_file(f"{os.getcwd()}/{Export_data_main._transfer_folder}/export_server.info")
 
-        # --------Transfer data END-------------
 
-        # User
-        elif command == 'user_access_token':
+            ''' =============================================================================== USER =============================================================================== '''
+
+        elif user_command == ['token']:
             print(token)
+        elif user_command == ['sh']:
+            Tools.run_terminal_command()
+        elif user_command == ['ls', '-l']:
+            Tools.run_terminal_command(Folder.get_content())
+        elif user_command == ['ssh', 'connect']:
+            connection_data:list = input("Enter remote host and username separated by a space: ").strip().split()
+            Tools.connect_ssh(connection_data[0], connection_data[1])
+
+
+            ''' =============================================================================== DOCKER =============================================================================== '''
+
+        elif user_command[0] == 'docker':
+            if not Docker._check_docker:
+                print("No docker found in the system.")
+                continue
+            if len(user_command) == 4 and user_command[:3] in Docker._commands and user_command[:3] == ['docker', 'logs', '-i']:
+                Docker.get_container_interactive_logs(user_command[3])
+            elif user_command in Docker._commands:
+                if user_command == ['docker', '-h']:
+                    print(Docker.docker_menu())
+                elif user_command == ['docker', 'ls']:
+                    Docker.display_containers(all=False)
+                elif user_command == ['docker', 'ls', '--all']:
+                    Docker.display_containers(all=True)
+
+
 
 
 if __name__ == '__main__':

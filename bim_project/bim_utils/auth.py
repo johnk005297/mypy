@@ -34,7 +34,7 @@ class Auth:
 
     def establish_connection(self):
         try:
-            self.url = input("\nEnter URL: ").lower().strip()
+            self.url = input("\nEnter URL: ").strip().lower()
             self.url = self.url[:-1] if self.url[-1] == '/' else self.url
             self.url = self.url[:-5] if self.url[-4:] == 'auth' else self.url
         except IndexError:

@@ -253,7 +253,7 @@ class License:
 
         for license in new_license_data:
             if license['LicenseID'] in licenses_id:
-                self.put_license(url, token, license['LicenseID'])
+                self.put_license(url, token, username, password, license['LicenseID'])
             else:
                 data = json.dumps(license['base64_token'])
                 request = requests.post(url=f'{url}/{self.__api_License}', headers=headers, data=data, verify=False)
@@ -261,7 +261,7 @@ class License:
                 time.sleep(0.15)
                 if request.status_code in (200, 201, 204,):
                     print(Fore.GREEN + f"\n   - new license '{response['product']}' has been posted successfully!")
-                    self.put_license(url, token, license['LicenseID'])
+                    self.put_license(url, token, username, password, license['LicenseID'])
                     time.sleep(0.15)
                 else:
                     logging.error('%s', request.text)
@@ -271,7 +271,7 @@ class License:
         return True
 
 
-    def put_license(self, url:str, token:str, license_id:str):
+    def put_license(self, url:str, token:str, username, password, license_id:str):
 
         headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
         # all the active licenses will be deactivated, if user forgot to do it, and if there are any active
@@ -281,8 +281,13 @@ class License:
         #         return
         #         self.delete_license(url, token, username, password)
         #         pass
-        if len(license_id.strip()) == 0:
-            print('No license id was provided.')
+        check_id:bool = False
+        for license in self.get_licenses(url, token, username, password):
+            if license['licenseID'] == license_id:
+                check_id = True
+                break
+        if not check_id:
+            print('Incorrect license ID.')
             return False
         url_put_license:str = f"{url}/{self.__api_License}/active/{license_id}"
         payload = {}

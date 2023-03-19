@@ -1,7 +1,7 @@
 #
 # Tool modules to work with folders and files
 import os
-import sys
+import platform
 import logging
 import json
 import shutil
@@ -39,6 +39,12 @@ class Folder:
             return False
         return True
 
+
+    def get_content():
+        ''' Function provides current directory content. '''
+
+        command = "dir" if Tools.is_windows() else "ls -lha"
+        return command
 
 
 class File:
@@ -90,7 +96,7 @@ class Tools:
 
     def is_windows():
         ''' Check if OS is windows or not. '''
-        return True if sys.platform == 'win32' else False
+        return True if platform.system() == 'Windows' else False
 
 
     def create_random_name():
@@ -98,3 +104,20 @@ class Tools:
 
         random_name: str = ''.join(random.choice(string.ascii_letters) for x in range(20))
         return random_name
+
+
+    def run_terminal_command(command=''):
+        ''' Function for execution OS command in shell. '''        
+
+        os_name = 'Windows' if Tools.is_windows() else 'Linux'
+        command = input("{0} shell: ".format(os_name)).strip() if not command else command
+        os.system(command)
+
+    def connect_ssh(host='', username=''):
+        ''' Establish remote ssh connection. '''
+
+        command = f"ssh -o StrictHostKeyChecking=no {username}@{host}"
+        try:
+            os.system(command)
+        except OSError:
+            return False
