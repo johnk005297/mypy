@@ -4,7 +4,7 @@
 import os
 import sys
 
-version = '106'
+version = '108'
 ''''''''''''''''''''''''
 
 def alter_yml():
@@ -38,7 +38,7 @@ def alter_yml():
         'minio:': "9000:9000",
         'ldapwebapi:': "5103:5000",
         'rabbitmq:': ["5672:5672", "15672:15672"],
-        'keydb:': "6379:6379",
+        'redis:': "6379:6379",
         'spatialdb:': "5434:5432",
         'influxdb:': "8086:8086",
         'license-service:': "5501:5000",
@@ -46,6 +46,9 @@ def alter_yml():
         'graphdb:': ["7687:7687", "7474:7474"],
         'treesdb:': "5430:5432",
         'treesapi:': "7782:5000",
+        'construction_control_db': "5555:5432",      
+        'construction_control_api': "8888:5000",
+        # 'reports-service:': "8093:5000",
         'notification:': "8090:5000",
         'tasksworker:': "8091:5000",
         'collisions:': "8092:5000",
@@ -56,7 +59,8 @@ def alter_yml():
         'ifc_converter:': "10040:5000",
         'collision_calculator:': "10060:5000",
         'spatiumdb:': "5435:5432",
-        'hangfiredb:': "5437:5432",                
+        'hangfiredb:': "5437:5432",
+        'reportsdb:': "5436:5432",
         'timescaledb:': "5450:5432",        
         'nifi:': "8100:8080",                
         'enterprise_asset_management_db:': "5444:5432"
