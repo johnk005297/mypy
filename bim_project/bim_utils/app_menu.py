@@ -1,6 +1,8 @@
 #
+
+
 class AppMenu:
-    version = '1.33a'
+    version = '1.33b'
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -61,6 +63,8 @@ class AppMenu:
         ''' Define what the user would like to do '''
 
         user_command = input("\nCommand (m for help): ").strip().lower().split()
+        if not user_command:
+            return False
 
         # License
         if user_command == ['1']:
@@ -107,16 +111,30 @@ class AppMenu:
             return user_command
         elif user_command == ['ssh', 'connect']:
             return user_command
-        
+   
         # Docker
-        elif user_command == ['docker', '-h']:
-            return user_command
-        elif user_command == ['docker', 'ls']:
-            return user_command
-        elif user_command == ['docker', 'ls', '--all']:
-            return user_command
-        elif user_command[:3] == ['docker', 'logs', '-i'] and len(user_command) == 4:
-            return user_command
+        elif user_command[0] == 'docker' and len(user_command) > 1:             # if user command starts with docker and has minimum one more argument
+            if user_command[1] == '-h':
+                return (user_command, 'docker help')
+
+            elif user_command[1] == 'ls':
+                return (user_command, 'docker container ls')
+
+            elif user_command[1:] == ['ls', '--all']:
+                return (user_command, 'docker container ls -a')
+
+            elif user_command[1] == 'logs' and len(user_command) > 2:           # if user command starts with 'docker logs'
+
+                if user_command[2] == '-i' and len(user_command) == 4:          # if user command starts with 'docker logs -i'
+                    return (user_command, 'docker logs -i')
+
+                elif user_command[2] == '-f' and len(user_command) > 3:         # if user command starts with 'docker logs -f'
+                    if user_command[3] == '--all' and len(user_command) == 4:   # if user command is 'docker logs -f --all'
+                        return (user_command, 'docker logs -f --all')
+                    else:
+                        return (user_command, 'docker logs -f')
+                else:                                                           # if user command is 'docker logs' + further arguments
+                    return (user_command, 'docker logs')
 
         # Main
         elif user_command == ['m']:
@@ -125,8 +143,6 @@ class AppMenu:
             return ['quit']
         
         # Exceptions
-        elif not user_command:
-            pass
         else:
             print('Unknown command.')
             return False

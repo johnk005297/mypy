@@ -4,6 +4,7 @@ import requests
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
+from urllib.error import HTTPError
 import logging
 import time
 from getpass import getpass
@@ -57,6 +58,7 @@ class Auth:
 
         # Check both ports: 80 and 443
         for x in range(2):
+
             try:
                 check_url_request = requests.get(url=f"{self.url}/{self.__api_Providers}", verify=False, allow_redirects=False, timeout=2)
                 if check_url_request.status_code == 200:
@@ -64,20 +66,34 @@ class Auth:
                     return True
                 elif check_url_request.status_code in (301, 302):   # This part needs to fix issues if the redirect is set up.
                     self.url = self.url[:4] + self.url[5:] if self.url[4] == 's' else self.url[:4] + 's' + self.url[4:]
-                elif check_url_request.status_code == 500:
-                    print('Error 500: Check connection to host.')
+                
+                # Cant' catch 502 error with except. Temporary need to add this block
+                elif x == 1 and check_url_request.status_code == 500:
+                    message = 'Error 500: Check connection to host.'
+                    logging.error(f"{check_url_request.text}\n{message}")
+                    print(message)
+                    return False
+                elif x == 1 and check_url_request.status_code == 502:
+                    message = "Error 502. Check web interface."
+                    logging.error(f"{check_url_request.text}\n{message}")
+                    print(message)
+                    return False
+                
             except requests.exceptions.MissingSchema:
                 print('Invalid URL')
                 return False
+
             except self.possible_request_errors as err:
                 logging.error(f"Connection error via '{self.url[:self.url.index(':')]}':\n{err}.")
                 self.url = self.url[:4] + self.url[5:] if self.url[4] == 's' else self.url[:4] + 's' + self.url[4:]
                 if x == 1:
                     message:str = "Error: Check connection to host."
-                    print(message)
                     logging.error(f"{err}\n{message}")
+                    print(message)
                     return False
                 continue
+
+            continue
 
 
     def get_local_providerId(self, url):

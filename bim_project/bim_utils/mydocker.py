@@ -1,15 +1,19 @@
 #
 import docker
 from prettytable import PrettyTable
+from tools import Folder, Tools
+import os
+
 
 class Docker:
 
+    _commands:list = ['docker help', 'docker container ls', 'docker container ls -a', 'docker logs -i', 'docker logs']
 
     def __init__(self):
         try:
             self.__client = docker.from_env()
             self._check_docker = True
-            self._commands:list = [['docker', '-h'], ['docker', 'ls'], ['docker', 'ls', '--all'], ['docker', 'logs', '-i']]
+            # self._commands:list = ['docker help', 'docker container ls', 'docker container ls -a', 'docker logs -i', 'docker logs']
         except docker.errors.DockerException:
             self._check_docker:bool = False
 
@@ -21,28 +25,39 @@ class Docker:
     def docker_menu(self):
         ''' Appearance of docker commands menu. '''
 
-        _docker_menu = "Docker options:                                                                                \
-                          \n                                                                                           \
-                          \n   Containers                                                                              \
-                          \n      docker ls                        display running containers                          \
-                          \n      docker ls --all                  display all containers                              \
-                          \n                                                                                           \
-                          \n   Logs                                                                                    \
-                          \n      docker logs --all                get all containers logs                             \
-                          \n      docker logs <container_id>       get logs from specific container                    \
-                          \n      docker logs -i <container_id>    get logs from specific container interactively "
+        _docker_menu = "Docker options:                                                                                                 \
+                          \n                                                                                                            \
+                          \n   Containers                                                                                               \
+                          \n      docker ls                                         display running containers                          \
+                          \n      docker ls --all                                   display all containers                              \
+                          \n                                                                                                            \
+                          \n   Logs                                                                                                     \
+                          \n      docker logs <container_id, container_id, ...>     display logs from the specific container(s)         \
+                          \n      docker logs -f --all                              get all containers logs in files                    \
+                          \n      docker logs -f <container_id, container_id, ...>  get logs in the file                                \
+                          \n      docker logs -i <container_id>                     get logs from specific container interactively "
 
 
         return _docker_menu
 
 
+    def get_containers(self, all=False):
+        ''' Get a dictionary of all docker containers on the server. '''
+        try:
+            if all:
+                containers:dict = {x.name: [x.id, x.short_id, x.status] for x in self.__client.containers.list(all)}
+                return containers
+            else:
+                containers:dict = {x.name: [x.id, x.short_id, x.status] for x in self.__client.containers.list()}
+                return containers
+        except:
+            return False
+
+
     def display_containers(self, all=False):
         ''' Function to display containers in format 'id  name'. '''
 
-        if all:
-            containers:dict = {x.name: [x.id, x.short_id, x.status] for x in self.__client.containers.list(all)}
-        else:
-            containers:dict = {x.name: [x.id, x.short_id, x.status] for x in self.__client.containers.list()}
+        containers = self.get_containers(all=True) if all else self.get_containers()
 
         if not containers:
             print("No docker containers have been found." if all else "No running docker containers have been found.")
@@ -65,19 +80,71 @@ class Docker:
         try:
             container = self.__client.containers.get(id)
             log = container.logs(stream=True, tail=10, timestamps=False)
+        except docker.errors.NotFound:
+            print("No such docker container.")
+            return False
         except:
             print("Incorrect container id.")
             return False
-        
+
         try:
             while next(log):
                 print(next(log).decode())
         except KeyboardInterrupt:
             print('\nInterrupted by the user.')
 
+        return True
 
-    def get_container_log(self, id, tail=500, in_file=False):
+
+    def get_container_log(self, *args, in_file=False, all=False, days=2):
         ''' Get log from a single container. '''
 
-        log = self.__client.containers.get(id).logs(tail=tail, timestamps=False).decode()
-        print(log)
+        if in_file:
+            folder_name:str = 'bimeister_logs'
+            Folder.create_folder(os.getcwd(), folder_name)
+
+        try:
+            for id in args:
+                log = self.__client.containers.get(id).logs(since=1679778125, timestamps=False).decode()
+                filename = self.__client.containers.get(id).name + '.log'
+
+                if in_file:
+                    with open(folder_name + '/' + filename, 'w', encoding='utf-8') as file:
+                        file.write(log)
+                        print(folder_name + '/' + filename)
+                else:
+                    print(log)
+                    print('#'*100)
+        except docker.errors.NotFound:
+            print("No such docker container.")
+            return False
+        except:
+            print("Incorrect container id.")
+            return False
+
+        return True
+
+    def get_all_containers_logs(self, tail=10000):
+        ''' Get logs from all containers in files. '''
+        
+        folder_name:str = 'bimeister_logs'
+        Folder.create_folder(os.getcwd(), folder_name)
+        containers = self.get_containers(all=True)
+        container_names:list = []
+        for name, value in containers.items():
+            try:
+                log = self.__client.containers.get(value[1]).logs(tail=tail, timestamps=False).decode()
+                filename = name + '.log'
+                container_names.append(filename)
+                with open(folder_name + '/' + filename, 'w', encoding='utf-8') as file:
+                    file.write(log)
+                    print(folder_name + '/' + filename)
+            except:
+                print("Error occured.")
+                return False
+
+        Tools.zip_files_in_dir(folder_name, folder_name)    # pack logs in zip archive
+        Folder.delete_folder(folder_name)                   # delete folder with *.log files
+
+        return True
+

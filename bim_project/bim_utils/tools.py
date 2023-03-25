@@ -8,6 +8,10 @@ import shutil
 import time
 import random
 import string
+import pathlib
+import zipfile
+from datetime import datetime
+
 
 class Folder:
 
@@ -47,6 +51,15 @@ class Folder:
         return command
 
 
+    def delete_folder(path_to_folder):
+        try:
+            shutil.rmtree(path_to_folder, ignore_errors=True)
+            return True
+        except:
+            return False
+
+
+
 class File:
 
     def read_file(path_to_file, filename):
@@ -81,6 +94,9 @@ class File:
     def remove_file(path_to_file):
         if os.path.isfile(path_to_file):
             os.remove(path_to_file)
+            return True
+        return False
+
 
 
 class Tools:
@@ -119,5 +135,29 @@ class Tools:
         command = f"ssh -o StrictHostKeyChecking=no {username}@{host}"
         try:
             os.system(command)
-        except OSError:
+        except OSError as err:
+            logging.error(err)
             return False
+
+
+    def zip_files_in_dir(dirName, archName):
+
+        directory = pathlib.Path(dirName + '/')
+        with zipfile.ZipFile(archName + '.zip', mode='w') as archive:
+            try:
+                for file_path in directory.iterdir():
+                    archive.write(file_path, arcname=file_path.name)
+            except:
+                print("Error occured while zipping logs.")
+                return False
+        return True
+
+
+    def calculate_timedelta(number):
+        ''' Function gets days as input data, and provides the amount of epoch seconds by subtracting provided days from current time. '''
+
+        epoch_time = datetime.now().timestamp()
+        days_in_seconds = float(number * 86400)      # 86400 is the amount of seconds in 24 hours
+        delta = epoch_time - days_in_seconds
+        return delta
+

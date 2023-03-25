@@ -1,8 +1,8 @@
 #
 # Script for work with license and some other small features.
 import os
+import sys
 import time
-import platform
 import app_menu
 import auth
 import user
@@ -12,6 +12,7 @@ import import_data
 from tools import Folder, File, Tools
 import logs # activates with import
 import mydocker
+from main_local import main_local
 
 
 def main():
@@ -182,29 +183,47 @@ def main():
         elif user_command == ['ls', '-l']:
             Tools.run_terminal_command(Folder.get_content())
         elif user_command == ['ssh', 'connect']:
-            connection_data:list = input("Enter remote host and username separated by a space: ").strip().split()
-            Tools.connect_ssh(connection_data[0], connection_data[1])
+            connection_data:list = input("Enter 'remote host' and 'username' separated by a space: ").strip().split()
+            try:
+                Tools.connect_ssh(connection_data[0], connection_data[1])
+            except IndexError:
+                print("Incorrect data. Can't connect.")
+                continue
+
 
 
             ''' =============================================================================== DOCKER =============================================================================== '''
 
-        elif user_command[0] == 'docker':
+        elif isinstance(user_command, tuple) and user_command[0][0] == 'docker':
             if not Docker._check_docker:
                 print("No docker found in the system.")
                 continue
-            if len(user_command) == 4 and user_command[:3] in Docker._commands and user_command[:3] == ['docker', 'logs', '-i']:
-                Docker.get_container_interactive_logs(user_command[3])
-            elif user_command in Docker._commands:
-                if user_command == ['docker', '-h']:
-                    print(Docker.docker_menu())
-                elif user_command == ['docker', 'ls']:
-                    Docker.display_containers(all=False)
-                elif user_command == ['docker', 'ls', '--all']:
-                    Docker.display_containers(all=True)
 
+            if user_command[1] == 'docker help':
+                print(Docker.docker_menu())
+            elif user_command[1] == 'docker container ls':
+                Docker.display_containers(all=False)
+            elif user_command[1] == 'docker container ls -a':
+                Docker.display_containers(all=True)
+            elif user_command[1] == 'docker logs -i':
+                container_id = user_command[0][3]
+                Docker.get_container_interactive_logs(container_id)
+            elif user_command[1] == 'docker logs -f':
+                containers_id = [x for x in user_command[0][3:]]
+                Docker.get_container_log(*containers_id, in_file=True)
+            elif user_command[1] == 'docker logs -f --all':
+                Docker.get_all_containers_logs()
+            elif user_command[1] == 'docker logs':
+                containers_id = [x for x in user_command[0][2:]]
+                Docker.get_containers_logs(*containers_id)
 
 
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) == 1:
+        main()
+    elif sys.argv[1] == '--local' and len(sys.argv) == 2:
+        main_local()
+
+
 
