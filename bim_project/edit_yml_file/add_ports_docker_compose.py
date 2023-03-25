@@ -4,7 +4,7 @@
 import os
 import sys
 
-version = '108'
+version = 'sprint-108'
 ''''''''''''''''''''''''
 
 def alter_yml():
@@ -144,7 +144,7 @@ def alter_yml():
             file.write(line)
     
     if os.path.isfile(yml_file_open_ports):
-        print(f"sprint-{version}")
+        print(version)
         print(f'\nFile "{yml_file_open_ports}" is ready.')
     else:
         print("No file here")
@@ -152,5 +152,5 @@ def alter_yml():
         os.system('pause')
 
 if __name__ == "__main__":
-    print(f"sprint-{version}")
+    print(version)
     alter_yml()
