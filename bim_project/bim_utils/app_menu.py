@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    version = '1.33b'
+    version = '1.34'
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -117,11 +117,11 @@ class AppMenu:
             if user_command[1] == '-h':
                 return (user_command, 'docker help')
 
-            elif user_command[1] == 'ls':
-                return (user_command, 'docker container ls')
-
             elif user_command[1:] == ['ls', '--all']:
                 return (user_command, 'docker container ls -a')
+
+            elif user_command[1] == 'ls':
+                return (user_command, 'docker container ls')
 
             elif user_command[1] == 'logs' and len(user_command) > 2:           # if user command starts with 'docker logs'
 
@@ -129,7 +129,7 @@ class AppMenu:
                     return (user_command, 'docker logs -i')
 
                 elif user_command[2] == '-f' and len(user_command) > 3:         # if user command starts with 'docker logs -f'
-                    if user_command[3] == '--all' and len(user_command) == 4:   # if user command is 'docker logs -f --all'
+                    if '--all' in user_command:                                 
                         return (user_command, 'docker logs -f --all')
                     else:
                         return (user_command, 'docker logs -f')

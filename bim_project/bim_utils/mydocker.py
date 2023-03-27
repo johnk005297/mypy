@@ -12,7 +12,7 @@ class Docker:
     def __init__(self):
         try:
             self.__client = docker.from_env()
-            self._check_docker = True
+            self._check_docker:bool = True
             # self._commands:list = ['docker help', 'docker container ls', 'docker container ls -a', 'docker logs -i', 'docker logs']
         except docker.errors.DockerException:
             self._check_docker:bool = False
@@ -35,7 +35,10 @@ class Docker:
                           \n      docker logs <container_id, container_id, ...>     display logs from the specific container(s)         \
                           \n      docker logs -f --all                              get all containers logs in files                    \
                           \n      docker logs -f <container_id, container_id, ...>  get logs in the file                                \
-                          \n      docker logs -i <container_id>                     get logs from specific container interactively "
+                          \n      docker logs -i <container_id>                     get logs from specific container interactively      \
+                          \n                                                                                                            \
+                          \n   Main                                                                                                     \
+                          \n      q                                                 exit"
 
 
         return _docker_menu
@@ -43,6 +46,7 @@ class Docker:
 
     def get_containers(self, all=False):
         ''' Get a dictionary of all docker containers on the server. '''
+
         try:
             if all:
                 containers:dict = {x.name: [x.id, x.short_id, x.status] for x in self.__client.containers.list(all)}
@@ -96,46 +100,57 @@ class Docker:
         return True
 
 
-    def get_container_log(self, *args, in_file=False, all=False, days=2):
+    def get_container_log(self, *args, in_file=False, all=False, tail=5000, days=None):
         ''' Get log from a single container. '''
 
         if in_file:
             folder_name:str = 'bimeister_logs'
             Folder.create_folder(os.getcwd(), folder_name)
 
+        if days:
+            delta:int = Tools.calculate_timedelta(days)
+
         try:
             for id in args:
-                log = self.__client.containers.get(id).logs(since=1679778125, timestamps=False).decode()
-                filename = self.__client.containers.get(id).name + '.log'
+                if not days:
+                    log = self.__client.containers.get(id).logs(tail=tail, timestamps=False).decode()
+                else:
+                    log = self.__client.containers.get(id).logs(since=delta, timestamps=False).decode()
 
+                filename = self.__client.containers.get(id).name + '.log'
                 if in_file:
                     with open(folder_name + '/' + filename, 'w', encoding='utf-8') as file:
                         file.write(log)
                         print(folder_name + '/' + filename)
                 else:
                     print(log)
-                    print('#'*100)
+                    print('#'*50 + " THE END " + '#'*50)
         except docker.errors.NotFound:
             print("No such docker container.")
-            return False
+            pass
         except:
-            print("Incorrect container id.")
-            return False
-
+            print("Unexpected error.")
+            pass
         return True
 
-    def get_all_containers_logs(self, tail=10000):
+
+    def get_all_containers_logs(self, tail=5000, days=None):
         ''' Get logs from all containers in files. '''
         
         folder_name:str = 'bimeister_logs'
         Folder.create_folder(os.getcwd(), folder_name)
+
         containers = self.get_containers(all=True)
-        container_names:list = []
+        if days:
+            delta:int = Tools.calculate_timedelta(days)
         for name, value in containers.items():
             try:
-                log = self.__client.containers.get(value[1]).logs(tail=tail, timestamps=False).decode()
+                if not days:
+                    log = self.__client.containers.get(value[1]).logs(tail=tail, timestamps=False).decode()
+                else:
+                    log = self.__client.containers.get(value[1]).logs(since=delta, timestamps=False).decode()
+                
                 filename = name + '.log'
-                container_names.append(filename)
                 with open(folder_name + '/' + filename, 'w', encoding='utf-8') as file:
                     file.write(log)
                     print(folder_name + '/' + filename)
