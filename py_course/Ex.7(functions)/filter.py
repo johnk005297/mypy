@@ -19,22 +19,36 @@ def task1():
     (('название_1', 'вес_1'), ..., ('название_N', 'вес_N'))
     А, затем, отфильтровать (исключить) все предметы с весом менее 500, используя функцию filter. Вывести на экран список оставшихся предметов (только их названия) в одну строчку через пробел.
 
+
 '''
-def task2():
+def task2_1():
     import sys
 
     # считывание списка из входного потока
-    lst_in = list(map(str.strip, sys.stdin.readlines()))
+    # lst_in = list(map(str.strip, sys.stdin.readlines()))
+    lst_in = ['зонт=1000',
+            'палатка=10000',
+            'спички=22',
+            'котелок=543']
 
-    # First option
     tpl = tuple(map(lambda x: tuple(x.split('=')), lst_in))
     tpl = filter(lambda x: int(x[1]) > 500, tpl)
     print(*(next(tpl)[0] for x in range(3)))
 
-    # Second option. We can do the same but put tpl in the filter expression.
+
+def task2_2():
+    import sys
+
+    # считывание списка из входного потока
+    # lst_in = list(map(str.strip, sys.stdin.readlines()))
+    lst_in = ['зонт=1000',
+            'палатка=10000',
+            'спички=22',
+            'котелок=543']
+
+    # We can do the same as task2_1, but put tpl in the filter expression.
     f = filter(lambda x: int(x[1]) > 500, tuple(map(lambda x: tuple(x.split('=')), lst_in)))
     print(*(item for item, weight in f))
-
 
 
 '''
@@ -47,4 +61,42 @@ def task3():
     print(*(x for x in f))
 
 
-task3()
+
+'''
+    Подвиг 4. Саша и Галя коллекционируют монетки. Каждый из них решил записать номиналы монеток из своей коллекции. Получилось два списка. 
+    Эти списки поступают на вход программы в виде двух строк из целых чисел, записанных через пробел. Необходимо выделить значения, присутствующие в обоих списках и оставить среди них только четные. 
+    Результат вывести на экран в виде строки полученных чисел в порядке их возрастания через пробел.
+
+    При реализации программы используйте функцию filter и кое-что еще (для упрощения программы), подумайте что.
+'''
+def task4_1():
+    # Inputs:
+    #   1 5 2 7 10 25 50 100
+    #   5 2 3 7 10 25 55
+    set_a = set(input().split())
+    set_b = set(input().split())
+
+    result = filter(lambda x: int(x) % 2 ==0, set_a.intersection(set_b))
+    print(*(x for x in result))
+
+def task4_2():
+    # Inputs:
+    #   1 5 2 7 10 25 50 100
+    #   5 2 3 7 10 25 55
+    a = list(map(int, input().split()))
+    b = list(map(int, input().split()))
+
+    sm = sorted(filter(lambda x: x in b and x % 2 == 0, a))
+    print(*sm)
+
+
+'''
+Подвиг 5. Вводится список email-адресов в одну строчку через пробел. Среди них нужно оставить только корректно записанные адреса. 
+Будем полагать, что к таким относятся те, что используют латинские буквы, цифры и символ подчеркивания. 
+А также в адресе должен быть символ "@", а после него символ точки "." (между ними, конечно же, могут быть и другие символы).
+
+Результат отобразить в виде строки email-адресов, записанных через пробел.
+'''
+
+def task5_1():
+    pass
