@@ -72,12 +72,27 @@ class Import_data:
         for workflow in workflows:
             name = workflow.split(':')[0].strip()
             id = workflow.split(':')[1].strip()
-            with open(f'{self._transfer_folder}/{self._workflows_folder}/{id}.zip', mode='rb') as file:
-                post_request = requests.post(url=url_import, headers=headers, files={'file': file}, verify=False)
-                logging.info(post_request.status_code)
-                print(f"   {count()}) {name}")   # display the name of the process in the output
+            try:
+                with open(f'{self._transfer_folder}/{self._workflows_folder}/{id}.zip', mode='rb') as file:
+                    post_request = requests.post(url=url_import, headers=headers, files={'file': file}, verify=False)
+                    time.sleep(0.1)
 
-        return 
+                    if post_request.status_code != 200:
+                        print(f"  {count()}) ERROR {post_request.status_code} >>> {name}, id: {id}.")
+                        logging.error(post_request.text)
+                        continue
+
+                    logging.info(post_request.status_code)
+                    print(f"   {count()}) {name}.")   # display the name of the process in the output
+
+            except FileNotFoundError:
+                print(f"Process not found: {name}")
+                continue
+            except:
+                logging.error()
+                continue
+
+        return
 
 
     def post_workflows_full_way(self, url, token):
@@ -162,15 +177,15 @@ class Import_data:
     def prepare_object_model_file_for_import(self):
         '''
             Function finds needed data(used two tuples as pointers: big_fish and small_fish) in object_model_import_server.json file, and place it in the object_model_export_server.json file.
-            Both servers use the same data structure with key-value pairs. Thus, they have identical keys and different values. We search for values we need in object_model_import_server.json file, 
+            Both servers use the same data structure with key-value pairs. Thus, they have identical keys and different values. We search for values we need in object_model_import_server.json file,
             and replace with it values in object_model_export_server.json file. Needed preparation are going to be end in modified_object_model.json file, which will be used further in import process.
         '''
         # Turn both .json files into dictionaries
         data_obj_model_import = File.read_file(self._transfer_folder + '/' + self._object_model_folder, self._object_model_file)
         data_obj_model_export = File.read_file(self._transfer_folder + '/' + self.Export_data._object_model_folder, self.Export_data._object_model_file)
-        
+
         # Pointers to data we need to collect from the .json file
-        big_fish: tuple = ("bimPropertyTreeNodes", "bimInterfaceTreeNodes", "bimClassTreeNodes", "bimDirectoryTreeNodes", "bimStructureTreeNodes", "rootSystemBimClass", "systemBimInterfaces", 
+        big_fish: tuple = ("bimPropertyTreeNodes", "bimInterfaceTreeNodes", "bimClassTreeNodes", "bimDirectoryTreeNodes", "bimStructureTreeNodes", "rootSystemBimClass", "systemBimInterfaces",
                             "systemBimProperties","secondLevelSystemBimClasses",)
         small_fish: tuple = ("BimProperty", "BimInterface", "BimClass", "BimDirectory", "BimStructure", "FILE_INTERFACE", "WORK_DATES_INTERFACE", "COMMERCIAL_SECRET_BIM_INTERFACE","FILE_PROPERTY", 
                             "PLANNED_START_PROPERTY","PLANNED_END_PROPERTY", "ACTUAL_START_PROPERTY", "ACTUAL_END_PROPERTY", "COMMERCIAL_SECRET_BIM_PROPERTY","ACTIVE_CLASS","FOLDER_CLASS", "DOCUMENT_CLASS",

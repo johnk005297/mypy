@@ -245,7 +245,8 @@ class User:
         except self.possible_request_errors as err:
             logging.error(f'{err}\n{request.text}')
             return False
-        logging.info(f"System role '{system_role_id}' from user '{username}' removed successfully.")
+        if request.status_code in (200, 201, 204):
+            logging.info(f"System role '{system_role_id}' from user '{username}' removed successfully.")
         return True
 
 

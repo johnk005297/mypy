@@ -290,7 +290,6 @@ class Export_data:
         return True
 
 
-
     def display_list_of_workflowsName_and_workflowsId(self, url, token):
         ''' Function to display workFlows on the screen and save that info to a file. '''
 

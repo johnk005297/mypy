@@ -34,7 +34,6 @@ import mydocker
 
 
 
-import sys
 import app_menu
 
 def main_local():

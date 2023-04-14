@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    version = '1.34'
+    version = '1.34f'
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -25,23 +25,22 @@ class AppMenu:
                                 \n   License                                                          \
                                 \n      1                   check license                             \
                                 \n      2                   get serverId                              \
-                                \n      3                   apply new license                         \
-                                \n      4                   delete active license                     \
-                                \n      5                   activate uploaded license                 \
-                                \n      112                 check_serverId_consistency                \
+                                \n      apply new lic       apply new license                         \
+                                \n      delete lic          delete active license                     \
+                                \n      activate lic        activate already uploaded license         \
                                 \n                                                                    \
                                 \n   Databases                                                        \
                                 \n      drop uo             clean bimeisterdb.UserObjects table       \
                                 \n      drop uo -h          info about UserObjects table              \
                                 \n                                                                    \
                                 \n   Transfer data                                                    \
-                                \n      exp om              export object model                       \
-                                \n      exp wf              export workflows                          \
-                                \n      imp om              import object model                       \
-                                \n      imp wf              import workflows                          \
+                                \n      export om           export object model                       \
+                                \n      export wf           export workflows                          \
+                                \n      import om           import object model                       \
+                                \n      import wf           import workflows                          \
                                 \n      list wf             display workflows(name: id)               \
-                                \n      del wf              delete workflows                          \
-                                \n      rm files            clean bim_utils local files               \
+                                \n      delete wf           delete workflows                          \
+                                \n      rm files            clean bim_utils transfer files            \
                                 \n                                                                    \
                                 \n   User                                                             \
                                 \n      token               get user access token                     \
@@ -63,6 +62,7 @@ class AppMenu:
         ''' Define what the user would like to do '''
 
         user_command = input("\nCommand (m for help): ").strip().lower().split()
+
         if not user_command:
             return False
 
@@ -71,13 +71,11 @@ class AppMenu:
             return ['check_license']
         elif user_command == ['2']:
             return ['server_id']
-        elif user_command == ['3']:
+        elif user_command == ['apply', 'new', 'lic']:
             return ['apply_license']
-        elif user_command == ['4']:
+        elif user_command == ['delete', 'lic']:
             return ['delete_active_license']
-        elif user_command == ['112']:
-            return ['check_serverId_validation']
-        elif user_command == ['5']:
+        elif user_command == ['activate', 'lic']:
             return ['activate_license']
 
         # Databases
@@ -87,17 +85,17 @@ class AppMenu:
             return user_command
         
         # Transfer data
-        elif user_command == ['exp', 'om']:
+        elif user_command == ['export', 'om']:
             return user_command
-        elif user_command == ['exp', 'wf']:
+        elif user_command == ['export', 'wf']:
             return user_command
-        elif user_command == ['imp', 'om']:
+        elif user_command == ['import', 'om']:
             return user_command
-        elif user_command == ['imp', 'wf']:
+        elif user_command == ['import', 'wf']:
             return user_command
         elif user_command == ['list', 'wf']:
             return user_command
-        elif user_command == ['del', 'wf']:
+        elif user_command == ['delete', 'wf']:
             return user_command
         elif user_command == ['rm', 'files']:
             return user_command
@@ -111,7 +109,7 @@ class AppMenu:
             return user_command
         elif user_command == ['ssh', 'connect']:
             return user_command
-   
+
         # Docker
         elif user_command[0] == 'docker' and len(user_command) > 1:             # if user command starts with docker and has minimum one more argument
             if user_command[1] == '-h':

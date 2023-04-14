@@ -52,23 +52,24 @@ def main():
         if user_command in (
                          ['check_license']
                         ,['server_id']
-                        ,['check_serverId_validation']
                         ,['apply_license']
                         ,['delete_active_license']
                         ,['activate_license']
-                        ,['exp', 'wf']                   # export workFlows
-                        ,['exp', 'om']                   # export object model
-                        ,['list', 'wf']                  # display workFlows
-                        ,['del', 'wf']                   # delete workFlows
-                        ,['imp', 'wf']                   # import workFlows
-                        ,['imp', 'om']                   # import object model
+                        ,['export', 'wf']                   # export workFlows
+                        ,['export', 'om']                   # export object model
+                        ,['list', 'wf']                     # display workFlows
+                        ,['delete', 'wf']                   # delete workFlows
+                        ,['import', 'wf']                   # import workFlows
+                        ,['import', 'om']                   # import object model
                         ):
             if not License_main.privileges_checked and not User_main.check_user_permissions(url, token, username, password, License_main._permissions_to_check):
 
                 # Create/activate user
                 Auth_superuser = auth.Auth(username='johnny_mnemonic', password='Qwerty12345!') # Create Auth class instance for new user
                 try:
-                    License_main.privileges_granted, superuser = User_main.create_or_activate_superuser(url, token, Auth_superuser.username, Auth_superuser.password)
+                    # License_main.privileges_granted, superuser = User_main.create_or_activate_superuser(url, token, Auth_superuser.username, Auth_superuser.password)
+                    superuser = User_main.create_or_activate_superuser(url, token, Auth_superuser.username, Auth_superuser.password)
+                    License_main.privileges_granted = True
                 except TypeError:
                     continue
                 # Create system role
@@ -84,13 +85,14 @@ def main():
                 User_main.add_system_role_to_user(url, Auth_superuser.token, initial_user['id'], username, su_system_role_id)
 
 
-            ''' =============================================================================== MAIN BLOCK =============================================================================== '''
+        ''' =============================================================================== MAIN BLOCK =============================================================================== '''
         if user_command == ['main_menu']:
             print(AppMenu_main._main_menu)
         elif user_command in (['quit'], ['connect_to_another_server']): # connect to another server isn't realized yet
 
             ''' Delete created user with privileges. '''
             if License_main.privileges_granted:
+
                 User_main.remove_system_role_from_user(url, token, initial_user['id'], initial_user['userName'], su_system_role_id)
                 Auth_main.get_user_access_token(url, username, password, Auth_main.providerId)
                 User_main.remove_system_role_from_user(url, token, superuser['id'], superuser['userName'], su_system_role_id)
@@ -123,11 +125,6 @@ def main():
         elif user_command == ['activate_license']:
             license_id:str = input("Enter license id: ").strip()
             License_main.put_license(url, token, username, password, license_id)
-        elif user_command == ['check_serverId_validation']:
-            if License_main.serverId_validation(url, token, username, password):
-                print("ServerId is correct.")
-            else:
-                print("System has licenses with different server_id. Need to report to administrator.")
 
 
             ''' =============================================================================== User objects BLOCK =============================================================================== '''
@@ -141,7 +138,7 @@ def main():
             ''' =============================================================================== TRANSFER DATA BLOCK =============================================================================== '''
 
             # Export data and display/remove workFlows
-        elif user_command in (['exp', 'om'], ['exp', 'wf'], ['list', 'wf'], ['del', 'wf']):
+        elif user_command in (['export', 'om'], ['export', 'wf'], ['list', 'wf'], ['delete', 'wf']):
             if Export_data_main.is_first_launch_export_data:
                 Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
                 time.sleep(0.1)
@@ -150,21 +147,21 @@ def main():
                 Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._object_model_folder)
                 time.sleep(0.1)
                 Export_data_main.is_first_launch_export_data = False
-            if user_command == ['exp', 'om']:
+            if user_command == ['export', 'om']:
                 Export_data_main.export_server_info(url, token)
                 Export_data_main.get_object_model(Export_data_main._object_model_file, Auth_main.url, Auth_main.token)
-            elif user_command == ['exp', 'wf']:
+            elif user_command == ['export', 'wf']:
                 Export_data_main.export_server_info(url, token)
                 Export_data_main.export_workflows(url, token)
             elif user_command == ['list', 'wf']:
                 Export_data_main.display_list_of_workflowsName_and_workflowsId(url, token)
-            elif user_command == ['del', 'wf']:
+            elif user_command == ['delete', 'wf']:
                 Export_data_main.delete_workflows(url, token)
 
             # Import data
-        elif user_command == ['imp', 'wf']:
+        elif user_command == ['import', 'wf']:
             Import_data_main.import_workflows(url, token)
-        elif user_command == ['imp', 'om']:
+        elif user_command == ['import', 'om']:
             Import_data_main.import_object_model(url, token)
 
             # Clean transfer data storage
@@ -216,13 +213,7 @@ def main():
                 Docker.get_container_interactive_logs(container_id)
 
             elif user_command[1] == 'docker logs -f':
-                # if '--days' in user_command[0]:
-                #     containers_id = [x for x in user_command[0][3:] if not x.startswith('-') and len(x) > 2]    # getting a list of container id to pass in Docker.get_container_log function.
-                #     days = user_command[0].index('--days') + 1
-                #     Docker.get_container_log(*containers_id, in_file=True, days=user_command[0][days])
-                # else:
-                #     containers_id = [x for x in user_command[0][3:]]
-                #     Docker.get_container_log(*containers_id, in_file=True)
+
             # very important to pass arguments as integer value(which comes as str). Otherwise, won't work.
                 if '--tail' in user_command[0]:
                     containers_id = [x for x in user_command[0][3:] if not x.startswith('-') and len(x) > 3]        # getting a list of container id to pass in Docker.get_container_log function.
@@ -239,12 +230,7 @@ def main():
                     Docker.get_container_log(*containers_id, in_file=True)
 
             elif user_command[1] == 'docker logs -f --all':
-                # if '--days' in user_command[0]:
-                #     containers_id = [x for x in user_command[0][3:] if not x.startswith('-') and len(x) > 2]    # getting a list of container id to pass in Docker.get_container_log function.
-                #     days = user_command[0].index('--days') + 1
-                #     Docker.get_all_containers_logs(*containers_id, days=user_command[0][days])
-                # else:
-                #     Docker.get_all_containers_logs()
+
                 if '--tail' in user_command[0]:
                     containers_id = [x for x in user_command[0][3:] if not x.startswith('-') and len(x) > 3]        # getting a list of container id to pass in Docker.get_container_log function.
                     tail_idx = user_command[0].index('--tail') + 1
@@ -259,13 +245,7 @@ def main():
                     Docker.get_all_containers_logs()
 
             elif user_command[1] == 'docker logs':
-                # if '--days' in user_command[0]:
-                #     containers_id = [x for x in user_command[0][2:] if not x.startswith('-') and len(x) > 2]    # getting a list of container id to pass in Docker.get_container_log function.
-                #     days = user_command[0].index('--days') + 1
-                #     Docker.get_container_log(*containers_id, days=user_command[0][days])
-                # else:
-                #     containers_id = [x for x in user_command[0][2:]]
-                #     Docker.get_container_log(*containers_id)
+
                 if '--tail' in user_command[0]:
                     containers_id = [x for x in user_command[0][2:] if not x.startswith('-') and len(x) > 3]        # getting a list of container id to pass in Docker.get_container_log function.
                     tail_idx = user_command[0].index('--tail') + 1

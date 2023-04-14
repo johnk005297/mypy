@@ -84,7 +84,7 @@ class License:
                         is_present = True
                 if not is_present:
                     list_of_lic_data.append(data)
-                    list_of_lic_data[count()-1]['base64_token'] = x
+                    list_of_lic_data[count() - 1]['base64_token'] = x
 
         else:
             try:
@@ -123,7 +123,7 @@ class License:
         payload = {
                     "username": username,
                     "password": password
-                }
+                 }
         try:
             request = requests.get(url=url_get_licenses, data=payload, headers=headers, verify=False)
             request.raise_for_status()
@@ -132,18 +132,7 @@ class License:
 
         # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
         response = request.json()
-        return response
-
-
-    def serverId_validation(self, url, token, username, password):
-        ''' Check for a known bag with different serverId in serverInfo in Minio. ServerId should be the same in all licenses.'''
-
-        licenses = self.get_licenses(url, token, username, password)
-        serverId = self.get_serverID(url, token)
-        for license in licenses:
-            if serverId != license['serverId']:
-                return False
-        return True       
+        return response    
 
 
     def get_license_status(self, url, token, username, password):

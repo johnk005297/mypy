@@ -3,6 +3,7 @@ import docker
 from prettytable import PrettyTable
 from tools import Folder, Tools
 import os
+import logging
 
 
 class Docker:
@@ -25,19 +26,21 @@ class Docker:
     def docker_menu(self):
         ''' Appearance of docker commands menu. '''
 
-        _docker_menu = "Docker options:                                                                                                 \
-                          \n                                                                                                            \
-                          \n   Containers                                                                                               \
-                          \n      docker ls                                         display running containers                          \
-                          \n      docker ls --all                                   display all containers                              \
-                          \n                                                                                                            \
-                          \n   Logs                                                                                                     \
-                          \n      docker logs <container_id, container_id, ...>     display logs from the specific container(s)         \
-                          \n      docker logs -f --all                              get all containers logs in files                    \
-                          \n      docker logs -f <container_id, container_id, ...>  get logs in the file                                \
-                          \n      docker logs -i <container_id>                     get logs from specific container interactively      \
-                          \n                                                                                                            \
-                          \n   Main                                                                                                     \
+        _docker_menu = "Docker options:                                                                                                                          \
+                          \n                                                                                                                                     \
+                          \n   Containers                                                                                                                        \
+                          \n      docker ls                                         display running containers                                                   \
+                          \n      docker ls --all                                   display all containers                                                       \
+                          \n                                                                                                                                     \
+                          \n   Logs                                                                                                                              \
+                          \n      docker logs <container_id, container_id, ...>     display logs from the specific container(s)                                  \
+                          \n      docker logs -f --all                              get all containers logs in files                                             \
+                          \n      docker logs -f <container_id, container_id, ...>  get logs in the file                                                         \
+                          \n      docker logs -i <container_id>                     get logs from specific container interactively                               \
+                          \n                  --days(optional)                      exact period to get logs for. Not applicable with '-i' flag.                 \
+                          \n                  --tail(optional)                      amount of lines from the end of the log. Not applicable with '-i' flag.      \
+                          \n                                                                                                                                     \
+                          \n   Main                                                                                                                              \
                           \n      q                                                 exit"
 
 
@@ -87,8 +90,9 @@ class Docker:
         except docker.errors.NotFound:
             print("No such docker container.")
             return False
-        except:
-            print("Incorrect container id.")
+        except docker.errors.APIError as err:
+            logging.error(err)
+            print("Server error. Check the log.")
             return False
 
         try:
@@ -124,12 +128,13 @@ class Docker:
                         print(folder_name + '/' + filename)
                 else:
                     print(log)
-                    print('#'*50 + " THE END " + '#'*50)
+
         except docker.errors.NotFound:
             print("No such docker container.")
             pass
-        except:
-            print("Unexpected error.")
+        except docker.errors.APIError as err:
+            logging.error(err)
+            print("Server error. Check the log.")
             pass
         return True
 
@@ -144,6 +149,7 @@ class Docker:
         if days:
             delta:int = Tools.calculate_timedelta(days)
         for name, value in containers.items():
+
             try:
                 if not days:
                     log = self.__client.containers.get(value[1]).logs(tail=tail, timestamps=False).decode()
@@ -154,10 +160,15 @@ class Docker:
                 with open(folder_name + '/' + filename, 'w', encoding='utf-8') as file:
                     file.write(log)
                     print(folder_name + '/' + filename)
+
+            except docker.errors.APIError as err:
+                logging.error(err)
+                print("Server error. Check the log.")
+
             except:
                 print("Error occured.")
                 return False
-
+                
         Tools.zip_files_in_dir(folder_name, folder_name)    # pack logs in zip archive
         Folder.delete_folder(folder_name)                   # delete folder with *.log files
 
