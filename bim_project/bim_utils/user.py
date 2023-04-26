@@ -260,7 +260,7 @@ class User:
         except self.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
             return False
-        logging.info(f"New role '{system_role_id}' was deleted successfully.")
+        logging.info(f"New role '{system_role_id}' was deleted successfully.") if request.status_code in (200, 201, 204) else False
         return True
 
 
@@ -274,5 +274,5 @@ class User:
         except self.possible_request_errors as err:
             logging.error(f"{err}\n{request.text}")
             return False
-        logging.info(f"Created user <{username}> was deleted successfully.")
+        logging.info(f"Created user <{username}> was deleted successfully.") if request.status_code in (200, 201, 204) else False
         return True

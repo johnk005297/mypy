@@ -80,7 +80,7 @@ def main():
                 initial_user = User_main.get_current_user(url, token)
                 # Add created role to current user
                 Auth_superuser.providerId = Auth_main.get_local_providerId(url)  # getting provider id for created user for logon
-                Auth_superuser.get_user_access_token(url, Auth_superuser.username, Auth_superuser.password, Auth_superuser.providerId) # logging in under superuser account
+                Auth_superuser.get_user_access_token(url, Auth_superuser.username, Auth_superuser.password, Auth_superuser.providerId) # logging in under superuser account  
                 # Add system role to initial user we connected
                 User_main.add_system_role_to_user(url, Auth_superuser.token, initial_user['id'], username, su_system_role_id)
 
@@ -93,11 +93,13 @@ def main():
             ''' Delete created user with privileges. '''
             if License_main.privileges_granted:
 
-                User_main.remove_system_role_from_user(url, token, initial_user['id'], initial_user['userName'], su_system_role_id)
+                User_main.remove_system_role_from_user(url, Auth_superuser.token, initial_user['id'], initial_user['userName'], su_system_role_id)
+
+                # Need to login back as initial user to get the correct token, which is needed to perform operations with new system role and super user below.
                 Auth_main.get_user_access_token(url, username, password, Auth_main.providerId)
-                User_main.remove_system_role_from_user(url, token, superuser['id'], superuser['userName'], su_system_role_id)
-                User_main.delete_system_role(url, su_system_role_id, token)
-                User_main.delete_user(url, token, superuser['id'], superuser['userName'])
+                User_main.remove_system_role_from_user(url, Auth_main.token, superuser['id'], superuser['userName'], su_system_role_id)
+                User_main.delete_system_role(url, su_system_role_id, Auth_main.token)
+                User_main.delete_user(url, Auth_main.token, superuser['id'], superuser['userName'])
 
 
             if user_command == ['quit']:
