@@ -99,4 +99,12 @@ def task4_2():
 '''
 
 def task5_1():
-    pass
+    count = 0
+    for i in email:
+        if 'a' <= i.lower() <= 'z' or '0' <= i <= '9' or i  in '_@.':
+            count+=1
+        
+    print("ДА" if count == len(email) else "НЕТ")
+
+email = input()
+task5_1(email)

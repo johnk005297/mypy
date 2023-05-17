@@ -289,7 +289,7 @@ class Import_data:
             print("Error with POST object model. Check the logs.")
             return False
 
-        if post_request.status_code != 200:
+        if post_request.status_code not in (200, 201, 204):
             logging.error(f"\n{post_request.text}")
             print("   - post object model:                  error ", post_request.status_code)
             return False

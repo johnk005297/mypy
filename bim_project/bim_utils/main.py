@@ -12,6 +12,7 @@ import import_data
 from tools import Folder, File, Tools
 import logs # activates with import
 import mydocker
+import myk8s
 from main_local import main_local
 
 
@@ -24,6 +25,7 @@ def main():
     Export_data_main = export_data.Export_data()
     Import_data_main = import_data.Import_data()
     Docker           = mydocker.Docker()
+    K8s              = myk8s.K8S()
 
 
     AppMenu_main.welcome_info_note()
@@ -262,6 +264,46 @@ def main():
                     containers_id = [x for x in user_command[0][2:]]
                     Docker.get_container_log(*containers_id)
 
+
+            ''' =============================================================================== K8S =============================================================================== '''
+        elif isinstance(user_command, tuple) and user_command[0][0] == 'kube':
+            # Check for Kubernetes on server
+            if not K8s._check_k8s:
+                print("No kubernetes found in the system.")
+                continue
+
+            if user_command == ['quit']:
+                break
+
+            ft_token = K8s.get_ft_token()
+            
+            if user_command[1] == 'kube help':
+                print(K8s.k8s_menu())
+
+            elif user_command[1] == 'kube get features':
+                # ft_token = K8s.get_ft_token()
+                K8s.display_features(url, ft_token)
+            
+            elif user_command[1] == 'kube spatium ft --enable':
+                # ft_token = K8s.get_ft_token()
+                K8s.set_feature(url, K8s._api_spatium, token, ft_token, is_enabled=True)
+
+            elif user_command[1] == 'kube spatium ft --disable':
+                K8s.set_feature(url, K8s._api_spatium, token, ft_token, is_enabled=False)
+
+            elif user_command[1] == 'kube enterpriseassetmanagementisenabled ft --enable':
+                # ft_token = K8s.get_ft_token()
+                K8s.set_feature(url, K8s._api_enterpriseassetmanagementisenabled, token, ft_token, is_enabled=True)
+
+            elif user_command[1] == 'kube enterpriseassetmanagementisenabled ft --disable':
+                K8s.set_feature(url, K8s._api_enterpriseassetmanagementisenabled, token, ft_token, is_enabled=False)
+
+            elif user_command[1] == 'kube maintenanceplanning ft --enable':
+                # ft_token = K8s.get_ft_token()
+                K8s.set_feature(url, K8s._api_maintenanceplanning, token, ft_token, is_enabled=True)
+
+            elif user_command[1] == 'kube maintenanceplanning ft --disable':
+                K8s.set_feature(url, K8s._api_maintenanceplanning, token, ft_token, is_enabled=False)
 
 
 

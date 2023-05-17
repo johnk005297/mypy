@@ -48,7 +48,7 @@ def alter_yml():
         'treesapi:': "7782:5000",
         'construction_control_db': "5555:5432",      
         'construction_control_api': "8888:5000",
-        # 'reports-service:': "8093:5000",
+        'reports-service:': "8093:5000",
         'notification:': "8090:5000",
         'tasksworker:': "8091:5000",
         'collisions:': "8092:5000",
@@ -63,7 +63,8 @@ def alter_yml():
         'reportsdb:': "5436:5432",
         'timescaledb:': "5450:5432",        
         'nifi:': "8100:8080",                
-        'enterprise_asset_management_db:': "5444:5432"
+        'enterprise_asset_management_db:': "5444:5432",
+        'maintenanceplanningdb': "5445:5432"
     }
 
     array_to_exclude: list = ['ports:']    # Generating list for checking the elements in the yml_file_as_list

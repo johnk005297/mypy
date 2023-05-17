@@ -161,4 +161,3 @@ class Tools:
         delta:int = epoch_time - days
 
         return delta
-

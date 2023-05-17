@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    version = '1.35'
+    version = '1.36'
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -50,6 +50,10 @@ class AppMenu:
                                 \n                                                                    \
                                 \n   Docker                                                           \
                                 \n      docker -h           get a list of available commands          \
+                                \n                                                                    \
+                                \n   K8S                                                              \
+                                \n      kube -h             get a list of available commands          \
+                                \n                                                                    \
                                 \n                                                                    \
                                 \n   Main                                                             \
                                 \n      m                   print this menu                           \
@@ -118,7 +122,7 @@ class AppMenu:
             elif user_command[1:] == ['ls', '--all']:
                 return (user_command, 'docker container ls -a')
 
-            elif user_command[1] == 'ls':
+            elif user_command[1:] == ['ls']:
                 return (user_command, 'docker container ls')
 
             elif user_command[1] == 'logs' and len(user_command) > 2:           # if user command starts with 'docker logs'
@@ -133,6 +137,33 @@ class AppMenu:
                         return (user_command, 'docker logs -f')
                 else:                                                           # if user command is 'docker logs' + further arguments
                     return (user_command, 'docker logs')
+
+        # K8S
+        elif user_command[0] == 'kube' and len(user_command) > 1:
+            if user_command == ['kube', '-h'] or user_command == ['kube', '--help']:
+                return (user_command, 'kube help')
+            
+            elif user_command == ['kube', 'get', 'ft']:
+                return (user_command, 'kube get features')
+            
+            elif user_command == ['kube', 'spatium', 'ft', '--enable']:
+                return (user_command, 'kube spatium ft --enable')
+            
+            elif user_command == ['kube', 'spatium', 'ft', '--disable']:
+                return (user_command, 'kube spatium ft --disable')
+            
+            elif user_command == ['kube', 'enterprise', 'ft', '--enable']:
+                return (user_command, 'kube enterpriseassetmanagementisenabled ft --enable')
+            
+            elif user_command == ['kube', 'enterprise', 'ft', '--disable']:
+                return (user_command, 'kube enterpriseassetmanagementisenabled ft --disable')
+    
+            elif user_command == ['kube', 'maintenance', 'ft', '--enable']:
+                return (user_command, 'kube maintenanceplanning ft --enable')
+            
+            elif user_command == ['kube', 'maintenance', 'ft', '--disable']:
+                return (user_command, 'kube maintenanceplanning ft --disable')
+
 
         # Main
         elif user_command == ['m']:
