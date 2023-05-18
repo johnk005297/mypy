@@ -30,13 +30,12 @@ class K8S:
             self._check_k8s:bool = True
         except config.ConfigException as config_err:
             self._check_k8s:bool = False
-            print("No Kube config was found. Check for it.")
+            # logging.error(config_err)
         except ApiException as client_api_err:
             self._check_k8s:bool = False
-            print(client_api_err)
+            # logging.error(client_api_err)
         except:
             self._check_k8s:bool = False
-            print("Check out the K8S state.")
 
 
     def k8s_menu(self):
@@ -72,17 +71,18 @@ class K8S:
         
 
     def get_ft_pod(self):
-        ''' Get feature toggle pod. '''
+        ''' Get feature toggle pod. In current version we are checking for redis or keydb.'''
 
         v1 = self.get_CoreV1Api()
         pods = v1.list_pod_for_all_namespaces(watch=False)
-        
+
+        possible_ft_pods:list = ['redis', 'keydb']
         count = Tools.counter()
         for item in pods.items:
             count()
-            if item.metadata.namespace == self.namespace and (item.spec.containers[0].name == 'redis' or item.spec.containers[0].name == 'keydb') and item.status.phase == 'Running':
+            # if item.metadata.namespace == self.namespace and (item.spec.containers[0].name == 'redis' or item.spec.containers[0].name == 'keydb') and item.status.phase == 'Running':
+            if item.metadata.namespace == self.namespace and item.spec.containers[0].name in possible_ft_pods and item.status.phase == 'Running':
                 ft_pod:str = item.metadata.name
-                # print(f"{item.status.pod_ip}\t{item.status.phase}\t{item.metadata.name}")
                 return ft_pod
             elif count() == len(pods.items):
                 print("No feature toggle pod was found. Check for needed pod.")        
@@ -111,13 +111,15 @@ class K8S:
         secrets_list:list = v1.list_namespaced_secret(self.namespace).items  # Getting a list of all the secrets
 
         # Getting a needed secret for FT activation
+        possible_ft_secrets:list = ['{}-redis'.format(self.namespace), '{}-keydb'.format(self.namespace)]
         count = Tools.counter()
         for item in secrets_list:
             count()
-            if item.metadata.name == self.namespace + '-' + 'redis':
+            # if item.metadata.name == self.namespace + '-' + 'redis':
+            if item.metadata.name in possible_ft_secrets:
                 return item.metadata.name
             elif count() == len(secrets_list):
-                print("No feature toggle service was found. Check for needed service.")
+                return False
 
 
     def get_ft_token(self):
@@ -125,7 +127,11 @@ class K8S:
         
         ft_pod = self.get_ft_pod()
         ft_secret = self.get_ft_secret()
-        ft_secret_pass = self.get_ft_secret_pass(ft_secret)
+
+        if ft_pod and ft_secret:
+            ft_secret_pass = self.get_ft_secret_pass(ft_secret)
+        else:
+            return False
         
         tmp_file:str = 'ft_token'
         exec_command:str = f"kubectl exec -n {self.namespace} {ft_pod} -- /bin/bash -c 'redis-cli -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN' 2> /dev/null > {tmp_file}"
