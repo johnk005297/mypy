@@ -20,6 +20,7 @@ class User:
     __api_Users_RemoveSystemRole:str = 'api/Users/RemoveSystemRole'
     License                          = license.License()
     possible_request_errors          = auth.Auth.possible_request_errors
+    _License_server_exception:bool   = False
 
 
     def __init__(self):
@@ -86,10 +87,16 @@ class User:
         user_system_roles_id: list = []  # list to collect user's system roles Id.
 
         headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
-        request = requests.get(url=f"{url}/{self.__api_Users}", headers=headers, verify=False)                                
+        request = requests.get(url=f"{url}/{self.__api_Users}", headers=headers, verify=False)
         response = request.json()
-        if request.status_code != 200:
+        if  request.status_code == 500:
             logging.error(f"{self.__api_Users}: {request.text}")
+            self._License_server_exception = True
+            if json.loads(request.text)['type'] == 'LicenseServiceClientException':
+                print(f"Error: {request.status_code}. LicenseServiceClientException. Check the logs. ")
+                self._License_server_exception = True
+            return False
+        elif request.status_code != 200:
             return False
 
         '''   Check if the user has needed permissions in his system roles already. Selecting roles from the tuple_of_needed_permissions.   '''

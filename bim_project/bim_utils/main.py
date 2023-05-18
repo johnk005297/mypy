@@ -64,7 +64,7 @@ def main():
                         ,['import', 'wf']                   # import workFlows
                         ,['import', 'om']                   # import object model
                         ):
-            if not License_main.privileges_checked and not User_main.check_user_permissions(url, token, username, password, License_main._permissions_to_check):
+            if not License_main.privileges_checked and not User_main.check_user_permissions(url, token, username, password, License_main._permissions_to_check) and not User_main._License_server_exception:
 
                 # Create/activate user
                 Auth_superuser = auth.Auth(username='johnny_mnemonic', password='Qwerty12345!') # Create Auth class instance for new user

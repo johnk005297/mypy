@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    version = '1.36'
+    version = '1.36a'
 
     def __init__(self):
         self._main_menu = self.main_menu()
