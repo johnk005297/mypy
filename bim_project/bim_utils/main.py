@@ -275,12 +275,13 @@ def main():
             if user_command == ['quit']:
                 break
 
+            if user_command[1] == 'kube help':
+                print(K8s.k8s_menu())
+                continue
+
             ft_token = K8s.get_ft_token()
             if ft_token:
-                if user_command[1] == 'kube help':
-                    print(K8s.k8s_menu())
-
-                elif user_command[1] == 'kube get features':
+                if user_command[1] == 'kube get features':
                     K8s.display_features(url, ft_token)
                 
                 elif user_command[1] == 'kube spatium ft --enable':
@@ -301,7 +302,7 @@ def main():
                 elif user_command[1] == 'kube maintenanceplanning ft --disable':
                     K8s.set_feature(url, K8s._api_maintenanceplanning, token, ft_token, is_enabled=False)
             else:
-                print("Couldn't get FT token. Check the logs.")
+                print("\nCouldn't get FT token. Check the logs.")
                 continue
 
 

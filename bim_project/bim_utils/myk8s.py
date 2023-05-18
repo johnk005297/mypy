@@ -89,20 +89,6 @@ class K8S:
         return False
 
 
-    def get_ft_secret_pass(self, secret_name):
-        ''' Get password from the k8s secret of the pod. '''
-
-        v1 = self.get_CoreV1Api()
-        try:
-            secret:dict = v1.read_namespaced_secret(secret_name, self.namespace).data
-        except ApiException as err:
-            # logging.error(err)
-            return False
-
-        passwd = base64.b64decode(list(secret.values())[0]).decode('utf-8')
-        return passwd if passwd else False
-
-
     def get_ft_secret(self):
         ''' Get a list of all secrets in the cluster. '''
 
@@ -111,15 +97,41 @@ class K8S:
         secrets_list:list = v1.list_namespaced_secret(self.namespace).items  # Getting a list of all the secrets
 
         # Getting a needed secret for FT activation
-        possible_ft_secrets:list = ['{}-redis'.format(self.namespace), '{}-keydb'.format(self.namespace)]
+        possible_ft_secrets:list = ['redis', 'keydb']
         count = Tools.counter()
         for item in secrets_list:
             count()
-            # if item.metadata.name == self.namespace + '-' + 'redis':
-            if item.metadata.name in possible_ft_secrets:
+            secret = item.metadata.name.split('-')
+            if secret[0] == self.namespace and secret[1] in possible_ft_secrets:
                 return item.metadata.name
             elif count() == len(secrets_list):
                 return False
+
+
+    def get_ft_secret_pass(self, secret_name):
+        ''' Get password from the k8s secret of the pod. '''
+
+        v1 = self.get_CoreV1Api()
+
+        try:
+            if secret_name.split('-')[1] == 'redis':
+                secret:dict = v1.read_namespaced_secret(secret_name, self.namespace).data
+                passwd = base64.b64decode(list(secret.values())[0]).decode('utf-8')
+
+            else:
+                # keydb secret is encoded. Need to decode it first, then extract the password.
+                secret:dict = v1.read_namespaced_secret(secret_name, self.namespace).data
+                decode:str = base64.b64decode(secret['server.sh']).decode('utf-8')
+                for string in range(len(decode.split())):
+                    if 'requirepass' in decode.split()[string]:
+                        passwd = decode.split()[string + 1].strip("\"")
+
+        except ApiException as err:
+            # logging.error(err)
+            return False
+
+        # passwd = base64.b64decode(list(secret.values())[0]).decode('utf-8')
+        return passwd if passwd else False
 
 
     def get_ft_token(self):
@@ -132,9 +144,12 @@ class K8S:
             ft_secret_pass = self.get_ft_secret_pass(ft_secret)
         else:
             return False
-        
+
+        # define what cli we need to use: redis or keydb
+        cli = 'redis-cli' if ft_secret.split('-')[1] == 'redis' else 'keydb-cli'
         tmp_file:str = 'ft_token'
-        exec_command:str = f"kubectl exec -n {self.namespace} {ft_pod} -- /bin/bash -c 'redis-cli -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN' 2> /dev/null > {tmp_file}"
+
+        exec_command:str = f"kubectl exec -n {self.namespace} {ft_pod} -- /bin/bash -c '{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN' 2> /dev/null > {tmp_file}"
         os.system(exec_command)
         file = File.read_file(os.getcwd(), tmp_file)
         token = json.loads(file)['Token']
@@ -153,8 +168,9 @@ class K8S:
             response:dict = request.json()
             # pretty = json.dumps(response, indent=4)
             # return pretty
+            print()
             for k,v in response.items():
-                print(" {0}:  {1}".format(k.capitalize(), v))
+                print("{0}:  {1}".format(k.capitalize(), v))
 
         else:
             print(f"Error {request.status_code} occurred during GetFeatures request. Check the logs.")
