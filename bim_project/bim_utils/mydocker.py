@@ -1,9 +1,10 @@
 #
 import docker
 from prettytable import PrettyTable
-from tools import Folder, Tools
+from tools import Folder, Tools, File
 import os
 import logging
+import json
 
 
 class Docker:
@@ -39,6 +40,15 @@ class Docker:
                           \n      docker logs -i <container_id>                     get logs from specific container interactively                               \
                           \n                  --days(optional)                      exact period to get logs for. Not applicable with '-i' flag.                 \
                           \n                  --tail(optional)                      amount of lines from the end of the log. Not applicable with '-i' flag.      \
+                          \n                                                                                                                                     \
+                          \n   Feature Toggle                                                                                                                    \
+                          \n      docker ls features                                display list of features                                                     \
+                          \n      docker spatium ft     --enable                    enable spatium feature toggle                                                \
+                          \n      docker spatium ft     --disable                   disable spatium feature toggle                                               \
+                          \n      docker enterprise ft  --enable                    enable enterprise feature toggle                                             \
+                          \n      docker enterprise ft  --disable                   disable enterprise feature toggle                                            \
+                          \n      docker maintenance ft --enable                    enable maintenance feature toggle                                            \
+                          \n      docker maintenance ft --disable                   disable maintenance feature toggle                                           \
                           \n                                                                                                                                     \
                           \n   Main                                                                                                                              \
                           \n      q                                                 exit"
@@ -174,3 +184,61 @@ class Docker:
 
         return True
 
+
+    ################# Feature Toggle block #################
+
+    def get_ft_container(self):
+        ''' Function finds needed container for FT. Returns tuple of container id and name. '''
+
+        ft_pods:tuple = ('keydb', 'redis')
+        containers = self.__client.containers.list()
+        for container in containers:
+            if container.labels.get('com.docker.compose.service', False) in ft_pods and container.status == 'running':
+                return (container.id, container.name)
+        
+        print(f"No {ft_pods} were found with Running status among containers. Check for it.")
+        return False
+            
+
+
+    def get_ft_secret_pass(self):
+        ''' Function gets secret from docker container inspectation. '''
+
+        try:
+            client = docker.APIClient(base_url='unix://var/run/docker.sock')
+        except:
+            print("Smth is wrong with the docker. Couldn't run docker.APIClient.")
+            return False
+        
+        id = self.get_ft_container()[0]
+        container = dict(client.inspect_container(id))
+
+        if '--requirepass' in container['Args']:
+            idx = container['Args'].index('--requirepass')
+            ft_secret = container['Args'][idx + 1]
+
+            return ft_secret
+        
+        else:
+            return False
+        
+
+    def get_ft_token(self):
+        ''' Function provides ft token. '''
+        
+        ft_containerId = self.get_ft_container()[0]
+        ft_secret_pass = self.get_ft_secret_pass()
+        cli = 'keydb-cli'
+        exec_command:str = f"{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN"
+
+
+        ft_container = self.__client.containers.get(ft_containerId)
+        result = ft_container.exec_run(exec_command, stderr=False)
+        result = result[1].decode('utf-8')
+        ft_token = json.loads(result)['Token']
+
+        return ft_token
+        # define what cli we need to use: redis or keydb
+        cli = 'redis-cli' if ft_secret.split('-')[1] == 'redis' else 'keydb-cli'
+
+        return token        

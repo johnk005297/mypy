@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    version = '1.36b'
+    version = '1.36c'
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -116,13 +116,13 @@ class AppMenu:
 
         # Docker
         elif user_command[0] == 'docker' and len(user_command) > 1:             # if user command starts with docker and has minimum one more argument
-            if user_command[1] == '-h':
+            if user_command == ['docker', '-h']:
                 return (user_command, 'docker help')
 
-            elif user_command[1:] == ['ls', '--all']:
+            elif user_command == ['docker', 'ls', '--all']:
                 return (user_command, 'docker container ls -a')
 
-            elif user_command[1:] == ['ls']:
+            elif user_command == ['docker', 'ls']:
                 return (user_command, 'docker container ls')
 
             elif user_command[1] == 'logs' and len(user_command) > 2:           # if user command starts with 'docker logs'
@@ -137,14 +137,35 @@ class AppMenu:
                         return (user_command, 'docker logs -f')
                 else:                                                           # if user command is 'docker logs' + further arguments
                     return (user_command, 'docker logs')
+            
+            elif user_command == ['docker', 'ls', 'features']:
+                return(user_command, 'docker list features')
+
+            elif user_command == ['docker', 'spatium', 'ft', '--enable']:
+                return (user_command, 'docker spatium ft --enable')
+            
+            elif user_command == ['docker', 'spatium', 'ft', '--disable']:
+                return (user_command, 'docker spatium ft --disable')
+            
+            elif user_command == ['docker', 'enterprise', 'ft', '--enable']:
+                return (user_command, 'docker enterpriseassetmanagementisenabled ft --enable')
+            
+            elif user_command == ['docker', 'enterprise', 'ft', '--disable']:
+                return (user_command, 'docker enterpriseassetmanagementisenabled ft --disable')
+    
+            elif user_command == ['docker', 'maintenance', 'ft', '--enable']:
+                return (user_command, 'docker maintenanceplanning ft --enable')
+            
+            elif user_command == ['docker', 'maintenance', 'ft', '--disable']:
+                return (user_command, 'docker maintenanceplanning ft --disable')
 
         # K8S
         elif user_command[0] == 'kube' and len(user_command) > 1:
             if user_command == ['kube', '-h'] or user_command == ['kube', '--help']:
                 return (user_command, 'kube help')
             
-            elif user_command == ['kube', 'get', 'ft']:
-                return (user_command, 'kube get features')
+            elif user_command == ['kube', 'ls', 'features']:
+                return (user_command, 'kube list features')
             
             elif user_command == ['kube', 'spatium', 'ft', '--enable']:
                 return (user_command, 'kube spatium ft --enable')

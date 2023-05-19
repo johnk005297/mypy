@@ -44,7 +44,7 @@ class K8S:
         _k8s_menu = "Kubernets options:                                                                  \
                           \n                                                                             \
                           \n   Feature toggle                                                            \
-                          \n      kube get ft                        display list of features            \
+                          \n      kube ls features                   display list of features            \
                           \n      kube spatium ft     --enable       enable spatium feature toggle       \
                           \n      kube spatium ft     --disable      disable spatium feature toggle      \
                           \n      kube enterprise ft  --enable       enable enterprise feature toggle    \
@@ -170,7 +170,7 @@ class K8S:
             # return pretty
             print()
             for k,v in response.items():
-                print("{0}:  {1}".format(k.capitalize(), v))
+                print(" {0}:  {1}".format(k.capitalize(), v))
 
         else:
             print(f"Error {request.status_code} occurred during GetFeatures request. Check the logs.")

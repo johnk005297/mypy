@@ -39,8 +39,6 @@ def main():
 
 
 
-
-
 # ---------------------------------------------------------
 # http://10.168.23.161
 # ---------------------------------------------------------
@@ -263,6 +261,28 @@ def main():
                 else:
                     containers_id = [x for x in user_command[0][2:]]
                     Docker.get_container_log(*containers_id)
+            
+            elif user_command[0] == ['docker', 'ls', 'features']:
+                ft_token = Docker.get_ft_token()
+                K8s.display_features(url, ft_token)
+            
+            elif user_command[1] == 'docker spatium ft --enable':
+                K8s.set_feature(url, K8s._api_spatium, token, ft_token, is_enabled=True)
+
+            elif user_command[1] == 'docker spatium ft --disable':
+                K8s.set_feature(url, K8s._api_spatium, token, ft_token, is_enabled=False)
+
+            elif user_command[1] == 'docker enterpriseassetmanagementisenabled ft --enable':
+                K8s.set_feature(url, K8s._api_enterpriseassetmanagementisenabled, token, ft_token, is_enabled=True)
+
+            elif user_command[1] == 'docker enterpriseassetmanagementisenabled ft --disable':
+                K8s.set_feature(url, K8s._api_enterpriseassetmanagementisenabled, token, ft_token, is_enabled=False)
+
+            elif user_command[1] == 'docker maintenanceplanning ft --enable':
+                K8s.set_feature(url, K8s._api_maintenanceplanning, token, ft_token, is_enabled=True)
+
+            elif user_command[1] == 'docker maintenanceplanning ft --disable':
+                K8s.set_feature(url, K8s._api_maintenanceplanning, token, ft_token, is_enabled=False)
 
 
             ''' =============================================================================== K8S =============================================================================== '''
@@ -281,7 +301,7 @@ def main():
 
             ft_token = K8s.get_ft_token()
             if ft_token:
-                if user_command[1] == 'kube get features':
+                if user_command[1] == 'kube list features':
                     K8s.display_features(url, ft_token)
                 
                 elif user_command[1] == 'kube spatium ft --enable':
