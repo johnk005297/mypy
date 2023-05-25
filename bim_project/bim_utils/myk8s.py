@@ -12,19 +12,10 @@ import os
 
 class K8S:
 
-    _api_GetFeatures:str                        = 'api/Features/GetFeatures'
-    _api_enterpriseassetmanagementisenabled:str = 'api/Features/enterpriseassetmanagementisenabled'
-    _api_documentworkflowtasksreport:str        = 'api/Features/documentworkflowtasksreport'
-    _api_testfeature:str                        = 'api/Features/testfeature'
-    _api_maintenanceplanning:str                = 'api/Features/maintenanceplanning'
-    _api_graphdbstorage:str                     = 'api/Features/graphdbstorage'
-    _api_spatium:str                            = 'api/Features/spatium'
-    _api_constructioncontrol:str                = 'api/Features/constructioncontrol'
-
     
     def __init__(self, namespace='bimeister'):
-        self.namespace        = namespace
-        # self.v1               = self.get_CoreV1Api()  # this line does not work.
+        self.namespace      = namespace
+        self._ft_token:bool = False
         try:
             config.load_kube_config()
             self._check_k8s:bool = True
@@ -41,7 +32,7 @@ class K8S:
     def k8s_menu(self):
         ''' Appearance of docker commands menu. '''
 
-        _k8s_menu = "Kubernets options:                                                                  \
+        _k8s_menu = "Kubernets options(runs locally on a host):                                          \
                           \n                                                                             \
                           \n   Feature toggle                                                            \
                           \n      kube ls features                   display list of features            \
@@ -152,48 +143,12 @@ class K8S:
         exec_command:str = f"kubectl exec -n {self.namespace} {ft_pod} -- /bin/bash -c '{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN' 2> /dev/null > {tmp_file}"
         os.system(exec_command)
         file = File.read_file(os.getcwd(), tmp_file)
-        token = json.loads(file)['Token']
+        ft_token = json.loads(file)['Token']
         os.remove(tmp_file)
 
-        return token
+        self._ft_token = True if ft_token else False
+        return ft_token
 
-
-    def display_features(self, url, FeatureAccessToken):
-        ''' Get list of features. '''
-
-        headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}' }
-        request = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)
-
-        if request.status_code == 200:
-            response:dict = request.json()
-            # pretty = json.dumps(response, indent=4)
-            # return pretty
-            print()
-            for k,v in response.items():
-                print(" {0}:  {1}".format(k.capitalize(), v))
-
-        else:
-            print(f"Error {request.status_code} occurred during GetFeatures request. Check the logs.")
-            # logging.error(request.text)
-            return False
-
-
-    def set_feature(self, url, feature, bearerToken, FeatureAccessToken, is_enabled=True):
-        ''' Function to enable/disable FT. '''
-
-        headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}', 'Authorization': f'Bearer {bearerToken}', 'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-        json_data = is_enabled
-        result:str = 'enabled' if is_enabled else 'disabled'
-
-        request = requests.put(url=f'{url}/{feature}', json=json_data, headers=headers, verify=False)
-        
-        if request.status_code in (200, 201, 204):
-            print(f"Feature: {feature.split('/')[2]} {result} successfully.")
-            return True
-        else:
-            # logging.error(request.status_code, '\n', request.text)
-            print(f"Feature: {feature.split('/')[2]} wasn't enabled. Check the log. Error: {request.status_code}.")
-            return False
 
 
 

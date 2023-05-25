@@ -13,9 +13,10 @@ class Docker:
 
     def __init__(self):
         try:
-            self.__client = docker.from_env()
+            self.__client           = docker.from_env()
             self._check_docker:bool = True
-            # self._commands:list = ['docker help', 'docker container ls', 'docker container ls -a', 'docker logs -i', 'docker logs']
+            self._ft_token:bool     = False
+            self._permissions:bool  = False
         except docker.errors.DockerException:
             self._check_docker:bool = False
 
@@ -27,7 +28,7 @@ class Docker:
     def docker_menu(self):
         ''' Appearance of docker commands menu. '''
 
-        _docker_menu = "Docker options:                                                                                                                          \
+        _docker_menu = "Docker options(runs locally on a host):                                                                                                                          \
                           \n                                                                                                                                     \
                           \n   Containers                                                                                                                        \
                           \n      docker ls                                         display running containers                                                   \
@@ -55,6 +56,12 @@ class Docker:
 
 
         return _docker_menu
+
+
+    def check_permissions(self):
+        ''' Function to check needed permissions to work with docker. '''
+
+        pass
 
 
     def get_containers(self, all=False):
@@ -231,14 +238,11 @@ class Docker:
         cli = 'keydb-cli'
         exec_command:str = f"{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN"
 
-
         ft_container = self.__client.containers.get(ft_containerId)
         result = ft_container.exec_run(exec_command, stderr=False)
         result = result[1].decode('utf-8')
-        ft_token = json.loads(result)['Token']
+        ft_token = json.loads(result)['Token']  # json.loads performs a dictionary from the result var, and then ask for it's 'Token' key value.
 
+        self._ft_token = True if ft_token else False
         return ft_token
-        # define what cli we need to use: redis or keydb
-        cli = 'redis-cli' if ft_secret.split('-')[1] == 'redis' else 'keydb-cli'
-
-        return token        
+      

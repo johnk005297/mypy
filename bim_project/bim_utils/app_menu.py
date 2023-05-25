@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    version = '1.36c'
+    version = '1.36d'
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -139,25 +139,25 @@ class AppMenu:
                     return (user_command, 'docker logs')
             
             elif user_command == ['docker', 'ls', 'features']:
-                return(user_command, 'docker list features')
+                return(user_command, 'docker list featureToggle')
 
             elif user_command == ['docker', 'spatium', 'ft', '--enable']:
-                return (user_command, 'docker spatium ft --enable')
+                return (user_command, 'docker spatium featureToggle --enable')
             
             elif user_command == ['docker', 'spatium', 'ft', '--disable']:
-                return (user_command, 'docker spatium ft --disable')
+                return (user_command, 'docker spatium featureToggle --disable')
             
             elif user_command == ['docker', 'enterprise', 'ft', '--enable']:
-                return (user_command, 'docker enterpriseassetmanagementisenabled ft --enable')
+                return (user_command, 'docker enterpriseassetmanagementisenabled featureToggle --enable')
             
             elif user_command == ['docker', 'enterprise', 'ft', '--disable']:
-                return (user_command, 'docker enterpriseassetmanagementisenabled ft --disable')
+                return (user_command, 'docker enterpriseassetmanagementisenabled featureToggle --disable')
     
             elif user_command == ['docker', 'maintenance', 'ft', '--enable']:
-                return (user_command, 'docker maintenanceplanning ft --enable')
+                return (user_command, 'docker maintenanceplanning featureToggle --enable')
             
             elif user_command == ['docker', 'maintenance', 'ft', '--disable']:
-                return (user_command, 'docker maintenanceplanning ft --disable')
+                return (user_command, 'docker maintenanceplanning featureToggle --disable')
 
         # K8S
         elif user_command[0] == 'kube' and len(user_command) > 1:
@@ -165,25 +165,25 @@ class AppMenu:
                 return (user_command, 'kube help')
             
             elif user_command == ['kube', 'ls', 'features']:
-                return (user_command, 'kube list features')
+                return (user_command, 'kube list featureToggle')
             
             elif user_command == ['kube', 'spatium', 'ft', '--enable']:
-                return (user_command, 'kube spatium ft --enable')
+                return (user_command, 'kube spatium featureToggle --enable')
             
             elif user_command == ['kube', 'spatium', 'ft', '--disable']:
-                return (user_command, 'kube spatium ft --disable')
+                return (user_command, 'kube spatium featureToggle --disable')
             
             elif user_command == ['kube', 'enterprise', 'ft', '--enable']:
-                return (user_command, 'kube enterpriseassetmanagementisenabled ft --enable')
+                return (user_command, 'kube enterpriseassetmanagementisenabled featureToggle --enable')
             
             elif user_command == ['kube', 'enterprise', 'ft', '--disable']:
-                return (user_command, 'kube enterpriseassetmanagementisenabled ft --disable')
+                return (user_command, 'kube enterpriseassetmanagementisenabled featureToggle --disable')
     
             elif user_command == ['kube', 'maintenance', 'ft', '--enable']:
-                return (user_command, 'kube maintenanceplanning ft --enable')
+                return (user_command, 'kube maintenanceplanning featureToggle --enable')
             
             elif user_command == ['kube', 'maintenance', 'ft', '--disable']:
-                return (user_command, 'kube maintenanceplanning ft --disable')
+                return (user_command, 'kube maintenanceplanning featureToggle --disable')
 
 
         # Main
