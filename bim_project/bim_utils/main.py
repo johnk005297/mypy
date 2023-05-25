@@ -307,7 +307,8 @@ def main():
                 continue
 
             if 'featureToggle' in user_command[1]:
-                ft_token = K8s.get_ft_token() if not ft_token else ft_token
+                ft_token = K8s.get_ft_token() if not K8s._ft_token else ft_token
+
 
             if ft_token:
                 if user_command[0] == ['kube', 'ls', 'features']:

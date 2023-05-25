@@ -5,7 +5,6 @@ from kubernetes.stream import stream
 from tools import Tools, File
 import json
 import base64
-import requests
 # import logging
 import os
 

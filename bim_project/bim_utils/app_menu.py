@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    version = '1.36d'
+    version = '1.36e'
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -116,7 +116,7 @@ class AppMenu:
 
         # Docker
         elif user_command[0] == 'docker' and len(user_command) > 1:             # if user command starts with docker and has minimum one more argument
-            if user_command == ['docker', '-h']:
+            if user_command == ['docker', '-h'] or user_command == ['docker', '--help']:
                 return (user_command, 'docker help')
 
             elif user_command == ['docker', 'ls', '--all']:

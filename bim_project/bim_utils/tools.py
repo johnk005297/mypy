@@ -1,6 +1,6 @@
 #
 # Tool modules to work with folders and files
-import os, grp
+import os
 import platform
 import logging
 import json
@@ -12,6 +12,9 @@ import pathlib
 import zipfile
 from datetime import datetime
 import requests
+from prettytable import PrettyTable
+from colorama import init, Fore
+init(autoreset=True)
 
 
 class Folder:
@@ -164,9 +167,10 @@ class Tools:
         return delta
     
 
-    def check_user_groups(*groups):
+    def check_user_groups(*groups): # Function isn't in use so far.
         ''' Check user groups in linux. Function receives an argument which is a group name, and checks if there is such a group in the list. '''
 
+        import grp
         lst = [grp.getgrgid(g).gr_name for g in os.getgroups()]
         return True if groups in lst else False
 
@@ -188,18 +192,22 @@ class FeatureToggle:
         headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}' }
         request = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)
 
+        table = PrettyTable()
+        table.field_names = ['FEATURE', 'STATUS']
+        table.align = 'l'
         if request.status_code == 200:
             response:dict = request.json()
             # pretty = json.dumps(response, indent=4)
             # return pretty
             print()
-            for k,v in response.items():
-                print(" {0}:  {1}".format(k.capitalize(), v))
-
+            for key,value in response.items():
+                # print(" {0}:  {1}".format(k.capitalize(), v))
+                table.add_row([key.capitalize(), Fore.GREEN + str(value) + Fore.RESET if value else Fore.RED + str(value) + Fore.RESET])
         else:
             print(f"Error {request.status_code} occurred during GetFeatures request. Check the logs.")
             # logging.error(request.text)
             return False
+        print(table)
 
 
     def set_feature(self, url, feature, bearerToken, FeatureAccessToken, is_enabled=True):
