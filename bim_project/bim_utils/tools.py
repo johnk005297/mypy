@@ -13,8 +13,6 @@ import zipfile
 from datetime import datetime
 import requests
 from prettytable import PrettyTable
-from colorama import init, Fore
-init(autoreset=True)
 
 
 class Folder:
@@ -174,55 +172,3 @@ class Tools:
         lst = [grp.getgrgid(g).gr_name for g in os.getgroups()]
         return True if groups in lst else False
 
-class FeatureToggle:
-
-    _api_GetFeatures:str                        = 'api/Features/GetFeatures'
-    _api_enterpriseassetmanagementisenabled:str = 'api/Features/enterpriseassetmanagementisenabled'
-    _api_documentworkflowtasksreport:str        = 'api/Features/documentworkflowtasksreport'
-    _api_testfeature:str                        = 'api/Features/testfeature'
-    _api_maintenanceplanning:str                = 'api/Features/maintenanceplanning'
-    _api_graphdbstorage:str                     = 'api/Features/graphdbstorage'
-    _api_spatium:str                            = 'api/Features/spatium'
-    _api_constructioncontrol:str                = 'api/Features/constructioncontrol'
-
-
-    def display_features(self, url, FeatureAccessToken):
-        ''' Get list of features. '''
-
-        headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}' }
-        request = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)
-
-        table = PrettyTable()
-        table.field_names = ['FEATURE', 'STATUS']
-        table.align = 'l'
-        if request.status_code == 200:
-            response:dict = request.json()
-            # pretty = json.dumps(response, indent=4)
-            # return pretty
-            print()
-            for key,value in response.items():
-                # print(" {0}:  {1}".format(k.capitalize(), v))
-                table.add_row([key.capitalize(), Fore.GREEN + str(value) + Fore.RESET if value else Fore.RED + str(value) + Fore.RESET])
-        else:
-            print(f"Error {request.status_code} occurred during GetFeatures request. Check the logs.")
-            # logging.error(request.text)
-            return False
-        print(table)
-
-
-    def set_feature(self, url, feature, bearerToken, FeatureAccessToken, is_enabled=True):
-        ''' Function to enable/disable FT. '''
-
-        headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}', 'Authorization': f'Bearer {bearerToken}', 'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-        json_data = is_enabled
-        result:str = 'enabled' if is_enabled else 'disabled'
-
-        request = requests.put(url=f'{url}/{feature}', json=json_data, headers=headers, verify=False)
-        
-        if request.status_code in (200, 201, 204):
-            print(f"Feature: {feature.split('/')[2]} {result} successfully.")
-            return True
-        else:
-            # logging.error(request.status_code, '\n', request.text)
-            print(f"Feature: {feature.split('/')[2]} wasn't enabled. Check the log. Error: {request.status_code}.")
-            return False

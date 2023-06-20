@@ -9,11 +9,14 @@ import user
 import license
 import export_data
 import import_data
-from tools import Folder, File, Tools, FeatureToggle
+from tools import Folder, File, Tools
+import featureToggle
 import logs # activates with import
 import mydocker
 import myk8s
 from main_local import main_local
+from help_menu import Help
+import postgre
 
 
 def main():
@@ -25,8 +28,9 @@ def main():
     Export_data_main = export_data.Export_data()
     Import_data_main = import_data.Import_data()
     Docker           = mydocker.Docker()
-    K8s              = myk8s.K8S()
-    FT               = FeatureToggle()
+    K8s              = myk8s.K8S(namespace='bimeister')
+    FT               = featureToggle.FeatureToggle()
+
 
 
     AppMenu_main.welcome_info_note()
@@ -40,9 +44,8 @@ def main():
 
 
 
-
 # ---------------------------------------------------------
-# http://10.168.23.161
+#
 # ---------------------------------------------------------
 
     while True:
@@ -178,7 +181,8 @@ def main():
             ''' =============================================================================== USER =============================================================================== '''
 
         elif user_command == ['token']:
-            print(token)
+            private_token = Auth_main.get_private_token(url, token)
+            print(private_token)
         elif user_command == ['sh']:
             Tools.run_terminal_command()
         elif user_command == ['ls', '-l']:
@@ -270,26 +274,12 @@ def main():
             elif 'featureToggle' in user_command[1]:
                 ft_token = Docker.get_ft_token() if not Docker._ft_token else ft_token
 
-                if user_command[0] == ['docker', 'ls', 'features']:
+                if user_command[0] == ['docker', 'ft', '--list']:
                     FT.display_features(url, ft_token)
-
-                elif user_command[0] == ['docker', 'spatium', 'ft', '--enable']:
-                    FT.set_feature(url, FT._api_spatium, token, ft_token, is_enabled=True)
-
-                elif user_command[0] == ['docker', 'spatium', 'ft', '--disable']:
-                    FT.set_feature(url, FT._api_spatium, token, ft_token, is_enabled=False)
-
-                elif user_command[0] == ['docker', 'enterprise', 'ft', '--enable']:
-                    FT.set_feature(url, FT._api_enterpriseassetmanagementisenabled, token, ft_token, is_enabled=True)
-
-                elif user_command[0] == ['docker', 'enterprise', 'ft', '--disable']:
-                    FT.set_feature(url, FT._api_enterpriseassetmanagementisenabled, token, ft_token, is_enabled=False)
-
-                elif user_command[0] == ['docker', 'maintenance', 'ft', '--enable']:
-                    FT.set_feature(url, FT._api_maintenanceplanning, token, ft_token, is_enabled=True)
-
-                elif user_command[0] == ['docker', 'maintenance', 'ft', '--disable']:
-                    FT.set_feature(url, FT._api_maintenanceplanning, token, ft_token, is_enabled=False)
+                
+                elif user_command[1] == 'docker set featureToggle':
+                    feature:str = user_command[0][2]
+                    FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[0][-1] == '--on' else False))
 
 
             ''' =============================================================================== K8S =============================================================================== '''
@@ -311,26 +301,13 @@ def main():
 
 
             if ft_token:
-                if user_command[0] == ['kube', 'ls', 'features']:
+                if user_command[0] == ['kube', 'ft', '--list']:
                     FT.display_features(url, ft_token)
-                
-                elif user_command[0] == ['kube', 'spatium', 'ft', '--enable']:
-                    FT.set_feature(url, FT._api_spatium, token, ft_token, is_enabled=True)
 
-                elif user_command[0] == ['kube', 'spatium', 'ft', '--disable']:
-                    FT.set_feature(url, FT._api_spatium, token, ft_token, is_enabled=False)
+                elif user_command[1] == 'kube set featureToggle':
+                    feature:str = user_command[0][2]
+                    FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[0][-1] == '--on' else False))
 
-                elif user_command[0] == ['kube', 'enterprise', 'ft', '--enable']:
-                    FT.set_feature(url, FT._api_enterpriseassetmanagementisenabled, token, ft_token, is_enabled=True)
-
-                elif user_command[0] == ['kube', 'enterprise', 'ft', '--disable']:
-                    FT.set_feature(url, FT._api_enterpriseassetmanagementisenabled, token, ft_token, is_enabled=False)
-
-                elif user_command[0] == ['kube', 'maintenance', 'ft', '--enable']:
-                    FT.set_feature(url, FT._api_maintenanceplanning, token, ft_token, is_enabled=True)
-
-                elif user_command[0] == ['kube', 'maintenance', 'ft', '--disable']:
-                    FT.set_feature(url, FT._api_maintenanceplanning, token, ft_token, is_enabled=False)
             else:
                 print("\nCouldn't get FT token. Check the logs.")
                 continue
@@ -340,8 +317,10 @@ def main():
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         main()
-    elif sys.argv[1] == '--local' and len(sys.argv) == 2:
+    elif sys.argv[1] == '--docker' and len(sys.argv) == 2:
         main_local()
+    elif sys.argv[1] == '--help' and len(sys.argv) == 2:
+        help = Help.options_menu(help)
 
 
 

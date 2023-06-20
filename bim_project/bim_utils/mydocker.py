@@ -28,7 +28,7 @@ class Docker:
     def docker_menu(self):
         ''' Appearance of docker commands menu. '''
 
-        _docker_menu = "Docker options(runs locally on a host):                                                                                                                          \
+        _docker_menu = "Docker options(runs locally on a host):                                                                                                  \
                           \n                                                                                                                                     \
                           \n   Containers                                                                                                                        \
                           \n      docker ls                                         display running containers                                                   \
@@ -43,13 +43,10 @@ class Docker:
                           \n                  --tail(optional)                      amount of lines from the end of the log. Not applicable with '-i' flag.      \
                           \n                                                                                                                                     \
                           \n   Feature Toggle                                                                                                                    \
-                          \n      docker ls features                                display list of features                                                     \
-                          \n      docker spatium ft     --enable                    enable spatium feature toggle                                                \
-                          \n      docker spatium ft     --disable                   disable spatium feature toggle                                               \
-                          \n      docker enterprise ft  --enable                    enable enterprise feature toggle                                             \
-                          \n      docker enterprise ft  --disable                   disable enterprise feature toggle                                            \
-                          \n      docker maintenance ft --enable                    enable maintenance feature toggle                                            \
-                          \n      docker maintenance ft --disable                   disable maintenance feature toggle                                           \
+                          \n      docker ft --list                                  display list of features                                                     \
+                          \n      docker ft [ft_name] [--on/--off]                  turn on/off feature                                                          \
+                          \n        usage:                                                                                                                       \
+                          \n        docker ft Spatium --on                                                                                                       \
                           \n                                                                                                                                     \
                           \n   Main                                                                                                                              \
                           \n      q                                                 exit"

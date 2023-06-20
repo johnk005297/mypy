@@ -12,7 +12,7 @@ import os
 class K8S:
 
     
-    def __init__(self, namespace='bimeister'):
+    def __init__(self, namespace:str=None):
         self.namespace      = namespace
         self._ft_token:bool = False
         try:
@@ -31,18 +31,15 @@ class K8S:
     def k8s_menu(self):
         ''' Appearance of docker commands menu. '''
 
-        _k8s_menu = "Kubernets options(runs locally on a host):                                          \
-                          \n                                                                             \
-                          \n   Feature toggle                                                            \
-                          \n      kube ls features                   display list of features            \
-                          \n      kube spatium ft     --enable       enable spatium feature toggle       \
-                          \n      kube spatium ft     --disable      disable spatium feature toggle      \
-                          \n      kube enterprise ft  --enable       enable enterprise feature toggle    \
-                          \n      kube enterprise ft  --disable      disable enterprise feature toggle   \
-                          \n      kube maintenance ft --enable       enable maintenance feature toggle   \
-                          \n      kube maintenance ft --disable      disable maintenance feature toggle  \
-                          \n                                                                             \
-                          \n   Main                                                                      \
+        _k8s_menu = "Kubernets options(runs locally on a host):                                       \
+                          \n                                                                          \
+                          \n   Feature toggle                                                         \
+                          \n      kube ft --list                     display list of features         \
+                          \n      kube ft [ft_name] [--on/--off]     turn on/off feature              \
+                          \n        usage:                                                            \
+                          \n        kube ft Spatium --on                                              \
+                          \n                                                                          \
+                          \n   Main                                                                   \
                           \n      q                                  exit"
 
 

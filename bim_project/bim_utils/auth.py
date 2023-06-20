@@ -13,8 +13,9 @@ from getpass import getpass
 
 class Auth:
 
-    __api_Providers:str  = 'api/Providers'
-    __api_Auth_Login:str = 'api/Auth/Login'
+    __api_Providers:str    = 'api/Providers'
+    __api_Auth_Login:str   = 'api/Auth/Login'
+    __api_PrivateToken:str = 'api/PrivateToken'
     headers = {'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
     possible_request_errors:tuple = (  requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout,
                                        requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL,
@@ -22,11 +23,12 @@ class Auth:
 
 
     def __init__(self, url=None, username=None, password=None):
-        self.url        = url
-        self.username   = username
-        self.password   = password
-        self.token      = None
-        self.providerId = None
+        self.url          = url
+        self.username     = username
+        self.password     = password
+        self.token        = None
+        self.providerId   = None
+        self.privateToken = None
 
 
     def __getattr__(self, item):
@@ -39,7 +41,7 @@ class Auth:
             self.url = self.url[:-1] if self.url[-1] == '/' else self.url
             self.url = self.url[:-5] if self.url[-4:] == 'auth' else self.url
         except IndexError:
-            message:str = 'Wrong input.'
+            message:str = 'Incorrect input.'
             print(message)
             logging.info(message)
             return False
@@ -175,3 +177,19 @@ class Auth:
         else:
             logging.error(log)
             return False
+
+
+    def get_private_token(self, url, token):
+        ''' Function provides user private token. '''
+
+        headers = {'accept': 'text/plain', 'Authorization': f"Bearer {token}"}
+        try:
+            request = requests.get(url=f"{url}/{self.__api_PrivateToken}", headers=headers, verify=False)
+            response = request.json()
+            self.privateToken:str = response['privateToken']
+        except self.possible_request_errors as err:
+            print(err)
+            return False
+
+
+        return self.privateToken
