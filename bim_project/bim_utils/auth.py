@@ -183,13 +183,16 @@ class Auth:
         ''' Function provides user private token. '''
 
         headers = {'accept': 'text/plain', 'Authorization': f"Bearer {token}"}
+        url=f"{url}/{self.__api_PrivateToken}"
         try:
-            request = requests.get(url=f"{url}/{self.__api_PrivateToken}", headers=headers, verify=False)
+            request = requests.get(url=url, headers=headers, verify=False)
+            if request.status_code == 204:
+                request = requests.post(url=url, headers=headers, verify=False)
             response = request.json()
+
             self.privateToken:str = response['privateToken']
         except self.possible_request_errors as err:
             print(err)
             return False
-
 
         return self.privateToken
