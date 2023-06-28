@@ -183,7 +183,7 @@ def main():
 
         elif user_command == ['token']:
             private_token = Auth_main.get_private_token(url, token)
-            print(private_token)
+            print(f"\n{private_token}")
         elif user_command == ['sh']:
             Tools.run_terminal_command()
         elif user_command == ['ls', '-l']:
@@ -322,6 +322,13 @@ if __name__ == '__main__':
         main_local()
     elif sys.argv[1] == '--help' and len(sys.argv) == 2:
         help = Help.options_menu(help)
+    elif sys.argv[1] == '--sql-query':
+        sql = postgre.DB()
+        args = sys.argv[2:]
+        
+        sql.exec_query_from_file(*args)
+
+        
 
 
 

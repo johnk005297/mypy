@@ -189,8 +189,8 @@ class Auth:
             if request.status_code == 204:
                 request = requests.post(url=url, headers=headers, verify=False)
             response = request.json()
-
             self.privateToken:str = response['privateToken']
+
         except self.possible_request_errors as err:
             print(err)
             return False

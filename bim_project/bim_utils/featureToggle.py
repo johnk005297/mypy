@@ -49,10 +49,8 @@ class FeatureToggle:
         table.align = 'l'
         if request.status_code == 200:
             response:dict = request.json()
-            # pretty = json.dumps(response, indent=4)
-            # return pretty
             print()
-            for key,value in response.items():
+            for key,value in sorted(response.items()):
                 # print(" {0}:  {1}".format(k.capitalize(), v))
                 table.add_row([key.capitalize(), Fore.GREEN + str(value) + Fore.RESET if value else Fore.RED + str(value) + Fore.RESET])
         else:
