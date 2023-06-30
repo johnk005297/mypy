@@ -55,40 +55,40 @@ def main():
             continue
 
         ''' Check user privileges for everything related in the tuple below. '''
-        if user_command in (
-                         ['check_license']
-                        ,['server_id']
-                        ,['apply_license']
-                        ,['delete_active_license']
-                        ,['activate_license']
-                        ,['export', 'wf']                   # export workFlows
-                        ,['export', 'om']                   # export object model
-                        ,['list', 'wf']                     # display workFlows
-                        ,['delete', 'wf']                   # delete workFlows
-                        ,['import', 'wf']                   # import workFlows
-                        ,['import', 'om']                   # import object model
-                        ):
-            if not License_main.privileges_checked and not User_main.check_user_permissions(url, token, username, password, License_main._permissions_to_check) and not User_main._License_server_exception:
+        # if user_command in (
+        #                  ['check_license']
+        #                 ,['server_id']
+        #                 ,['apply_license']
+        #                 ,['delete_active_license']
+        #                 ,['activate_license']
+        #                 ,['export', 'wf']                   # export workFlows
+        #                 ,['export', 'om']                   # export object model
+        #                 ,['list', 'wf']                     # display workFlows
+        #                 ,['delete', 'wf']                   # delete workFlows
+        #                 ,['import', 'wf']                   # import workFlows
+        #                 ,['import', 'om']                   # import object model
+        #                 ):
+        #     if not License_main.privileges_checked and not User_main.check_user_permissions(url, token, username, password, License_main._permissions_to_check) and not User_main._License_server_exception:
 
-                # Create/activate user
-                Auth_superuser = auth.Auth(username='johnny_mnemonic', password='Qwerty12345!') # Create Auth class instance for new user
-                try:
-                    # License_main.privileges_granted, superuser = User_main.create_or_activate_superuser(url, token, Auth_superuser.username, Auth_superuser.password)
-                    superuser = User_main.create_or_activate_superuser(url, token, Auth_superuser.username, Auth_superuser.password)
-                    License_main.privileges_granted = True
-                except TypeError:
-                    continue
-                # Create system role
-                su_system_role_id = User_main.create_system_role(url, token)
-                # Add system role to created user
-                User_main.add_system_role_to_user(url, token, superuser['id'], superuser['userName'], su_system_role_id)
-                # Save data about current user we are working under
-                initial_user = User_main.get_current_user(url, token)
-                # Add created role to current user
-                Auth_superuser.providerId = Auth_main.get_local_providerId(url)  # getting provider id for created user for logon
-                Auth_superuser.get_user_access_token(url, Auth_superuser.username, Auth_superuser.password, Auth_superuser.providerId) # logging in under superuser account  
-                # Add system role to initial user we connected
-                User_main.add_system_role_to_user(url, Auth_superuser.token, initial_user['id'], username, su_system_role_id)
+        #         # Create/activate user
+        #         Auth_superuser = auth.Auth(username='johnny_mnemonic', password='Qwerty12345!') # Create Auth class instance for new user
+        #         try:
+        #             # License_main.privileges_granted, superuser = User_main.create_or_activate_superuser(url, token, Auth_superuser.username, Auth_superuser.password)
+        #             superuser = User_main.create_or_activate_superuser(url, token, Auth_superuser.username, Auth_superuser.password)
+        #             License_main.privileges_granted = True
+        #         except TypeError:
+        #             continue
+        #         # Create system role
+        #         su_system_role_id = User_main.create_system_role(url, token)
+        #         # Add system role to created user
+        #         User_main.add_system_role_to_user(url, token, superuser['id'], superuser['userName'], su_system_role_id)
+        #         # Save data about current user we are working under
+        #         initial_user = User_main.get_current_user(url, token)
+        #         # Add created role to current user
+        #         Auth_superuser.providerId = Auth_main.get_local_providerId(url)  # getting provider id for created user for logon
+        #         Auth_superuser.get_user_access_token(url, Auth_superuser.username, Auth_superuser.password, Auth_superuser.providerId) # logging in under superuser account  
+        #         # Add system role to initial user we connected
+        #         User_main.add_system_role_to_user(url, Auth_superuser.token, initial_user['id'], username, su_system_role_id)
 
 
         ''' =============================================================================== MAIN BLOCK =============================================================================== '''
@@ -97,15 +97,15 @@ def main():
         elif user_command in (['quit'], ['connect_to_another_server']): # connect to another server isn't realized yet
 
             ''' Delete created user with privileges. '''
-            if License_main.privileges_granted:
+            # if License_main.privileges_granted:
 
-                User_main.remove_system_role_from_user(url, Auth_superuser.token, initial_user['id'], initial_user['userName'], su_system_role_id)
+            #     User_main.remove_system_role_from_user(url, Auth_superuser.token, initial_user['id'], initial_user['userName'], su_system_role_id)
 
-                # Need to login back as initial user to get the correct token, which is needed to perform operations with new system role and super user below.
-                Auth_main.get_user_access_token(url, username, password, Auth_main.providerId)
-                User_main.remove_system_role_from_user(url, Auth_main.token, superuser['id'], superuser['userName'], su_system_role_id)
-                User_main.delete_system_role(url, su_system_role_id, Auth_main.token)
-                User_main.delete_user(url, Auth_main.token, superuser['id'], superuser['userName'])
+            #     # Need to login back as initial user to get the correct token, which is needed to perform operations with new system role and super user below.
+            #     Auth_main.get_user_access_token(url, username, password, Auth_main.providerId)
+            #     User_main.remove_system_role_from_user(url, Auth_main.token, superuser['id'], superuser['userName'], su_system_role_id)
+            #     User_main.delete_system_role(url, su_system_role_id, Auth_main.token)
+            #     User_main.delete_user(url, Auth_main.token, superuser['id'], superuser['userName'])
 
 
             if user_command == ['quit']:

@@ -168,6 +168,10 @@ class Auth:
                 print(message)
                 logging.error(log)
                 return False
+            elif response.get('type') and response.get('type') == 'UserPasswordValidationBimException':
+                message = f"The password does not match the password policy. Need to install a new password."
+                print(message)
+                logging.error(log)
             else:
                 logging.error(log)
                 return False

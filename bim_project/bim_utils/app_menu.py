@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    version = '1.37b'
+    __VERSION__ = '1.38'
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -14,8 +14,7 @@ class AppMenu:
 
     def welcome_info_note(self):
         ''' first note to be displayed '''
-        print(f"\nv{self.version}    \
-                \nnote: applicable with BIM version 101 and higher.")
+        print(f"v{self.__VERSION__}")
 
     def main_menu(self):
         ''' Help menu of user commands. '''
@@ -25,7 +24,7 @@ class AppMenu:
                                 \n   License                                                          \
                                 \n      1                   check license                             \
                                 \n      2                   get serverId                              \
-                                \n      apply new lic       apply new license                         \
+                                \n      apply lic           apply new license                         \
                                 \n      delete lic          delete active license                     \
                                 \n      activate lic        activate already uploaded license         \
                                 \n                                                                    \
@@ -75,7 +74,7 @@ class AppMenu:
             return ['check_license']
         elif user_command == ['2']:
             return ['server_id']
-        elif user_command == ['apply', 'new', 'lic']:
+        elif user_command == ['apply', 'lic']:
             return ['apply_license']
         elif user_command == ['delete', 'lic']:
             return ['delete_active_license']

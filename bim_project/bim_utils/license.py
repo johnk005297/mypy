@@ -54,7 +54,7 @@ class License:
     def read_license_token(self):
         ''' Check if there is a license.lic file, or ask user for token. Function returns a list of dictionaries with license data, if everything is correct. '''
 
-        data = input('Enter the filename containing token or token itself: ').strip()
+        data = input('Enter the filename(should have .lic extension) containing token or token itself: ').strip()
         if len(data) < 4:
             print('Incorrect input data.')
             return False
@@ -164,9 +164,10 @@ class License:
 
 
     def display_licenses(self, url, token, username, password):
-        ''' Display the licenses '''
+        ''' Display the list of licenses. '''
 
         licenses: list = self.get_licenses(url, token, username, password)
+
         if not self.get_license_status(url, token, username, password):
             for number, license in enumerate(licenses, 1):
                 print(f"\n  License {number}:")
@@ -225,11 +226,17 @@ class License:
             for name, id in active_licenses.items():
                 url_delete_license = f"{url}/{self.__api_License}/{id}"
                 request = requests.delete(url=url_delete_license, headers=headers, verify=False)
+                response = bool(request.text) if not request.text else request.json()
+
                 if request.status_code in (200, 201, 204):
                     print(Fore.GREEN + f"   - license '{name}': {id} has been deactivated!")
+
                 else:
-                    logging.error('%s', request.text)
-                    print(Fore.RED + f"   - license '{name}': {id} has not been deactivated! Check the logs.")
+                    if response and response['type'] and response['type'] == 'ForbiddenException':
+                        print(f"User '{username}' does not have sufficient privileges to do that!")
+                    else:
+                        logging.error('%s', request.text)
+                        print(Fore.RED + f"   - license '{name}': {id} has not been deactivated! Check the logs.")
 
 
     def post_license(self, url, token, username, password):
@@ -252,6 +259,11 @@ class License:
                     print(Fore.GREEN + f"\n   - new license '{response['product']}' has been posted successfully!")
                     self.put_license(url, token, username, password, license['LicenseID'])
                     time.sleep(0.15)
+
+                elif response['type'] and response['type'] == 'ForbiddenException':
+                    print(f"User '{username}' does not have sufficient privileges to do that!")
+                    return False
+
                 else:
                     logging.error('%s', request.text)
                     print(Fore.RED + f"\n   - new license has not been posted!")
@@ -281,12 +293,19 @@ class License:
         url_put_license:str = f"{url}/{self.__api_License}/active/{license_id}"
         payload = {}
         request = requests.put(url=url_put_license, headers=headers, data=payload, verify=False)
-        if request.status_code in (200, 201, 204,):
+        response = bool(request.text) if not request.text else request.json()
+
+        if request.status_code in (200, 201, 204):
             print(Fore.GREEN + f"   - license '{license_id}' has been activated successfully!")
             return True
+
         else:
-            logging.error('%s', request.text)
-            print(Fore.RED + f"   - error: license '{license_id}' has not been activated!")
+            if response and response['type'] and response['type'] == 'ForbiddenException':
+                print(f"User '{username}' does not have sufficient privileges to do that!")
+            else:
+                logging.error('%s', request.text)
+                print(Fore.RED + f"   - error: license '{license_id}' has not been activated!")
+
         return False
 
 
