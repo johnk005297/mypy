@@ -37,7 +37,7 @@ class K8S:
                           \n      kube ft --list                     display list of features         \
                           \n      kube ft [ft_name] [--on/--off]     turn on/off feature              \
                           \n        usage:                                                            \
-                          \n        kube ft Spatium --on                                              \
+                          \n          kube ft Spatium --on                                            \
                           \n                                                                          \
                           \n   Main                                                                   \
                           \n      q                                  exit"

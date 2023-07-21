@@ -9,32 +9,20 @@ class FeatureToggle:
 
     _api_GetFeatures:str = 'api/Features/GetFeatures'
     _api_Features:str    = 'api/Features'
-    # _api_enterpriseassetmanagementisenabled:str = 'api/Features/enterpriseassetmanagementisenabled'
-    # _api_documentworkflowtasksreport:str        = 'api/Features/documentworkflowtasksreport'
-    # _api_testfeature:str                        = 'api/Features/testfeature'
-    # _api_maintenanceplanning:str                = 'api/Features/maintenanceplanning'
-    # _api_graphdbstorage:str                     = 'api/Features/graphdbstorage'
-    # _api_spatium:str                            = 'api/Features/spatium'
-    # _api_constructioncontrol:str                = 'api/Features/constructioncontrol'
 
 
     def ft_menu(self):
         ''' Menu of FT options. '''
 
-        menu:str = "Feature Toggle                                                                                                                 \
-            \n      [docker/kube] ls features    \
-            \n      [docker/kube] ft [feature toggle name] --[on/off]                                                                      \
-            \n        usage:                                                                          \
-            \n          kube ft spatium --on      \
-            \n      docker ls features                                display list of features                                                     \
-            \n      docker spatium ft     --enable                    enable spatium feature toggle                                                \
-            \n      docker spatium ft     --disable                   disable spatium feature toggle                                               \
-            \n      docker enterprise ft  --enable                    enable enterprise feature toggle                                             \
-            \n      docker enterprise ft  --disable                   disable enterprise feature toggle                                            \
-            \n      docker maintenance ft --enable                    enable maintenance feature toggle                                            \
-            \n      docker maintenance ft --disable                   disable maintenance feature toggle                                           \
-            \n                                                                                                                                     \
-            \n   Main                                                                                                                              \
+        menu:str = "Feature Toggle                                                                                                                   \
+            \n        [docker/kube] ft [feature toggle name] --[on/off]                                                                              \
+            \n          usage:                                                                                                                       \
+            \n            kube ft spatium --on                                                                                                       \
+            \n            docker ft spatium --off                                                                                                    \
+            \n                                                                                                                                       \
+            \n        [docker/kube] ft --list                                 display the list of features                                           \
+            \n                                                                                                                                       \
+            \n   Main                                                                                                                                \
             \n      q                                                 exit"
 
 

@@ -294,6 +294,7 @@ class License:
         payload = {}
         request = requests.put(url=url_put_license, headers=headers, data=payload, verify=False)
         response = bool(request.text) if not request.text else request.json()
+        err_message:str = Fore.RED + f"   - error: license '{license_id}' has not been activated!"
 
         if request.status_code in (200, 201, 204):
             print(Fore.GREEN + f"   - license '{license_id}' has been activated successfully!")
@@ -301,10 +302,15 @@ class License:
 
         else:
             if response and response['type'] and response['type'] == 'ForbiddenException':
-                print(f"User '{username}' does not have sufficient privileges to do that!")
+                logging.error('%s', request.text)
+                print(f"\nUser '{username}' does not have sufficient privileges to do that!")
+            elif response and response['type'] and response['type'] == 'BadRequestException' and response['message'] == 'ServerIdDoesntMatch':
+                logging.error('%s', request.text)
+                print("\n   ServerID doesn't match!")
+                print(err_message)
             else:
                 logging.error('%s', request.text)
-                print(Fore.RED + f"   - error: license '{license_id}' has not been activated!")
+                print(err_message)
 
         return False
 

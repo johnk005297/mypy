@@ -148,9 +148,9 @@ class Auth:
         auth_request = requests.post(url=f"{url}/{self.__api_Auth_Login}", data=data, headers=self.headers, verify=False)
         response = auth_request.json()
         time.sleep(0.07)
-        '''  
-        Block is for checking authorization request. 
-        Correct response of /api/Auth/Login method suppose to return a .json with 'access_token' and 'refresh_token'. 
+        '''
+        Block is for checking authorization request.
+        Correct response of /api/Auth/Login method suppose to return a .json with 'access_token' and 'refresh_token'.
         '''
         log = f"ProviderID: {providerId}, response: {auth_request.status_code} [{username}/{password}]\n{auth_request.text}"
         if auth_request.status_code == 401:

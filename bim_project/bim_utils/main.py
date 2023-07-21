@@ -19,6 +19,7 @@ from help_menu import Help
 import postgre
 
 
+
 def main():
 
     AppMenu_main     = app_menu.AppMenu()
@@ -44,7 +45,6 @@ def main():
 
 
 
-
 # ---------------------------------------------------------
 #
 # ---------------------------------------------------------
@@ -54,7 +54,7 @@ def main():
         if not user_command:    # if nothing to check, loop over.
             continue
 
-        ''' Check user privileges for everything related in the tuple below. '''
+        # ''' Check user privileges for everything related in the tuple below. '''
         # if user_command in (
         #                  ['check_license']
         #                 ,['server_id']
@@ -96,7 +96,7 @@ def main():
             print(AppMenu_main._main_menu)
         elif user_command in (['quit'], ['connect_to_another_server']): # connect to another server isn't realized yet
 
-            ''' Delete created user with privileges. '''
+            # ''' Delete created user with privileges. '''
             # if License_main.privileges_granted:
 
             #     User_main.remove_system_role_from_user(url, Auth_superuser.token, initial_user['id'], initial_user['userName'], su_system_role_id)
@@ -181,9 +181,12 @@ def main():
 
             ''' =============================================================================== USER =============================================================================== '''
 
-        elif user_command == ['token']:
+        elif user_command == ['ptoken']:
             private_token = Auth_main.get_private_token(url, token)
             print(f"\n{private_token}")
+        elif user_command == ['token']:
+            user_access_token = Auth_main.get_user_access_token(url, username, password, Auth_main.providerId)
+            print(f"\n{user_access_token}")
         elif user_command == ['sh']:
             Tools.run_terminal_command()
         elif user_command == ['ls', '-l']:
@@ -323,10 +326,9 @@ if __name__ == '__main__':
     elif sys.argv[1] == '--help' and len(sys.argv) == 2:
         help = Help.options_menu(help)
     elif sys.argv[1] == '--sql-query':
-        sql = postgre.DB()
-        args = sys.argv[2:]
-        
-        sql.exec_query_from_file(*args)
+        main_local()
+
+
 
         
 

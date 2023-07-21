@@ -1,10 +1,25 @@
 #
 import psycopg2
 from getpass import getpass
-import datetime
+import argparse
+
+
+class Parser:
+
+    def __init__(self):
+        pass
+
+    def get_args(self):
+        ''' Test function to parse args. '''
+
+        parser = argparse.ArgumentParser()
+        parser.parse_args()
+
 
 class DB:
 
+    def __init__(self):
+        pass
 
     def exec_query(self):
 
@@ -39,14 +54,22 @@ class DB:
         # if not user:
         #     user:str     = input("Enter db user name: ")
         # filename=None, host=None, database=None, port=None, user=None, password=None
-        if not kwargs['password'] in kwargs:
-            password:str = getpass("Enter password for database user: ")
+
+
+        if not kwargs.get('password', False):
+            kwargs['password'] = getpass("Enter user's password for db user: ")
+
+        mandatory_args:list = ['host', 'db', 'port', 'username', 'password']
+        for arg in mandatory_args:
+            if arg not in kwargs.keys():
+                print(f"Forgot to provide {arg}!")
+                return False
 
         try:
             conn = psycopg2.connect(host=kwargs['host'],
-                                    database=kwargs['database'],
+                                    db=kwargs['db'],
                                     port=kwargs['port'],
-                                    user=kwargs['user'],
+                                    username=kwargs['username'],
                                     password=kwargs['password']
                                     )
 

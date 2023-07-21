@@ -2,6 +2,8 @@
 
 import argparse
 import mydocker
+import app_menu
+import postgre
 
 # def main_local():
 
@@ -28,22 +30,19 @@ import mydocker
 #     args = parser.parse_args()
 #     print(args)
 
-    
 
 
 
 
 
-import app_menu
-
-def main_local():
-
+def run_docker():
 
     Docker = mydocker.Docker()
     menu_main_local = app_menu.AppMenu()
 
     while True:
         user_command = menu_main_local.get_user_command()
+
         if not user_command:    # if nothing to check, loop over.
             continue
         elif isinstance(user_command, tuple) and user_command[0][0] == 'docker':
@@ -114,3 +113,24 @@ def main_local():
                 Docker.get_container_log(*containers_id)
 
 
+def run_sql():
+    
+    pg = postgre.DB()
+    pg.exec_query_from_file(host="myserver", db="bimeisterdb", port="10265", password="abc123")
+
+
+
+
+def main_local():
+    
+    run_sql()
+    
+
+    # if "condition for docker":
+    #     run_docker()
+
+    # elif "condition for sql":
+    #     run_sql()
+
+    # else:
+    #     pass

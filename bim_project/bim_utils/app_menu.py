@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    __VERSION__ = '1.38'
+    __VERSION__ = '1.38b'
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -42,7 +42,8 @@ class AppMenu:
                                 \n      rm files            clean bim_utils transfer files            \
                                 \n                                                                    \
                                 \n   User                                                             \
-                                \n      token               get user access token                     \
+                                \n      ptoken              get private token                         \
+                                \n      token               get user access token(Bearer)             \
                                 \n      sh                  run terminal command(current host)        \
                                 \n      ssh connect         run terminal command(remote host)         \
                                 \n      ls -l               list current folder content               \
@@ -105,6 +106,8 @@ class AppMenu:
 
         # User
         elif user_command == ['token']:
+            return user_command
+        elif user_command == ['ptoken']:
             return user_command
         elif user_command == ['sh']:
             return user_command
