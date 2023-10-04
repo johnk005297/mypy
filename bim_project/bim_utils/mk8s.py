@@ -5,13 +5,13 @@ from kubernetes.stream import stream
 from tools import Tools, File
 import json
 import base64
-# import logging
 import os
-import logging
+from log import Logs
 
 
 class K8S:
 
+    __logger = Logs().f_logger(__name__)
     
     def __init__(self, namespace:str=None):
         self.namespace = namespace
@@ -21,10 +21,10 @@ class K8S:
             self._check_k8s:bool = True
         except config.ConfigException as config_err:
             self._check_k8s:bool = False
-            # logging.error(config_err)
+            # self.__logger.error(config_err)
         except ApiException as client_api_err:
             self._check_k8s:bool = False
-            # logging.error(client_api_err)
+            # self.__logger.error(client_api_err)
         except:
             self._check_k8s:bool = False
 
@@ -52,7 +52,7 @@ class K8S:
         try:
             v1 = client.CoreV1Api()
         except ApiException as err:
-            logging.error(err)
+            self.__logger.error(err)
             print("Error occured. Check the logs.")
             return False
         return v1
@@ -114,7 +114,7 @@ class K8S:
                         passwd = decode.split()[string + 1].strip("\"")
 
         except ApiException as err:
-            logging.error(err)
+            self.__logger.error(err)
             return False
 
         # passwd = base64.b64decode(list(secret.values())[0]).decode('utf-8')
@@ -139,7 +139,12 @@ class K8S:
         exec_command:str = f"kubectl exec -n {self.namespace} {ft_pod} -- /bin/bash -c '{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN' 2> /dev/null > {tmp_file}"
         os.system(exec_command)
         file = File.read_file(os.getcwd(), tmp_file)
-        ft_token = json.loads(file)['Token']
+        try:
+            ft_token = json.loads(file)['Token']
+        except json.decoder.JSONDecodeError as err:
+            self.__logger.error(err)
+            print("No FT token was received. Check the logs!")
+            return False
         os.remove(tmp_file)
 
         self._ft_token = True if ft_token else False
