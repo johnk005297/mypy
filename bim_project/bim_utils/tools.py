@@ -2,7 +2,7 @@
 # Tool modules to work with folders and files
 import os
 import platform
-import logging
+# import logging
 import json
 import shutil
 import time
@@ -13,6 +13,7 @@ import zipfile
 from datetime import datetime
 import requests
 from prettytable import PrettyTable
+import logging
 
 
 class Folder:
@@ -20,8 +21,9 @@ class Folder:
     def create_folder(path, folder_name):
         try:
             if not os.path.isdir(path + '/' + folder_name):
-                os.mkdir(path + '/' + folder_name)
+                os.mkdir(path + '/' + folder_name)        
         except OSError as err:
+            print("ERROR in create folder function.")
             logging.error(err)
             return False
 
@@ -65,7 +67,7 @@ class Folder:
 class File:
 
     def read_file(path_to_file, filename):
-        ''' Read from text files. In .json case function returns a dictionary. Need to pass two arguments in str format: path and file name. '''
+        ''' Read from text files. In .json case function returns a dictionary. Need to pass two arguments in str format: a path and a file name. '''
         try:
             with open(f"{path_to_file}/{filename}", 'r', encoding='utf-8') as file:
                 if os.path.splitext(f'{path_to_file}/{filename}')[1] == '.json':    # checking extension of the file
@@ -169,6 +171,6 @@ class Tools:
         ''' Check user groups in linux. Function receives an argument which is a group name, and checks if there is such a group in the list. '''
 
         import grp
-        lst = [grp.getgrgid(g).gr_name for g in os.getgroups()]
+        lst = [grp.getgrgid(group).gr_name for group in os.getgroups()]
         return True if groups in lst else False
 

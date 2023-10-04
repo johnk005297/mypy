@@ -1,17 +1,19 @@
 #
 import docker
 from prettytable import PrettyTable
-from tools import Folder, Tools, File
+from tools import Folder, Tools
 import os
-import logging
 import json
+# import logging
+from log import Logs
 
 
 class Docker:
 
-    _commands:list = ['docker help', 'docker container ls', 'docker container ls -a', 'docker logs -i', 'docker logs']
+    __logger = Logs().f_logger(__name__)
 
     def __init__(self):
+
         try:
             self.__client           = docker.from_env()
             self._check_docker:bool = True
@@ -39,8 +41,9 @@ class Docker:
                           \n      docker logs -f --all                              get all containers logs in files                                             \
                           \n      docker logs -f <container_id, container_id, ...>  get logs in the file                                                         \
                           \n      docker logs -i <container_id>                     get logs from specific container interactively                               \
-                          \n                  --days(optional)                      exact period to get logs for. Not applicable with '-i' flag.                 \
-                          \n                  --tail(optional)                      amount of lines from the end of the log. Not applicable with '-i' flag.      \
+                          \n      <optional keys>:                                                                                                               \
+                          \n              --days(optional)                          exact period to get logs for. Not applicable with '-i' flag.                 \
+                          \n              --tail(optional)                          amount of lines from the end of the log. Not applicable with '-i' flag.      \
                           \n                                                                                                                                     \
                           \n   Feature Toggle                                                                                                                    \
                           \n      docker ft --list                                  display list of features                                                     \
@@ -105,7 +108,7 @@ class Docker:
             print("No such docker container.")
             return False
         except docker.errors.APIError as err:
-            logging.error(err)
+            self.__logger.error(err)
             print("Server error. Check the log.")
             return False
 
@@ -147,7 +150,7 @@ class Docker:
             print("No such docker container.")
             pass
         except docker.errors.APIError as err:
-            logging.error(err)
+            self.__logger.error(err)
             print("Server error. Check the log.")
             pass
         return True
@@ -176,7 +179,7 @@ class Docker:
                     print(folder_name + '/' + filename)
 
             except docker.errors.APIError as err:
-                logging.error(err)
+                self.__logger.error(err)
                 print("Server error. Check the log.")
 
             except:
@@ -236,9 +239,16 @@ class Docker:
         exec_command:str = f"{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN"
 
         ft_container = self.__client.containers.get(ft_containerId)
-        result = ft_container.exec_run(exec_command, stderr=False)
-        result = result[1].decode('utf-8')
-        ft_token = json.loads(result)['Token']  # json.loads performs a dictionary from the result var, and then ask for it's 'Token' key value.
+        get_ft = ft_container.exec_run(exec_command, stderr=False)
+        result = get_ft[1].decode('utf-8')
+        try:
+            ft_token = json.loads(result)['Token']  # json.loads performs a dictionary from the result var, and then ask for it's 'Token' key value.            
+            self.__logger.debug(ft_token)
+        except json.decoder.JSONDecodeError as err:
+            self.__logger.error(err)
+            print("No FT token was received. Check the logs!")
+            return False
+
 
         self._ft_token = True if ft_token else False
         return ft_token

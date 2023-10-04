@@ -4,13 +4,15 @@ import requests
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
-import logging
 import time
 import app_menu
 import auth
 import license
 from tools import File
 from tools import Tools
+from log import Logs
+
+
 
 class Export_data:
 
@@ -34,6 +36,9 @@ class Export_data:
     AppMenu                                        = app_menu.AppMenu()
     possible_request_errors                        = auth.Auth().possible_request_errors
     License                                        = license.License()
+    __logger                                       = Logs().f_logger(__name__)
+    # __start_connection                             = Logs().http_connect()
+    # __check_response                               = Logs().http_response()
 
 
     def __init__(self):
@@ -53,21 +58,22 @@ class Export_data:
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
         url_get_object_model:str = url + '/' + self.__api_Integration_ObjectModel_Export
         try:
-            request = requests.get(url_get_object_model, headers=headers, verify=False)
-            response = request.json()
+            response = requests.get(url_get_object_model, headers=headers, verify=False)
+            # self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+            data = response.json()
         except self.possible_request_errors as err:
-            logging.error(f"{err}\n{request.text}")
+            self.__logger.error(f"{err}\n{response.text}")
             print("Error: Couldn't export object model. Check the logs.")
             return False
 
         try:
             with open(f"{self._transfer_folder}/{self._object_model_folder}/{filename}", "w", encoding="utf-8") as json_file:
-                json.dump(response, json_file, ensure_ascii=False, indent=4)
-                logging.info(f"Object model has been exported. '{filename}' file is ready.")
+                json.dump(data, json_file, ensure_ascii=False, indent=4)
+                self.__logger.info(f"Object model has been exported. '{filename}' file is ready.")
                 if filename != 'object_model_import_server.json':
                     print(f"\n   - object model exported in '{filename}' file.")
         except (FileNotFoundError, OSError) as err:
-            logging.error(err)
+            self.__logger.error(err)
             print('Erorr occured. Check the logs.')
             return False
         return True
@@ -82,7 +88,7 @@ class Export_data:
                 with open(file_path, mode='w', encoding='utf-8'): pass
         except OSError as err:
             print(f"Error occured. Check the logs.")
-            logging.error("select_workflow_nodes function error:\n", err)
+            self.__logger.error("select_workflow_nodes function error:\n", err)
             return
 
         # This self.current_workflow_node_selection will only go further through the process of export. Import procedure will use 'self._selected_workflow_nodes_file' file.
@@ -128,7 +134,7 @@ class Export_data:
     #         request = requests.get(url=url_get_all_workflow_nodes, headers=headers, verify=False)
     #         response = request.json()
     #     except self.possible_request_errors as err:
-    #         logging.error(f"{err}\n{request.text}") 
+    #         self.__logger.error(f"{err}\n{request.text}") 
     #         print(f"Error: Couldn't export workFlow nodes. Check the logs.")
     #         return False
 
@@ -143,7 +149,7 @@ class Export_data:
     #             self.workflow_nodes[x['name']] = x['id']
 
     #     except OSError as err:
-    #         logging.error(err)
+    #         self.__logger.error(err)
     #         print('Error occured. Check the logs.')
     #         return False
     #     return True
@@ -156,15 +162,16 @@ class Export_data:
         url_get_all_workflow_nodes = url + '/' + self.__api_WorkFlowNodes
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
         try:
-            request = requests.get(url=url_get_all_workflow_nodes, headers=headers, verify=False)
-            response = request.json()
+            # self.__start_connection(url)
+            response = requests.get(url=url_get_all_workflow_nodes, headers=headers, verify=False)
+            data = response.json()
         except self.possible_request_errors as err:
-            logging.error(f"{err}\n{request.text}") 
+            self.__logger.error(f"{err}\n{response.text}") 
             print(f"Error: Couldn't export workFlow nodes. Check the logs.")
             return False
 
         # Creating a dictionary with all three nodes from the server in format: {"NodeName": "NodeId"}        
-        workflow_nodes:dict = {obj['name']: obj['id'] for obj in response}
+        workflow_nodes:dict = {obj['name']: obj['id'] for obj in data}
 
         return workflow_nodes
 
@@ -180,16 +187,17 @@ class Export_data:
                 url_get_workflows = f"{url}/{self.__api_WorkFlowNodes}/{nodeId}/children"
                 headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
                 try:
-                    request = requests.get(url_get_workflows, headers=headers, verify=False)
-                    response = request.json()
+                    # self.__logger.info(self.__start_connection(url))
+                    response = requests.get(url_get_workflows, headers=headers, verify=False)
+                    data = response.json()
                     time.sleep(0.1)
                 except self.possible_request_errors as err:
-                    logging.error(f"{err}\n{request.text}")
+                    self.__logger.error(f"{err}\n{response.text}")
                     return False
 
                 with open(f"{self._workflows_folder_path}/{nodeName}_workflows_export_server.json", 'w', encoding='utf-8') as json_file:
-                    json.dump(response, json_file, ensure_ascii=False, indent=4)       
-                logging.info(f"'{nodeName}_workflows_export_server.json' file is ready.")
+                    json.dump(data, json_file, ensure_ascii=False, indent=4)       
+                self.__logger.info(f"'{nodeName}_workflows_export_server.json' file is ready.")
             return True
 
 
@@ -204,16 +212,17 @@ class Export_data:
             workflow_data = File.read_file(f'{self._workflows_folder_path}', f'{nodeName}_workflows_export_server.json')
             for workflow in workflow_data['workFlows']:
                 url_export = f"{url}/api/Integration/WorkFlow/{workflow['id']}/Export"
-                request = requests.get(url=url_export, headers=headers, verify=False)
+                response = requests.get(url=url_export, headers=headers, verify=False)
+                # self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
                 print(f"   {count()}){nodeName}: {workflow['name']}")   # display the name of the process in the output
                 time.sleep(0.1)
                 try:
                     with open(f"{self._workflows_folder_path}/{workflow['id']}.zip", mode='wb') as zip_file, \
                          open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as wf_name_id:
-                         zip_file.write(request.content)
+                         zip_file.write(response.content)
                          wf_name_id.write("{0}: {1}\n".format(workflow['name'], workflow['id']))
                 except OSError as err:
-                    logging.error(err)
+                    self.__logger.error(err)
                     continue
 
         return True
@@ -229,9 +238,10 @@ class Export_data:
             workflow_data = File.read_file(self._transfer_folder + '/' + self._workflows_folder, node)
             for line in workflow_data['workFlows']:
                 url_get_workflow_xml_export = f"{url}/{self.__api_Attachments}/{line['attachmentId']}"
-                request = requests.get(url_get_workflow_xml_export, headers=headers, verify=False)                
+                response = requests.get(url_get_workflow_xml_export, headers=headers, verify=False)
+                # self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
                 with open(f"{self._transfer_folder}/{self._workflows_folder}/{line['originalId']}.xml", 'wb') as file:
-                    file.write(request.content)
+                    file.write(response.content)
                 time.sleep(0.15)
         return
 
@@ -246,7 +256,7 @@ class Export_data:
         workFlow_id_bimClass_id_export: list = []  # temp list to store data
         if not os.path.isfile(f"{self._transfer_folder}/{self._workflows_folder}/{self._exported_workflows_list}"):
             with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._exported_workflows_list}", 'w', encoding='utf-8') as file:
-                file.write('Workflows: name and Id\n---------------------------------\n')            
+                file.write('Workflows: name and Id\n---------------------------------\n')
 
         nodes = ' '.join(self.current_workflow_node_selection).replace('Draft', self._workflows_draft_file).replace('Archived', self._workflows_archived_file).replace('Active', self._workflows_active_file).split()
         for node in nodes:
@@ -258,15 +268,16 @@ class Export_data:
             for workflow in workflow_data['workFlows']:
                 print(f"     {workflow['name']}")   # display the name of the process in the output
                 url_get_workFlowId_and_bimClassId = f"{url}/{self.__api_WorkFlows}/{workflow['originalId']}/BimClasses"
-                request = requests.get(url_get_workFlowId_and_bimClassId, headers=headers, verify=False)
-                response = request.json()
+                response = requests.get(url_get_workFlowId_and_bimClassId, headers=headers, verify=False)
+                # self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+                data = response.json()
 
                 with open(f"{self._transfer_folder}/{self._workflows_folder}/{workflow['originalId']}.json", 'w', encoding='utf-8') as file:
-                    json.dump(response, file, ensure_ascii=False, indent=4)
+                    json.dump(data, file, ensure_ascii=False, indent=4)
 
                 # write list with active workFlows BimClasses ID in format [workFlow_id, bimClass_id]
                 workFlow_id_bimClass_id_export.append(workflow['originalId'])
-                workFlow_id_bimClass_id_export.append(response[0]['originalId'])
+                workFlow_id_bimClass_id_export.append(data[0]['originalId'])
 
                 # saving processes name with corresponding Id
                 with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._exported_workflows_list}", 'a', encoding='utf-8') as file:
@@ -286,7 +297,7 @@ class Export_data:
                 with open(f"{self._transfer_folder}/{self._workflows_folder}/{self._workflowID_bimClassID_file}", 'a', encoding='utf-8') as file:
                     json.dump(workFlow_id_bimClass_id_export, file, ensure_ascii=False, indent=4)
             
-        logging.info("Mapping between workflow_ID and bimClass_ID: done. 'workFlow_id_bimClass_id_export.json' file is ready.")
+        self.__logger.info("Mapping between workflow_ID and bimClass_ID: done. 'workFlow_id_bimClass_id_export.json' file is ready.")
         return True
 
 
@@ -326,14 +337,15 @@ class Export_data:
 
                 url_get_workflows = f"{url}/{self.__api_WorkFlowNodes}/{id}/children"
                 try:
-                    request = requests.get(url_get_workflows, headers=headers, verify=False)
-                    response = request.json()
+                    response = requests.get(url_get_workflows, headers=headers, verify=False)
+                    # self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+                    data = response.json()
                 except self.possible_request_errors as err:
-                    logging.error(f"{err}\n{request.text}")
-                if not response['workFlows']:
+                    self.__logger.error(f"{err}\n{response.text}")
+                if not data['workFlows']:
                     print(f'   No workflows in {node_name}')
                     continue
-                for workflow in response['workFlows']:
+                for workflow in data['workFlows']:
                     result = f"{node_name}: {workflow['name']}  id: {workflow['id']}"
                     time.sleep(0.05)
                     print(f'   {count()}){result}')
@@ -374,28 +386,31 @@ class Export_data:
 
             url_get_workflows = f"{url}/{self.__api_WorkFlowNodes}/{id}/children"
             try:
-                request = requests.get(url_get_workflows, headers=headers, verify=False)
-                response = request.json()
+                response = requests.get(url_get_workflows, headers=headers, verify=False)
+                data = response.json()
             except self.possible_request_errors as err:
-                logging.error(f"{err}\n{request.text}")
+                self.__logger.error(f"{err}\n{response.text}")
 
-            if not response['workFlows']:
+            if not data['workFlows']:
                 print(f'No workflows in {node_name}')
                 continue
-            for workflow in response['workFlows']:
+            for workflow in data['workFlows']:
                 workflows_to_delete.append([node_name, workflow['name'], workflow['id']])
 
         for number, workflow in enumerate(workflows_to_delete, 1):
+
             try:
                 url_delete_workflow = f"{url}/{self.__api_WorkFlows}/{workflow[2]}"
-                request = requests.delete(url_delete_workflow, headers=headers, verify=False)
-                if request.status_code != 204:
-                    print(f"Error: {workflow[0]} wasn't removed. Status code: {request.status_code}. Check the log.")
-                    logging.error(f"{workflow[0]}: {request.status_code}\n{request.text}")
-                logging.info(f'Deleted workflow: {workflow[0]}: {workflow[2]}')
+                response = requests.delete(url_delete_workflow, headers=headers, verify=False)
+                # self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+                if response.status_code != 204:
+                    print(f"Error: {workflow[0]} wasn't removed. Status code: {response.status_code}. Check the log.")
+                    self.__logger.error(f"{workflow[0]}: {response.status_code}\n{response.text}")
+                # self.__logger.info(f'{workflow[0]}: "{workflow[1]}"')
                 print(f'{number}) {workflow[0]}: {workflow[1]}')
             except self.possible_request_errors as err:
-                logging.error(f"{err}\n{request.text}")
+                self.__logger.error(f"{err}\n{response.text}")
+
         workflows_to_delete.clear()
         return True
 

@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    __VERSION__ = '1.38b'
+    __VERSION__ = '1.39'
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -33,13 +33,13 @@ class AppMenu:
                                 \n      drop uo -h          info about UserObjects table              \
                                 \n                                                                    \
                                 \n   Transfer data                                                    \
-                                \n      export om           export object model                       \
-                                \n      export wf           export workflows                          \
-                                \n      import om           import object model                       \
-                                \n      import wf           import workflows                          \
-                                \n      list wf             display workflows(name: id)               \
-                                \n      delete wf           delete workflows                          \
-                                \n      rm files            clean bim_utils transfer files            \
+                                \n      om export           export object model                       \
+                                \n      om import           import object model                       \
+                                \n      workflow export     export workflows                          \
+                                \n      workflow import     import workflows                          \
+                                \n      workflow ls         display workflows(name: id)               \
+                                \n      workflow remove     delete workflows                          \
+                                \n      files remove        clean bim_utils transfer files            \
                                 \n                                                                    \
                                 \n   User                                                             \
                                 \n      ptoken              get private token                         \
@@ -58,14 +58,21 @@ class AppMenu:
                                 \n   Main                                                             \
                                 \n      m                   print this menu                           \
                                 \n      q                   exit"
-                                # \n   c  connect to another server                    \  # Need to figure out the way to add connect to another server without re-running the script
+                                # \n   Reports                                                          \
+                                # \n      report ls           get a list of current reports             \
+                                # \n      report upload       upload report template                    \
+                                # \n      report test         test option(do not use)                   \
         return _main_menu
 
 
     def get_user_command(self):
         ''' Define what the user would like to do '''
 
-        user_command = input("\nCommand (m for help): ").strip().lower().split()
+        try:
+            user_command = input("\nCommand (m for help): ").strip().lower().split()
+        except KeyboardInterrupt:
+            print('\nInterrupted by the user.')
+            return ['quit']
 
         if not user_command:
             return False
@@ -89,19 +96,19 @@ class AppMenu:
             return user_command
         
         # Transfer data
-        elif user_command == ['export', 'om']:
+        elif user_command == ['om', 'export']:
             return user_command
-        elif user_command == ['export', 'wf']:
+        elif user_command == ['workflow', 'export']:
             return user_command
-        elif user_command == ['import', 'om']:
+        elif user_command == ['om', 'import']:
             return user_command
-        elif user_command == ['import', 'wf']:
+        elif user_command == ['workflow', 'import']:
             return user_command
-        elif user_command == ['list', 'wf']:
+        elif user_command == ['workflow', 'ls']:
             return user_command
-        elif user_command == ['delete', 'wf']:
+        elif user_command == ['workflow', 'remove']:
             return user_command
-        elif user_command == ['rm', 'files']:
+        elif user_command == ['files', 'remove']:
             return user_command
 
         # User
@@ -156,6 +163,14 @@ class AppMenu:
 
             elif len(user_command) == 4 and user_command[1] == 'ft':
                 return (user_command, 'kube set featureToggle')
+        
+        # Reports
+        elif user_command == ['report', 'ls'] and len(user_command) == 2:
+            return(user_command, 'report ls')
+        elif user_command == ['report', 'upload'] and len(user_command) == 2:
+            return(user_command, 'report upload')
+        elif user_command == ['report', 'test'] and len(user_command) == 2:
+            return(user_command, 'report test')
 
 
         # Main

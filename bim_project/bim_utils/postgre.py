@@ -12,8 +12,13 @@ class Parser:
     def get_args(self):
         ''' Test function to parse args. '''
 
+        # parser = argparse.ArgumentParser()
+        # parser.parse_args()
         parser = argparse.ArgumentParser()
-        parser.parse_args()
+        parser.add_argument("myvalue", help="Printing the value.")
+
+        args = parser.parse_args()
+        print(args.myvalue)
 
 
 class DB:

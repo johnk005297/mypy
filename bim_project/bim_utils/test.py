@@ -1,6 +1,7 @@
 #
 
 class Test:
+
     def get_user_command(self):
             ''' Define what the user would like to do '''
 
@@ -109,7 +110,5 @@ class Test:
                     return False
             
 
-T = Test()
 
 
-T.get_user_command()

@@ -39,7 +39,7 @@ class User:
             уже наполненным какими-то данными может привести к ошибкам. Чтобы уберечь пользователя от этого, необходимо очищать таблицу.
         '''
         
-        headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
+        headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
         try:
             user_obj_request = requests.delete(url=f"{url}/{self.__api_UserObjects_all}", headers=headers, verify=False)
             if user_obj_request.status_code == 204:
@@ -86,7 +86,7 @@ class User:
 
         user_system_roles_id: list = []  # list to collect user's system roles Id.
 
-        headers = {'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
+        headers = {'Content-type':'text/plain', 'Authorization': f"Bearer {token}"}
         request = requests.get(url=f"{url}/{self.__api_Users}", headers=headers, verify=False)
         response = request.json()
         if  request.status_code == 500:

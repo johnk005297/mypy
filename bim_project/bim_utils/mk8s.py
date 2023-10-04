@@ -7,13 +7,14 @@ import json
 import base64
 # import logging
 import os
+import logging
 
 
 class K8S:
 
     
     def __init__(self, namespace:str=None):
-        self.namespace      = namespace
+        self.namespace = namespace
         self._ft_token:bool = False
         try:
             config.load_kube_config()
@@ -51,7 +52,7 @@ class K8S:
         try:
             v1 = client.CoreV1Api()
         except ApiException as err:
-            # logging.error(err)
+            logging.error(err)
             print("Error occured. Check the logs.")
             return False
         return v1
@@ -64,34 +65,33 @@ class K8S:
         pods = v1.list_pod_for_all_namespaces(watch=False)
 
         possible_ft_pods:list = ['redis', 'keydb']
-        count = Tools.counter()
+        counter = Tools.counter()
         for item in pods.items:
-            count()
+            count = counter()
             # if item.metadata.namespace == self.namespace and (item.spec.containers[0].name == 'redis' or item.spec.containers[0].name == 'keydb') and item.status.phase == 'Running':
             if item.metadata.namespace == self.namespace and item.spec.containers[0].name in possible_ft_pods and item.status.phase == 'Running':
                 ft_pod:str = item.metadata.name
                 return ft_pod
-            elif count() == len(pods.items):
-                print("No feature toggle pod was found. Check for needed pod.")        
+            elif count == len(pods.items):
+                print("No feature toggle pod was found. Check for needed pod.")
         return False
 
 
     def get_ft_secret(self):
         ''' Get a list of all secrets in the cluster. '''
 
-
         v1 = self.get_CoreV1Api()
         secrets_list:list = v1.list_namespaced_secret(self.namespace).items  # Getting a list of all the secrets
 
         # Getting a needed secret for FT activation
         possible_ft_secrets:list = ['redis', 'keydb']
-        count = Tools.counter()
+        counter = Tools.counter()
         for item in secrets_list:
-            count()
+            count = counter()
             secret = item.metadata.name.split('-')
             if secret[0] == self.namespace and secret[1] in possible_ft_secrets:
                 return item.metadata.name
-            elif count() == len(secrets_list):
+            elif count == len(secrets_list):
                 return False
 
 
@@ -114,7 +114,7 @@ class K8S:
                         passwd = decode.split()[string + 1].strip("\"")
 
         except ApiException as err:
-            # logging.error(err)
+            logging.error(err)
             return False
 
         # passwd = base64.b64decode(list(secret.values())[0]).decode('utf-8')

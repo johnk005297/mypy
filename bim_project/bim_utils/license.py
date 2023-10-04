@@ -5,7 +5,6 @@ import base64
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
-import logging
 import time
 import binascii
 from colorama import init, Fore
@@ -14,6 +13,10 @@ from datetime import date
 from datetime import datetime
 import auth
 from tools import Tools
+# import logging
+from log import Logs
+
+
 
 
 class License:
@@ -24,6 +27,10 @@ class License:
 
     # This SUID and UPP licenses are actually two parts of one license. Have know idea why it was designed that way.
     __UPP_SUID_lic:tuple = ('Платформа BIMeister, Bimeister УПП', 'Платформа BIMeister, Bimeister СУИД')
+    __logger                      = Logs().f_logger(__name__)
+    __start_connection            = Logs().http_connect()
+    __check_response              = Logs().http_response()
+    start_connection = Logs().http_connect()
     possible_request_errors:tuple = auth.Auth().possible_request_errors
     privileges_granted:bool = False
     privileges_checked:bool = False
@@ -52,7 +59,7 @@ class License:
 
 
     def read_license_token(self):
-        ''' Check if there is a license.lic file, or ask user for token. Function returns a list of dictionaries with license data, if everything is correct. '''
+        ''' Check if there is a license.lic file, or ask user for a token. Function returns a list of dictionaries with license data, if everything is correct. '''
 
         data = input('Enter the filename(should have .lic extension) containing token or token itself: ').strip()
         if len(data) < 4:
@@ -66,7 +73,7 @@ class License:
 
         if is_file and not is_file_in_place:
             no_file_message:str = f"Error: No such file '{data}' in the current folder. Check for it."
-            logging.error(no_file_message)
+            self.__logger.error(no_file_message)
             print(no_file_message)
             return False
 
@@ -91,11 +98,11 @@ class License:
                 list_of_lic_data.append(self.decode_base64(data))
                 list_of_lic_data[0]['base64_token'] = data
             except binascii.Error:
-                logging.error(f"Binascii error with decoding the string: {binascii.Error}")
+                self.__logger.error(f"Binascii error with decoding the string: {binascii.Error}")
                 print(err_message)
                 return False
             except ValueError:
-                logging.error(f"Value error with decoding the string: {ValueError}")
+                self.__logger.error(f"Value error with decoding the string: {ValueError}")
                 print(err_message)
                 return False
         
@@ -119,30 +126,32 @@ class License:
         ''' Get all the licenses in the system '''
 
         url_get_licenses:str = f'{url}/{self.__api_License}'
-        headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
+        headers = {'accept': '*/*', 'Content-type':'text/plain', 'Authorization': f"Bearer {token}"}
         payload = {
                     "username": username,
                     "password": password
                  }
         try:
-            request = requests.get(url=url_get_licenses, data=payload, headers=headers, verify=False)
-            request.raise_for_status()
+            self.__logger.info(self.__start_connection(url))
+            response = requests.get(url=url_get_licenses, data=payload, headers=headers, verify=False)
+            self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+            response.raise_for_status()
         except self.possible_request_errors as err:
-            logging.error(f"{err}\n{request.text}")
+            self.__logger.error(f"{err}\n{response.text}")
 
         # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
-        response = request.json()
-        return response    
+        return response.json()
 
 
     def get_license_status(self, url, token, username, password):
         ''' Check if there is an active license. Return True/False. '''
 
+        self.__logger.info("Check license status...")
         licenses = self.get_licenses(url, token, username, password)
         current_date:str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
         for license in licenses:
             if license['activeUsers'] > license['activeUsersLimit'] and license['isActive'] and license['until'] > current_date:
-                logging.error(f"Users limit was exceeded! Active users: {license['activeUsers']}. Users limit: {license['activeUsersLimit']}")
+                self.__logger.error(f"Users limit was exceeded! Active users: {license['activeUsers']}. Users limit: {license['activeUsersLimit']}")
                 print("Users limit is exceeded!")
                 return False
             elif license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000' and license['until'] > current_date:
@@ -156,11 +165,13 @@ class License:
 
     def get_serverID(self, url, token):
 
-        headers = {'accept': '*/*', 'Content-type':'text/plane', 'Authorization': f"Bearer {token}"}
+        headers = {'accept': '*/*', 'Content-type':'text/plain', 'Authorization': f"Bearer {token}"}
         url_get_serverId:str = url + '/' + self.__api_License_serverId
-        request = requests.get(url=url_get_serverId, data="", headers=headers, verify=False)
+        self.__logger.info(self.__start_connection(url))
+        response = requests.get(url=url_get_serverId, data="", headers=headers, verify=False)
+        self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
         message:str = "Current user don't have sufficient privileges."
-        return request.text if request.status_code == 200 else message
+        return response.text if response.status_code == 200 else message
 
 
     def display_licenses(self, url, token, username, password):
@@ -192,13 +203,14 @@ class License:
                         print( f"   - {key}: {Fore.GREEN + str(value)}" if value and key == 'isActive' else f"   - {key}: {value}" )
 
         else:
-            logging.error("Unpredictable behaviour(license status) in License class.")
+            self.__logger.error("Unpredictable behaviour(license status) in License class.")
 
 
     def delete_license(self, url, token, username, password):
         '''   Delete active license, if there is one.   '''    
 
-        headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
+        headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
+        self.__logger.info("Delete license:")
         licenses = self.get_licenses(url, token, username, password)
         active_licenses = dict()
         ''' 
@@ -214,34 +226,37 @@ class License:
         else:
             for lic in self.__UPP_SUID_lic:
                 if active_licenses.get(lic):
-                    request = requests.delete(url=f"{url}/{self.__api_License}/{active_licenses[lic]}", headers=headers, verify=False)
-                    if request.status_code in (200, 201, 204):
+                    response = requests.delete(url=f"{url}/{self.__api_License}/{active_licenses[lic]}", headers=headers, verify=False)
+                    self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+                    if response.status_code in (200, 201, 204):
                         print(Fore.GREEN + f"   - license '{lic}': {active_licenses.pop(lic)} has been deactivated!")
                     else:
-                        logging.error('%s', request.text)
+                        self.__logger.error('%s', response.text)
                         print(Fore.RED + f"   - license '{lic}' has not been deactivated! Check the logs.")
 
             if not active_licenses:
                 return
             for name, id in active_licenses.items():
                 url_delete_license = f"{url}/{self.__api_License}/{id}"
-                request = requests.delete(url=url_delete_license, headers=headers, verify=False)
-                response = bool(request.text) if not request.text else request.json()
+                response = requests.delete(url=url_delete_license, headers=headers, verify=False)
+                self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+                response_data = bool(response.text) if not response.text else response.json()
 
-                if request.status_code in (200, 201, 204):
+                if response.status_code in (200, 201, 204):
                     print(Fore.GREEN + f"   - license '{name}': {id} has been deactivated!")
 
                 else:
-                    if response and response['type'] and response['type'] == 'ForbiddenException':
+                    if response_data and response_data['type'] and response_data['type'] == 'ForbiddenException':
                         print(f"User '{username}' does not have sufficient privileges to do that!")
                     else:
-                        logging.error('%s', request.text)
+                        self.__logger.error('%s', response.text)
                         print(Fore.RED + f"   - license '{name}': {id} has not been deactivated! Check the logs.")
 
 
     def post_license(self, url, token, username, password):
 
-        headers = {'accept': 'text/plane', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
+        headers = {'accept': 'text/plain', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
+        self.__logger.info("Posting a license:")
         licenses_id = tuple(x.get('licenseID', False) for x in self.get_licenses(url, token, username, password))
         new_license_data:list = self.read_license_token()
         if not new_license_data:
@@ -252,20 +267,22 @@ class License:
                 self.put_license(url, token, username, password, license['LicenseID'])
             else:
                 data = json.dumps(license['base64_token'])
-                request = requests.post(url=f'{url}/{self.__api_License}', headers=headers, data=data, verify=False)
-                response = request.json()
+                response = requests.post(url=f'{url}/{self.__api_License}', headers=headers, data=data, verify=False)
+                self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+                response_data = response.json()
                 time.sleep(0.15)
-                if request.status_code in (200, 201, 204,):
-                    print(Fore.GREEN + f"\n   - new license '{response['product']}' has been posted successfully!")
+                if response.status_code in (200, 201, 204,):
+                    print(Fore.GREEN + f"\n   - new license '{response_data['product']}' has been posted successfully!")
                     self.put_license(url, token, username, password, license['LicenseID'])
+                    self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
                     time.sleep(0.15)
 
-                elif response['type'] and response['type'] == 'ForbiddenException':
+                elif response_data['type'] and response_data['type'] == 'ForbiddenException':
                     print(f"User '{username}' does not have sufficient privileges to do that!")
                     return False
 
                 else:
-                    logging.error('%s', request.text)
+                    self.__logger.error('%s', response.text)
                     print(Fore.RED + f"\n   - new license has not been posted!")
                     return False
         
@@ -274,7 +291,7 @@ class License:
 
     def put_license(self, url:str, token:str, username, password, license_id:str):
 
-        headers = {'accept': '*/*', 'Content-type': 'text/plane', 'Authorization': f"Bearer {token}"}
+        headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
         # all the active licenses will be deactivated, if user forgot to do it, and if there are any active
         # for license in self.get_licenses(url, token, username, password):
         #     if license['isActive'] == True and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
@@ -283,6 +300,7 @@ class License:
         #         self.delete_license(url, token, username, password)
         #         pass
         check_id:bool = False
+        self.__logger.info("Putting a license:")
         for license in self.get_licenses(url, token, username, password):
             if license['licenseID'] == license_id:
                 check_id = True
@@ -292,24 +310,25 @@ class License:
             return False
         url_put_license:str = f"{url}/{self.__api_License}/active/{license_id}"
         payload = {}
-        request = requests.put(url=url_put_license, headers=headers, data=payload, verify=False)
-        response = bool(request.text) if not request.text else request.json()
+        response = requests.put(url=url_put_license, headers=headers, data=payload, verify=False)
+        self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+        response_data = bool(response.text) if not response.text else response.json()
         err_message:str = Fore.RED + f"   - error: license '{license_id}' has not been activated!"
 
-        if request.status_code in (200, 201, 204):
+        if response.status_code in (200, 201, 204):
             print(Fore.GREEN + f"   - license '{license_id}' has been activated successfully!")
             return True
 
         else:
-            if response and response['type'] and response['type'] == 'ForbiddenException':
-                logging.error('%s', request.text)
+            if response_data and response_data['type'] and response_data['type'] == 'ForbiddenException':
+                self.__logger.error('%s', response.text)
                 print(f"\nUser '{username}' does not have sufficient privileges to do that!")
-            elif response and response['type'] and response['type'] == 'BadRequestException' and response['message'] == 'ServerIdDoesntMatch':
-                logging.error('%s', request.text)
+            elif response_data and response_data['type'] and response_data['type'] == 'BadRequestException' and response_data['message'] == 'ServerIdDoesntMatch':
+                self.__logger.error('%s', response.text)
                 print("\n   ServerID doesn't match!")
                 print(err_message)
             else:
-                logging.error('%s', request.text)
+                self.__logger.error('%s', response.text)
                 print(err_message)
 
         return False

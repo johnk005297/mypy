@@ -3,12 +3,14 @@ import requests
 from prettytable import PrettyTable
 from colorama import init, Fore
 init(autoreset=True)
-
+# import logging
+from log import Logs
 
 class FeatureToggle:
 
     _api_GetFeatures:str = 'api/Features/GetFeatures'
     _api_Features:str    = 'api/Features'
+    __logger             = Logs().f_logger(__name__)
 
 
     def ft_menu(self):
@@ -43,7 +45,7 @@ class FeatureToggle:
                 table.add_row([key.capitalize(), Fore.GREEN + str(value) + Fore.RESET if value else Fore.RED + str(value) + Fore.RESET])
         else:
             print(f"Error {request.status_code} occurred during GetFeatures request. Check the logs.")
-            # logging.error(request.text)
+            self.__logger.error(request.text)
             return False
         print(table)
 
@@ -61,6 +63,6 @@ class FeatureToggle:
             print(f"Result: {feature} {result} successfully.")
             return True
         else:
-            # logging.error(request.status_code, '\n', request.text)
+            self.__logger.error(request.status_code, '\n', request.text)
             print(f"Result: {feature} wasn't enabled. Check the log. Error: {request.status_code}.")
             return False

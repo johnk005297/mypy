@@ -4,7 +4,6 @@ import requests
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
-import logging
 import time
 import shutil
 import export_data
@@ -12,6 +11,8 @@ from tools import File
 from tools import Tools
 import auth
 import license
+# import logging
+from log import Logs
 
 
 class Import_data:
@@ -28,7 +29,7 @@ class Import_data:
     Export_data                               = export_data.Export_data()
     License                                   = license.License()
     possible_request_errors                   = auth.Auth().possible_request_errors
-
+    __logger                                  = Logs().f_logger(__name__)
 
     def __init__(self):
         self.export_serverId = None
@@ -74,22 +75,22 @@ class Import_data:
             id = workflow.split(':')[1].strip()
             try:
                 with open(f'{self._transfer_folder}/{self._workflows_folder}/{id}.zip', mode='rb') as file:
-                    post_request = requests.post(url=url_import, headers=headers, files={'file': file}, verify=False)
+                    response = requests.post(url=url_import, headers=headers, files={'file': file}, verify=False)
                     time.sleep(0.1)
 
-                    if post_request.status_code != 200:
-                        print(f"  {count()}) ERROR {post_request.status_code} >>> {name}, id: {id}.")
-                        logging.error(post_request.text)
+                    if response.status_code != 200:
+                        print(f"  {count()}) ERROR {response.status_code} >>> {name}, id: {id}.")
+                        self.__logger.error(response.text)
                         continue
 
-                    logging.info(post_request.status_code)
+                    self.__logger.debug(f'{response.request.method} "{name}: {id}" {response.status_code}')
                     print(f"   {count()}) {name}.")   # display the name of the process in the output
 
             except FileNotFoundError:
                 print(f"Process not found: {name}")
                 continue
             except:
-                logging.error()
+                self.__logger.error()
                 continue
 
         return
@@ -125,7 +126,7 @@ class Import_data:
                     post_request = requests.post(url=url_create_workflow_import, data=post_payload, headers=headers_import, verify=False)  # verify=False to eliminate SSL check which causes Error
                     post_response = post_request.json()
                 except self.possible_request_errors as err:
-                    logging.error(f"{err}\n{post_request.text}")
+                    self.__logger.error(f"{err}\n{post_request.text}")
                     return False
 
                 bimClass_id = self.get_BimClassId_of_current_process(post_response['originalId'], url, token)
@@ -153,8 +154,8 @@ class Import_data:
                     requests.put(url=f"{url_create_workflow_import}/{post_response['originalId']}", data=changed_put_payload, headers=headers_import, verify=False)  # /api/WorkFlows/{workFlowOriginalId}
                     time.sleep(0.2)
                 except self.possible_request_errors as err:
-                    logging.error(err)
-                    logging.debug("Workflow name: " + workflow["name"])
+                    self.__logger.error(err)
+                    self.__logger.debug("Workflow name: " + workflow["name"])
                     print(f"Error with the workflow {workflow['name']} import. Check the logs.")
                     return False
                 '''  END OF PUT REQUEST  '''
@@ -166,7 +167,7 @@ class Import_data:
                 try:           
                     post_xml_request = requests.post(url=f"{url_create_workflow_import}/{post_response['originalId']}/Diagram?contentType=file", headers=headers_for_xml_import, data=payload, files=files, verify=False)
                 except self.possible_request_errors as err:
-                    logging.error(f"{err}\n{post_xml_request.text}")
+                    self.__logger.error(f"{err}\n{post_xml_request.text}")
 
                 print("   - " + post_response['name'] + " " + ('' if post_xml_request.status_code == 200 else "  --->  error"))
                 time.sleep(0.2)
@@ -243,10 +244,10 @@ class Import_data:
                     File.replace_str_in_file(modified_OM_file, modified_OM_file, value_from_export_json, insert_data[key][key_from_export_json])
                     time.sleep(0.1)
                 except (KeyError, ValueError, TypeError, UnicodeError, UnicodeDecodeError, UnicodeEncodeError, SyntaxError) as err:
-                    logging.error(err)
+                    self.__logger.error(err)
                     return False
 
-        logging.info(f"Preparation object model file is finished. '{self.Export_data._object_model_file}' was altered into a '{self._modified_object_model_file}' file.")
+        self.__logger.info(f"Preparation object model file is finished. '{self.Export_data._object_model_file}' was altered into a '{self._modified_object_model_file}' file.")
         print("\n   - preparing object model file:        done")
         return True
 
@@ -269,7 +270,7 @@ class Import_data:
                 json.dump(modified_obj_model_json, file, ensure_ascii=False, indent=4)
             if count > 0:
                 print(f"   - corrupted 'defaultValues':       {count}")
-            logging.info(f"Fixing defaultValues in '{self._modified_object_model_file}' file is finished. Corrupted defaulValues: {count}")
+            self.__logger.info(f"Fixing defaultValues in '{self._modified_object_model_file}' file is finished. Corrupted defaulValues: {count}")
             return True
         else:
             return False
@@ -285,12 +286,12 @@ class Import_data:
         try:
             post_request = requests.post(url=url_post_object_model, data=data.encode("utf-8"),  headers=headers_import, verify=False)
         except self.possible_request_errors as err:
-            logging.error(err)
+            self.__logger.error(err)
             print("Error with POST object model. Check the logs.")
             return False
 
         if post_request.status_code not in (200, 201, 204):
-            logging.error(f"\n{post_request.text}")
+            self.__logger.error(f"\n{post_request.text}")
             print("   - post object model:                  error ", post_request.status_code)
             return False
         else:

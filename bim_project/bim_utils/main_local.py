@@ -1,7 +1,7 @@
 #
 
 import argparse
-import mydocker
+import mdocker
 import app_menu
 import postgre
 

@@ -11,11 +11,11 @@ import export_data
 import import_data
 from tools import Folder, File, Tools
 import featureToggle
-import logs # activates with import
-import mydocker
-import myk8s
+import mdocker
+import mk8s
 from main_local import main_local
 from help_menu import Help
+from reports import Reports
 import postgre
 
 
@@ -23,27 +23,38 @@ import postgre
 def main():
 
     AppMenu_main     = app_menu.AppMenu()
-    Auth_main        = auth.Auth()
+    Auth             = auth.Auth()
     User_main        = user.User()
     License_main     = license.License()
     Export_data_main = export_data.Export_data()
     Import_data_main = import_data.Import_data()
-    Docker           = mydocker.Docker()
-    K8s              = myk8s.K8S(namespace='bimeister')
+    Docker           = mdocker.Docker()
+    K8s              = mk8s.K8S(namespace='bimeister')
     FT               = featureToggle.FeatureToggle()
+    Repo             = Reports()
 
 
 
     AppMenu_main.welcome_info_note()
-    if not Auth_main.establish_connection():  # if connection was not established, do not continue
+    if not Auth.establish_connection():  # if connection was not established, do not continue
         return False
 
-    url, token, username, password = Auth_main.url, Auth_main.token, Auth_main.username, Auth_main.password
+    url, token, username, password = Auth.url, Auth.token, Auth.username, Auth.password
 # ---------------------------------------------------------
 #   TEST ZONE
 # ---------------------------------------------------------
 
 
+    # import re
+    # a = r"~ E'^\\\\d+$' /*проверка, что первые"
+    # s = r'"Name": "Филиал ООО \"Газпром инвест\""'
+    # # print(re.sub(r'E\'\^\\\\\\d+$', r'123', a))
+    # print(a)
+
+    # # print(re.findall(r'[\\]"', s))
+    # # print(re.sub(r'^[^\\]"', r'\\\\\\\\\\\\\"', s))
+    # # print(re.sub(r'[\\]"', r'\\\\\\\\\\\\\"', s))   # replace \" with \\\\\\\"
+    # return
 
 # ---------------------------------------------------------
 #
@@ -85,7 +96,7 @@ def main():
         #         # Save data about current user we are working under
         #         initial_user = User_main.get_current_user(url, token)
         #         # Add created role to current user
-        #         Auth_superuser.providerId = Auth_main.get_local_providerId(url)  # getting provider id for created user for logon
+        #         Auth_superuser.providerId = Auth.get_local_providerId(url)  # getting provider id for created user for logon
         #         Auth_superuser.get_user_access_token(url, Auth_superuser.username, Auth_superuser.password, Auth_superuser.providerId) # logging in under superuser account  
         #         # Add system role to initial user we connected
         #         User_main.add_system_role_to_user(url, Auth_superuser.token, initial_user['id'], username, su_system_role_id)
@@ -102,10 +113,10 @@ def main():
             #     User_main.remove_system_role_from_user(url, Auth_superuser.token, initial_user['id'], initial_user['userName'], su_system_role_id)
 
             #     # Need to login back as initial user to get the correct token, which is needed to perform operations with new system role and super user below.
-            #     Auth_main.get_user_access_token(url, username, password, Auth_main.providerId)
-            #     User_main.remove_system_role_from_user(url, Auth_main.token, superuser['id'], superuser['userName'], su_system_role_id)
-            #     User_main.delete_system_role(url, su_system_role_id, Auth_main.token)
-            #     User_main.delete_user(url, Auth_main.token, superuser['id'], superuser['userName'])
+            #     Auth.get_user_access_token(url, username, password, Auth.providerId)
+            #     User_main.remove_system_role_from_user(url, Auth.token, superuser['id'], superuser['userName'], su_system_role_id)
+            #     User_main.delete_system_role(url, su_system_role_id, Auth.token)
+            #     User_main.delete_user(url, Auth.token, superuser['id'], superuser['userName'])
 
 
             if user_command == ['quit']:
@@ -113,7 +124,7 @@ def main():
             else:
                 License_main.privileges_granted = False
                 License_main.privileges_checked = False
-                if not Auth_main.establish_connection():
+                if not Auth.establish_connection():
                     return False
 
 
@@ -146,7 +157,7 @@ def main():
             ''' =============================================================================== TRANSFER DATA BLOCK =============================================================================== '''
 
             # Export data and display/remove workFlows
-        elif user_command in (['export', 'om'], ['export', 'wf'], ['list', 'wf'], ['delete', 'wf']):
+        elif user_command in (['om', 'export'], ['workflow', 'export'], ['workflow', 'ls'], ['workflow', 'remove']):
             if Export_data_main.is_first_launch_export_data:
                 Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
                 time.sleep(0.1)
@@ -155,25 +166,25 @@ def main():
                 Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._object_model_folder)
                 time.sleep(0.1)
                 Export_data_main.is_first_launch_export_data = False
-            if user_command == ['export', 'om']:
+            if user_command == ['om', 'export']:
                 Export_data_main.export_server_info(url, token)
-                Export_data_main.get_object_model(Export_data_main._object_model_file, Auth_main.url, Auth_main.token)
-            elif user_command == ['export', 'wf']:
+                Export_data_main.get_object_model(Export_data_main._object_model_file, Auth.url, Auth.token)
+            elif user_command == ['workflow', 'export']:
                 Export_data_main.export_server_info(url, token)
                 Export_data_main.export_workflows(url, token)
-            elif user_command == ['list', 'wf']:
+            elif user_command == ['workflow', 'ls']:
                 Export_data_main.display_list_of_workflowsName_and_workflowsId(url, token)
-            elif user_command == ['delete', 'wf']:
+            elif user_command == ['workflow', 'remove']:
                 Export_data_main.delete_workflows(url, token)
 
             # Import data
-        elif user_command == ['import', 'wf']:
+        elif user_command == ['workflow', 'import']:
             Import_data_main.import_workflows(url, token)
-        elif user_command == ['import', 'om']:
+        elif user_command == ['om', 'import']:
             Import_data_main.import_object_model(url, token)
 
             # Clean transfer data storage
-        elif user_command == ['rm', 'files']:
+        elif user_command == ['files', 'remove']:
             Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._object_model_folder}")
             Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._workflows_folder}")
             File.remove_file(f"{os.getcwd()}/{Export_data_main._transfer_folder}/export_server.info")
@@ -182,10 +193,10 @@ def main():
             ''' =============================================================================== USER =============================================================================== '''
 
         elif user_command == ['ptoken']:
-            private_token = Auth_main.get_private_token(url, token)
+            private_token = Auth.get_private_token(url, token)
             print(f"\n{private_token}")
         elif user_command == ['token']:
-            user_access_token = Auth_main.get_user_access_token(url, username, password, Auth_main.providerId)
+            user_access_token = Auth.get_user_access_token(url, username, password, Auth.providerId)
             print(f"\n{user_access_token}")
         elif user_command == ['sh']:
             Tools.run_terminal_command()
@@ -205,7 +216,7 @@ def main():
 
         elif isinstance(user_command, tuple) and user_command[0][0] == 'docker':
             if not Docker._check_docker:
-                print("No docker found in the system.")
+                print("No docker found in the system.\nHint: Try to run bim_utils using sudo privileges.")
                 continue
             # elif not Docker._permissions:
             #     print("Insufficient privileges to work with docker. Try to execute bim_utils with sudo.")
@@ -233,12 +244,22 @@ def main():
                 if '--tail' in user_command[0]:
                     containers_id = [x for x in user_command[0][3:] if not x.startswith('-') and len(x) > 3]        # getting a list of container id to pass in Docker.get_container_log function.
                     tail_idx = user_command[0].index('--tail') + 1
-                    Docker.get_container_log(*containers_id, in_file=True, tail=int(user_command[0][tail_idx]))
+                    try:
+                        number = int(user_command[0][tail_idx])
+                    except ValueError:
+                        print("--tail must be integer!")
+                        continue
+                    Docker.get_container_log(*containers_id, in_file=True, tail=number)
 
                 elif '--days' in user_command[0]:
                     containers_id = [x for x in user_command[0][3:] if not x.startswith('-') and len(x) > 3]
                     days_idx = user_command[0].index('--days') + 1
-                    Docker.get_container_log(*containers_id, in_file=True, days=int(user_command[0][days_idx]))
+                    try:
+                        days = int(user_command[0][days_idx])
+                    except ValueError:
+                        print("--days value must be integer!")
+                        continue
+                    Docker.get_container_log(*containers_id, in_file=True, days=days)
 
                 else:
                     containers_id = [x for x in user_command[0][3:]]
@@ -249,12 +270,22 @@ def main():
                 if '--tail' in user_command[0]:
                     containers_id = [x for x in user_command[0][3:] if not x.startswith('-') and len(x) > 3]        # getting a list of container id to pass in Docker.get_container_log function.
                     tail_idx = user_command[0].index('--tail') + 1
-                    Docker.get_all_containers_logs(*containers_id, tail=int(user_command[0][tail_idx]))
+                    try:
+                        number = int(user_command[0][tail_idx])
+                    except ValueError:
+                        print("--tail must be integer!")
+                        continue                    
+                    Docker.get_all_containers_logs(*containers_id, tail=number)
 
                 elif '--days' in user_command[0]:
                     containers_id = [x for x in user_command[0][3:] if not x.startswith('-') and len(x) > 3]
                     days_idx = user_command[0].index('--days') + 1
-                    Docker.get_all_containers_logs(*containers_id, days=int(user_command[0][days_idx]))
+                    try:
+                        days = int(user_command[0][days_idx])
+                    except ValueError:
+                        print("--days value must be integer!")
+                        continue
+                    Docker.get_all_containers_logs(*containers_id, days=days)
 
                 else:
                     Docker.get_all_containers_logs()
@@ -264,12 +295,22 @@ def main():
                 if '--tail' in user_command[0]:
                     containers_id = [x for x in user_command[0][2:] if not x.startswith('-') and len(x) > 3]        # getting a list of container id to pass in Docker.get_container_log function.
                     tail_idx = user_command[0].index('--tail') + 1
+                    try:
+                        number = int(user_command[0][tail_idx])
+                    except ValueError:
+                        print("--tail must be integer!")
+                        continue                     
                     Docker.get_container_log(*containers_id, tail=int(user_command[0][tail_idx]))
 
                 elif '--days' in user_command[0]:
                     containers_id = [x for x in user_command[0][2:] if not x.startswith('-') and len(x) > 3]
                     days_idx = user_command[0].index('--days') + 1
-                    Docker.get_container_log(*containers_id, days=int(user_command[0][days_idx]))
+                    try:
+                        days = int(user_command[0][days_idx])
+                    except ValueError:
+                        print("--days value must be integer!")
+                        continue
+                    Docker.get_container_log(*containers_id, days=days)
 
                 else:
                     containers_id = [x for x in user_command[0][2:]]
@@ -303,7 +344,6 @@ def main():
             if 'featureToggle' in user_command[1]:
                 ft_token = K8s.get_ft_token() if not K8s._ft_token else ft_token
 
-
             if ft_token:
                 if user_command[0] == ['kube', 'ft', '--list']:
                     FT.display_features(url, ft_token)
@@ -315,6 +355,18 @@ def main():
             else:
                 print("\nCouldn't get FT token. Check the logs.")
                 continue
+
+
+            ''' =============================================================================== REPORTS =============================================================================== '''
+        elif user_command[0] == ['report', 'ls'] and len(user_command) == 2:
+            Repo.display_reports(url, token)
+        
+        elif user_command[0] == ['report', 'upload'] and len(user_command) == 2:
+            Repo.upload_single_report(url, token)
+
+        elif user_command[0] == ['report', 'test'] and len(user_command) == 2:
+            Repo.upload_report(url, token)
+
 
 
 
