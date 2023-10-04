@@ -109,17 +109,6 @@ def get_lists(s1, s2):
 # print(*sorted(get_lists(input(), input()).items()))
 
 
-# Option 3
-def show_sorted(func): 
-    return lambda *args, **kwards: dict(zip(*func(*args, **kwards)))
-
-@show_sorted
-def get_lists(s1, s2):
-    return s1.split(), s2.split()
-
-# print(*sorted(get_lists(input(), input()).items()))
-
-
 
 
 '''

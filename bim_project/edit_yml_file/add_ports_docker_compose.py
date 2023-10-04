@@ -139,7 +139,10 @@ def write_to_file(filename, docker_compose):
         for line in docker_compose:
             file.write(line)
 
+
     print(f'\nFile "{compose_file_open_ports}" is ready.')
+    if sys.platform == 'win32':
+        os.system('pause')
 
 
 def open_ports():
@@ -204,7 +207,7 @@ def open_ports():
 
 
 
-__VERSION__ = 'sprint-114'
+__VERSION__ = 'sprint-115'
 if __name__ == "__main__":
     print(__VERSION__)
 
