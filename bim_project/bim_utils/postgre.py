@@ -61,21 +61,25 @@ class DB:
         # filename=None, host=None, database=None, port=None, user=None, password=None
 
 
-        if not kwargs.get('password', False):
-            kwargs['password'] = getpass("Enter user's password for db user: ")
+        # if not kwargs.get('password', False):
+        #     kwargs['password'] = getpass("Enter user's password for db user: ")
 
-        mandatory_args:list = ['host', 'db', 'port', 'username', 'password']
+        mandatory_args:list = ['host', 'db', 'port', 'user', 'password', 'file']
+
+        return
+    
         for arg in mandatory_args:
             if arg not in kwargs.keys():
                 print(f"Forgot to provide {arg}!")
                 return False
 
+
         try:
-            conn = psycopg2.connect(host=kwargs['host'],
-                                    db=kwargs['db'],
-                                    port=kwargs['port'],
-                                    username=kwargs['username'],
-                                    password=kwargs['password']
+            conn = psycopg2.connect(database=kwargs['db'],
+                                    host=kwargs['host'],
+                                    user=kwargs['user'],
+                                    password=kwargs['password'],
+                                    port=kwargs['port']
                                     )
 
         except psycopg2.Error as err:
@@ -84,7 +88,7 @@ class DB:
 
         with conn.cursor() as cursor:
             try:
-                cursor.execute(open(kwargs['filename'], "r").read()) 
+                cursor.execute(open(kwargs['file'], "r").read()) 
                 res = cursor.fetchall()
                 for x in res:
                     print(x)

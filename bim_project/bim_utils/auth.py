@@ -60,6 +60,10 @@ class Auth:
     
     def url_validation(self):
 
+
+        if self.url[:4] != 'http':
+            self.url = 'http://' + self.url
+
         # Check both ports: 80 and 443
         for x in range(2):
             self.__logger.info(self.__start_connection(self.url))

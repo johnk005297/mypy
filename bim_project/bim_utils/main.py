@@ -45,16 +45,8 @@ def main():
 # ---------------------------------------------------------
 
 
-    # import re
-    # a = r"~ E'^\\\\d+$' /*проверка, что первые"
-    # s = r'"Name": "Филиал ООО \"Газпром инвест\""'
-    # # print(re.sub(r'E\'\^\\\\\\d+$', r'123', a))
-    # print(a)
 
-    # # print(re.findall(r'[\\]"', s))
-    # # print(re.sub(r'^[^\\]"', r'\\\\\\\\\\\\\"', s))
-    # # print(re.sub(r'[\\]"', r'\\\\\\\\\\\\\"', s))   # replace \" with \\\\\\\"
-    # return
+
 
 # ---------------------------------------------------------
 #
@@ -157,7 +149,7 @@ def main():
             ''' =============================================================================== TRANSFER DATA BLOCK =============================================================================== '''
 
             # Export data and display/remove workFlows
-        elif user_command in (['om', 'export'], ['workflow', 'export'], ['workflow', 'ls'], ['workflow', 'remove']):
+        elif user_command in (['export', 'om'], ['export', 'workflow'], ['ls', 'workflow'], ['remove', 'workflow']):
             if Export_data_main.is_first_launch_export_data:
                 Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
                 time.sleep(0.1)
@@ -166,25 +158,25 @@ def main():
                 Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._object_model_folder)
                 time.sleep(0.1)
                 Export_data_main.is_first_launch_export_data = False
-            if user_command == ['om', 'export']:
+            if user_command == ['export', 'om']:
                 Export_data_main.export_server_info(url, token)
                 Export_data_main.get_object_model(Export_data_main._object_model_file, Auth.url, Auth.token)
-            elif user_command == ['workflow', 'export']:
+            elif user_command == ['export', 'workflow']:
                 Export_data_main.export_server_info(url, token)
                 Export_data_main.export_workflows(url, token)
-            elif user_command == ['workflow', 'ls']:
+            elif user_command == ['ls', 'workflow']:
                 Export_data_main.display_list_of_workflowsName_and_workflowsId(url, token)
-            elif user_command == ['workflow', 'remove']:
+            elif user_command == ['remove', 'workflow']:
                 Export_data_main.delete_workflows(url, token)
 
             # Import data
-        elif user_command == ['workflow', 'import']:
+        elif user_command == ['import', 'workflow']:
             Import_data_main.import_workflows(url, token)
-        elif user_command == ['om', 'import']:
+        elif user_command == ['import', 'om']:
             Import_data_main.import_object_model(url, token)
 
             # Clean transfer data storage
-        elif user_command == ['files', 'remove']:
+        elif user_command == ['remove', 'files']:
             Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._object_model_folder}")
             Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._workflows_folder}")
             File.remove_file(f"{os.getcwd()}/{Export_data_main._transfer_folder}/export_server.info")

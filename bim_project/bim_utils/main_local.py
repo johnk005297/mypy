@@ -37,7 +37,7 @@ import postgre
 
 def run_docker():
 
-    Docker = mydocker.Docker()
+    Docker = mdocker.Docker()
     menu_main_local = app_menu.AppMenu()
 
     while True:
@@ -116,13 +116,13 @@ def run_docker():
 def run_sql():
     
     pg = postgre.DB()
-    pg.exec_query_from_file(host="myserver", db="bimeisterdb", port="10265", password="abc123")
+    pg.exec_query_from_file()
 
 
 
 
 def main_local():
-    
+
     run_sql()
     
 

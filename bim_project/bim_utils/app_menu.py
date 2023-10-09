@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    __VERSION__ = '1.39'
+    __VERSION__ = '1.39b'
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -22,8 +22,8 @@ class AppMenu:
         _main_menu      = "\nHelp:                                                                    \
                                 \n                                                                    \
                                 \n   License                                                          \
-                                \n      1                   check license                             \
-                                \n      2                   get serverId                              \
+                                \n      check lic           check license                             \
+                                \n      get sid             get serverId                              \
                                 \n      apply lic           apply new license                         \
                                 \n      delete lic          delete active license                     \
                                 \n      activate lic        activate already uploaded license         \
@@ -33,13 +33,13 @@ class AppMenu:
                                 \n      drop uo -h          info about UserObjects table              \
                                 \n                                                                    \
                                 \n   Transfer data                                                    \
-                                \n      om export           export object model                       \
-                                \n      om import           import object model                       \
-                                \n      workflow export     export workflows                          \
-                                \n      workflow import     import workflows                          \
-                                \n      workflow ls         display workflows(name: id)               \
-                                \n      workflow remove     delete workflows                          \
-                                \n      files remove        clean bim_utils transfer files            \
+                                \n      export om           export object model                       \
+                                \n      import om           import object model                       \
+                                \n      export workflow     export workflows                          \
+                                \n      import workflow     import workflows                          \
+                                \n      ls workflow         display workflows(name: id)               \
+                                \n      remove workflow     delete workflows                          \
+                                \n      remove files        clean bim_utils transfer files            \
                                 \n                                                                    \
                                 \n   User                                                             \
                                 \n      ptoken              get private token                         \
@@ -78,9 +78,9 @@ class AppMenu:
             return False
 
         # License
-        if user_command == ['1']:
+        if user_command == ['check', 'lic']:
             return ['check_license']
-        elif user_command == ['2']:
+        elif user_command == ['get', 'sid']:
             return ['server_id']
         elif user_command == ['apply', 'lic']:
             return ['apply_license']
@@ -96,19 +96,19 @@ class AppMenu:
             return user_command
         
         # Transfer data
-        elif user_command == ['om', 'export']:
+        elif user_command == ['export', 'om']:
             return user_command
-        elif user_command == ['workflow', 'export']:
+        elif user_command == ['import', 'om']:
+            return user_command        
+        elif user_command == ['export', 'workflow']:
             return user_command
-        elif user_command == ['om', 'import']:
+        elif user_command == ['import', 'workflow']:
             return user_command
-        elif user_command == ['workflow', 'import']:
+        elif user_command == ['ls', 'workflow']:
             return user_command
-        elif user_command == ['workflow', 'ls']:
+        elif user_command == ['remove', 'workflow']:
             return user_command
-        elif user_command == ['workflow', 'remove']:
-            return user_command
-        elif user_command == ['files', 'remove']:
+        elif user_command == ['remove', 'files']:
             return user_command
 
         # User
