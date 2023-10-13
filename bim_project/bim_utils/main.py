@@ -35,14 +35,11 @@ def main():
 
 
 
-    AppMenu_main.welcome_info_note()
-    if not Auth.establish_connection():  # if connection was not established, do not continue
-        return False
+# ---------------------------------------------------------
+#   TEST ZONE       LOBBY
+# ---------------------------------------------------------
 
-    url, token, username, password = Auth.url, Auth.token, Auth.username, Auth.password
-# ---------------------------------------------------------
-#   TEST ZONE
-# ---------------------------------------------------------
+
 
 
 
@@ -51,6 +48,15 @@ def main():
 # ---------------------------------------------------------
 #
 # ---------------------------------------------------------
+
+
+
+    AppMenu_main.welcome_info_note()
+    if not Auth.establish_connection():  # if connection was not established, do not continue
+        return False
+
+    url, token, username, password = Auth.url, Auth.token, Auth.username, Auth.password
+
 
     while True:
         user_command = AppMenu_main.get_user_command()

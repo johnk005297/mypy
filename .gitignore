@@ -23,4 +23,5 @@ bim_project/bim_utils/transfer_files
 bim_project/bim_utils/archive
 bim_project/bim_utils/query.sql
 bim_project/bim_utils/check.sql
+bim_project/bim_utils/confluence.py
 

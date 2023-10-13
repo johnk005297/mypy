@@ -54,6 +54,8 @@ class AppMenu:
                                 \n   K8S                                                              \
                                 \n      kube -h             get a list of available commands          \
                                 \n                                                                    \
+                                \n   Reports                                                          \
+                                \n      report ls           get a list of current reports             \
                                 \n                                                                    \
                                 \n   Main                                                             \
                                 \n      m                   print this menu                           \

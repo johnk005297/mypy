@@ -13,7 +13,7 @@ from datetime import date
 from datetime import datetime
 import auth
 from tools import Tools
-# import logging
+from termcolor import colored, cprint
 from log import Logs
 
 
@@ -152,7 +152,7 @@ class License:
         for license in licenses:
             if license['activeUsers'] > license['activeUsersLimit'] and license['isActive'] and license['until'] > current_date:
                 self.__logger.error(f"Users limit was exceeded! Active users: {license['activeUsers']}. Users limit: {license['activeUsersLimit']}")
-                print("Users limit is exceeded!")
+                cprint(colored("Users limit is exceeded!".upper(), "red", attrs=["reverse", "blink"]))
                 return False
             elif license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000' and license['until'] > current_date:
                 return True
