@@ -123,7 +123,7 @@ def run_sql():
 
 def main_local():
 
-    run_sql()
+    run_docker()
     
 
     # if "condition for docker":

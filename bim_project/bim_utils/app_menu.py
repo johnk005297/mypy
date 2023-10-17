@@ -38,8 +38,8 @@ class AppMenu:
                                 \n      export workflow     export workflows                          \
                                 \n      import workflow     import workflows                          \
                                 \n      ls workflow         display workflows(name: id)               \
-                                \n      remove workflow     delete workflows                          \
-                                \n      remove files        clean bim_utils transfer files            \
+                                \n      rm workflow         delete workflows                          \
+                                \n      rm files            clean bim_utils transfer files            \
                                 \n                                                                    \
                                 \n   User                                                             \
                                 \n      ptoken              get private token                         \
@@ -108,9 +108,9 @@ class AppMenu:
             return user_command
         elif user_command == ['ls', 'workflow']:
             return user_command
-        elif user_command == ['remove', 'workflow']:
+        elif user_command == ['rm', 'workflow']:
             return user_command
-        elif user_command == ['remove', 'files']:
+        elif user_command == ['rm', 'files']:
             return user_command
 
         # User
@@ -178,7 +178,7 @@ class AppMenu:
         # Main
         elif user_command == ['m']:
             return ['main_menu']
-        elif user_command == ['q']:
+        elif user_command in (['quit'],['exit'],['q']):
             return ['quit']
         
         # Exceptions
@@ -187,8 +187,3 @@ class AppMenu:
             return False
 
 
-
-        ### To do list ###
-        # ssh -o StrictHostKeyChecking=no localadmin@std-h5.dev.bimeister.io <command>
-        # elif user_command == 'c':
-        #     return 'connect_to_another_server'

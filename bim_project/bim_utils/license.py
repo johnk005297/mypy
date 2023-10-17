@@ -178,8 +178,9 @@ class License:
         ''' Display the list of licenses. '''
 
         licenses: list = self.get_licenses(url, token, username, password)
+        license_status:bool = self.get_license_status(url, token, username, password)
 
-        if not self.get_license_status(url, token, username, password):
+        if not license_status:
             for number, license in enumerate(licenses, 1):
                 print(f"\n  License {number}:")
                 if license['licenseID'] == '00000000-0000-0000-0000-000000000000':
@@ -192,10 +193,10 @@ class License:
                 for key, value in license.items():
                     print(f"   - {key}: {Fore.RED + str(value)}" if not value and key == 'isActive' else f"   - {key}: {value}")
 
-        elif self.get_license_status(url, token, username, password):
-            for license in licenses:
+        elif license_status:
+            for number, license in enumerate(licenses, 1):
                 # if license.get('isActive'):   # if we want to display only active licenses
-                print()
+                print(f"\n License {number}:")
                 if license.get('licenseID') == '00000000-0000-0000-0000-000000000000':
                     print(f"   - trial deploy license\n   - validation period: {license['until'][:19]}")
                 else:

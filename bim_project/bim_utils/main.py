@@ -172,7 +172,7 @@ def main():
                 Export_data_main.export_workflows(url, token)
             elif user_command == ['ls', 'workflow']:
                 Export_data_main.display_list_of_workflowsName_and_workflowsId(url, token)
-            elif user_command == ['remove', 'workflow']:
+            elif user_command == ['rm', 'workflow']:
                 Export_data_main.delete_workflows(url, token)
 
             # Import data
@@ -182,7 +182,7 @@ def main():
             Import_data_main.import_object_model(url, token)
 
             # Clean transfer data storage
-        elif user_command == ['remove', 'files']:
+        elif user_command == ['rm', 'files']:
             Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._object_model_folder}")
             Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._workflows_folder}")
             File.remove_file(f"{os.getcwd()}/{Export_data_main._transfer_folder}/export_server.info")

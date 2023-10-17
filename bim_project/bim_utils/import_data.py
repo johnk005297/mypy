@@ -68,8 +68,9 @@ class Import_data:
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
 
         # Read the file with workflows in the list without blank lines
-        count = Tools.counter()
         workflows = [x for x in File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', self.Export_data._exported_workflows_list).split('\n') if x.split()]
+
+        count = Tools.counter()
         for workflow in workflows:
             name = workflow.split(':')[0].strip()
             id = workflow.split(':')[1].strip()
