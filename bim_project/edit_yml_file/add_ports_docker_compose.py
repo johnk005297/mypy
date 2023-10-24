@@ -163,15 +163,14 @@ def open_ports():
         'pdfservice:': "8089:5000",
         'db:': "5432:5432",
         'authdb:': "5433:5432",
+        'journaldb:': "5438:5432",
         'auth:': "8080:5000",
-        'journal:': "10005:5000",
+        'journal:': "8097:5000",
         'minio:': "9000:9000",
         'ldapwebapi:': "5103:5000",
         'rabbitmq:': ["5672:5672", "15672:15672"],
         'redis:': "6379:6379",
         'keydb:': "6379:6379",
-        'spatialdb:': "5434:5432",
-        'influxdb:': "8086:8086",
         'license-service:': "5501:5000",
         'ifc-geometry-converter:': "8088:5000",
         'treesdb:': "5430:5432",
@@ -183,7 +182,7 @@ def open_ports():
         'tasksworker:': "8091:5000",
         'collisions:': "8092:5000",
         'spatium_migrator:': "9999:5000",        
-        'spatium_api:': "10000:5000",
+        'spatium_api:': ["10000:5000", "20000:5002"],
         'spatiumdb:': "5435:5432",
         'hangfiredb:': "5437:5432",
         'reportsdb:': "5436:5432",
@@ -199,15 +198,23 @@ def open_ports():
         'planning_api:': "7500:5000",
         'root_cause_analysis_db:': "5449:5432",
         'root_cause_analysis_api:': "10002:5000",
+        'reference_data_manager:': "8094:5000",
+        'reference_data_manager_db:': "5452:5432",
         'reliability_centered_maintenance_api:': "10003:5000",
-        'reliability_centered_maintenance_db:': "5455:5432"
+        'reliability_centered_maintenance_db:': "5455:5432",
+        'risk_based_inspections_db:': "5454:5432",
+        'risk_based_inspections_api:': "10004:5000",
+        'data_synchronizer_db:': "5456:5432",
+        'data_synchronizer_api:': "5700:5000",
+        'recommendation_management_db:': "5457:5432",
+        'recommendation_management_api:': "10005:5000"
     }
 
     return dictionary_of_services
 
 
 
-__VERSION__ = 'sprint-117'
+__VERSION__ = 'release-118'
 if __name__ == "__main__":
     print(__VERSION__)
 
