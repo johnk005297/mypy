@@ -187,7 +187,7 @@ class Docker:
                 return False
                 
         Tools.zip_files_in_dir(folder_name, folder_name)    # pack logs in zip archive
-        Folder.delete_folder(folder_name)                   # delete folder with *.log files
+        Folder.clean_folder(folder_name, remove=True)                   # delete folder with *.log files
 
         return True
 
@@ -243,7 +243,7 @@ class Docker:
         result = get_ft[1].decode('utf-8')
         try:
             ft_token = json.loads(result)['Token']  # json.loads performs a dictionary from the result var, and then ask for it's 'Token' key value.            
-            self.__logger.debug(ft_token)
+            self.__logger.debug(f"Received FT: {ft_token}")
         except json.decoder.JSONDecodeError as err:
             self.__logger.error(err)
             print("No FT token was received. Check the logs!")

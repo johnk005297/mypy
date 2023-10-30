@@ -18,6 +18,7 @@ import logging
 
 class Folder:
 
+    @staticmethod
     def create_folder(path, folder_name):
         try:
             if not os.path.isdir(path + '/' + folder_name):
@@ -27,8 +28,8 @@ class Folder:
             logging.error(err)
             return False
 
-
-    def clean_folder(path_to_folder:str):
+    @staticmethod
+    def clean_folder(path_to_folder:str, remove=False):
         ''' Function removes everything in provided directory. '''
 
         filename:str = path_to_folder.split('/')[-1]
@@ -36,9 +37,10 @@ class Folder:
             if os.path.isdir(path_to_folder):
                 shutil.rmtree(path_to_folder, ignore_errors=True)
                 time.sleep(0.10)
-                os.mkdir(path_to_folder)
-                time.sleep(0.10)
-                print(f'\n   - {filename} folder is now empty.')
+                if not remove:
+                    os.mkdir(path_to_folder)
+                    time.sleep(0.10)
+                    print(f'\n   - {filename} folder is now empty.')
             else:
                 print(f'   - no {filename} folder was found.')
         except OSError as err:
@@ -47,7 +49,7 @@ class Folder:
             return False
         return True
 
-
+    @staticmethod
     def get_content():
         ''' Function provides current directory content. '''
 
@@ -55,16 +57,9 @@ class Folder:
         return command
 
 
-    def delete_folder(path_to_folder):
-        try:
-            shutil.rmtree(path_to_folder, ignore_errors=True)
-            return True
-        except:
-            return False
-
-
 
 class File:
+
 
     def read_file(path_to_file, filename):
         ''' Read from text files. In .json case function returns a dictionary. Need to pass two arguments in str format: a path and a file name. '''

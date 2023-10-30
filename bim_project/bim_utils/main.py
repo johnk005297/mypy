@@ -155,7 +155,7 @@ def main():
             ''' =============================================================================== TRANSFER DATA BLOCK =============================================================================== '''
 
             # Export data and display/remove workFlows
-        elif user_command in (['export', 'om'], ['export', 'workflow'], ['ls', 'workflow'], ['remove', 'workflow']):
+        elif user_command in (['export', 'om'], ['export', 'workflow'], ['ls', 'workflow'], ['rm', 'workflow']):
             if Export_data_main.is_first_launch_export_data:
                 Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
                 time.sleep(0.1)

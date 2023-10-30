@@ -220,7 +220,7 @@ class Export_data:
                     with open(f"{self._workflows_folder_path}/{workflow['id']}.zip", mode='wb') as zip_file, \
                          open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as wf_name_id:
                          zip_file.write(response.content)
-                         wf_name_id.write("{0}: {1}\n".format(workflow['name'], workflow['id']))
+                         wf_name_id.write("{0}  {1}\n".format(workflow['id'], workflow['name']))
                 except OSError as err:
                     self.__logger.error(err)
                     continue

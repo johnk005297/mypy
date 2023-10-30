@@ -7,7 +7,6 @@ import logging
 
 class Logs:
 
-
     def __init__(self):
         self.log_folder:str = "bimUtils_logs"
         if not os.path.isdir(self.log_folder):
@@ -58,6 +57,7 @@ class Logs:
         logger.addHandler(f_handler)
 
         return logger
+
 
 
 
