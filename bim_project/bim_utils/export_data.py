@@ -99,7 +99,7 @@ class Export_data:
         if not [x for x in self.current_workflow_node_selection if x in ('dr', 'ar', 'ac')]:
             return False
         else:
-            # In case if smth else with valid request was provided. Clean everything except 'dr', 'ar', 'ac'.
+            # In case if smth else with valid request was provided. Clean everything except 'dr', 'ar', 'ac', 'all'.
             self.current_workflow_node_selection:list = [x for x in self.current_workflow_node_selection if x in ('dr', 'ar', 'ac')]
 
         # Replacing user input with full names: Draft, Archived, Active
@@ -108,14 +108,14 @@ class Export_data:
         with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
         with open(file_path, 'a', encoding='utf-8') as file:
-            for node in self.current_workflow_node_selection:
+            for node in self.current_workflow_node_selection:                
                 if node == 'Draft':
                     if self._workflows_draft_file not in content:
                         file.write(f"{self._workflows_draft_file}\n")
                 elif node == 'Archived':
                     if self._workflows_archived_file not in content:
                         file.write(f"{self._workflows_archived_file}\n")
-                elif node =='Active':
+                elif node == 'Active':
                     if self._workflows_active_file not in content:
                         file.write(f"{self._workflows_active_file}\n")
                 else:
@@ -123,39 +123,6 @@ class Export_data:
         return True
 
 
-    # def get_all_workflow_nodes(self, filename, url, token):
-    #     '''  Getting Draft, Archived and Active nodes from the server in .json file.  
-    #          Function holds a dictionary with all the nodes in format: {"NodeName": "NodeId"}.
-    #     '''
-
-    #     url_get_all_workflow_nodes = url + '/' + self.__api_WorkFlowNodes
-    #     headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-    #     try:
-    #         request = requests.get(url=url_get_all_workflow_nodes, headers=headers, verify=False)
-    #         response = request.json()
-    #     except self.possible_request_errors as err:
-    #         self.__logger.error(f"{err}\n{request.text}") 
-    #         print(f"Error: Couldn't export workFlow nodes. Check the logs.")
-    #         return False
-
-    #     try:
-    #         path = f'{self._transfer_folder}/{self._workflows_folder}/{filename}'
-    #         with open(path, mode='w', encoding='utf-8') as json_file:
-    #             json.dump(response, json_file, ensure_ascii=False, indent=4)
-
-    #         # Creating a dictionary with all three nodes from the server in format: {"NodeName": "NodeId"}
-    #         self.workflow_nodes:dict = {}
-    #         for x in File.read_file(self._transfer_folder + '/' + self._workflows_folder, self._all_workflow_nodes_file):
-    #             self.workflow_nodes[x['name']] = x['id']
-
-    #     except OSError as err:
-    #         self.__logger.error(err)
-    #         print('Error occured. Check the logs.')
-    #         return False
-    #     return True
-
-
-    
     def get_workflow_nodes_id(self, url, token):
         ''' Function returns a dictionary with all the nodes in format: {"NodeName": "NodeId"}. '''
 
@@ -201,31 +168,75 @@ class Export_data:
             return True
 
 
-    def collect_workflows_data(self, url, token):
-        ''' Function for collecting data using /api/Integration/WorkFlow/{workflow_id}/Export method. 
-            This method's response needs to be saved as a zip file for each process.
+    def save_workflows_at_once(self, url, token):
+        '''  
+            Function to export workflows at once.
+            api/Integration/WorkFlow/{workflow_id}/Export method's response needs to be saved as a zip file for each process.
         '''
 
         count = Tools.counter()
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+
         for nodeName in self.current_workflow_node_selection:
             workflow_data = File.read_file(f'{self._workflows_folder_path}', f'{nodeName}_workflows_export_server.json')
             for workflow in workflow_data['workFlows']:
-                url_export = f"{url}/api/Integration/WorkFlow/{workflow['id']}/Export"
-                response = requests.get(url=url_export, headers=headers, verify=False)
-                # self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+                try:
+                    url_export = f"{url}/api/Integration/WorkFlow/{workflow['id']}/Export"
+                    response = requests.get(url=url_export, headers=headers, verify=False)
+                except self.possible_request_errors as err:
+                    self.__logger.error(f"{err}\n{response.text}")
                 print(f"   {count()}){nodeName}: {workflow['name']}")   # display the name of the process in the output
                 time.sleep(0.1)
                 try:
                     with open(f"{self._workflows_folder_path}/{workflow['id']}.zip", mode='wb') as zip_file, \
-                         open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as wf_name_id:
+                         open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as wf_id_name:
                          zip_file.write(response.content)
-                         wf_name_id.write("{0}  {1}\n".format(workflow['id'], workflow['name']))
+                         wf_id_name.write("{0}  {1}\n".format(workflow['id'], workflow['name']))
                 except OSError as err:
                     self.__logger.error(err)
                     continue
 
         return True
+
+
+    def save_workflows_by_choice(self, url, token, *args):
+        ''' Function to export only specified workflows. '''
+
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        nodes:dict = self.get_workflow_nodes_id(url, token)
+        for id in args:
+            issue_message:str = "Issue with the workflow encountered. Check the logs."
+            try:
+                url_export = f"{url}/api/WorkFlows/{id}"
+                response = requests.get(url=url_export, headers=headers, verify=False)
+                data = response.json()
+                workflow_name, node_id = data['name'], data['workFlowNodeId']
+            except self.possible_request_errors as err:
+                self.__logger.error(f"{err} {response.status_code}\n{response.text}")
+                print(issue_message)
+                return False
+            else:
+                url_export = f"{url}/api/Integration/WorkFlow/{id}/Export"
+                try:
+                    response = requests.get(url=url_export, headers=headers, verify=False)
+                    with open(f"{self._workflows_folder_path}/{id}.zip", mode='wb') as zip_file, \
+                         open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as wf_id_name:
+                         zip_file.write(response.content)
+                         wf_id_name.write("{0}  {1}\n".format(id, workflow_name))
+                    time.sleep(0.1)
+                    node_name:str = {key for key in nodes if nodes[key] == node_id}
+                    print("{0}: {1} successfully saved.".format(*node_name, workflow_name))
+                except self.possible_request_errors as err:
+                    self.__logger.error(f"{err} {response.status_code}\n{response.text}")
+                    print(issue_message)
+                    return False
+                except OSError as err:
+                    self.__logger.error(err)
+
+        return True
+
+
+
 
 
     def get_workflow_xml(self, url, token):
@@ -346,7 +357,8 @@ class Export_data:
                     print(f'   No workflows in {node_name}')
                     continue
                 for workflow in data['workFlows']:
-                    result = f"{node_name}: {workflow['name']}  id: {workflow['id']}"
+                    # result = f"{node_name}: {workflow['name']}  id: {workflow['id']}"
+                    result = f"{node_name}: {workflow['id']}  {workflow['name']}"
                     time.sleep(0.05)
                     print(f'   {count()}){result}')
                     file.write(result + '\n')
@@ -422,10 +434,13 @@ class Export_data:
             file.write(serverId)
 
 
-    def export_workflows(self, url, token):
+    def export_workflows(self, url, token, *args, at_once=True):
+        if not at_once:
+            self.save_workflows_by_choice(url, token, *args)
+            return True
         if self.select_workflow_nodes():
             self.get_workflows(url, token)
-            self.collect_workflows_data(url, token)
+            self.save_workflows_at_once(url, token)
 
             ### Need to disable this block to test another API method for transferring process ###
             # self.get_workflow_xml(url, token)

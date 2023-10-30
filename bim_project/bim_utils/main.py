@@ -155,7 +155,8 @@ def main():
             ''' =============================================================================== TRANSFER DATA BLOCK =============================================================================== '''
 
             # Export data and display/remove workFlows
-        elif user_command in (['export', 'om'], ['export', 'workflow'], ['ls', 'workflow'], ['rm', 'workflow']):
+        elif user_command in (['export', 'om'], ['ls', 'workflow'], ['rm', 'workflow']) or user_command[:2] == ['export', 'workflow']:
+
             if Export_data_main.is_first_launch_export_data:
                 Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
                 time.sleep(0.1)
@@ -164,12 +165,19 @@ def main():
                 Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._object_model_folder)
                 time.sleep(0.1)
                 Export_data_main.is_first_launch_export_data = False
+
             if user_command == ['export', 'om']:
                 Export_data_main.export_server_info(url, token)
                 Export_data_main.get_object_model(Export_data_main._object_model_file, Auth.url, Auth.token)
-            elif user_command == ['export', 'workflow']:
+
+            elif user_command[:2] == ['export', 'workflow']:
                 Export_data_main.export_server_info(url, token)
-                Export_data_main.export_workflows(url, token)
+                if len(user_command) == 2:
+                    Export_data_main.export_workflows(url, token, at_once=True)
+                else:
+                    args = user_command[2:]
+                    Export_data_main.export_workflows(url, token, *args, at_once=False)
+
             elif user_command == ['ls', 'workflow']:
                 Export_data_main.display_list_of_workflowsName_and_workflowsId(url, token)
             elif user_command == ['rm', 'workflow']:
