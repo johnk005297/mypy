@@ -36,7 +36,7 @@ class AppMenu:
                                 \n      export om                   export object model                       \
                                 \n      import om                   import object model                       \
                                 \n      export workflow             export workflows massively                \
-                                \n      export workflow id...       export specific workflows only            \
+                                \n      export workflow <id...>     export specific workflows only            \
                                 \n      import workflow             import workflows                          \
                                 \n      ls workflow                 display workflows(name: id)               \
                                 \n      rm workflow                 delete workflows                          \
