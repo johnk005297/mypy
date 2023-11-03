@@ -21,10 +21,10 @@ class K8S:
             self._check_k8s:bool = True
         except config.ConfigException as config_err:
             self._check_k8s:bool = False
-            # self.__logger.error(config_err)
+            self.__logger.error(config_err)
         except ApiException as client_api_err:
             self._check_k8s:bool = False
-            # self.__logger.error(client_api_err)
+            self.__logger.error(client_api_err)
         except:
             self._check_k8s:bool = False
 
