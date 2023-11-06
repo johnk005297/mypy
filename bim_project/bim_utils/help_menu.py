@@ -15,4 +15,6 @@ class Help:
                          \n      bim_utils --sql-query --file query.sql --host sandbox-4 --db bimeisterdb --port 5432 --user postgres --password mypassword[optional]  "
         
 
+
+
         print(help_menu)

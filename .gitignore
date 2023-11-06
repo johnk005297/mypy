@@ -2,7 +2,6 @@ bot_project/settings.py
 git.commands
 web_proj/web/
 *.log
-tar_extract.py
 __pycache__
 venv/
 images/
@@ -11,8 +10,6 @@ temp.py
 bim_project/.env
 export_task/.env
 export_task/*.json
-py_course/Ex.6/.env
-py_course/test.py
 export_proj_venv
 export_task_backup
 bim_project/tmp
@@ -24,4 +21,5 @@ bim_project/bim_utils/archive
 bim_project/bim_utils/query.sql
 bim_project/bim_utils/check.sql
 bim_project/bim_utils/confluence.py
+study
 

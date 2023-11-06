@@ -205,7 +205,7 @@ class Export_data:
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         nodes:dict = self.get_workflow_nodes_id(url, token)
         for id in args:
-            issue_message = lambda wf_id: print("Error: WorkFlow [{0}] wasn't exported. Check the logs.".format(wf_id))
+            issue_message = lambda wf_id: print("Error: WorkFlow <{0}> wasn't exported. Check the logs.".format(wf_id))
             try:
                 url_export = f"{url}/api/WorkFlows/{id}"
                 response = requests.get(url=url_export, headers=headers, verify=False)
@@ -220,7 +220,7 @@ class Export_data:
                 if response.status_code == 400 and data['type']:
                     print("InvalidInfoModelException. WorkFlow ID is incorrect. Check the logs.")
                 elif response.status_code == 404:
-                    print(f"NotFoundDataException. WorkFlow: [{id}] wasn't found. Check the logs.")
+                    print(f"NotFoundDataException. WorkFlow: <{id}> wasn't found. Check the logs.")
                 continue
             else:
                 url_export = f"{url}/api/Integration/WorkFlow/{id}/Export"
