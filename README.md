@@ -1,2 +1,1 @@
-# learning_stuff
-some notes from the course
+# Tiny scripts from work
