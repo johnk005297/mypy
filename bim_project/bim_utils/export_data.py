@@ -205,16 +205,23 @@ class Export_data:
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         nodes:dict = self.get_workflow_nodes_id(url, token)
         for id in args:
-            issue_message:str = "Issue with the workflow encountered. Check the logs."
+            issue_message = lambda wf_id: print("Error: WorkFlow [{0}] wasn't exported. Check the logs.".format(wf_id))
             try:
                 url_export = f"{url}/api/WorkFlows/{id}"
                 response = requests.get(url=url_export, headers=headers, verify=False)
-                data = response.json()
+                data = response.json()             
                 workflow_name, node_id = data['name'], data['workFlowNodeId']
             except self.possible_request_errors as err:
                 self.__logger.error(f"{err} {response.status_code}\n{response.text}")
-                print(issue_message)
-                return False
+                issue_message(id)
+                continue
+            except Exception as err:
+                self.__logger.error(f"{err} {response.status_code}\n{data}")
+                if response.status_code == 400 and data['type']:
+                    print("InvalidInfoModelException. WorkFlow ID is incorrect. Check the logs.")
+                elif response.status_code == 404:
+                    print(f"NotFoundDataException. WorkFlow: [{id}] wasn't found. Check the logs.")
+                continue
             else:
                 url_export = f"{url}/api/Integration/WorkFlow/{id}/Export"
                 try:
@@ -224,19 +231,22 @@ class Export_data:
                          zip_file.write(response.content)
                          wf_id_name.write("{0}  {1}\n".format(id, workflow_name))
                     time.sleep(0.1)
-                    node_name:str = {key for key in nodes if nodes[key] == node_id}
+                    node_name:set = {key for key in nodes if nodes[key] == node_id}
                     print("{0}: {1} successfully saved.".format(*node_name, workflow_name))
                 except self.possible_request_errors as err:
                     self.__logger.error(f"{err} {response.status_code}\n{response.text}")
-                    print(issue_message)
-                    return False
+                    issue_message(workflow_name)
+                    continue
                 except OSError as err:
                     self.__logger.error(err)
+                    issue_message(workflow_name)
+                    continue
+                except Exception as err:
+                    self.__logger.error(err)
+                    issue_message(workflow_name)
+                    continue
 
         return True
-
-
-
 
 
     def get_workflow_xml(self, url, token):

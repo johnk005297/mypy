@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    __VERSION__ = '1.40'
+    __VERSION__ = '1.40a'
 
     def __init__(self):
         self._main_menu = self.main_menu()
