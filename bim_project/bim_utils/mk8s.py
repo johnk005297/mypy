@@ -103,7 +103,7 @@ class K8S:
         try:
             if secret_name.split('-')[1] == 'redis':
                 secret:dict = v1.read_namespaced_secret(secret_name, self.namespace).data
-                passwd = base64.b64decode(list(secret.values())[0]).decode('utf-8')
+                passwd:str = base64.b64decode(secret['REDIS_PASSWORD']).decode('utf-8')
 
             else:
                 # keydb secret is encoded. Need to decode it first, then extract the password.
