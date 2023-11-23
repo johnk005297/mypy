@@ -3,7 +3,7 @@
 
 import os
 import sys
-
+import yaml
 
 
 def check_service_validation(services):
@@ -27,7 +27,7 @@ def get_docker_compose_file():
     return yml_file
 
 
-def read_file(filename, services):
+def read_docker_compose_file(filename, services):
     ''' Read .yml text file in yml_file var. All open ports will be excluded. '''
     
     d_compose:list = []  # Creating a list of .yml file in format ['first string', 'second string', etc]
@@ -63,6 +63,28 @@ def read_file(filename, services):
     except Exception as err:
             print("Error: ", err)
             return False
+
+
+def read_docker_ports_file(filename):
+
+    services = dict()
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            data = yaml.safe_load(file)['services']
+    except Exception as err:
+        print("Error: ", err)
+        return False
+
+    for key, value in data.items():
+        for val in value.values():
+            if len(val) == 1:
+                services[key + ':'] = ''.join(val).split(':', 1)[1]
+            else:
+                services[key + ':'] = []
+                for x in val:
+                    services[key + ':'].append(''.join(x).split(':', 1)[1])
+                    
+    return services
 
 
 def detect_service_block(yml_file):
@@ -214,15 +236,17 @@ def open_ports():
 
 
 
-__VERSION__ = 'release-118'
+__VERSION__ = 'release-119'
 if __name__ == "__main__":
     print(__VERSION__)
 
-    services = open_ports()
-    if not check_service_validation(services):
-        sys.exit("Missing colons in services dictionary!")
+    # services = open_ports()
+    # if not check_service_validation(services):
+    #     sys.exit("Missing colons in services dictionary!")
+
+    services = read_docker_ports_file('docker-compose.ports.yml')
     filename = get_docker_compose_file()
-    docker_compose = read_file(filename, services)
+    docker_compose = read_docker_compose_file(filename, services)
     spaces = detect_service_block(docker_compose)
     insert_ports(services, docker_compose)
     add_ssl_certificate(docker_compose)
