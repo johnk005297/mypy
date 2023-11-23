@@ -66,6 +66,7 @@ def read_docker_compose_file(filename, services):
 
 
 def read_docker_ports_file(filename):
+    ''' Function reads the .yml text file with ports, and returns an actual list of bim services in dictionary format. '''
 
     services = dict()
     try:
