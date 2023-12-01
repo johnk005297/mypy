@@ -91,14 +91,17 @@ class Auth:
                     self.__logger.error(response.text)
                     return False
 
-            except requests.exceptions.MissingSchema:
-                print('Invalid URL')
+            except requests.exceptions.MissingSchema as err:
+                self.__logger.error(err)
+                if x == 1:
+                    print('Invalid URL')
                 return False
             
-            except requests.exceptions.ReadTimeout:
+            except requests.exceptions.ReadTimeout as err:
                 message:str = "Check connection to host."
-                print(message)
-                self.__logger.error(f"{response.text}\n{message}")
+                if x == 1:
+                    print(message)
+                self.__logger.error(f"{message}\n{err}")
 
             except self.possible_request_errors as err:
                 self.__logger.error(f"Connection error via '{self.url[:self.url.index(':')]}':\n{err}.")

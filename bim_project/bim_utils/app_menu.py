@@ -2,7 +2,7 @@
 
 
 class AppMenu:
-    __VERSION__ = '1.40b'
+    __VERSION__ = '1.40d'
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -75,116 +75,8 @@ class AppMenu:
             user_command = input("\nCommand (m for help): ").strip().lower().split()
         except KeyboardInterrupt:
             print('\nInterrupted by the user.')
-            return ['quit']
-
-        if not user_command:
-            return False
-
-        # License
-        if user_command == ['check', 'lic']:
-            return ['check_license']
-        elif user_command == ['get', 'sid']:
-            return ['server_id']
-        elif user_command == ['apply', 'lic']:
-            return ['apply_license']
-        elif user_command == ['delete', 'lic']:
-            return ['delete_active_license']
-        elif user_command == ['activate', 'lic']:
-            return ['activate_license']
-
-        # Databases
-        elif user_command == ['drop', 'uo']:
-            return user_command
-        elif user_command == ['drop', 'uo', '-h']:
-            return user_command
-        
-        # Transfer data
-        elif user_command == ['export', 'om']:
-            return user_command
-        elif user_command == ['import', 'om']:
-            return user_command        
-        elif user_command[:2] == ['export', 'workflow']:
-            return user_command
-        elif user_command == ['import', 'workflow']:
-            return user_command
-        elif user_command == ['ls', 'workflow']:
-            return user_command
-        elif user_command == ['rm', 'workflow']:
-            return user_command
-        elif user_command == ['rm', 'files']:
-            return user_command
-
-        # User
-        elif user_command == ['token']:
-            return user_command
-        elif user_command == ['ptoken']:
-            return user_command
-        elif user_command == ['sh']:
-            return user_command
-        elif user_command == ['ls', '-l']:
-            return user_command
-        elif user_command == ['ssh', 'connect']:
-            return user_command
-
-        # Docker
-        elif user_command[0] == 'docker' and len(user_command) > 1:             # if user command starts with docker and has minimum one more argument
-            if user_command == ['docker', '-h'] or user_command == ['docker', '--help']:
-                return (user_command, 'docker help')
-
-            elif user_command == ['docker', 'ls', '--all']:
-                return (user_command, 'docker container ls -a')
-
-            elif user_command == ['docker', 'ls']:
-                return (user_command, 'docker container ls')
-
-            elif user_command[1] == 'logs' and len(user_command) > 2:           # if user command starts with 'docker logs'
-
-                if user_command[2] == '-i' and len(user_command) == 4:          # if user command starts with 'docker logs -i'
-                    return (user_command, 'docker logs -i')
-
-                elif user_command[2] == '-f' and len(user_command) > 3:         # if user command starts with 'docker logs -f'
-                    if '--all' in user_command:                                 
-                        return (user_command, 'docker logs -f --all')
-                    else:
-                        return (user_command, 'docker logs -f')
-                else:                                                           # if user command is 'docker logs' + further arguments
-                    return (user_command, 'docker logs')
-            
-            elif user_command == ['docker', 'ft', '--list']:
-                return(user_command, 'docker list featureToggle')
-            
-            elif len(user_command) == 4 and user_command[1] == 'ft':
-                return (user_command, 'docker set featureToggle')
-
-        # K8S
-        elif user_command[0] == 'kube' and len(user_command) > 1:
-            if user_command == ['kube', '-h'] or user_command == ['kube', '--help']:
-                return (user_command, 'kube help')
-
-            elif user_command == ['kube', 'ft', '--list']:
-                return (user_command, 'kube list featureToggle')
-
-            elif len(user_command) == 4 and user_command[1] == 'ft':
-                return (user_command, 'kube set featureToggle')
-        
-        # Reports
-        elif user_command == ['report', 'ls'] and len(user_command) == 2:
-            return(user_command, 'report ls')
-        elif user_command == ['report', 'upload'] and len(user_command) == 2:
-            return(user_command, 'report upload')
-        elif user_command == ['report', 'test'] and len(user_command) == 2:
-            return(user_command, 'report test')
-
-
-        # Main
-        elif user_command == ['m']:
-            return ['main_menu']
-        elif user_command in (['quit'],['exit'],['q']):
-            return ['quit']
-        
-        # Exceptions
+            return ['q']
+        except Exception:
+            return ['q']
         else:
-            print('Unknown command.')
-            return False
-
-
+            return False if not user_command else user_command

@@ -61,7 +61,7 @@ class License:
     def read_license_token(self):
         ''' Check if there is a license.lic file, or ask user for a token. Function returns a list of dictionaries with license data, if everything is correct. '''
 
-        data = input('Enter the filename(should have .lic extension) containing token or token itself: ').strip()
+        data = input('Enter the filename(should have .lic extension) containing token or provide token itself: ').strip()
         if len(data) < 4:
             print('Incorrect input data.')
             return False

@@ -43,6 +43,7 @@ class Import_data:
             ask_for_confirmation:bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
             return True if ask_for_confirmation == 'y' else False
         elif not server_info:
+            self.__logger.error("Can't local server info ID in server_info file.")
             return False
         else:
             self.export_serverId = server_info.split()[1]
@@ -314,7 +315,7 @@ class Import_data:
             self.post_object_model(url, token)
             return True
         else:
-            print("No object_model for import." if not os.path.isfile(f'{self._transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}') else "Can't perform import procedure on the export server.")
+            print("No object_model for import." if not os.path.isfile(f'{self._transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}') else "")
             return False
 
 
@@ -328,5 +329,5 @@ class Import_data:
             # self.post_workflows_full_way(url, token)
             return True
         else:
-            print("No workflows for import." if not os.listdir(f'{self._transfer_folder}/{self._workflows_folder}') else "Can't perform import procedure on the export server.")
+            print("No workflows for import." if not os.listdir(f'{self._transfer_folder}/{self._workflows_folder}') else "")
             return False

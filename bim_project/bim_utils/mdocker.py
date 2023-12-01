@@ -40,10 +40,10 @@ class Docker:
                           \n      docker logs <container_id, container_id, ...>     display logs from the specific container(s)                                  \
                           \n      docker logs -f --all                              get all containers logs in files                                             \
                           \n      docker logs -f <container_id, container_id, ...>  get logs in the file                                                         \
-                          \n      docker logs -i <container_id>                     get logs from specific container interactively                               \
                           \n      <optional keys>:                                                                                                               \
                           \n              --days(optional)                          exact period to get logs for. Not applicable with '-i' flag.                 \
                           \n              --tail(optional)                          amount of lines from the end of the log. Not applicable with '-i' flag.      \
+                          \n      docker logs -i <container_id>                     get logs from specific container interactively                               \
                           \n                                                                                                                                     \
                           \n   Feature Toggle                                                                                                                    \
                           \n      docker ft --list                                  display list of features                                                     \
@@ -105,7 +105,7 @@ class Docker:
             container = self.__client.containers.get(id)
             log = container.logs(stream=True, tail=10, timestamps=False)
         except docker.errors.NotFound:
-            print("No such docker container.")
+            print("No such docker container: ", id)
             return False
         except docker.errors.APIError as err:
             self.__logger.error(err)
@@ -146,7 +146,8 @@ class Docker:
                 else:
                     print(log)
 
-        except docker.errors.NotFound:
+        except docker.errors.NotFound as err:
+            self.__logger.error(err)
             print("No such docker container.")
             pass
         except docker.errors.APIError as err:
@@ -233,7 +234,14 @@ class Docker:
     def get_ft_token(self):
         ''' Function provides ft token. '''
         
-        ft_containerId = self.get_ft_container()[0]
+        try:
+            ft_containerId = self.get_ft_container()[0]
+        except TypeError as err:
+            self.__logger.error(err)
+            return False
+        except Exception:
+            return False
+
         ft_secret_pass = self.get_ft_secret_pass()
         cli = 'keydb-cli'
         exec_command:str = f"{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN"
