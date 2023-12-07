@@ -22,7 +22,7 @@ class Folder:
     def create_folder(path, folder_name):
         try:
             if not os.path.isdir(path + '/' + folder_name):
-                os.mkdir(path + '/' + folder_name)        
+                os.mkdir(path + '/' + folder_name, mode=777)        
         except OSError as err:
             print("ERROR in create folder function.")
             logging.error(err)

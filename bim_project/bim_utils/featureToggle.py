@@ -28,8 +28,25 @@ class FeatureToggle:
             \n      q                                                 exit"
 
 
-    def display_features(self, url, FeatureAccessToken):
+    def get_features(self, url, FeatureAccessToken):
         ''' Get list of features. '''
+
+        headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}' }
+        request = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)
+
+        if request.status_code == 200:
+            response:dict = request.json()
+            ft_list:list = [ft for ft in response]
+        else:
+            print(f"Error {request.status_code} occurred during GetFeatures request. Check the logs.")
+            self.__logger.error(request.text)
+            return False
+        
+        return ft_list
+
+
+    def display_features(self, url, FeatureAccessToken):
+        ''' Display list of features in pretty table. '''
 
         headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}' }
         request = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)

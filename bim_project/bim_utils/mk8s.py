@@ -15,17 +15,19 @@ class K8S:
     
     def __init__(self, namespace:str=None):
         self.namespace = namespace
-        self._ft_token:bool = False
+        self._ft_token:bool = False           
         try:
             config.load_kube_config()
             self._check_k8s:bool = True
         except config.ConfigException as config_err:
             self._check_k8s:bool = False
             self.__logger.error(config_err)
+            self.__logger.info("Check out the kube config file, or try to run script under 'root' user.")
         except ApiException as client_api_err:
             self._check_k8s:bool = False
             self.__logger.error(client_api_err)
-        except:
+        except Exception as err:
+            self.__logger.error(err)
             self._check_k8s:bool = False
 
 

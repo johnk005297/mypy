@@ -48,7 +48,7 @@ class Auth:
             print(message)
             return False
         except KeyboardInterrupt:
-            print('\nInterrupted by the user.')
+            print('\nKeyboardInterrupt')
             return False
         if not self.url_validation():
             return False
@@ -78,7 +78,7 @@ class Auth:
                 
                 # Cant' catch 502 error with except. Temporary need to add this block
                 elif x == 1 and response.status_code == 500:
-                    message = 'Error 500: Check connection to host.'
+                    message:str = 'Error 500: Check connection to host.'
                     self.__logger.error(f"{response.text}\n{message}")
                     print(message)
                     return False
@@ -112,7 +112,6 @@ class Auth:
                     print(message)
                     return False
                 continue
-
             continue
 
 
@@ -150,7 +149,9 @@ class Auth:
             self.username=confirm_name if confirm_name else 'admin'
             self.password=confirm_pass if confirm_pass else 'Qwerty12345!'
         except KeyboardInterrupt:
-            print('\nInterrupted by the user.')
+            print('\nKeyboardInterrupt')
+            return False
+        except Exception:
             sys.exit()
 
 

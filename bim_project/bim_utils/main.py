@@ -60,8 +60,6 @@ def main():
 
     while True:
         user_command = AppMenu_main.get_user_command()
-        if not user_command:    # if nothing to check, loop over.
-            continue
 
         # ''' Check user privileges for everything related in the tuple below. '''
         # if user_command in (
@@ -100,18 +98,23 @@ def main():
         #         User_main.add_system_role_to_user(url, Auth_superuser.token, initial_user['id'], username, su_system_role_id)
 
 
-            ''' =============================================================================== MAIN BLOCK =============================================================================== '''
+            #    ''' =============================================================================== MAIN BLOCK ======================================================================================= '''
 
         match user_command:
+
+            # if nothing to check, loop over.
+            case False:
+                continue
 
             case ['m']:
                 print(AppMenu_main._main_menu)
 
+            # Close the menu and exit from the script.
             case ['exit'] | ['q'] | ['quit']:
-                break   # Close the menu and exit from the script.
+                break
 
 
-                ''' =============================================================================== LICENSE BLOCK =============================================================================== '''
+            #    ''' =============================================================================== LICENSE BLOCK ==================================================================================== '''
 
             case ['check', 'lic']:
                 License_main.display_licenses(url, token, username, password)
@@ -133,7 +136,7 @@ def main():
                 License_main.put_license(url, token, username, password, license_id)
 
 
-                ''' =============================================================================== User objects BLOCK =============================================================================== '''
+            #    ''' =============================================================================== User objects BLOCK =============================================================================== '''
             
             case ['drop', 'uo']:
                 User_main.delete_user_objects(url, token)
@@ -142,7 +145,7 @@ def main():
                 print(User_main.delete_user_objects.__doc__)
             
 
-                ''' =============================================================================== TRANSFER DATA BLOCK =============================================================================== '''
+            #    ''' =============================================================================== TRANSFER DATA BLOCK ============================================================================== '''
             
             # Export data
             case ['export', 'om'] | ['ls', 'workflow'] | ['rm', 'workflow'] | ['export', 'workflow', *_]:
@@ -188,7 +191,7 @@ def main():
                 File.remove_file(f"{os.getcwd()}/{Export_data_main._transfer_folder}/export_server.info")                
 
 
-                ''' =============================================================================== USER =============================================================================== '''
+            #    ''' =============================================================================== USER =============================================================================== '''
 
             case ['ptoken']:
                 private_token = Auth.get_private_token(url, token)
@@ -213,7 +216,7 @@ def main():
                     continue
 
 
-                ''' =============================================================================== DOCKER =============================================================================== '''
+            #    ''' =============================================================================== DOCKER =============================================================================== '''
 
             case ['docker', *_] if not Docker._check_docker:
                 print("No docker found in the system.\nHint: Try to run bim_utils using sudo privileges.")
@@ -231,130 +234,141 @@ def main():
             case ['docker', 'logs', '-i', container_id]:
                 Docker.get_container_interactive_logs(container_id)
 
+            case ['docker', 'logs', '-f', '--all', *_] if '--tail' in user_command:
+                tail_idx = user_command.index('--tail') + 1
+                try:
+                    number = int(user_command[tail_idx])
+                except ValueError:
+                    print("--tail must be integer!")
+                    continue
+                Docker.get_all_containers_logs(tail=number)
+
+            case ['docker', 'logs', '-f', '--all', *_] if '--days' in user_command:
+                days_idx = user_command.index('--days') + 1
+                try:
+                    days = int(user_command[days_idx])
+                except ValueError:
+                    print("--days value must be integer!")
+                    continue
+                Docker.get_all_containers_logs(days=days)
+
             case ['docker', 'logs', '-f', '--all', *_]:
+                Docker.get_all_containers_logs()
 
-                if '--tail' in user_command:
-                    tail_idx = user_command.index('--tail') + 1
-                    try:
-                        number = int(user_command[tail_idx])
-                    except ValueError:
-                        print("--tail must be integer!")
-                        continue
-                    Docker.get_all_containers_logs(tail=number)
-
-                elif '--days' in user_command:
-                    days_idx = user_command.index('--days') + 1
-                    try:
-                        days = int(user_command[days_idx])
-                    except ValueError:
-                        print("--days value must be integer!")
-                        continue
-                    Docker.get_all_containers_logs(days=days)
-                else:
-                    Docker.get_all_containers_logs()
-
-            case ['docker', 'logs', '-f', *_] if len(user_command) > 3 and '--all' not in user_command:
-
+            case ['docker', 'logs', '-f', _, *_] if '--all' not in user_command and '--tail' in user_command:
                 # very important to pass arguments as integer value(which comes as str). Otherwise, won't work.
-                if '--tail' in user_command:
-                    tail_idx = user_command.index('--tail') + 1
-                    try:
-                        number = int(user_command[tail_idx])
-                    except ValueError:
-                        print("--tail must be integer!")
-                        continue
+                tail_idx = user_command.index('--tail') + 1
+                try:
+                    number = int(user_command[tail_idx])
+                except ValueError:
+                    print("--tail must be integer!")
+                    continue
+                # remove tail value so it won't be added to containers_id list.
+                user_command.remove(user_command[tail_idx])
+                # getting a list of container id to pass in Docker.get_container_log function.                        
+                containers_id = [x for x in user_command[3:] if not x.startswith('-') and len(x) >= 2]
+                Docker.get_container_log(*containers_id, in_file=True, tail=number)
 
-                    # remove tail value so it won't be added to containers_id list.
-                    user_command.remove(user_command[tail_idx])
+            case ['docker', 'logs', '-f', _, *_] if '--all' not in user_command and '--days' in user_command:
+                days_idx = user_command.index('--days') + 1
+                try:
+                    days = int(user_command[days_idx])
+                except ValueError:
+                    print("--days value must be integer!")
+                    continue
+                user_command.remove(user_command[days_idx])
+                containers_id = [x for x in user_command[3:] if not x.startswith('-') and len(x) >= 2]
+                Docker.get_container_log(*containers_id, in_file=True, days=days)
 
-                    # getting a list of container id to pass in Docker.get_container_log function.                        
-                    containers_id = [x for x in user_command[3:] if not x.startswith('-') and len(x) >= 2]
-                    Docker.get_container_log(*containers_id, in_file=True, tail=number)
-
-                elif '--days' in user_command:
-                    days_idx = user_command.index('--days') + 1
-                    try:
-                        days = int(user_command[days_idx])
-                    except ValueError:
-                        print("--days value must be integer!")
-                        continue
-                    user_command.remove(user_command[days_idx])
-                    containers_id = [x for x in user_command[3:] if not x.startswith('-') and len(x) >= 2]
-                    Docker.get_container_log(*containers_id, in_file=True, days=days)
-
-                else:
+            case ['docker', 'logs', '-f', _, *_] if '--all' not in user_command:
                     containers_id = [x for x in user_command[3:] if not x.startswith('-')]
                     Docker.get_container_log(*containers_id, in_file=True)
 
+            case ['docker', 'logs', *_] if '--tail' in user_command:
+                tail_idx = user_command.index('--tail') + 1
+                try:
+                    number = int(user_command[tail_idx])
+                except ValueError:
+                    print("--tail must be integer!")
+                    continue
+                user_command.remove(user_command[tail_idx])
+                containers_id = [x for x in user_command[2:] if not x.startswith('-') and len(x) >= 2]
+                Docker.get_container_log(*containers_id, tail=number)
+
+            case ['docker', 'logs', *_] if '--days' in user_command:
+                days_idx = user_command.index('--days') + 1
+                try:
+                    days = int(user_command[days_idx])
+                except ValueError:
+                    print("--days value must be integer!")
+                    continue
+                user_command.remove(user_command[days_idx])
+                containers_id = [x for x in user_command[2:] if not x.startswith('-') and len(x) >= 2]                        
+                Docker.get_container_log(*containers_id, days=days)
+
             case ['docker', 'logs', *_]:
-                if '--tail' in user_command:
-                    tail_idx = user_command.index('--tail') + 1
-                    try:
-                        number = int(user_command[tail_idx])
-                    except ValueError:
-                        print("--tail must be integer!")
-                        continue
-                    user_command.remove(user_command[tail_idx])
-                    containers_id = [x for x in user_command[2:] if not x.startswith('-') and len(x) >= 2]
-                    Docker.get_container_log(*containers_id, tail=number)
+                containers_id = [x for x in user_command[2:]]
+                Docker.get_container_log(*containers_id)
 
-                elif '--days' in user_command:
-                    days_idx = user_command.index('--days') + 1
-                    try:
-                        days = int(user_command[days_idx])
-                    except ValueError:
-                        print("--days value must be integer!")
-                        continue
-                    user_command.remove(user_command[days_idx])
-                    containers_id = [x for x in user_command[2:] if not x.startswith('-') and len(x) >= 2]                        
-                    Docker.get_container_log(*containers_id, days=days)
-
-                else:
-                    containers_id = [x for x in user_command[2:]]
-                    Docker.get_container_log(*containers_id)
-
-            case ['docker', 'ft', '--list']:
+            case ['docker', 'ft', _, *_]:
                 ft_token = Docker.get_ft_token() if not Docker._ft_token else ft_token
+
                 if ft_token:
-                    FT.display_features(url, ft_token)
+                    if user_command == ['docker', 'ft', '--list']:
+                        FT.display_features(url, ft_token)
+                    elif len(user_command) == 4 and user_command[-1] in ('--on', '--off'):
+                        feature:str = user_command[2]
+                        ft_list:list = FT.get_features(url, ft_token)
+                        if feature in ft_list:
+                            try:
+                                FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[-1] == '--on' else False))
+                            except UnboundLocalError as err:
+                                print(err)
+                                continue
+                            except Exception:
+                                print("Unpredictable behaviour in docker set feature.")
+                        else:
+                            print("Incorrect FT name.")
 
-            case ['docker', 'ft'] if len(user_command) == 4:
-                feature:str = user_command[2]
-                FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[3] == '--on' else False))
 
-
-                ''' =============================================================================== K8S =============================================================================== '''
+            #    ''' =============================================================================== K8S ============================================================================================== '''
 
             case ['kube', *_] if not K8s._check_k8s:
-                print("No kubernetes found in the system.")
+                print("Couldn't connect to kube-api. Check the logs.")
                 continue
 
             case ['kube', '--help'] | ['kube', '-h']:
                 print(K8s.k8s_menu())
                 continue
             
-            case ['kube', 'ft', *_]:
-
+            case ['kube', 'ft', _, *_]:
                 ft_token = K8s.get_ft_token() if not K8s._ft_token else ft_token
+
                 if ft_token:
                     if user_command == ['kube', 'ft', '--list']:
                         FT.display_features(url, ft_token)
+                    elif len(user_command) == 4 and user_command[-1] in ('--on', '--off'):
+                        feature:str = user_command[2]
+                        ft_list:list = FT.get_features(url, ft_token)
+                        if feature in ft_list:
+                            try:
+                                FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[-1] == '--on' else False))
+                            except UnboundLocalError as err:
+                                print(err)
+                                continue
+                            except Exception:
+                                print("Unpredictable behaviour in k8s set feature.")
+                        else:
+                            print("Incorrect FT name.")
 
-                    elif user_command[:2] == ['kube', 'ft']:
-                            feature:str = user_command[2]
-                            FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[-1] == '--on' else False))
-                    else:
-                        print("\nCouldn't get FT token. Check the logs.")
-                        continue
 
-
-                ''' =============================================================================== REPORTS =============================================================================== '''
+            #    ''' =============================================================================== REPORTS ========================================================================================== '''
             
             case ['ls', 'report']:
                 Repo.display_reports(url, token)
 
-            case ['upload', 'report']:
-                Repo.upload_single_report(url, token)
+            # case ['upload', 'report']:
+            #     Repo.upload_single_report(url, token)
             
             # case ['test', 'report']:
             #     Repo.upload_report(url, token)
@@ -365,41 +379,6 @@ def main():
                 print("Unknown command.")
 
 
-
-
-
-
-        
-
-
-        #     ''' =============================================================================== K8S =============================================================================== '''
-        # elif isinstance(user_command, tuple) and user_command[0][0] == 'kube':
-        #     # Check for Kubernetes on server
-        #     if not K8s._check_k8s:
-        #         print("No kubernetes found in the system.")
-        #         continue
-
-        #     if user_command == ['quit']:
-        #         break
-
-        #     if user_command[1] == 'kube help':
-        #         print(K8s.k8s_menu())
-        #         continue
-
-        #     if 'featureToggle' in user_command[1]:
-        #         ft_token = K8s.get_ft_token() if not K8s._ft_token else ft_token
-
-        #     if ft_token:
-        #         if user_command[0] == ['kube', 'ft', '--list']:
-        #             FT.display_features(url, ft_token)
-
-        #         elif user_command[1] == 'kube set featureToggle':
-        #             feature:str = user_command[0][2]
-        #             FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[0][-1] == '--on' else False))
-
-        #     else:
-        #         print("\nCouldn't get FT token. Check the logs.")
-        #         continue
 
 
 

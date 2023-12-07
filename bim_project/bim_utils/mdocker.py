@@ -19,8 +19,11 @@ class Docker:
             self._check_docker:bool = True
             self._ft_token:bool     = False
             self._permissions:bool  = False
-        except docker.errors.DockerException:
+        except docker.errors.DockerException as err:
+            self.__logger.error(err)
             self._check_docker:bool = False
+        except Exception as err:
+            self.__logger.error(err)
 
 
     def __getattr__(self, item):
@@ -239,7 +242,8 @@ class Docker:
         except TypeError as err:
             self.__logger.error(err)
             return False
-        except Exception:
+        except Exception as err:
+            self.__logger.error(err)
             return False
 
         ft_secret_pass = self.get_ft_secret_pass()

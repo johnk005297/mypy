@@ -1,8 +1,9 @@
 #
-
+from log import Logs
 
 class AppMenu:
-    __VERSION__ = '1.40d'
+    __VERSION__ = '1.40e'
+    __logger    = Logs().f_logger(__name__)
 
     def __init__(self):
         self._main_menu = self.main_menu()
@@ -71,12 +72,14 @@ class AppMenu:
     def get_user_command(self):
         ''' Define what the user would like to do '''
 
+        exit_command = ['q']
         try:
             user_command = input("\nCommand (m for help): ").strip().lower().split()
         except KeyboardInterrupt:
-            print('\nInterrupted by the user.')
-            return ['q']
-        except Exception:
-            return ['q']
+            print('\nKeyboardInterrupt')
+            return exit_command
+        except Exception as err:
+            self.__logger.error(err)
+            return exit_command
         else:
             return False if not user_command else user_command
