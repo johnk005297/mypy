@@ -386,6 +386,7 @@ def main():
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         main()
+        Tools.set_full_access_to_logs()
     elif sys.argv[1] == '--docker' and len(sys.argv) == 2:
         main_local()
     elif sys.argv[1] == '--help' and len(sys.argv) == 2:

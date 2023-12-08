@@ -255,7 +255,7 @@ class Docker:
         result = get_ft[1].decode('utf-8')
         try:
             ft_token = json.loads(result)['Token']  # json.loads performs a dictionary from the result var, and then ask for it's 'Token' key value.            
-            self.__logger.debug(f"Received FT: {ft_token}")
+            self.__logger.info(f"Received FT: {ft_token}")
         except json.decoder.JSONDecodeError as err:
             self.__logger.error(err)
             print("No FT token was received. Check the logs!")

@@ -143,6 +143,7 @@ class K8S:
         file = File.read_file(os.getcwd(), tmp_file)
         try:
             ft_token = json.loads(file)['Token']
+            self.__logger.info(f"Received FT: {ft_token}")
         except json.decoder.JSONDecodeError as err:
             self.__logger.error(err)
             print("No FT token was received. Check the logs!")
