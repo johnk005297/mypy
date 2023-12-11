@@ -5,12 +5,32 @@ from colorama import init, Fore
 init(autoreset=True)
 # import logging
 from log import Logs
+import mdocker
+import mk8s
+
 
 class FeatureToggle:
 
     _api_GetFeatures:str = 'api/Features/GetFeatures'
     _api_Features:str    = 'api/Features'
     __logger             = Logs().f_logger(__name__)
+    Docker               = mdocker.Docker()
+    K8s                  = mk8s.K8S(namespace='bimeister')
+    COS                  = False
+
+
+    def define_COS(self):
+        ''' Define which container orchestration system(K8S or Docker) is used. '''
+
+        if self.K8s._check_k8s:
+            self.COS:str = "K8S"
+            return self.COS
+        elif self.Docker._check_docker:
+            self.COS:str = "Docker"
+            return self.COS
+        else:
+            self.__logger.debug("No K8S or Docker has been found on localhost.")
+            return False
 
 
     def ft_menu(self):

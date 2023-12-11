@@ -310,56 +310,55 @@ def main():
                 containers_id = [x for x in user_command[2:]]
                 Docker.get_container_log(*containers_id)
 
-            case ['docker', 'ft', _, *_]:
-                ft_token = Docker.get_ft_token() if not Docker._ft_token else ft_token
 
-                if ft_token:
-                    if user_command == ['docker', 'ft', '--list']:
-                        FT.display_features(url, ft_token)
-                    elif len(user_command) == 4 and user_command[-1] in ('--on', '--off'):
-                        feature:str = user_command[2]
-                        ft_list:list = FT.get_features(url, ft_token)
-                        if feature in ft_list:
-                            try:
-                                FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[-1] == '--on' else False))
-                            except UnboundLocalError as err:
-                                print(err)
-                                continue
-                            except Exception:
-                                print("Unpredictable behaviour in docker set feature.")
-                        else:
-                            print("Incorrect FT name.")
+            #    ''' =============================================================================== Feature Toggle =================================================================================== '''
 
-
-            #    ''' =============================================================================== K8S ============================================================================================== '''
-
-            case ['kube', *_] if not K8s._check_k8s:
-                print("Couldn't connect to kube-api. Check the logs.")
+            case ['ft', *_] if not K8s._check_k8s and not Docker._check_docker:
+                print("No Kubernets or Docker has been found on the localhost.")
                 continue
 
-            case ['kube', '--help'] | ['kube', '-h']:
-                print(K8s.k8s_menu())
-                continue
-            
-            case ['kube', 'ft', _, *_]:
-                ft_token = K8s.get_ft_token() if not K8s._ft_token else ft_token
+            case ['ft', _, *_]:
+                COS = FT.define_COS()
 
-                if ft_token:
-                    if user_command == ['kube', 'ft', '--list']:
-                        FT.display_features(url, ft_token)
-                    elif len(user_command) == 4 and user_command[-1] in ('--on', '--off'):
-                        feature:str = user_command[2]
-                        ft_list:list = FT.get_features(url, ft_token)
-                        if feature in ft_list:
-                            try:
-                                FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[-1] == '--on' else False))
-                            except UnboundLocalError as err:
-                                print(err)
-                                continue
-                            except Exception:
-                                print("Unpredictable behaviour in k8s set feature.")
-                        else:
-                            print("Incorrect FT name.")
+                if COS == 'K8S':
+                    ft_token = K8s.get_ft_token() if not K8s._ft_token else ft_token
+                    if ft_token:
+                        if user_command == ['ft', '--list']:
+                            FT.display_features(url, ft_token)
+                        elif len(user_command) == 3 and user_command[-1] in ('--on', '--off'):
+                            feature:str = user_command[1]
+                            ft_list:list = FT.get_features(url, ft_token)
+                            if feature in ft_list:
+                                try:
+                                    FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[-1] == '--on' else False))
+                                except UnboundLocalError as err:
+                                    print(err)
+                                    continue
+                                except Exception:
+                                    print("Unpredictable behaviour in k8s set feature.")
+                            else:
+                                print("Incorrect FT name.")
+                elif COS == 'Docker':
+                    ft_token = Docker.get_ft_token() if not Docker._ft_token else ft_token
+                    if ft_token:
+                        if user_command == ['ft', '--list']:
+                            FT.display_features(url, ft_token)
+                        elif len(user_command) == 3 and user_command[-1] in ('--on', '--off'):
+                            feature:str = user_command[1]
+                            ft_list:list = FT.get_features(url, ft_token)
+                            if feature in ft_list:
+                                try:
+                                    FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[-1] == '--on' else False))
+                                except UnboundLocalError as err:
+                                    print(err)
+                                    continue
+                                except Exception:
+                                    print("Unpredictable behaviour in docker set feature.")
+                            else:
+                                print("Incorrect FT name.")
+
+                else:
+                    print("Unexpected error occured. Check the logs.")
 
 
             #    ''' =============================================================================== REPORTS ========================================================================================== '''

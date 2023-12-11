@@ -2,7 +2,7 @@
 from log import Logs
 
 class AppMenu:
-    __VERSION__ = '1.40f'
+    __VERSION__ = '1.40g'
     __logger    = Logs().f_logger(__name__)
 
     def __init__(self):
@@ -53,8 +53,11 @@ class AppMenu:
                                 \n   Docker                                                                   \
                                 \n      docker -h                   get a list of available commands          \
                                 \n                                                                            \
-                                \n   K8S                                                                      \
-                                \n      kube -h                     get a list of available commands          \
+                                \n   Feature Toggle                                                           \
+                                \n      ft --list                   display list of features                  \
+                                \n      ft [ft_name] [--on/--off]   turn on/off feature                       \
+                                \n        example:                                                            \
+                                \n        ft Spatium --on                                                     \
                                 \n                                                                            \
                                 \n   Reports                                                                  \
                                 \n      report ls                   get a list of current reports             \
@@ -62,10 +65,13 @@ class AppMenu:
                                 \n   Main                                                                     \
                                 \n      m                           print this menu                           \
                                 \n      q                           exit"
-                                # \n   Reports                                                          \
-                                # \n      report ls           get a list of current reports             \
-                                # \n      report upload       upload report template                    \
-                                # \n      report test         test option(do not use)                   \
+
+                                # \n   K8S                                                                    \
+                                # \n      kube -h                     get a list of available commands        \        
+                                # \n   Reports                                                                \
+                                # \n      report ls           get a list of current reports                   \
+                                # \n      report upload       upload report template                          \
+                                # \n      report test         test option(do not use)                         \
         return _main_menu
 
 

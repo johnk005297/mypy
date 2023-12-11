@@ -40,21 +40,25 @@ def run_docker():
 
     Docker = mdocker.Docker()
     menu   = app_menu.AppMenu()
-    FT     = featureToggle.FeatureToggle()
 
-
-
-    while True:
-        
+    while True:    
         user_command = menu.get_user_command()
-
         match user_command:
+
+            # if nothing to check, loop over.
+            case False:
+                continue
+
+            # Close the menu and exit from the script.
+            case ['exit'] | ['q'] | ['quit']:
+                break
+
+            case ['m']:
+                print(Docker.docker_menu_local())
+
             case ['docker', *_] if not Docker._check_docker:
                 print("No docker found in the system.\nHint: Try to run bim_utils using sudo privileges.")
                 continue
-
-            case ['docker', '-h'] | ['docker', '--help']:
-                print(Docker.docker_menu())
 
             case ['docker', 'ls']:
                 Docker.display_containers(all=False)
@@ -141,94 +145,11 @@ def run_docker():
                 containers_id = [x for x in user_command[2:]]
                 Docker.get_container_log(*containers_id)
 
-            # case ['docker', 'ft', '--list']:
-            #     ft_token = Docker.get_ft_token() if not Docker._ft_token else ft_token
-            #     if ft_token:
-            #         FT.display_features(url, ft_token)
+            case _:
+                print("Unknown command.")
+                continue
 
-            # case ['docker', 'ft'] if len(user_command) == 4:
-            #     feature:str = user_command[2]
-            #     FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[3] == '--on' else False))
-
-
-
-
-
-
-
-
-
-
-        # if not user_command:    # if nothing to check, loop over.
-        #     continue
-        # elif isinstance(user_command, tuple) and user_command[0][0] == 'docker':
-        #     if not Docker._check_docker:
-        #         print("No docker found in the system.")
-        #         return False
-
-        # if user_command == ['quit']:
-        #     break
-
-        # elif user_command == ['main_menu']:
-        #     print(Docker.docker_menu())
-
-        # elif user_command[1] == 'docker container ls -a':
-        #     Docker.display_containers(all=True)
-
-        # elif user_command[1] == 'docker container ls':
-        #     Docker.display_containers(all=False)
-
-        # elif user_command[1] == 'docker logs -i':
-        #     container_id = user_command[0][3]
-        #     Docker.get_container_interactive_logs(container_id)
-
-        # elif user_command[1] == 'docker logs -f':
-
-        #     # very important to pass arguments as integer value(which comes as str). Otherwise, won't work.
-        #     if '--tail' in user_command[0]:
-        #         containers_id = [x for x in user_command[0][3:] if not x.startswith('-') and len(x) > 3]        # getting a list of container id to pass in Docker.get_container_log function.
-        #         tail_idx = user_command[0].index('--tail') + 1
-        #         Docker.get_container_log(*containers_id, in_file=True, tail=int(user_command[0][tail_idx]))
-
-        #     elif '--days' in user_command[0]:
-        #         containers_id = [x for x in user_command[0][3:] if not x.startswith('-') and len(x) > 3]
-        #         days_idx = user_command[0].index('--days') + 1
-        #         Docker.get_container_log(*containers_id, in_file=True, days=int(user_command[0][days_idx]))
-
-        #     else:
-        #         containers_id = [x for x in user_command[0][3:]]
-        #         Docker.get_container_log(*containers_id, in_file=True)
-
-        # elif user_command[1] == 'docker logs -f --all':
-        #     if '--tail' in user_command[0]:
-        #         containers_id = [x for x in user_command[0][3:] if not x.startswith('-') and len(x) > 3]        # getting a list of container id to pass in Docker.get_container_log function.
-        #         tail_idx = user_command[0].index('--tail') + 1
-        #         Docker.get_all_containers_logs(*containers_id, tail=int(user_command[0][tail_idx]))
-
-        #     elif '--days' in user_command[0]:
-        #         containers_id = [x for x in user_command[0][3:] if not x.startswith('-') and len(x) > 3]
-        #         days_idx = user_command[0].index('--days') + 1
-        #         Docker.get_all_containers_logs(*containers_id, days=int(user_command[0][days_idx]))
-
-        #     else:
-        #         Docker.get_all_containers_logs()
-
-        # elif user_command[1] == 'docker logs':
-        #     if '--tail' in user_command[0]:
-        #         containers_id = [x for x in user_command[0][2:] if not x.startswith('-') and len(x) > 3]        # getting a list of container id to pass in Docker.get_container_log function.
-        #         tail_idx = user_command[0].index('--tail') + 1
-        #         Docker.get_container_log(*containers_id, tail=int(user_command[0][tail_idx]))
-
-        #     elif '--days' in user_command[0]:
-        #         containers_id = [x for x in user_command[0][2:] if not x.startswith('-') and len(x) > 3]
-        #         days_idx = user_command[0].index('--days') + 1
-        #         Docker.get_container_log(*containers_id, days=int(user_command[0][days_idx]))
-
-        #     else:
-        #         containers_id = [x for x in user_command[0][2:]]
-        #         Docker.get_container_log(*containers_id)
-
-
+# Function isn't ready.
 def run_sql():
     
     pg = postgre.DB()
@@ -238,15 +159,6 @@ def run_sql():
 
 
 def main_local():
-
     run_docker()
-    
 
-    # if "condition for docker":
-    #     run_docker()
 
-    # elif "condition for sql":
-    #     run_sql()
-
-    # else:
-    #     pass

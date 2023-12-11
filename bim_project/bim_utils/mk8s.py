@@ -15,7 +15,7 @@ class K8S:
     
     def __init__(self, namespace:str=None):
         self.namespace = namespace
-        self._ft_token:bool = False           
+        self._ft_token:bool = False
         try:
             config.load_kube_config()
             self._check_k8s:bool = True

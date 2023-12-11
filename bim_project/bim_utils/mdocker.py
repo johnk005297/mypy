@@ -48,15 +48,32 @@ class Docker:
                           \n              --tail(optional)                          amount of lines from the end of the log. Not applicable with '-i' flag.      \
                           \n      docker logs -i <container_id>                     get logs from specific container interactively                               \
                           \n                                                                                                                                     \
-                          \n   Feature Toggle                                                                                                                    \
-                          \n      docker ft --list                                  display list of features                                                     \
-                          \n      docker ft [ft_name] [--on/--off]                  turn on/off feature                                                          \
-                          \n        usage:                                                                                                                       \
-                          \n        docker ft Spatium --on                                                                                                       \
-                          \n                                                                                                                                     \
                           \n   Main                                                                                                                              \
                           \n      q                                                 exit"
 
+        return _docker_menu
+
+
+    def docker_menu_local(self):
+        ''' Appearance of docker commands menu. '''
+
+        _docker_menu = "Docker options(runs locally on a host):                                                                                                  \
+                          \n                                                                                                                                     \
+                          \n   Containers                                                                                                                        \
+                          \n      docker ls                                         display running containers                                                   \
+                          \n      docker ls --all                                   display all containers                                                       \
+                          \n                                                                                                                                     \
+                          \n   Logs                                                                                                                              \
+                          \n      docker logs <container_id, container_id, ...>     display logs from the specific container(s)                                  \
+                          \n      docker logs -f --all                              get all containers logs in files                                             \
+                          \n      docker logs -f <container_id, container_id, ...>  get logs in the file                                                         \
+                          \n      <optional keys>:                                                                                                               \
+                          \n              --days(optional)                          exact period to get logs for. Not applicable with '-i' flag.                 \
+                          \n              --tail(optional)                          amount of lines from the end of the log. Not applicable with '-i' flag.      \
+                          \n      docker logs -i <container_id>                     get logs from specific container interactively                               \
+                          \n                                                                                                                                     \
+                          \n   Main                                                                                                                              \
+                          \n      q                                                 exit"
 
         return _docker_menu
 
