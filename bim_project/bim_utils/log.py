@@ -59,7 +59,16 @@ class Logs:
         return logger
 
 
+    def set_full_access_to_logs(self):
+        ''' Need to make bimUtils_logs folder accessible for all users to escape errors at launch. '''
 
+        logs:str = 'bimUtils_logs'
+        if os.path.isdir(logs):
+            try:
+                os.chmod(logs, mode=0o777)
+                [os.chmod(f"{logs}/{file}", mode=0o777) for file in os.listdir(logs) if file]
+            except PermissionError:
+                pass        
 
 
 # class Logs:   # default configuration for logging
