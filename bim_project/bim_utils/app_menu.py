@@ -2,7 +2,7 @@
 from log import Logs
 
 class AppMenu:
-    __VERSION__ = '1.40g'
+    __VERSION__ = '1.41'
     __logger    = Logs().f_logger(__name__)
 
     def __init__(self):

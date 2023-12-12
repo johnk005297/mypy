@@ -22,8 +22,6 @@ from log import Logs
 
 
 
-
-
 def main():
 
     AppMenu_main     = app_menu.AppMenu()
@@ -51,7 +49,6 @@ def main():
 # ---------------------------------------------------------
 #
 # ---------------------------------------------------------
-
 
 
     AppMenu_main.welcome_info_note()
@@ -381,11 +378,18 @@ def main():
                 print("Unknown command.")
 
 
-
+def enable_history_input():
+    # Block for users input. Need for ability to have history of user's inputs.
+    if Tools.is_windows():
+        import pyreadline3
+    else:
+        import readline
 
 
 
 if __name__ == '__main__':
+
+    enable_history_input()
     if len(sys.argv) == 1:
         main()
     elif sys.argv[1] == '--docker' and len(sys.argv) == 2:
