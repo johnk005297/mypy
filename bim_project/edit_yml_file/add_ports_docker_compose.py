@@ -19,8 +19,11 @@ def check_service_validation(services):
 def get_docker_compose_file():
 
     yml_file = input("Enter the name of the .yml file: ")
+    if not yml_file:
+        yml_file:str = 'docker-compose.deploy-local.effective.yml'
+        return yml_file
+    
     yml_file += '.yml' if yml_file[-4:] != '.yml' else ''
-
     if not os.path.isfile(f"{os.getcwd()}/{yml_file}"):     # check if the file exists
         sys.exit("No .yml file has been found. Exit!")
 
