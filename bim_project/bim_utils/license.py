@@ -52,7 +52,7 @@ class License:
              'ActivationType': 'Offline', 'Client': 'Rupert Pupkin', 'ClientEmail': 'Rupert.Pupkin@fun.org', 'Organisation': 'sandbox-3.imp.bimeister.io',
              'IsOrganisation': 'False', 'OrderId': 'Стенд для демо', 'CrmOrderId': 'IMSD-604', 'sign': '<activation_key>'
             }
-            to the dictionary above we add this key: 'base64_token' with all the encoded line from the license file.
+            to the dictionary above we add this key: 'base64_encoded_license' with all the encoded line from the license file. This key 'base64_encoded_license' is used to post and activate license.
 
         '''
         decoded_string = base64.b64decode(encoded_string).decode('utf-8')
@@ -68,7 +68,7 @@ class License:
             print('Incorrect input data.')
             return False
         err_message:str = 'Error with decoding the string. Check the log.'
-        list_of_lic_data:list = [] # list where to put all the decoded token data
+        list_of_licenses:list = [] # list where to put all the decoded token data
         is_file:bool = os.path.splitext(data)[1] == '.lic'
         is_file_in_place:bool = os.path.isfile(f"{os.getcwd()}/{data}")
 
@@ -92,18 +92,18 @@ class License:
                     self.__logger.error(err)
                     continue
 
-                for obj in list_of_lic_data:
-                    if obj.get('LicenseID') == data['LicenseID']:
+                for license in list_of_licenses:
+                    if license.get('LicenseID') == data['LicenseID']:
                         is_present = True
-                        continue
+                        break
                 if not is_present:
-                    list_of_lic_data.append(data)
-                    list_of_lic_data[-1]['base64_token'] = line
+                    list_of_licenses.append(data)
+                    list_of_licenses[-1]['base64_encoded_license'] = line
 
         else:
             try:
-                list_of_lic_data.append(self.decode_base64(data))
-                list_of_lic_data[0]['base64_token'] = data
+                list_of_licenses.append(self.decode_base64(data))
+                list_of_licenses[0]['base64_encoded_license'] = data
             except binascii.Error:
                 self.__logger.error(f"Binascii error with decoding the string: {binascii.Error}")
                 print(err_message)
@@ -116,17 +116,17 @@ class License:
         ### Since EDMS and EPMM license could be applied in strict order, we need to make that order correct.
         EDMS:int = -1
         EPMM:int = -1
-        for lic in range(len(list_of_lic_data)):
-            if list_of_lic_data[lic]['Product'] == 'BimeisterEDMS':
+        for lic in range(len(list_of_licenses)):
+            if list_of_licenses[lic]['Product'] == 'BimeisterEDMS':
                 EDMS = lic
                 continue
-            elif list_of_lic_data[lic]['Product'] == 'BimeisterEPMM':
+            elif list_of_licenses[lic]['Product'] == 'BimeisterEPMM':
                 EPMM = lic
                 continue
         if (EDMS >= 0 and EPMM >= 0) and (EDMS > EPMM):
-            list_of_lic_data[EDMS], list_of_lic_data[EPMM] = list_of_lic_data[EPMM], list_of_lic_data[EDMS]    
+            list_of_licenses[EDMS], list_of_licenses[EPMM] = list_of_licenses[EPMM], list_of_licenses[EDMS]    
 
-        return list_of_lic_data
+        return list_of_licenses
 
 
     def get_licenses(self, url, token, username, password):
@@ -274,7 +274,7 @@ class License:
             if license['LicenseID'] in licenses_id:
                 self.put_license(url, token, username, password, license['LicenseID'])
             else:
-                data = json.dumps(license['base64_token'])
+                data = json.dumps(license['base64_encoded_license'])
                 response = requests.post(url=f'{url}/{self.__api_License}', headers=headers, data=data, verify=False)
                 self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
                 response_data = response.json()
