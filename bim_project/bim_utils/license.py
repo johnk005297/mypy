@@ -50,8 +50,10 @@ class License:
              'version': '1', 'LicenseID': 'a7bfd7df-6b90-4ca1-b40e-07d99f38308f', 'ServerID': 'eeaa4ad2-28b7-4eb7-8bfb-3fdd40d257a5', 'From': '10.03.2023 00:00:01',
              'Until': '25.12.2023 23:59:59', 'NumberOfUsers': '100', 'NumberOfIpConnectionsPerUser': '0', 'Product': 'BimeisterEDMS', 'LicenceType': 'Trial',
              'ActivationType': 'Offline', 'Client': 'Rupert Pupkin', 'ClientEmail': 'Rupert.Pupkin@fun.org', 'Organisation': 'sandbox-3.imp.bimeister.io',
-             'IsOrganisation': 'False', 'OrderId': 'Стенд для демо', 'CrmOrderId': 'IMSD-604', 'sign': '<activation_key>', 'base64_token':'<base64_encoded_token>'
+             'IsOrganisation': 'False', 'OrderId': 'Стенд для демо', 'CrmOrderId': 'IMSD-604', 'sign': '<activation_key>'
             }
+            to the dictionary above we add this key: 'base64_token' with all the encoded line from the license file.
+
         '''
         decoded_string = base64.b64decode(encoded_string).decode('utf-8')
         data = dict([ [x.split('=', 1)[0].strip(), x.split('=', 1)[1].strip()] for x in tuple(x for x in decoded_string.split('\n') if x) ])
@@ -69,7 +71,6 @@ class License:
         list_of_lic_data:list = [] # list where to put all the decoded token data
         is_file:bool = os.path.splitext(data)[1] == '.lic'
         is_file_in_place:bool = os.path.isfile(f"{os.getcwd()}/{data}")
-        count = Tools.counter()
 
         if is_file and not is_file_in_place:
             no_file_message:str = f"Error: No such file '{data}' in the current folder. Check for it."
@@ -80,18 +81,24 @@ class License:
         elif is_file and is_file_in_place:
             with open(data, "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
                 content = [line for line in file.read().split('\n') if line]
-            for x in content:
+            for line in content:
                 is_present:bool = False
                 try:
-                    data = self.decode_base64(x)
-                except (binascii.Error, ValueError):
+                    data = self.decode_base64(line)
+                except (binascii.Error, ValueError) as err:
+                    self.__logger.error(err)
                     continue
+                except Exception as err:
+                    self.__logger.error(err)
+                    continue
+
                 for obj in list_of_lic_data:
                     if obj.get('LicenseID') == data['LicenseID']:
                         is_present = True
+                        continue
                 if not is_present:
                     list_of_lic_data.append(data)
-                    list_of_lic_data[count() - 1]['base64_token'] = x
+                    list_of_lic_data[-1]['base64_token'] = line
 
         else:
             try:
@@ -105,7 +112,7 @@ class License:
                 self.__logger.error(f"Value error with decoding the string: {ValueError}")
                 print(err_message)
                 return False
-        
+
         ### Since EDMS and EPMM license could be applied in strict order, we need to make that order correct.
         EDMS:int = -1
         EPMM:int = -1
@@ -117,7 +124,7 @@ class License:
                 EPMM = lic
                 continue
         if (EDMS >= 0 and EPMM >= 0) and (EDMS > EPMM):
-            list_of_lic_data[EDMS], list_of_lic_data[EPMM] = list_of_lic_data[EPMM], list_of_lic_data[EDMS]
+            list_of_lic_data[EDMS], list_of_lic_data[EPMM] = list_of_lic_data[EPMM], list_of_lic_data[EDMS]    
 
         return list_of_lic_data
 

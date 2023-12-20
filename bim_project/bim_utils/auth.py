@@ -75,7 +75,7 @@ class Auth:
                     return True
                 elif response.status_code in (301, 302, 308):   # This part needs to fix issues if the redirect is set up.
                     self.url = self.url[:4] + self.url[5:] if self.url[4] == 's' else self.url[:4] + 's' + self.url[4:]
-                
+
                 # Cant' catch 502 error with except. Temporary need to add this block
                 elif x == 1 and response.status_code == 500:
                     message:str = 'Error 500: Check connection to host.'
@@ -102,6 +102,7 @@ class Auth:
                 if x == 1:
                     print(message)
                 self.__logger.error(f"{message}\n{err}")
+                return False
 
             except self.possible_request_errors as err:
                 self.__logger.error(f"Connection error via '{self.url[:self.url.index(':')]}':\n{err}.")
