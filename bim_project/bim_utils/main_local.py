@@ -37,6 +37,7 @@ import featureToggle
 
 
 def run_docker():
+    ''' Function to perform some operations with docker. Display containers and work with the logs. '''
 
     Docker = mdocker.Docker()
     menu   = app_menu.AppMenu()
@@ -50,14 +51,14 @@ def run_docker():
                 continue
 
             # Close the menu and exit from the script.
-            case ['exit'] | ['q'] | ['quit']:
+            case ['exit'|'q'|'quit']:
                 break
 
             case ['m']:
-                print(Docker.docker_menu_local())
+                print(Docker.docker_menu())
 
-            case ['docker', *_] if not Docker._check_docker:
-                print("No docker found in the system.\nHint: Try to run bim_utils using sudo privileges.")
+            case ['docker', *_] if not Docker.get_docker_client():
+                print("No docker found in the system.\nHint: Try to run this tool using sudo privileges, or check for 'docker' group of the current user.")
                 continue
 
             case ['docker', 'ls']:
@@ -145,9 +146,19 @@ def run_docker():
                 containers_id = [x for x in user_command[2:]]
                 Docker.get_container_log(*containers_id)
 
+            # wildcard pattern if no cases before where matched
             case _:
                 print("Unknown command.")
                 continue
+
+
+def run_k8s():
+    ''' Function to work with the logs in k8s cluster. '''
+
+    pass
+
+
+
 
 # Function isn't ready.
 def run_sql():
@@ -157,8 +168,5 @@ def run_sql():
 
 
 
-
-def main_local():
-    run_docker()
 
 

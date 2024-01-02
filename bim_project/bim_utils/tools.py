@@ -12,7 +12,6 @@ import pathlib
 import zipfile
 from datetime import datetime
 import requests
-from prettytable import PrettyTable
 import logging
 
 

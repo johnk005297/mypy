@@ -11,19 +11,33 @@ from log import Logs
 class Docker:
 
     __logger = Logs().f_logger(__name__)
+    _bimeister_log_folder = Logs()._bimeister_log_folder + '_docker'
+
 
     def __init__(self):
+        self._ft_token:bool        = False
+        self._permissions:bool     = False
 
+
+    @classmethod
+    def __check_docker(cls):
         try:
-            self.__client           = docker.from_env()
-            self._check_docker:bool = True
-            self._ft_token:bool     = False
-            self._permissions:bool  = False
+            docker.from_env()
+            return True
         except docker.errors.DockerException as err:
-            self.__logger.error(err)
-            self._check_docker:bool = False
+            cls.__logger.error(err)
+            return False
         except Exception as err:
-            self.__logger.error(err)
+            cls.__logger.error(err)
+            return False
+    
+
+    def get_docker_client(self):
+        if self.__check_docker():
+            self.__client = docker.from_env()
+            return True
+        else:
+            return False
 
 
     def __getattr__(self, item):
@@ -53,29 +67,6 @@ class Docker:
 
         return _docker_menu
 
-
-    def docker_menu_local(self):
-        ''' Appearance of docker commands menu. '''
-
-        _docker_menu = "Docker options(runs locally on a host):                                                                                                  \
-                          \n                                                                                                                                     \
-                          \n   Containers                                                                                                                        \
-                          \n      docker ls                                         display running containers                                                   \
-                          \n      docker ls --all                                   display all containers                                                       \
-                          \n                                                                                                                                     \
-                          \n   Logs                                                                                                                              \
-                          \n      docker logs <container_id, container_id, ...>     display logs from the specific container(s)                                  \
-                          \n      docker logs -f --all                              get all containers logs in files                                             \
-                          \n      docker logs -f <container_id, container_id, ...>  get logs in the file                                                         \
-                          \n      <optional keys>:                                                                                                               \
-                          \n              --days(optional)                          exact period to get logs for. Not applicable with '-i' flag.                 \
-                          \n              --tail(optional)                          amount of lines from the end of the log. Not applicable with '-i' flag.      \
-                          \n      docker logs -i <container_id>                     get logs from specific container interactively                               \
-                          \n                                                                                                                                     \
-                          \n   Main                                                                                                                              \
-                          \n      q                                                 exit"
-
-        return _docker_menu
 
 
     def check_permissions(self):
@@ -141,12 +132,11 @@ class Docker:
         return True
 
 
-    def get_container_log(self, *args, in_file=False, all=False, tail=5000, days=None):
+    def get_container_log(self, *args, in_file=False, tail=5000, days=None):
         ''' Get log from a single container. '''
 
         if in_file:
-            folder_name:str = 'bimeister_logs'
-            Folder.create_folder(os.getcwd(), folder_name)
+            Folder.create_folder(os.getcwd(), self._bimeister_log_folder)
 
         if days:
             delta:int = Tools.calculate_timedelta(days)
@@ -160,9 +150,9 @@ class Docker:
 
                 filename = self.__client.containers.get(id).name + '.log'
                 if in_file:
-                    with open(folder_name + '/' + filename, 'w', encoding='utf-8') as file:
+                    with open(self._bimeister_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
                         file.write(log)
-                        print(folder_name + '/' + filename)
+                        print(self._bimeister_log_folder + '/' + filename)
                 else:
                     print(log)
 
@@ -179,10 +169,8 @@ class Docker:
 
     def get_all_containers_logs(self, tail=5000, days=None):
         ''' Get logs from all containers in files. '''
-        
-        folder_name:str = 'bimeister_logs'
-        Folder.create_folder(os.getcwd(), folder_name)
 
+        Folder.create_folder(os.getcwd(), self._bimeister_log_folder)
         containers = self.get_containers(all=True)
         if days:
             delta:int = Tools.calculate_timedelta(days)
@@ -195,9 +183,9 @@ class Docker:
                     log = self.__client.containers.get(value[1]).logs(since=delta, timestamps=False).decode()
                 
                 filename = name + '.log'
-                with open(folder_name + '/' + filename, 'w', encoding='utf-8') as file:
+                with open(self._bimeister_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
                     file.write(log)
-                    print(folder_name + '/' + filename)
+                    print(self._bimeister_log_folder + '/' + filename)
 
             except docker.errors.APIError as err:
                 self.__logger.error(err)
@@ -207,8 +195,8 @@ class Docker:
                 print("Error occured.")
                 return False
                 
-        Tools.zip_files_in_dir(folder_name, folder_name)    # pack logs in zip archive
-        Folder.clean_folder(folder_name, remove=True)                   # delete folder with *.log files
+        Tools.zip_files_in_dir(self._bimeister_log_folder, self._bimeister_log_folder)    # pack logs in zip archive
+        Folder.clean_folder(self._bimeister_log_folder, remove=True)                      # delete folder with *.log files
 
         return True
 

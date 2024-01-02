@@ -14,7 +14,7 @@ from tools import Folder, File, Tools
 import featureToggle
 import mdocker
 import mk8s
-from main_local import main_local
+import main_local
 from help_menu import Help
 from reports import Reports
 import postgre
@@ -41,7 +41,7 @@ def main():
 #   TEST ZONE       LOBBY
 # ---------------------------------------------------------
 
-
+    
 
 
 
@@ -218,11 +218,11 @@ def main():
 
             #    ''' =============================================================================== DOCKER =============================================================================== '''
 
-            case ['docker', *_] if not Docker._check_docker:
-                print("No docker found in the system.\nHint: Try to run bim_utils using sudo privileges.")
+            case ['docker', *_] if not Docker.get_docker_client():
+                print("No docker found in the system.\nHint: Try to run this tool using sudo privileges, or check for 'docker' group of the current user.")
                 continue
 
-            case ['docker', '-h'] | ['docker', '--help']:
+            case ['docker', '-h'|'--help']:
                 print(Docker.docker_menu())
 
             case ['docker', 'ls']:
@@ -311,10 +311,46 @@ def main():
                 Docker.get_container_log(*containers_id)
 
 
+            #    ''' =============================================================================== K8S ============================================================================================== '''
+
+            case ['kube', *_] if not K8s.get_kube_config():
+                print("Couldn't locate K8S config file. No access to kube API. Check the log.")
+                continue
+
+            case ['kube', '-h'|'--help']:
+                print(K8s.k8s_menu())
+            
+            case ['kube', 'ns']:
+                K8s.display_namespaces()
+            
+            case ['kube', 'pods'|'po'|'pod']:
+                K8s.display_pods()
+            
+            case ['kube', 'logs', '-f', '--all', *_] if '--tail' in user_command:
+                namespace = False
+                if '-n' in user_command:
+                    namespace_idx = user_command.index('-n') + 1
+                    namespace = user_command[namespace_idx]
+                tail_idx = user_command.index('--tail') + 1
+                try:
+                    number = int(user_command[tail_idx])
+                except ValueError:
+                    print("--tail must be integer!")
+                    continue
+                K8s.get_all_pods_log(tail=number) if not namespace else K8s.get_all_pods_log(namespace=namespace, tail=number)
+            
+            case ['kube', 'logs', '-f', '--all', *_]:
+                namespace = False
+                if '-n' in user_command:
+                    namespace_idx = user_command.index('-n') + 1
+                    namespace = user_command[namespace_idx]
+                K8s.get_all_pods_log() if not namespace else K8s.get_all_pods_log(namespace=namespace)
+
+
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
 
-            case ['ft', *_] if not K8s._check_k8s and not Docker._check_docker:
-                print("No Kubernets or Docker has been found on the localhost.")
+            case ['ft', *_] if not K8s.get_kube_config() and not Docker.get_docker_client():
+                print("No Kubernets or Docker has been found on the localhost. Check the logs.")
                 continue
 
             case ['ft', _, *_]:
@@ -366,12 +402,6 @@ def main():
             case ['ls', 'report']:
                 Repo.display_reports(url, token)
 
-            # case ['upload', 'report']:
-            #     Repo.upload_single_report(url, token)
-            
-            # case ['test', 'report']:
-            #     Repo.upload_report(url, token)
-
 
             # wildcard pattern if no cases before where matched
             case _:
@@ -393,7 +423,7 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         main()
     elif sys.argv[1] == '--docker' and len(sys.argv) == 2:
-        main_local()
+        main_local.run_docker()
     elif sys.argv[1] == '--help' and len(sys.argv) == 2:
         help = Help.options_menu(help)
     elif sys.argv[1] == '--sql-query':

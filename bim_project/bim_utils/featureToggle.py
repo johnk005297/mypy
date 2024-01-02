@@ -22,30 +22,15 @@ class FeatureToggle:
     def define_COS(self):
         ''' Define which container orchestration system(K8S or Docker) is used. '''
 
-        if self.K8s._check_k8s:
+        if self.K8s.get_kube_config():
             self.COS:str = "K8S"
             return self.COS
-        elif self.Docker._check_docker:
+        elif self.Docker.get_docker_client():
             self.COS:str = "Docker"
             return self.COS
         else:
-            self.__logger.debug("No K8S or Docker has been found on localhost.")
+            self.__logger.debug("No K8S or Docker has been found on localhost. As well as no connection to the API's could be established.")
             return False
-
-
-    def ft_menu(self):
-        ''' Menu of FT options. '''
-
-        menu:str = "Feature Toggle                                                                                                                   \
-            \n        [docker/kube] ft [feature toggle name] --[on/off]                                                                              \
-            \n          usage:                                                                                                                       \
-            \n            kube ft spatium --on                                                                                                       \
-            \n            docker ft spatium --off                                                                                                    \
-            \n                                                                                                                                       \
-            \n        [docker/kube] ft --list                                 display the list of features                                           \
-            \n                                                                                                                                       \
-            \n   Main                                                                                                                                \
-            \n      q                                                 exit"
 
 
     def get_features(self, url, FeatureAccessToken):

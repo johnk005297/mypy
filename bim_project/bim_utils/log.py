@@ -1,6 +1,7 @@
 #
 import os
 import logging
+import sys
 
 
 
@@ -8,17 +9,23 @@ import logging
 class Logs:
 
     def __init__(self):
-        self.log_folder:str = "bimUtils_logs"
-        if not os.path.isdir(self.log_folder):
-            os.mkdir(self.log_folder)
+        self._log_folder:str = "bimUtils_logs"
+        self._bimeister_log_folder:str = "bimeister_logs"
+        if not os.path.isdir(self._log_folder):
+            try:
+                os.mkdir(self._log_folder)
+            except PermissionError as err:
+                print(f"Not enough permissions to create log folder in: {os.getcwd()}\n{err}")
+                sys.exit()
+            except Exception as err:
+                print(f"Couldn't create bimUtils_logs folder in: {os.getcwd()}\n{err}")
+                sys.exit()
 
 
     def connection_log(self, msg, url=None, method=None, path_url=None, status_code=None):
         message:str = msg
-
         def return_message(self):
             return message
-
         return return_message
 
 
@@ -39,7 +46,7 @@ class Logs:
     def f_logger(self, module_name, logLevel=logging.DEBUG):
         ''' Create a custom logger with file output. '''
 
-        log_file:str = f'{self.log_folder}/{module_name}.log'
+        log_file:str = f'{self._log_folder}/{module_name}.log'
 
         # Create a custom logger
         logger = logging.getLogger(module_name)
