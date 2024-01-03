@@ -55,8 +55,8 @@ class K8S:
                           \n    Logs                                                                                        \
                           \n       kube logs -f --all                                                                       \
                           \n       <optional keys>:                                                                         \
-                          \n               -n <namespace>           default value: bimeister                                \
-                          \n               --tail <number of lines>  defines the amount of lines in the log from the end    \
+                          \n             -n <namespace>             default value: bimeister                                \
+                          \n             --tail <number of lines>   defines the amount of lines to capture from the end     \
                           \n   Main                                                                                         \
                           \n      q                                  exit"
 
@@ -221,11 +221,11 @@ class K8S:
 
         pods = self.get_pods(namespace=namespace)
         table = PrettyTable()
-        table.field_names = ['NAME', 'READY', 'STATUS', 'RESTARTS', 'NAMESPACE']
+        table.field_names = ['NAME', 'READY', 'STATUS', 'NAMESPACE', 'RESTARTS']
         table.align = 'l'
         try:
             for name, value in pods.items():
-                table.add_row([name, value[1], value[0], value[2], value[3]] if value[1] else [Fore.RED + str(name), str(value[1]), str(value[0]), str(value[2]), str(value[3]) + Fore.RESET])
+                table.add_row([name, value[1], value[0], value[3], value[2]] if value[1] else [Fore.RED + str(name), str(value[1]), str(value[0]), str(value[3]), str(value[2]) + Fore.RESET])
         except NameError as err:
             print(f"Error: {err}")
         print(table)

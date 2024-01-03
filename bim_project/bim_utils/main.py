@@ -22,7 +22,7 @@ from log import Logs
 
 
 
-def main():
+def main(local=False):
 
     AppMenu_main     = app_menu.AppMenu()
     Auth             = auth.Auth()
@@ -52,7 +52,8 @@ def main():
 
 
     AppMenu_main.welcome_info_note()
-    if not Auth.establish_connection():  # if connection was not established, do not continue
+
+    if not local and not Auth.establish_connection():  # if connection was not established, do not continue
         return False
 
     url, token, username, password = Auth.url, Auth.token, Auth.username, Auth.password
@@ -106,49 +107,52 @@ def main():
             case False:
                 continue
 
-            case ['m']:
+            case ['m'] if not local:
                 print(AppMenu_main._main_menu)
+            
+            case ['m'] if local:
+                print(AppMenu_main._local_menu)
 
             # Close the menu and exit from the script.
-            case ['exit'] | ['q'] | ['quit']:
+            case ['exit'|'q'|'quit']:
                 break
 
 
             #    ''' =============================================================================== LICENSE BLOCK ==================================================================================== '''
 
-            case ['check', 'lic']:
+            case ['check', 'lic'] if not local:
                 License_main.display_licenses(url, token, username, password)
 
-            case ['get', 'sid']:
+            case ['get', 'sid'] if not local:
                 response = License_main.get_serverID(url, token)
                 print("\n   - serverId:", response)
 
-            case ['apply', 'lic']:
+            case ['apply', 'lic'] if not local:
                 License_main.post_license(url, token, username, password)
                 # license_id:str = License_main.post_license_new(url, token, username, password)
                 # License_main.put_license(url, token, license_id=license_id[0]) if license_id else print("Post license wasn't successful. Check the logs.")
 
-            case  ['delete', 'lic']:
+            case  ['delete', 'lic'] if not local:
                 License_main.delete_license(url, token, username, password)
 
-            case ['activate', 'lic']:
+            case ['activate', 'lic'] if not local:
                 license_id:str = input("Enter license id: ").strip()
                 License_main.put_license(url, token, username, password, license_id)
 
 
             #    ''' =============================================================================== User objects BLOCK =============================================================================== '''
             
-            case ['drop', 'uo']:
+            case ['drop', 'uo'] if not local:
                 User_main.delete_user_objects(url, token)
             
-            case ['drop', 'uo', '-h']:
+            case ['drop', 'uo', '-h'] if not local:
                 print(User_main.delete_user_objects.__doc__)
             
 
             #    ''' =============================================================================== TRANSFER DATA BLOCK ============================================================================== '''
             
             # Export data
-            case ['export', 'om'] | ['ls', 'workflow'] | ['rm', 'workflow'] | ['export', 'workflow', *_]:
+            case ['export', 'om'] | ['ls', 'workflow'] | ['rm', 'workflow'] | ['export', 'workflow', *_] if not local:
 
                 if Export_data_main.is_first_launch_export_data:
                     Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
@@ -179,13 +183,13 @@ def main():
                     Export_data_main.delete_workflows(url, token)                
 
             # Import data
-            case ['import', 'workflow']:
+            case ['import', 'workflow'] if not local:
                 Import_data_main.import_workflows(url, token)
 
-            case ['import', 'om']:
+            case ['import', 'om'] if not local:
                 Import_data_main.import_object_model(url, token)
 
-            case ['rm', 'files']:
+            case ['rm', 'files'] if not local:
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._object_model_folder}")
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._workflows_folder}")
                 File.remove_file(f"{os.getcwd()}/{Export_data_main._transfer_folder}/export_server.info")                
@@ -193,11 +197,11 @@ def main():
 
             #    ''' =============================================================================== USER =============================================================================== '''
 
-            case ['ptoken']:
+            case ['ptoken'] if not local:
                 private_token = Auth.get_private_token(url, token)
                 print(f"\n{private_token}")
 
-            case ['token']:
+            case ['token'] if not local:
                 user_access_token = Auth.get_user_access_token(url, username, password, Auth.providerId)
                 print(f"\n{user_access_token}")
 
@@ -219,7 +223,7 @@ def main():
             #    ''' =============================================================================== DOCKER =============================================================================== '''
 
             case ['docker', *_] if not Docker.get_docker_client():
-                print("No docker found in the system.\nHint: Try to run this tool using sudo privileges, or check for 'docker' group of the current user.")
+                print("No docker found in the system.")
                 continue
 
             case ['docker', '-h'|'--help']:
@@ -349,11 +353,11 @@ def main():
 
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
 
-            case ['ft', *_] if not K8s.get_kube_config() and not Docker.get_docker_client():
+            case ['ft', *_] if not local and not K8s.get_kube_config() and not Docker.get_docker_client():
                 print("No Kubernets or Docker has been found on the localhost. Check the logs.")
                 continue
 
-            case ['ft', _, *_]:
+            case ['ft', _, *_] if not local:
                 COS = FT.define_COS()
 
                 if COS == 'K8S':
@@ -399,7 +403,7 @@ def main():
 
             #    ''' =============================================================================== REPORTS ========================================================================================== '''
             
-            case ['ls', 'report']:
+            case ['ls', 'report'] if not local:
                 Repo.display_reports(url, token)
 
 
@@ -422,12 +426,14 @@ if __name__ == '__main__':
     enable_history_input()
     if len(sys.argv) == 1:
         main()
-    elif sys.argv[1] == '--docker' and len(sys.argv) == 2:
-        main_local.run_docker()
-    elif sys.argv[1] == '--help' and len(sys.argv) == 2:
-        help = Help.options_menu(help)
-    elif sys.argv[1] == '--sql-query':
-        main_local()
+    elif sys.argv[1] == '--local' and len(sys.argv) == 2:
+        main(local=True)
+    # elif sys.argv[1] == '--docker' and len(sys.argv) == 2:
+    #     main_local.run_docker()
+    # elif sys.argv[1] == '--help' and len(sys.argv) == 2:
+    #     help = Help.options_menu(help)
+    # elif sys.argv[1] == '--sql-query':
+    #     main_local()
     Logs().set_full_access_to_logs()
 
 

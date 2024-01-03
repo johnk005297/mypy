@@ -2,7 +2,6 @@
 # Tool modules to work with folders and files
 import os
 import platform
-# import logging
 import json
 import shutil
 import time
@@ -11,8 +10,8 @@ import string
 import pathlib
 import zipfile
 from datetime import datetime
-import requests
-import logging
+from log import Logs
+__logger = Logs().f_logger(__name__)
 
 
 class Folder:
@@ -24,7 +23,7 @@ class Folder:
                 os.mkdir(path + '/' + folder_name)        
         except OSError as err:
             print("ERROR in create folder function.")
-            logging.error(err)
+            __logger.error(err)
             return False
 
     @staticmethod
@@ -43,7 +42,7 @@ class Folder:
             else:
                 print(f'   - no {filename} folder was found.')
         except OSError as err:
-            logging.error(err)
+            __logger.error(err)
             print("Error occured. Check the logs.")
             return False
         return True
@@ -59,7 +58,6 @@ class Folder:
 
 class File:
 
-
     def read_file(path_to_file, filename):
         ''' Read from text files. In .json case function returns a dictionary. Need to pass two arguments in str format: a path and a file name. '''
         try:
@@ -69,14 +67,14 @@ class File:
                         content = json.load(file)
                     except json.JSONDecodeError as err:
                         print(f"Error with the {filename} file. Check the logs.")
-                        logging.error(f"Error with {filename}.\n{err}")
+                        __logger.error(f"Error with {filename}.\n{err}")
                         return False
                     return content
                 else:
                     content = file.read()
                     return content
         except OSError as err:
-            logging.error(err)
+            __logger.error(err)
             return False
 
 
@@ -130,6 +128,7 @@ class Tools:
         command = input("{0} shell: ".format(os_name)).strip() if not command else command
         os.system(command)
 
+
     def connect_ssh(host='', username=''):
         ''' Establish remote ssh connection. '''
 
@@ -137,7 +136,7 @@ class Tools:
         try:
             os.system(command)
         except OSError as err:
-            logging.error(err)
+            __logger.error(err)
             return False
 
 
@@ -148,7 +147,8 @@ class Tools:
             try:
                 for file_path in directory.iterdir():
                     archive.write(file_path, arcname=file_path.name)
-            except:
+            except Exception as err:
+
                 print("Error occured while zipping logs.")
                 return False
         return True
@@ -160,13 +160,11 @@ class Tools:
         epoch_time:int = int(datetime.now().timestamp())
         days:int = days * 86400      # 86400 is the amount of seconds in 24 hours
         delta:int = epoch_time - days
-
         return delta
     
 
-    def check_user_groups(*groups): # Function isn't in use so far.
+    def is_user_in_group(group):
         ''' Check user groups in linux. Function receives an argument which is a group name, and checks if there is such a group in the list. '''
-
         import grp
         lst = [grp.getgrgid(group).gr_name for group in os.getgroups()]
-        return True if groups in lst else False
+        return True if group in lst else False

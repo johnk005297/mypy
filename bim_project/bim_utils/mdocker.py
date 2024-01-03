@@ -30,11 +30,16 @@ class Docker:
         except Exception as err:
             cls.__logger.error(err)
             return False
-    
+
 
     def get_docker_client(self):
         if self.__check_docker():
             self.__client = docker.from_env()
+
+            # check if user has a docker group
+            if not Tools.is_windows() and not Tools.is_user_in_group('docker'):
+                print("Current user doesn't have privileges to run docker commands. Use sudo or add user to docker group.")
+                return False
             return True
         else:
             return False
@@ -58,8 +63,8 @@ class Docker:
                           \n      docker logs -f --all                              get all containers logs in files                                             \
                           \n      docker logs -f <container_id, container_id, ...>  get logs in the file                                                         \
                           \n      <optional keys>:                                                                                                               \
-                          \n              --days(optional)                          exact period to get logs for. Not applicable with '-i' flag.                 \
-                          \n              --tail(optional)                          amount of lines from the end of the log. Not applicable with '-i' flag.      \
+                          \n            --days(optional)                            exact period to get logs for. Not applicable with '-i' flag.                 \
+                          \n            --tail(optional)                            amount of lines from the end of the log. Not applicable with '-i' flag.      \
                           \n      docker logs -i <container_id>                     get logs from specific container interactively                               \
                           \n                                                                                                                                     \
                           \n   Main                                                                                                                              \
