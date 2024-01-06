@@ -57,8 +57,6 @@ def main(local=False):
         return False
 
     url, token, username, password = Auth.url, Auth.token, Auth.username, Auth.password
-
-
     while True:
         user_command = AppMenu_main.get_user_command()
 
@@ -331,10 +329,7 @@ def main(local=False):
                 K8s.display_pods()
             
             case ['kube', 'logs', '-f', '--all', *_] if '--tail' in user_command:
-                namespace = False
-                if '-n' in user_command:
-                    namespace_idx = user_command.index('-n') + 1
-                    namespace = user_command[namespace_idx]
+                namespace = K8s.check_args_for_namespace(user_command[3:])
                 tail_idx = user_command.index('--tail') + 1
                 try:
                     number = int(user_command[tail_idx])
@@ -344,11 +339,27 @@ def main(local=False):
                 K8s.get_all_pods_log(tail=number) if not namespace else K8s.get_all_pods_log(namespace=namespace, tail=number)
             
             case ['kube', 'logs', '-f', '--all', *_]:
-                namespace = False
-                if '-n' in user_command:
-                    namespace_idx = user_command.index('-n') + 1
-                    namespace = user_command[namespace_idx]
+                namespace = K8s.check_args_for_namespace(user_command[3:])
                 K8s.get_all_pods_log() if not namespace else K8s.get_all_pods_log(namespace=namespace)
+            
+            case ['kube', 'logs', '-f', *_] if '--all' not in user_command and '--pods' in user_command:
+                namespace = K8s.check_args_for_namespace(user_command[3:])
+                if namespace:
+                    ns_idx = user_command.index('-n') + 1
+                    user_command.remove(user_command[ns_idx])
+                if '--tail' in user_command:
+                    tail_idx = user_command.index('--tail') + 1
+                    try:
+                        number = int(user_command[tail_idx])
+                        user_command.remove(user_command[tail_idx])
+                    except ValueError:
+                        print("--tail must be integer!")
+                        continue
+                    pods = tuple(pod for pod in user_command[3:] if not pod.startswith('-'))
+                    K8s.get_pod_log(*pods, tail=number) if not namespace else K8s.get_pod_log(*pods, namespace=namespace, tail=number)
+                else:
+                    pods = tuple(pod for pod in user_command[3:] if not pod.startswith('-'))
+                    K8s.get_pod_log(*pods) if not namespace else K8s.get_pod_log(*pods, namespace=namespace)                    
 
 
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
@@ -428,12 +439,6 @@ if __name__ == '__main__':
         main()
     elif sys.argv[1] == '--local' and len(sys.argv) == 2:
         main(local=True)
-    # elif sys.argv[1] == '--docker' and len(sys.argv) == 2:
-    #     main_local.run_docker()
-    # elif sys.argv[1] == '--help' and len(sys.argv) == 2:
-    #     help = Help.options_menu(help)
-    # elif sys.argv[1] == '--sql-query':
-    #     main_local()
     Logs().set_full_access_to_logs()
 
 

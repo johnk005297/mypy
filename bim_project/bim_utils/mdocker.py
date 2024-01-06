@@ -59,9 +59,9 @@ class Docker:
                           \n      docker ls --all                                   display all containers                                                       \
                           \n                                                                                                                                     \
                           \n   Logs                                                                                                                              \
-                          \n      docker logs <container_id, container_id, ...>     display logs from the specific container(s)                                  \
+                          \n      docker logs <container_id container_id ...>     display logs from the specific container(s)                                  \
                           \n      docker logs -f --all                              get all containers logs in files                                             \
-                          \n      docker logs -f <container_id, container_id, ...>  get logs in the file                                                         \
+                          \n      docker logs -f <container_id container_id ...>  get logs in the file                                                         \
                           \n      <optional keys>:                                                                                                               \
                           \n            --days(optional)                            exact period to get logs for. Not applicable with '-i' flag.                 \
                           \n            --tail(optional)                            amount of lines from the end of the log. Not applicable with '-i' flag.      \

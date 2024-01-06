@@ -46,20 +46,21 @@ class K8S:
     def k8s_menu(self):
         ''' Appearance of docker commands menu. '''
 
-        _k8s_menu = "Kubernets options(requires access to kube API):                                                        \
-                          \n                                                                                                \
-                          \n   Pods/Namespaces                                                                              \
-                          \n      kube ns                            display cluster namespaces                             \
-                          \n      kube pods                          display the list of pods                               \
-                          \n                                                                                                \
-                          \n    Logs                                                                                        \
-                          \n       kube logs -f --all                                                                       \
-                          \n       <optional keys>:                                                                         \
-                          \n             -n <namespace>             default value: bimeister                                \
-                          \n             --tail <number of lines>   defines the amount of lines to capture from the end     \
-                          \n   Main                                                                                         \
+        _k8s_menu = "Kubernets options(requires access to kube API):                                                                    \
+                          \n                                                                                                            \
+                          \n   Pods/Namespaces                                                                                          \
+                          \n      kube ns                                       display cluster namespaces                              \
+                          \n      kube pods                                     display the list of pods                                \
+                          \n                                                                                                            \
+                          \n    Logs                                                                                                    \
+                          \n       kube logs -f --all                                                                                   \
+                          \n       <optional keys>:                                                                                     \
+                          \n             -n <namespace>                         default value: bimeister                                \
+                          \n             --tail <number of lines>               defines the amount of lines to capture from the end     \
+                          \n       kube logs -f --pods <pod_name pod_name ...>  save log in file for specific pod(s)                    \
+                          \n                                                                                                            \
+                          \n   Main                                                                                                     \
                           \n      q                                  exit"
-
 
         return _k8s_menu
 
@@ -236,7 +237,7 @@ class K8S:
         ''' Function get logs from all the pods in a given namespace. '''
 
         v1 = self.get_CoreV1Api()
-        # check for bimeister namespace
+        # check namespace if it exists
         ns:list = self.get_namespaces()
         if namespace not in ns:
             print("Error: Non-existing namespace.")
@@ -246,12 +247,11 @@ class K8S:
         pods = self.get_pods(namespace=namespace)
         for pod in pods:
             try:
-                pod_log = v1.read_namespaced_pod_log(name=pod, namespace=namespace, pretty=True, tail_lines=tail, timestamps=True)
+                pod_log = v1.read_namespaced_pod_log(name=pod, namespace=namespace, pretty=True, tail_lines=tail)
                 filename:str = pod + ".log"
                 with open(self._bimeister_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
                     file.write(pod_log)
                     print(self._bimeister_log_folder + '/' + filename)
-                self.__logger.info(f"Pod log uploaded: {pod}")
             except ApiException as err:
                 self.__logger.error(err)
                 print(f"Error occurred. Check the log.")
@@ -264,9 +264,40 @@ class K8S:
         # packing to zip archive and remove original log folder
         Tools.zip_files_in_dir(self._bimeister_log_folder, self._bimeister_log_folder)
         Folder.clean_folder(self._bimeister_log_folder, remove=True)
-
         return True
 
 
+    def get_pod_log(self, *args, namespace='bimeister', tail=5000):
+        ''' Function gets logs from the specific pods. '''
+
+        v1 = self.get_CoreV1Api()
+        # check namespace if it exists
+        ns:list = self.get_namespaces()
+        if namespace not in ns:
+            print("Error: Non-existing namespace.")
+            return False
+
+        Folder.create_folder(os.getcwd(), self._bimeister_log_folder)
+        for pod in args:
+            try:
+                pod_log = v1.read_namespaced_pod_log(name=pod, namespace=namespace, pretty=True, tail_lines=tail)
+                filename:str = pod + '.log'
+                with open(self._bimeister_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
+                    file.write(pod_log)
+                    print(self._bimeister_log_folder + '/' + filename)
+            except ApiException as err:
+                self.__logger.error(err)
+                print(f"Couldn't fetch logs for pod: {pod}. Check the log.")
+            except Exception as err:
+                self.__logger.error(err)
+                print(f"Couldn't fetch logs for pod: {pod}. Check the log.")
+        return True
 
 
+    def check_args_for_namespace(self, user_command):
+        ''' Function checks if -n flag was provided by user. '''
+        namespace = False
+        if '-n' in user_command:
+            namespace_idx = user_command.index('-n') + 1
+            namespace = user_command[namespace_idx]
+        return namespace
