@@ -189,9 +189,9 @@ class Export_data:
                 time.sleep(0.1)
                 try:
                     with open(f"{self._workflows_folder_path}/{workflow['id']}.zip", mode='wb') as zip_file, \
-                         open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as wf_id_name:
+                         open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as file:
                          zip_file.write(response.content)
-                         wf_id_name.write("{0}  {1}\n".format(workflow['id'], workflow['name']))
+                         file.write("{0}  {1}  {2}\n".format(nodeName, workflow['id'], workflow['name']))
                 except OSError as err:
                     self.__logger.error(err)
                     continue
@@ -204,12 +204,13 @@ class Export_data:
 
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         nodes:dict = self.get_workflow_nodes_id(url, token)
+
         for id in args:
             issue_message = lambda wf_id: print("Error: WorkFlow <{0}> wasn't exported. Check the logs.".format(wf_id))
             try:
                 url_export = f"{url}/api/WorkFlows/{id}"
                 response = requests.get(url=url_export, headers=headers, verify=False)
-                data = response.json()             
+                data = response.json()
                 workflow_name, node_id = data['name'], data['workFlowNodeId']
             except self.possible_request_errors as err:
                 self.__logger.error(f"{err} {response.status_code}\n{response.text}")
@@ -226,12 +227,12 @@ class Export_data:
                 url_export = f"{url}/api/Integration/WorkFlow/{id}/Export"
                 try:
                     response = requests.get(url=url_export, headers=headers, verify=False)
-                    with open(f"{self._workflows_folder_path}/{id}.zip", mode='wb') as zip_file, \
-                         open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as wf_id_name:
-                         zip_file.write(response.content)
-                         wf_id_name.write("{0}  {1}\n".format(id, workflow_name))
-                    time.sleep(0.1)
                     node_name:set = {key for key in nodes if nodes[key] == node_id}
+                    with open(f"{self._workflows_folder_path}/{id}.zip", mode='wb') as zip_file, \
+                         open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as file:
+                         zip_file.write(response.content)
+                         file.write("{0}  {1}  {2}\n".format(*node_name, id, workflow_name))
+                    time.sleep(0.1)
                     print("{0}: {1} successfully saved.".format(*node_name, workflow_name))
                 except self.possible_request_errors as err:
                     self.__logger.error(f"{err} {response.status_code}\n{response.text}")
@@ -267,10 +268,11 @@ class Export_data:
         return
 
 
-    def get_workFlowId_and_bimClassId(self, url, token):
+    def get_workFlowId_and_bimClassId(self, url, token): ## Function currently is not un use.
         '''
             This function does mapping between workFlow_id and bimClass_id. 
             It uses list comprehension block for transformation list of objects into dictionary with {'workFlow_id': 'bimClass_id'} pairs.
+
         '''
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
 

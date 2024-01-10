@@ -73,8 +73,8 @@ class Import_data:
 
         count = Tools.counter()
         for workflow in workflows:
-            id = workflow.split(' ', 1)[0].strip()
-            name = workflow.split(' ', 1)[1].strip()
+            id = workflow.split(' '*2, 2)[1].strip()
+            name = workflow.split(' '*2, 2)[2].strip()
             try:
                 with open(f'{self._transfer_folder}/{self._workflows_folder}/{id}.zip', mode='rb') as file:
                     response = requests.post(url=url_import, headers=headers, files={'file': file}, verify=False)

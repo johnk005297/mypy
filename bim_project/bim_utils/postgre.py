@@ -64,9 +64,9 @@ class DB:
         # if not kwargs.get('password', False):
         #     kwargs['password'] = getpass("Enter user's password for db user: ")
 
-        mandatory_args:list = ['host', 'db', 'port', 'user', 'password', 'file']
+        mandatory_args:list = ['10.169.123.133', 'authdb', '10265', 'bimauth', 'dbpass', 'query.sql']
 
-        return
+        # return
     
         for arg in mandatory_args:
             if arg not in kwargs.keys():
