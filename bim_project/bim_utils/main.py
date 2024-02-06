@@ -3,7 +3,6 @@
 import os
 import sys
 import time
-from typing import Any
 import app_menu
 import auth
 import user
@@ -14,12 +13,10 @@ from tools import Folder, File, Tools
 import featureToggle
 import mdocker
 import mk8s
-import main_local
-from help_menu import Help
 from reports import Reports
 import postgre
 from log import Logs
-
+import argparse
 
 
 def main(local=False):
@@ -41,15 +38,14 @@ def main(local=False):
 #   TEST ZONE       LOBBY
 # ---------------------------------------------------------
 
-    
 
-
-
+    # pg = postgre.DB()
+    # pg.exec_query_from_file(db='authdb', host='10.169.123.133', user='bimauth', password='dbpass', port='10265', file='query.sql')
+    # return
 
 # ---------------------------------------------------------
 #
 # ---------------------------------------------------------
-
 
     AppMenu_main.welcome_info_note()
 
@@ -424,7 +420,7 @@ def main(local=False):
 
 
 def enable_history_input():
-    # Block for users input. Need for ability to have history of user's inputs.
+    ''' Function provides an opportunity to have access of input history. '''
     if Tools.is_windows():
         import pyreadline3
     else:
@@ -435,10 +431,26 @@ def enable_history_input():
 if __name__ == '__main__':
 
     enable_history_input()
-    if len(sys.argv) == 1:
+    parser      = argparse.ArgumentParser(prog='bim_utils', description='\'Frankenstein\' CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
+    subparser   = parser.add_subparsers(dest='command', help='run without arguments for standart use')
+    sql         = subparser.add_parser('sql', help='execute sql query provided in a *.sql file')
+    local       = subparser.add_parser('local', help='execute script with locally available options on the current host')
+    sql.add_argument('--host', help='Specify the name of the database.', required=True)
+    sql.add_argument('--db', help='Specify the name of the database.', required=True)
+    sql.add_argument('--user', help='Specify username with access to DB.', required=True)
+    sql.add_argument('--password', help='Specify db user password.', required=True)
+    sql.add_argument('--port', help='Specify the port of the database.', required=True)
+    sql.add_argument('--file', help='Specify the sql file name containing the query.', required=True)
+    args = parser.parse_args()
+
+    if not args.command:
         main()
-    elif sys.argv[1] == '--local' and len(sys.argv) == 2:
+    elif args.command == 'sql':
+        pg = postgre.DB()
+        pg.exec_query_from_file(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port, file=args.file)
+    elif args.command == 'local':
         main(local=True)
+
     Logs().set_full_access_to_logs()
 
 

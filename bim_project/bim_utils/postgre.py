@@ -1,30 +1,42 @@
 #
 import psycopg2
-from getpass import getpass
-import argparse
-
-
-class Parser:
-
-    def __init__(self):
-        pass
-
-    def get_args(self):
-        ''' Test function to parse args. '''
-
-        # parser = argparse.ArgumentParser()
-        # parser.parse_args()
-        parser = argparse.ArgumentParser()
-        parser.add_argument("myvalue", help="Printing the value.")
-
-        args = parser.parse_args()
-        print(args.myvalue)
-
+import csv
 
 class DB:
 
     def __init__(self):
         pass
+
+
+    @staticmethod
+    def pp(cursor, data=None, rowlens=0):
+        d = cursor.description
+        if not d:
+            return "#### NO RESULTS ###"
+        names = []
+        lengths = []
+        rules = []
+        if not data:
+            data = cursor.fetchall()
+        for dd in d:    # iterate over description
+            l = dd[1]
+            if not l:
+                l = 12             # or default arg ...
+            l = max(l, len(dd[0])) # Handle long names
+            names.append(dd[0])
+            lengths.append(l)
+        for col in range(len(lengths)):
+            if rowlens:
+                rls = [len(row[col]) for row in data if row[col]]
+                lengths[col] = max([lengths[col]]+rls)
+            rules.append("-"*lengths[col])
+        format = " ".join(["%%-%ss" % l for l in lengths])
+        result = [format % tuple(names)]
+        result.append(format % tuple(rules))
+        for row in data:
+            result.append(format % row)
+        return "\n".join(result)
+
 
     def exec_query(self):
 
@@ -48,32 +60,6 @@ class DB:
 
     def exec_query_from_file(self, **kwargs):
 
-        # if not filename:
-        #     filename:str = input("Enter sql script file name: ")
-        # if not host:
-        #     host:str     = input("Enter db host name or IP: ")
-        # if not database:
-        #     database:str = input("Enter db name: ")
-        # if not port:
-        #     port:str     = input("Enter db port number: ")
-        # if not user:
-        #     user:str     = input("Enter db user name: ")
-        # filename=None, host=None, database=None, port=None, user=None, password=None
-
-
-        # if not kwargs.get('password', False):
-        #     kwargs['password'] = getpass("Enter user's password for db user: ")
-
-        mandatory_args:list = ['10.169.123.133', 'authdb', '10265', 'bimauth', 'dbpass', 'query.sql']
-
-        # return
-    
-        for arg in mandatory_args:
-            if arg not in kwargs.keys():
-                print(f"Forgot to provide {arg}!")
-                return False
-
-
         try:
             conn = psycopg2.connect(database=kwargs['db'],
                                     host=kwargs['host'],
@@ -89,15 +75,31 @@ class DB:
         with conn.cursor() as cursor:
             try:
                 cursor.execute(open(kwargs['file'], "r").read()) 
-                res = cursor.fetchall()
-                for x in res:
-                    print(x)
+                result = cursor.fetchall()
+
+                # Extract the table headers
+                headers = [i[0] for i in cursor.description]
+
+                # Open CSV file for writing
+                fileName:str = kwargs['file'][:-4] + '.csv'
+                csvFile = csv.writer(open(fileName, 'w', newline=''),
+                                    delimiter=',', lineterminator='\r\n',
+                                    quoting=csv.QUOTE_ALL, escapechar='\\')
+                
+                # Add the header and data to the CSV file
+                csvFile.writerow(headers)
+                csvFile.writerows(result)                
+
+            except psycopg2.DatabaseError as err:
+                print(err.pgerror)
+
             except psycopg2.Error as err:
                 if err.pgcode == '42P01':
-                    print('UndefinedTable in the query.')
+                    print('Undefined table in the query.')
                 print(err.pgerror)
                 return False
 
+            finally:
+                cursor.close()
+                conn.close()
 
-        cursor.close()
-        conn.close()

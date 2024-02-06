@@ -217,7 +217,9 @@ class Docker:
             if container.labels.get('com.docker.compose.service', False) in ft_pods and container.status == 'running':
                 return (container.id, container.name)
         
-        print(f"No {ft_pods} were found with Running status among containers. Check for it.")
+        message:str = f"No {ft_pods} were found with Running status among containers. Check for it."
+        self.__logger.error(message)
+        print(message)
         return False
             
 
