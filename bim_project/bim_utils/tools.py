@@ -168,3 +168,8 @@ class Tools:
         import grp
         lst = [grp.getgrgid(group).gr_name for group in os.getgroups()]
         return True if group in lst else False
+
+    def is_user_root():
+        ''' Get current user id. '''
+        user_id = os.getuid()
+        return True if user_id == 0 else False

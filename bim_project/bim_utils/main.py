@@ -39,9 +39,7 @@ def main(local=False):
 # ---------------------------------------------------------
 
 
-    # pg = postgre.DB()
-    # pg.exec_query_from_file(db='authdb', host='10.169.123.133', user='bimauth', password='dbpass', port='10265', file='query.sql')
-    # return
+
 
 # ---------------------------------------------------------
 #
@@ -217,7 +215,7 @@ def main(local=False):
             #    ''' =============================================================================== DOCKER =============================================================================== '''
 
             case ['docker', *_] if not Docker.get_docker_client():
-                print("No docker found in the system.")
+                print("Error: No docker found in the system, or current user doesn't have accesss to it.")
                 continue
 
             case ['docker', '-h'|'--help']:
