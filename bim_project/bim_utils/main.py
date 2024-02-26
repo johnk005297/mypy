@@ -1,7 +1,6 @@
 #
 # Script for work with license and some other small features.
 import os
-import sys
 import time
 import app_menu
 import auth
@@ -450,9 +449,5 @@ if __name__ == '__main__':
         main(local=True)
 
     Logs().set_full_access_to_logs()
-
-
-        
-
 
 

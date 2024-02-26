@@ -1,8 +1,11 @@
 #
 import psycopg2
 import csv
+from log import Logs
 
 class DB:
+
+    __logger = Logs().f_logger(__name__)
 
     def __init__(self):
         pass
@@ -73,8 +76,12 @@ class DB:
             return False
 
         with conn.cursor() as cursor:
+            success_msg:str = "SQL query executed successfully!"
             try:
-                cursor.execute(open(kwargs['file'], "r").read()) 
+                cursor.execute(open(kwargs['file'], "r").read())
+                if cursor.description == None:
+                    print(success_msg)
+                    return True
                 result = cursor.fetchall()
 
                 # Extract the table headers
@@ -88,10 +95,14 @@ class DB:
                 
                 # Add the header and data to the CSV file
                 csvFile.writerow(headers)
-                csvFile.writerows(result)                
+                csvFile.writerows(result)
+                print(success_msg)
+                print("Result saved in query.csv file!")
 
             except psycopg2.DatabaseError as err:
+                self.__logger.error(err.pgerror)
                 print(err.pgerror)
+                return False
 
             except psycopg2.Error as err:
                 if err.pgcode == '42P01':
