@@ -330,7 +330,7 @@ def main(local=False):
                     print("--tail must be integer!")
                     continue
                 K8s.get_all_pods_log(tail=number) if not namespace else K8s.get_all_pods_log(namespace=namespace, tail=number)
-            
+
             case ['kube', 'logs', '-f', '--all', *_]:
                 namespace = K8s.check_args_for_namespace(user_command[3:])
                 K8s.get_all_pods_log() if not namespace else K8s.get_all_pods_log(namespace=namespace)

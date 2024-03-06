@@ -92,12 +92,12 @@ class DB:
                 csvFile = csv.writer(open(fileName, 'w', newline=''),
                                     delimiter=',', lineterminator='\r\n',
                                     quoting=csv.QUOTE_ALL, escapechar='\\')
-                
+
                 # Add the header and data to the CSV file
                 csvFile.writerow(headers)
                 csvFile.writerows(result)
                 print(success_msg)
-                print("Result saved in query.csv file!")
+                print(f"Result saved in {kwargs['file'][:-4]}_result.csv file!")
 
             except psycopg2.DatabaseError as err:
                 self.__logger.error(err.pgerror)
