@@ -170,25 +170,8 @@ def write_to_file(filename, docker_compose):
         os.system('pause')
 
 
-def open_ports():
-    ''' Returns an actual list of bim services in dictionary format. '''
-
-    services = \
-    {
-        'bimeister_frontend:': ['80:5000', '443:5001'], 'webapi:': '8081:5000', 'pdfservice:': '8089:5000', 'db:': '5432:5432', 'authdb:': '5433:5432', 'journaldb:': '5438:5432', 'auth:': '8080:5000', 'journal:': '8097:5000', 'minio:': '9000:9000', 'rabbitmq:': ['5672:5672', '15672:15672'], 'keydb:': '6379:6379', 'license-service:': '5501:5000', 'treesdb:': '5430:5432', 'treesapi:': '7782:5000', 'construction_control_db:': '5555:5432', 'construction_control_api:': '8888:5000', 'reports-service:': '8093:5000', 'tasksworker:': '8091:5000', 'spatium_api:': ['10000:5000', '20000:5002'], 'spatiumdb:': '5435:5432', 'hangfiredb:': '5437:5432', 'reportsdb:': '5436:5432', 'maintenanceplanningdb:': '5445:5432', 'asset_performance_management_api:': '8083:5000', 'asset_performance_management_db:': '5446:5432', 'correctionmaintenancedb:': '5448:5432', 'correction_maintenance_api:': '10001:5000', 'work_permits_management_db:': '5447:5432', 'work_permits_management:': '8086:5000', 'extension_api:': '8095:5000', 'extension_api_db:': '5440:5432', 'planning_api:': '7500:5000', 'root_cause_analysis_db:': '5449:5432', 'api_gateway:': '8098:5000', 'notification_api:': '8099:5000', 'notificationdb:': '5451:5432', 'root_cause_analysis_api:': '10002:5000', 'reference_data_manager:': '8094:5000', 'reference_data_manager_db:': '5452:5432', 'reliability_centered_maintenance_api:': '10003:5000', 'reliability_centered_maintenance_db:': '5455:5432', 'risk_based_inspections_db:': '5454:5432', 'risk_based_inspections_api:': '10004:5000', 'data_synchronizer_db:': '5456:5432', 'data_synchronizer_api:': '5700:5000', 'recommendation_management_db:': '5457:5432', 'recommendation_management_api:': '10005:5000'
-    }
-
-    return services
-
-
-
 
 if __name__ == "__main__":
-
-    # services = open_ports()
-    # if not check_service_validation(services):
-    #     sys.exit("Missing colons in services dictionary!")
-
     services = read_docker_ports_file('docker-compose.ports.yml')
     filename = get_docker_compose_file()
     docker_compose = read_docker_compose_file(filename, services)
