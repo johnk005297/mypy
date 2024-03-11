@@ -79,12 +79,16 @@ def read_docker_ports_file(filename):
         return False
 
     for key, values in data.items():
-        for value in values.values():
-            if len(value) == 1:
-                services[key + ':'] = ''.join(value).split(':', 1)[1]
+        for k,v in values.items():
+
+            if k != 'ports':
+                continue
+
+            if len(v) == 1:
+                services[key + ':'] = ''.join(v).split(':', 1)[1]
             else:
                 services[key + ':'] = []
-                for x in value:
+                for x in v:
                     services[key + ':'].append(''.join(x).split(':', 1)[1])
 
     return services
