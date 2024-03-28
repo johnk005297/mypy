@@ -45,7 +45,7 @@ class Export_data:
         self.is_first_launch_export_data:bool = True
 
 
-    def get_object_model(self, filename, url, token):    
+    def get_object_model(self, filename, url, token):
         '''   Function gets object model from the server, and writes it into a file.   '''
 
         path_to_file = f'{self._transfer_folder}/{self._object_model_folder}/{filename}'

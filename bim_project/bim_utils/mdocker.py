@@ -210,13 +210,13 @@ class Docker:
     def get_ft_container(self):
         ''' Function finds needed container for FT. Returns tuple of container id and name. '''
 
-        ft_pods:tuple = ('keydb', 'redis')
+        ft_container:tuple = ('keydb', 'redis')
         containers = self.__client.containers.list()
         for container in containers:
-            if container.labels.get('com.docker.compose.service', False) in ft_pods and container.status == 'running':
+            if container.labels.get('com.docker.compose.service', False) in ft_container and container.status == 'running':
                 return (container.id, container.name)
         
-        message:str = f"No {ft_pods} were found with Running status among containers. Check for it."
+        message:str = f"No {ft_container} were found with Running status among containers. Check for it."
         self.__logger.error(message)
         print(message)
         return False

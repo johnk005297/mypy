@@ -155,24 +155,83 @@ class K8S:
 
         # define what cli we need to use: redis or keydb
         cli = 'redis-cli' if ft_secret.split('-')[1] == 'redis' else 'keydb-cli'
-        tmp_file:str = 'ft_token'
 
-        exec_command:str = f"kubectl exec -n {self.__namespace} {ft_pod} -- /bin/bash -c '{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN' 2> /dev/null > {tmp_file}"
-        os.system(exec_command)
-        file = File.read_file(os.getcwd(), tmp_file)
+        v1 = self.get_CoreV1Api()
+        exec_command:str = f"{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN"
+        data = self.exec_cmd_in_pod(ft_pod, ft_secret.split('-')[1], exec_command, self.__namespace, v1)
+        fault_message:str = "No FT token was received. Check the logs!"
+
+        if not data:
+            print(fault_message)
+            return False
+
+        ft_token:str = ''
         try:
-            ft_token = json.loads(file)['Token']
-            self.__logger.info(f"Received FT: {ft_token}")
+            ft_token = data.splitlines()[1]
+            ft_token = json.loads(ft_token)['Token']
         except json.decoder.JSONDecodeError as err:
             self.__logger.error(err)
-            self.__logger.debug(f"GET FEATURE_ACCESS_TOKEN response: {file}")
-            print("No FT token was received. Check the logs!")
-            os.remove(tmp_file)
-            return False
-        os.remove(tmp_file)
+            print(fault_message)
+        except Exception as err:
+            print(fault_message)
 
         self._ft_token = True if ft_token else False
         return ft_token
+
+
+    def exec_cmd_in_pod(self, pod, container, command, namespace, api_instance):   # Need to test this function!
+        ''' Execute command in pod. '''
+
+        exec_command = ["/bin/sh", "-c", command]
+        try:
+            # response from stream operation is a string
+            resp = stream(api_instance.connect_get_namespaced_pod_exec,
+                        pod,
+                        namespace,
+                        container=container,
+                        command=exec_command,
+                        stderr=True, stdin=False,
+                        stdout=True, tty=False,
+                        _preload_content=True)
+
+        except Exception as err:
+            self.__logger.error(err)
+            return False
+
+        return resp
+
+
+    # def get_ft_token(self):
+    #     ''' Function get's FT token into token variable. During process it creates tmp file after kubectl command, read token from the file into var, and delete the file. '''
+        
+    #     ft_pod = self.get_ft_pod()
+    #     ft_secret = self.get_ft_secret()
+
+    #     if ft_pod and ft_secret:
+    #         ft_secret_pass = self.get_ft_secret_pass(ft_secret)
+    #     else:
+    #         return False
+
+    #     # define what cli we need to use: redis or keydb
+    #     cli = 'redis-cli' if ft_secret.split('-')[1] == 'redis' else 'keydb-cli'
+    #     tmp_file:str = 'ft_token'
+
+    #     exec_command:str = f"kubectl exec -n {self.__namespace} {ft_pod} -- /bin/bash -c '{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN' 2> /dev/null > {tmp_file}"
+    #     os.system(exec_command)
+    #     file = File.read_file(os.getcwd(), tmp_file)
+    #     try:
+    #         ft_token = json.loads(file)['Token']
+    #         self.__logger.info(f"Received FT: {ft_token}")
+    #     except json.decoder.JSONDecodeError as err:
+    #         self.__logger.error(err)
+    #         self.__logger.debug(f"GET FEATURE_ACCESS_TOKEN response: {file}")
+    #         print("No FT token was received. Check the logs!")
+    #         os.remove(tmp_file)
+    #         return False
+    #     os.remove(tmp_file)
+
+    #     self._ft_token = True if ft_token else False
+    #     return ft_token
 
 
     def get_namespaces(self):

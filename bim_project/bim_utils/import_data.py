@@ -282,7 +282,7 @@ class Import_data:
 
         headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
         url_post_object_model:str = f'{url}/{self.__api_Integration_ObjectModel_Import}'
-        with open(f"{self._transfer_folder}/{self._object_model_folder}/{self._modified_object_model_file}", "r", encoding="utf-8") as file:
+        with open(f"{self._transfer_folder}/{self._object_model_folder}/{self.Export_data._object_model_file}", "r", encoding="utf-8") as file:
             data = file.read()
         # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file   
         try:
@@ -309,9 +309,9 @@ class Import_data:
             # In order to avoid message about the file is already there from Export_data.get_object_model function, need to remove it first.
             if os.path.isfile(f'{self._transfer_folder}/{self._object_model_folder}/{self._object_model_file}'):
                 os.remove(f'{self._transfer_folder}/{self._object_model_folder}/{self._object_model_file}')
-            self.Export_data.get_object_model(self._object_model_file, url, token)
-            self.prepare_object_model_file_for_import()
-            self.fix_defaulValues_in_object_model()
+            # self.Export_data.get_object_model(self._object_model_file, url, token)
+            # self.prepare_object_model_file_for_import()
+            # self.fix_defaulValues_in_object_model()
             self.post_object_model(url, token)
             return True
         else:
