@@ -180,15 +180,17 @@ class Export_data:
         # Check if exported_workflows.list has something from the passed arguments already. If so, delete them.
         if os.path.isfile(f"{self._workflows_folder_path}/{self._exported_workflows_list}"):
             tmp_file = 'temp.list'
+            list_of_chosen_wf_id:list = []
+            for nodeName in self.current_workflow_node_selection:
+                workflow_data = File.read_file(f'{self._workflows_folder_path}', f'{nodeName}_workflows_export_server.json')
+                for workflow in workflow_data['workFlows']:
+                    list_of_chosen_wf_id.append(workflow['id'])
+
             with open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", 'r', encoding='utf-8') as input, \
                  open(f"{self._workflows_folder_path}/{tmp_file}", 'w', encoding='utf-8') as output:
-                for nodeName in self.current_workflow_node_selection:
-                    workflow_data = File.read_file(f'{self._workflows_folder_path}', f'{nodeName}_workflows_export_server.json')
-                    for workflow in workflow_data['workFlows']:
-                        for line in input:
-                            if workflow['id'] not in line.strip("\n"):
-                                output.write(line)
-            
+                for line in input:
+                    if line.split()[1] not in list_of_chosen_wf_id:
+                        output.write(line)
             os.replace(f"{self._workflows_folder_path}/{tmp_file}", f"{self._workflows_folder_path}/{self._exported_workflows_list}")
 
         with open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as file:
@@ -219,16 +221,15 @@ class Export_data:
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         nodes:dict = self.get_workflow_nodes_id(url, token)
 
-        
+
         # Check if exported_workflows.list has something from the passed arguments already. If so, delete them.
         if os.path.isfile(f"{self._workflows_folder_path}/{self._exported_workflows_list}"):
             tmp_file = 'temp.list'
             with open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", 'r', encoding='utf-8') as input, \
                  open(f"{self._workflows_folder_path}/{tmp_file}", 'w', encoding='utf-8') as output:
-                for id in args:
-                    for line in input:
-                        if id not in line.strip("\n"):
-                            output.write(line)
+                for line in input:
+                    if line.split()[1] not in args:
+                        output.write(line)
 
             os.replace(f"{self._workflows_folder_path}/{tmp_file}", f"{self._workflows_folder_path}/{self._exported_workflows_list}")
 
