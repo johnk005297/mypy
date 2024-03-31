@@ -177,24 +177,38 @@ class Export_data:
         count = Tools.counter()
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
 
-        for nodeName in self.current_workflow_node_selection:
-            workflow_data = File.read_file(f'{self._workflows_folder_path}', f'{nodeName}_workflows_export_server.json')
-            for workflow in workflow_data['workFlows']:
-                try:
-                    url_export = f"{url}/api/Integration/WorkFlow/{workflow['id']}/Export"
-                    response = requests.get(url=url_export, headers=headers, verify=False)
-                except self.possible_request_errors as err:
-                    self.__logger.error(f"{err}\n{response.text}")
-                print(f"   {count()}){nodeName}: {workflow['name']}")   # display the name of the process in the output
-                time.sleep(0.1)
-                try:
-                    with open(f"{self._workflows_folder_path}/{workflow['id']}.zip", mode='wb') as zip_file, \
-                         open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as file:
-                         zip_file.write(response.content)
-                         file.write("{0}  {1}  {2}\n".format(nodeName, workflow['id'], workflow['name']))
-                except OSError as err:
-                    self.__logger.error(err)
-                    continue
+        # Check if exported_workflows.list has something from the passed arguments already. If so, delete them.
+        if os.path.isfile(f"{self._workflows_folder_path}/{self._exported_workflows_list}"):
+            tmp_file = 'temp.list'
+            with open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", 'r', encoding='utf-8') as input, \
+                 open(f"{self._workflows_folder_path}/{tmp_file}", 'w', encoding='utf-8') as output:
+                for nodeName in self.current_workflow_node_selection:
+                    workflow_data = File.read_file(f'{self._workflows_folder_path}', f'{nodeName}_workflows_export_server.json')
+                    for workflow in workflow_data['workFlows']:
+                        for line in input:
+                            if workflow['id'] not in line.strip("\n"):
+                                output.write(line)
+            
+            os.replace(f"{self._workflows_folder_path}/{tmp_file}", f"{self._workflows_folder_path}/{self._exported_workflows_list}")
+
+        with open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as file:
+            for nodeName in self.current_workflow_node_selection:
+                workflow_data = File.read_file(f'{self._workflows_folder_path}', f'{nodeName}_workflows_export_server.json')
+                for workflow in workflow_data['workFlows']:
+                    try:
+                        url_export = f"{url}/api/Integration/WorkFlow/{workflow['id']}/Export"
+                        response = requests.get(url=url_export, headers=headers, verify=False)
+                    except self.possible_request_errors as err:
+                        self.__logger.error(f"{err}\n{response.text}")
+                    print(f"   {count()}){nodeName}: {workflow['name']}")   # display the name of the process in the output
+                    time.sleep(0.1)
+                    try:
+                        with open(f"{self._workflows_folder_path}/{workflow['id']}.zip", mode='wb') as zip_file:
+                            zip_file.write(response.content)
+                        file.write("{0}  {1}  {2}\n".format(nodeName, workflow['id'], workflow['name']))
+                    except OSError as err:
+                        self.__logger.error(err)
+                        continue
 
         return True
 
@@ -205,47 +219,60 @@ class Export_data:
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         nodes:dict = self.get_workflow_nodes_id(url, token)
 
-        for id in args:
-            issue_message = lambda wf_id: print("Error: WorkFlow <{0}> wasn't exported. Check the logs.".format(wf_id))
-            try:
-                url_export = f"{url}/api/WorkFlows/{id}"
-                response = requests.get(url=url_export, headers=headers, verify=False)
-                data = response.json()
-                workflow_name, node_id = data['name'], data['workFlowNodeId']
-            except self.possible_request_errors as err:
-                self.__logger.error(f"{err} {response.status_code}\n{response.text}")
-                issue_message(id)
-                continue
-            except Exception as err:
-                self.__logger.error(f"{err} {response.status_code}\n{data}")
-                if response.status_code == 400 and data['type']:
-                    print("InvalidInfoModelException. WorkFlow ID is incorrect. Check the logs.")
-                elif response.status_code == 404:
-                    print(f"NotFoundDataException. WorkFlow: <{id}> wasn't found. Check the logs.")
-                continue
-            else:
-                url_export = f"{url}/api/Integration/WorkFlow/{id}/Export"
+        
+        # Check if exported_workflows.list has something from the passed arguments already. If so, delete them.
+        if os.path.isfile(f"{self._workflows_folder_path}/{self._exported_workflows_list}"):
+            tmp_file = 'temp.list'
+            with open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", 'r', encoding='utf-8') as input, \
+                 open(f"{self._workflows_folder_path}/{tmp_file}", 'w', encoding='utf-8') as output:
+                for id in args:
+                    for line in input:
+                        if id not in line.strip("\n"):
+                            output.write(line)
+
+            os.replace(f"{self._workflows_folder_path}/{tmp_file}", f"{self._workflows_folder_path}/{self._exported_workflows_list}")
+
+        with open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as file:
+            for id in args:
+                issue_message = lambda wf_id: print("Error: WorkFlow <{0}> wasn't exported. Check the logs.".format(wf_id))
                 try:
+                    url_export = f"{url}/api/WorkFlows/{id}"
                     response = requests.get(url=url_export, headers=headers, verify=False)
-                    node_name:set = {key for key in nodes if nodes[key] == node_id}
-                    with open(f"{self._workflows_folder_path}/{id}.zip", mode='wb') as zip_file, \
-                         open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as file:
-                         zip_file.write(response.content)
-                         file.write("{0}  {1}  {2}\n".format(*node_name, id, workflow_name))
-                    time.sleep(0.1)
-                    print("{0}: {1} successfully saved.".format(*node_name, workflow_name))
+                    data = response.json()
+                    workflow_name, node_id = data['name'], data['workFlowNodeId']
                 except self.possible_request_errors as err:
                     self.__logger.error(f"{err} {response.status_code}\n{response.text}")
-                    issue_message(workflow_name)
-                    continue
-                except OSError as err:
-                    self.__logger.error(err)
-                    issue_message(workflow_name)
+                    issue_message(id)
                     continue
                 except Exception as err:
-                    self.__logger.error(err)
-                    issue_message(workflow_name)
+                    self.__logger.error(f"{err} {response.status_code}\n{data}")
+                    if response.status_code == 400 and data['type']:
+                        print("InvalidInfoModelException. WorkFlow ID is incorrect. Check the logs.")
+                    elif response.status_code == 404:
+                        print(f"NotFoundDataException. WorkFlow: <{id}> wasn't found. Check the logs.")
                     continue
+                else:
+                    url_export = f"{url}/api/Integration/WorkFlow/{id}/Export"
+                    try:
+                        response = requests.get(url=url_export, headers=headers, verify=False)
+                        node_name:set = {key for key in nodes if nodes[key] == node_id}
+                        with open(f"{self._workflows_folder_path}/{id}.zip", mode='wb') as zip_file:
+                            zip_file.write(response.content)
+                        file.write("{0}  {1}  {2}\n".format(*node_name, id, workflow_name))
+                        time.sleep(0.1)
+                        print("{0}: {1} successfully saved.".format(*node_name, workflow_name))
+                    except self.possible_request_errors as err:
+                        self.__logger.error(f"{err} {response.status_code}\n{response.text}")
+                        issue_message(workflow_name)
+                        continue
+                    except OSError as err:
+                        self.__logger.error(err)
+                        issue_message(workflow_name)
+                        continue
+                    except Exception as err:
+                        self.__logger.error(err)
+                        issue_message(workflow_name)
+                        continue
 
         return True
 
