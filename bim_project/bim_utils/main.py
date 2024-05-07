@@ -432,12 +432,12 @@ if __name__ == '__main__':
     subparser   = parser.add_subparsers(dest='command', help='run without arguments for standart use')
     sql         = subparser.add_parser('sql', help='execute sql query provided in a *.sql file')
     local       = subparser.add_parser('local', help='execute script with locally available options on the current host')
-    sql.add_argument('--host', help='db hostname or IP address', required=True)
-    sql.add_argument('--db', help='db name', required=True)
-    sql.add_argument('--user', help='username with access to db', required=True)
-    sql.add_argument('--password', help='db user password', required=True)
-    sql.add_argument('--port', help='db port', required=True)
-    sql.add_argument('--file', help='sql filename containing the query', required=True)
+    sql.add_argument('-s', '--host', help='db hostname or IP address', required=True)
+    sql.add_argument('-d', '--db', help='db name', required=True)
+    sql.add_argument('-u', '--user', help='username with access to db', required=True)
+    sql.add_argument('-pw', '--password', help='db user password', required=True)
+    sql.add_argument('-p', '--port', help='db port', required=True)
+    sql.add_argument('-f', '--file', help='sql filename containing the query', required=True)
     args = parser.parse_args()
 
     if not args.command:
