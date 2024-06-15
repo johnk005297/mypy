@@ -40,6 +40,7 @@ class FeatureToggle:
         request = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)
 
         if request.status_code == 200:
+            self.__logger.info(f"{self._api_GetFeatures} {request}")
             response:dict = request.json()
             ft_list:list = [ft for ft in response]
         else:
@@ -60,6 +61,7 @@ class FeatureToggle:
         table.field_names = ['FEATURE', 'STATUS']
         table.align = 'l'
         if request.status_code == 200:
+            self.__logger.info(f"{self._api_GetFeatures} {request}")
             response:dict = request.json()
             print()
             for key,value in sorted(response.items()):
@@ -82,6 +84,7 @@ class FeatureToggle:
         request = requests.put(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
         
         if request.status_code in (200, 201, 204):
+            self.__logger.info(f"{url}/{self._api_Features}/{feature} {request}")
             print(f"Result: {feature} {result} successfully.")
             return True
         else:

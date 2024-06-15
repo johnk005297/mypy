@@ -122,19 +122,22 @@ class K8S:
 
         v1 = self.get_CoreV1Api()
         try:
+            secret:dict = v1.read_namespaced_secret(secret_name, self.__namespace).data
             if secret_name.split('-')[1] == 'redis':
-                secret:dict = v1.read_namespaced_secret(secret_name, self.__namespace).data
                 passwd:str = base64.b64decode(secret['REDIS_PASSWORD']).decode('utf-8')
 
             else:
                 # keydb secret is encoded. Need to decode it first, then extract the password.
-                secret:dict = v1.read_namespaced_secret(secret_name, self.__namespace).data
                 decode:str = base64.b64decode(secret['server.sh']).decode('utf-8')
                 for string in range(len(decode.split())):
                     if 'requirepass' in decode.split()[string]:
                         passwd = decode.split()[string + 1].strip("\"")
 
         except ApiException as err:
+            self.__logger.error(err)
+            return False
+        
+        except Exception as err:
             self.__logger.error(err)
             return False
 
@@ -193,7 +196,8 @@ class K8S:
                         stderr=True, stdin=False,
                         stdout=True, tty=False,
                         _preload_content=True)
-
+            
+            self.__logger.info(resp)
         except Exception as err:
             self.__logger.error(err)
             return False

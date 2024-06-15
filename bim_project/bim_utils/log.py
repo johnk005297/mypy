@@ -22,13 +22,6 @@ class Logs:
                 sys.exit()
 
 
-    def connection_log(self, msg, url=None, method=None, path_url=None, status_code=None):
-        message:str = msg
-        def return_message(self):
-            return message
-        return return_message
-
-
     def http_connect(self):
         def log_message(self, url):
             message:str = f"Starting new HTTP connection: {url}"
