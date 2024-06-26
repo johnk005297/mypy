@@ -2,38 +2,36 @@ import os
 import json
 import requests
 import base64
-from urllib3.exceptions import InsecureRequestWarning
-from urllib3 import disable_warnings
-disable_warnings(InsecureRequestWarning)
+import auth
 import time
 import binascii
-from colorama import init, Fore
-init(autoreset=True)
 from datetime import date
 from datetime import datetime
-import auth
 from tools import Tools
 from termcolor import colored, cprint
 from log import Logs
-
-
+from urllib3 import disable_warnings
+from urllib3.exceptions import InsecureRequestWarning
+disable_warnings(InsecureRequestWarning)
+from colorama import init, Fore
+init(autoreset=True)
 
 
 class License:
 
-    __api_License:str              = "api/License"
-    __api_License_serverId:str     = "api/License/serverId"
-    _permissions_to_check:tuple    = ('LicensesRead', 'LicensesWrite')
+    __api_License: str = "api/License"
+    __api_License_serverId: str = "api/License/serverId"
+    _permissions_to_check: tuple = ('LicensesRead', 'LicensesWrite')
 
     # This SUID and UPP licenses are actually two parts of one license. Have know idea why it was designed that way.
-    __UPP_SUID_lic:tuple = ('Платформа BIMeister, Bimeister УПП', 'Платформа BIMeister, Bimeister СУИД')
-    __logger                      = Logs().f_logger(__name__)
-    __start_connection            = Logs().http_connect()
-    __check_response              = Logs().http_response()
+    __UPP_SUID_lic: tuple = ('Платформа BIMeister, Bimeister УПП', 'Платформа BIMeister, Bimeister СУИД')
+    __logger = Logs().f_logger(__name__)
+    __start_connection = Logs().http_connect()
+    __check_response = Logs().http_response()
     start_connection = Logs().http_connect()
-    possible_request_errors:tuple = auth.Auth().possible_request_errors
-    privileges_granted:bool = False
-    privileges_checked:bool = False
+    possible_request_errors: tuple = auth.Auth().possible_request_errors
+    privileges_granted: bool = False
+    privileges_checked: bool = False
 
 
     def __init__(self):
@@ -67,13 +65,13 @@ class License:
         if len(data) < 4:
             print('Incorrect input data.')
             return False
-        err_message:str = 'Error with decoding the string. Check the log.'
-        list_of_licenses:list = [] # list where to put all the decoded token data
-        is_file:bool = os.path.splitext(data)[1] == '.lic'
-        is_file_in_place:bool = os.path.isfile(f"{os.getcwd()}/{data}")
+        err_message: str = 'Error with decoding the string. Check the log.'
+        list_of_licenses: list = [] # list where to put all the decoded token data
+        is_file: bool = os.path.splitext(data)[1] == '.lic'
+        is_file_in_place: bool = os.path.isfile(f"{os.getcwd()}/{data}")
 
         if is_file and not is_file_in_place:
-            no_file_message:str = f"Error: No such file '{data}' in the current folder. Check for it."
+            no_file_message: str = f"Error: No such file '{data}' in the current folder. Check for it."
             self.__logger.error(no_file_message)
             print(no_file_message)
             return False
@@ -82,7 +80,7 @@ class License:
             with open(data, "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
                 content = [line for line in file.read().split('\n') if line]
             for line in content:
-                is_present:bool = False
+                is_present: bool = False
                 try:
                     data = self.decode_base64(line)
                 except (binascii.Error, ValueError) as err:
@@ -114,8 +112,8 @@ class License:
                 return False
 
         ### Since EDMS and EPMM license could be applied in strict order, we need to make that order correct.
-        EDMS:int = -1
-        EPMM:int = -1
+        EDMS: int = -1
+        EPMM: int = -1
         for lic in range(len(list_of_licenses)):
             if list_of_licenses[lic]['Product'] == 'BimeisterEDMS':
                 EDMS = lic
@@ -132,7 +130,7 @@ class License:
     def get_licenses(self, url, token, username, password):
         ''' Get all the licenses in the system '''
 
-        url_get_licenses:str = f'{url}/{self.__api_License}'
+        url_get_licenses: str = f'{url}/{self.__api_License}'
         headers = {'accept': '*/*', 'Content-type':'text/plain', 'Authorization': f"Bearer {token}"}
         payload = {
                     "username": username,
@@ -155,7 +153,7 @@ class License:
 
         self.__logger.info("Check license status...")
         licenses = self.get_licenses(url, token, username, password)
-        current_date:str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
+        current_date: str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
         for license in licenses:
             if license['activeUsers'] > license['activeUsersLimit'] and license['isActive'] and license['until'] > current_date:
                 self.__logger.error(f"Users limit was exceeded! Active users: {license['activeUsers']}. Users limit: {license['activeUsersLimit']}")
@@ -173,11 +171,11 @@ class License:
     def get_serverID(self, url, token):
 
         headers = {'accept': '*/*', 'Content-type':'text/plain', 'Authorization': f"Bearer {token}"}
-        url_get_serverId:str = url + '/' + self.__api_License_serverId
+        url_get_serverId: str = url + '/' + self.__api_License_serverId
         self.__logger.info(self.__start_connection(url))
         response = requests.get(url=url_get_serverId, data="", headers=headers, verify=False)
         self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
-        message:str = "Current user don't have sufficient privileges."
+        message: str = "Current user don't have sufficient privileges."
         return response.text if response.status_code == 200 else message
 
 
@@ -185,7 +183,7 @@ class License:
         ''' Display the list of licenses. '''
 
         licenses: list = self.get_licenses(url, token, username, password)
-        license_status:bool = self.get_license_status(url, token, username, password)
+        license_status: bool = self.get_license_status(url, token, username, password)
 
         if not license_status:
             for number, license in enumerate(licenses, 1):
@@ -266,7 +264,7 @@ class License:
         headers = {'accept': 'text/plain', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
         self.__logger.info("Posting a license:")
         licenses_id = tuple(x.get('licenseID', False) for x in self.get_licenses(url, token, username, password))
-        new_license_data:list = self.read_license_token()
+        new_license_data: list = self.read_license_token()
         if not new_license_data:
             return False
 
@@ -297,7 +295,7 @@ class License:
         return True
 
 
-    def put_license(self, url:str, token:str, username, password, license_id:str):
+    def put_license(self, url: str, token: str, username, password, license_id: str):
 
         headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
         # all the active licenses will be deactivated, if user forgot to do it, and if there are any active
@@ -307,7 +305,7 @@ class License:
         #         return
         #         self.delete_license(url, token, username, password)
         #         pass
-        check_id:bool = False
+        check_id: bool = False
         self.__logger.info("Putting a license:")
         for license in self.get_licenses(url, token, username, password):
             if license['licenseID'] == license_id:
@@ -316,12 +314,12 @@ class License:
         if not check_id:
             print('Incorrect license ID.')
             return False
-        url_put_license:str = f"{url}/{self.__api_License}/active/{license_id}"
+        url_put_license: str = f"{url}/{self.__api_License}/active/{license_id}"
         payload = {}
         response = requests.put(url=url_put_license, headers=headers, data=payload, verify=False)
         self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
         response_data = bool(response.text) if not response.text else response.json()
-        err_message:str = Fore.RED + f"   - error: license '{license_id}' has not been activated!"
+        err_message: str = Fore.RED + f"   - error: license '{license_id}' has not been activated!"
 
         if response.status_code in (200, 201, 204):
             print(Fore.GREEN + f"   - license '{license_id}' has been activated successfully!")

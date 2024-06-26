@@ -1,32 +1,32 @@
 #
 import requests
-from prettytable import PrettyTable
-from colorama import init, Fore
-init(autoreset=True)
-# import logging
-from log import Logs
 import mdocker
 import mk8s
+from prettytable import PrettyTable
+from log import Logs
+from colorama import init, Fore
+init(autoreset=True)
+
 
 
 class FeatureToggle:
 
-    _api_GetFeatures:str = 'api/Features/GetFeatures'
-    _api_Features:str    = 'api/Features'
-    __logger             = Logs().f_logger(__name__)
-    Docker               = mdocker.Docker()
-    K8s                  = mk8s.K8S(namespace='bimeister')
-    COS                  = False
+    _api_GetFeatures: str = 'api/Features/GetFeatures'
+    _api_Features: str = 'api/Features'
+    __logger = Logs().f_logger(__name__)
+    Docker = mdocker.Docker()
+    K8s = mk8s.K8S(namespace='bimeister')
+    COS = False
 
 
     def define_COS(self):
-        ''' Define which container orchestration system(K8S or Docker) is used. '''
+        """ Define which container orchestration system(K8S or Docker) is used. """
 
         if self.K8s.get_kube_config():
-            self.COS:str = "K8S"
+            self.COS: str = "K8S"
             return self.COS
         elif self.Docker.get_docker_client():
-            self.COS:str = "Docker"
+            self.COS: str = "Docker"
             return self.COS
         else:
             self.__logger.debug("No K8S or Docker has been found on localhost. As well as no connection to the API's could be established.")
@@ -34,25 +34,25 @@ class FeatureToggle:
 
 
     def get_features(self, url, FeatureAccessToken):
-        ''' Get list of features. '''
+        """ Get list of features. """
 
         headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}' }
         request = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)
 
         if request.status_code == 200:
             self.__logger.info(f"{self._api_GetFeatures} {request}")
-            response:dict = request.json()
-            ft_list:list = [ft for ft in response]
+            response: dict = request.json()
+            ft_list: list = [ft for ft in response]
         else:
             print(f"Error {request.status_code} occurred during GetFeatures request. Check the logs.")
             self.__logger.error(request.text)
             return False
-        
+
         return ft_list
 
 
     def display_features(self, url, FeatureAccessToken):
-        ''' Display list of features in pretty table. '''
+        """ Display list of features in pretty table. """
 
         headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}' }
         request = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)
@@ -62,7 +62,7 @@ class FeatureToggle:
         table.align = 'l'
         if request.status_code == 200:
             self.__logger.info(f"{self._api_GetFeatures} {request}")
-            response:dict = request.json()
+            response: dict = request.json()
             print()
             for key,value in sorted(response.items()):
                 # print(" {0}:  {1}".format(k.capitalize(), v))
@@ -75,11 +75,11 @@ class FeatureToggle:
 
 
     def set_feature(self, url, feature, bearerToken, FeatureAccessToken, is_enabled=True):
-        ''' Function to enable/disable FT. '''
+        """ Function to enable/disable FT. """
 
         headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}', 'Authorization': f'Bearer {bearerToken}', 'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
         json_data = is_enabled
-        result:str = 'enabled' if is_enabled else 'disabled'
+        result: str = 'enabled' if is_enabled else 'disabled'
 
         request = requests.put(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
         

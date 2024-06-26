@@ -9,8 +9,8 @@ import sys
 class Logs:
 
     def __init__(self):
-        self._log_folder:str = "bimUtils_logs"
-        self._bimeister_log_folder:str = "bimeister_logs"
+        self._log_folder: str = "bimUtils_logs"
+        self._bimeister_log_folder: str = "bimeister_logs"
         if not os.path.isdir(self._log_folder):
             try:
                 os.mkdir(self._log_folder)
@@ -37,9 +37,9 @@ class Logs:
 
 
     def f_logger(self, module_name, logLevel=logging.DEBUG):
-        ''' Create a custom logger with file output. '''
+        """ Create a custom logger with file output. """
 
-        log_file:str = f'{self._log_folder}/{module_name}.log'
+        log_file: str = f'{self._log_folder}/{module_name}.log'
 
         # Create a custom logger
         logger = logging.getLogger(module_name)
@@ -60,7 +60,7 @@ class Logs:
 
 
     def set_full_access_to_logs(self):
-        ''' Need to make bimUtils_logs folder accessible for all users to escape errors at launch. '''
+        """ Need to make bimUtils_logs folder accessible for all users to escape errors at launch. """
 
         logs:str = 'bimUtils_logs'
         if os.path.isdir(logs):

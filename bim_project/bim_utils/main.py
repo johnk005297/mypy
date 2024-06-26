@@ -1,6 +1,7 @@
 #
 # Script for work with license and some other small features.
 import os
+import sys
 import time
 import app_menu
 import auth
@@ -428,10 +429,14 @@ def enable_history_input():
 if __name__ == '__main__':
 
     enable_history_input()
-    parser      = argparse.ArgumentParser(prog='bim_utils', description='\'Frankenstein\' CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
-    subparser   = parser.add_subparsers(dest='command', help='run without arguments for standart use')
-    sql         = subparser.add_parser('sql', help='execute sql query provided in a *.sql file')
-    local       = subparser.add_parser('local', help='execute script with locally available options on the current host')
+    parser = argparse.ArgumentParser(prog='bim_utils', description='\'Frankenstein\' CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
+    subparser = parser.add_subparsers(dest='command', help='run without arguments for standart use')
+    local = subparser.add_parser('local', help='execute script with locally available options on the current host')
+    db = subparser.add_parser('drop-UO', help='truncate bimeisterdb.UserObjects table')
+    db.add_argument('--url', help='provide full URL to the web', required=True)
+    db.add_argument('-u', '--user', required=False)
+    db.add_argument('-p', '--password', required=False)
+    sql = subparser.add_parser('sql', help='execute sql query provided in a *.sql file')
     sql.add_argument('-s', '--host', help='db hostname or IP address', required=True)
     sql.add_argument('-d', '--db', help='db name', required=True)
     sql.add_argument('-u', '--user', help='username with access to db', required=True)
@@ -442,6 +447,22 @@ if __name__ == '__main__':
 
     if not args.command:
         main()
+    elif args.command == 'drop-UO':
+        Auth = auth.Auth()
+        User = user.User()
+        if not args.user:
+            username: str = input('Enter username: ')
+            args.user = username
+        if not args.password:
+            from getpass import getpass
+            password: str = getpass('Enter password: ')
+            args.password = password
+        url = Auth.url_validation(args.url)
+        url = url if url else sys.exit()
+        provider_id = Auth.get_providerId(url)
+        user_access_token = Auth.get_user_access_token(url, args.user, args.password, provider_id)
+        user_access_token = user_access_token if user_access_token else sys.exit()
+        User.delete_user_objects(url, user_access_token)
     elif args.command == 'sql':
         pg = postgre.DB()
         pg.exec_query_from_file(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port, file=args.file)
@@ -449,5 +470,4 @@ if __name__ == '__main__':
         main(local=True)
 
     Logs().set_full_access_to_logs()
-
 

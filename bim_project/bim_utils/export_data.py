@@ -1,42 +1,45 @@
 import os
 import json
 import requests
-from urllib3.exceptions import InsecureRequestWarning
-from urllib3 import disable_warnings
-disable_warnings(InsecureRequestWarning)
 import time
 import app_menu
 import auth
 import license
+from urllib3.exceptions import InsecureRequestWarning
 from tools import File
 from tools import Tools
 from log import Logs
+from urllib3 import disable_warnings
+disable_warnings(InsecureRequestWarning)
+
 
 
 
 class Export_data:
 
-    __api_Integration_ObjectModel_Export:str       = 'api/Integration/ObjectModel/Export'
-    __api_WorkFlowNodes:str                        = 'api/WorkFlowNodes'
-    __api_WorkFlows:str                            = 'api/WorkFlows'
-    __api_Attachments:str                          = 'api/Attachments'
-    _transfer_folder:str                           = 'transfer_files'
-    _workflows_folder:str                          = 'workflows'
-    _workflows_folder_path:str                     = f'{_transfer_folder}/{_workflows_folder}'
-    _object_model_folder:str                       = 'object_model'
-    _all_workflow_nodes_file:str                   = 'all_workflow_nodes_export_server.json'
-    _workflows_draft_file:str                      = 'Draft_workflows_export_server.json'
-    _workflows_archived_file:str                   = 'Archived_workflows_export_server.json'
-    _workflows_active_file:str                     = 'Active_workflows_export_server.json'
-    _selected_workflow_nodes_file:str              = 'workflow_nodes_to_import.list'
-    _workflowID_bimClassID_file:str                = 'workflowID_bimClassID_export_server.json'
-    _object_model_file:str                         = 'object_model_export_server.json'
-    _exported_workflows_list:str                   = 'exported_workflows.list'
-    _export_server_info_file:str                   = 'export_server.info'  # Needs for separation import procedures on export server during one session.
-    AppMenu                                        = app_menu.AppMenu()
-    possible_request_errors                        = auth.Auth().possible_request_errors
-    License                                        = license.License()
-    __logger                                       = Logs().f_logger(__name__)
+    __api_Integration_ObjectModel_Export: str       = 'api/Integration/ObjectModel/Export'
+    __api_WorkFlowNodes: str                        = 'api/WorkFlowNodes'
+    __api_WorkFlows: str                            = 'api/WorkFlows'
+    __api_Attachments: str                          = 'api/Attachments'
+    _transfer_folder: str                           = 'transfer_files'
+    _workflows_folder: str                          = 'workflows'
+    _workflows_folder_path: str                     = f'{_transfer_folder}/{_workflows_folder}'
+    _object_model_folder: str                       = 'object_model'
+    _all_workflow_nodes_file: str                   = 'all_workflow_nodes_export_server.json'
+    _workflows_draft_file: str                      = 'Draft_workflows_export_server.json'
+    _workflows_archived_file: str                   = 'Archived_workflows_export_server.json'
+    _workflows_active_file: str                     = 'Active_workflows_export_server.json'
+    _selected_workflow_nodes_file: str              = 'workflow_nodes_to_import.list'
+    _workflowID_bimClassID_file: str                = 'workflowID_bimClassID_export_server.json'
+    _object_model_file: str                         = 'object_model_export_server.json'
+    _exported_workflows_list: str                   = 'exported_workflows.list'
+
+    # Needs for separation import procedures on export server during one session.
+    _export_server_info_file: str                   = 'export_server.info'
+    AppMenu                                         = app_menu.AppMenu()
+    possible_request_errors                         = auth.Auth().possible_request_errors
+    License                                         = license.License()
+    __logger                                        = Logs().f_logger(__name__)
     # __start_connection                             = Logs().http_connect()
     # __check_response                               = Logs().http_response()
 
@@ -46,7 +49,7 @@ class Export_data:
 
 
     def get_object_model(self, filename, url, token):
-        '''   Function gets object model from the server, and writes it into a file.   '''
+        """   Function gets object model from the server, and writes it into a file.   """
 
         path_to_file = f'{self._transfer_folder}/{self._object_model_folder}/{filename}'
         if os.path.isfile(path_to_file):
@@ -56,13 +59,16 @@ class Export_data:
             else: return
 
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-        url_get_object_model:str = url + '/' + self.__api_Integration_ObjectModel_Export
+        url_get_object_model: str = url + '/' + self.__api_Integration_ObjectModel_Export
         try:
             response = requests.get(url_get_object_model, headers=headers, verify=False)
-            # self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+            if response.status_code != 200:
+                self.__logger.error(f"{self.get_object_model.__name__}\n{response.text}")
+            # self.__logger.debug(self.__check_response(
+            # url, response.request.method, response.request.path_url, response.status_code))
             data = response.json()
         except self.possible_request_errors as err:
-            self.__logger.error(f"{err}\n{response.text}")
+            self.__logger.error(f"{err}")
             print("Error: Couldn't export object model. Check the logs.")
             return False
 
@@ -74,13 +80,13 @@ class Export_data:
                     print(f"\n   - object model exported in '{filename}' file.")
         except (FileNotFoundError, OSError) as err:
             self.__logger.error(err)
-            print('Erorr occured. Check the logs.')
+            print('Error occurred. Check the logs.')
             return False
         return True
 
 
     def select_workflow_nodes(self):
-        '''   Function creates a file 'chosen_by_user_workflow_nodes_export' with chosen workflow nodes in it.   '''
+        """   Function creates a file 'chosen_by_user_workflow_nodes_export' with chosen workflow nodes in it.   """
 
         try:
             file_path = self._transfer_folder + '/' + self._workflows_folder + '/' + self._selected_workflow_nodes_file

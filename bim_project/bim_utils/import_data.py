@@ -1,35 +1,34 @@
 import os
 import json
 import requests
-from urllib3.exceptions import InsecureRequestWarning
-from urllib3 import disable_warnings
-disable_warnings(InsecureRequestWarning)
 import time
 import shutil
 import export_data
-from tools import File
-from tools import Tools
 import auth
 import license
-# import logging
+from tools import File
+from tools import Tools
 from log import Logs
+from urllib3.exceptions import InsecureRequestWarning
+from urllib3 import disable_warnings
+disable_warnings(InsecureRequestWarning)
 
 
 class Import_data:
 
-    __api_WorkFlows:str                       = 'api/WorkFlows'
-    __api_Integration_ObjectModel_Import:str  = 'api/Integration/ObjectModel/Import'
-    __api_Integration_WorkFlow_Import:str     = 'api/Integration/WorkFlow/Import'
-    _transfer_folder:str                      = 'transfer_files'
-    _workflows_folder:str                     = 'workflows'
-    _all_workflow_nodes_file:str              = 'all_workflow_nodes_import_server.json'
-    _object_model_folder:str                  = 'object_model'
-    _object_model_file:str                    = 'object_model_import_server.json'
-    _modified_object_model_file:str           = 'modified_object_model.json'
-    Export_data                               = export_data.Export_data()
-    License                                   = license.License()
-    possible_request_errors                   = auth.Auth().possible_request_errors
-    __logger                                  = Logs().f_logger(__name__)
+    __api_WorkFlows: str = 'api/WorkFlows'
+    __api_Integration_ObjectModel_Import: str = 'api/Integration/ObjectModel/Import'
+    __api_Integration_WorkFlow_Import: str = 'api/Integration/WorkFlow/Import'
+    _transfer_folder: str = 'transfer_files'
+    _workflows_folder: str = 'workflows'
+    _all_workflow_nodes_file: str = 'all_workflow_nodes_import_server.json'
+    _object_model_folder: str = 'object_model'
+    _object_model_file: str = 'object_model_import_server.json'
+    _modified_object_model_file: str = 'modified_object_model.json'
+    Export_data = export_data.Export_data()
+    License = license.License()
+    possible_request_errors = auth.Auth().possible_request_errors
+    __logger = Logs().f_logger(__name__)
 
     def __init__(self):
         self.export_serverId = None
@@ -40,7 +39,7 @@ class Import_data:
 
         server_info = File.read_file(self._transfer_folder, self.Export_data._export_server_info_file)
         if server_info and server_info.split()[1] == self.License.get_serverID(url, token):
-            ask_for_confirmation:bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
+            ask_for_confirmation: bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
             return True if ask_for_confirmation == 'y' else False
         elif not server_info:
             self.__logger.error("Can't local server info ID in server_info file.")
@@ -239,7 +238,7 @@ class Import_data:
         shutil.copyfile(f"{self._transfer_folder}/{self._object_model_folder}/{self.Export_data._object_model_file}", f"{self._transfer_folder}/{self._object_model_folder}/{self._modified_object_model_file}")
 
         # Replacement of values in .json file
-        modified_OM_file:str = f'{self._transfer_folder}/{self._object_model_folder}/{self._modified_object_model_file}'
+        modified_OM_file: str = f'{self._transfer_folder}/{self._object_model_folder}/{self._modified_object_model_file}'
         for key,value in replace_data.items():
             for key_from_export_json, value_from_export_json in value.items():
                 try:
@@ -281,7 +280,7 @@ class Import_data:
     def post_object_model(self, url, token):
 
         headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-        url_post_object_model:str = f'{url}/{self.__api_Integration_ObjectModel_Import}'
+        url_post_object_model: str = f'{url}/{self.__api_Integration_ObjectModel_Import}'
         with open(f"{self._transfer_folder}/{self._object_model_folder}/{self.Export_data._object_model_file}", "r", encoding="utf-8") as file:
             data = file.read()
         # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file   
@@ -302,8 +301,8 @@ class Import_data:
 
 
     def import_object_model(self, url, token):
-        server_validation:bool = self.validate_import_server(url, token)
-        object_model_file_exists:bool = os.path.isfile(f'{self._transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}')
+        server_validation: bool = self.validate_import_server(url, token)
+        object_model_file_exists: bool = os.path.isfile(f'{self._transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}')
         if object_model_file_exists and server_validation:
             # Check if the import server object model file is already exists. Need to delete it. Case, when user already made attempts to make import.
             # In order to avoid message about the file is already there from Export_data.get_object_model function, need to remove it first.
@@ -320,8 +319,8 @@ class Import_data:
 
 
     def import_workflows(self, url, token):
-        server_validation:bool = self.validate_import_server(url, token)
-        workflows_folder_exists:bool = os.path.isdir(self._transfer_folder + '/' + self._workflows_folder)
+        server_validation: bool = self.validate_import_server(url, token)
+        workflows_folder_exists: bool = os.path.isdir(self._transfer_folder + '/' + self._workflows_folder)
         if workflows_folder_exists and server_validation:
             self.post_workflows_short_way(url, token)
 
