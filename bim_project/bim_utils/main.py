@@ -7,16 +7,17 @@ import app_menu
 import auth
 import user
 import license
+import argparse
 import export_data
 import import_data
-from tools import Folder, File, Tools
+import postgre
 import featureToggle
 import mdocker
 import mk8s
+import vsphere
+from tools import Folder, File, Tools
 from reports import Reports
-import postgre
 from log import Logs
-import argparse
 
 
 def main(local=False):
@@ -108,7 +109,6 @@ def main(local=False):
             # Close the menu and exit from the script.
             case ['exit'|'q'|'quit']:
                 break
-
 
             #    ''' =============================================================================== LICENSE BLOCK ==================================================================================== '''
 
@@ -432,6 +432,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='bim_utils', description='\'Frankenstein\' CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
     subparser = parser.add_subparsers(dest='command', help='run without arguments for standart use')
     local = subparser.add_parser('local', help='execute script with locally available options on the current host')
+    vcenter = subparser.add_parser('vsphere', help='performing operations with vSphere API')
+    vcenter_flags = vcenter.add_mutually_exclusive_group(required=True)
+    vcenter_flags.add_argument('--restart-all-vm', required=False, action="store_true")
+    vcenter_flags.add_argument('--list-vm', required=False, action="store_true")
     db = subparser.add_parser('drop-UO', help='truncate bimeisterdb.UserObjects table')
     db.add_argument('--url', help='provide full URL to the web', required=True)
     db.add_argument('-u', '--user', required=False)
@@ -445,29 +449,42 @@ if __name__ == '__main__':
     sql.add_argument('-f', '--file', help='sql filename containing the query', required=True)
     args = parser.parse_args()
 
-    if not args.command:
-        main()
-    elif args.command == 'drop-UO':
-        Auth = auth.Auth()
-        User = user.User()
-        if not args.user:
-            username: str = input('Enter username: ')
-            args.user = username
-        if not args.password:
-            from getpass import getpass
-            password: str = getpass('Enter password: ')
-            args.password = password
-        url = Auth.url_validation(args.url)
-        url = url if url else sys.exit()
-        provider_id = Auth.get_providerId(url)
-        user_access_token = Auth.get_user_access_token(url, args.user, args.password, provider_id)
-        user_access_token = user_access_token if user_access_token else sys.exit()
-        User.delete_user_objects(url, user_access_token)
-    elif args.command == 'sql':
-        pg = postgre.DB()
-        pg.exec_query_from_file(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port, file=args.file)
-    elif args.command == 'local':
-        main(local=True)
+    try:
+        if not args.command:
+            main()
+        elif args.command == 'drop-UO':
+            Auth = auth.Auth()
+            User = user.User()
+            if not args.user:
+                username: str = input('Enter username: ')
+                args.user = username
+            if not args.password:
+                from getpass import getpass
+                password: str = getpass('Enter password: ')
+                args.password = password
+            url = Auth.url_validation(args.url)
+            url = url if url else sys.exit()
+            provider_id = Auth.get_providerId(url)
+            user_access_token = Auth.get_user_access_token(url, args.user, args.password, provider_id)
+            user_access_token = user_access_token if user_access_token else sys.exit()
+            User.delete_user_objects(url, user_access_token)
+        elif args.command == 'sql':
+            pg = postgre.DB()
+            pg.exec_query_from_file(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port, file=args.file)
+        elif args.command == 'local':
+            main(local=True)
+        elif args.command == 'vsphere':
+            v = vsphere.Vsphere()
+            if args.list_vm:
+                dct = v.get_pool_of_vm()
+                if not dct:
+                    sys.exit()
+                for value in dct.values():
+                    print(value)
+            if args.restart_all_vm:
+                pass
+    except KeyboardInterrupt:
+        print('\nKeyboardInterrupt')
 
     Logs().set_full_access_to_logs()
 

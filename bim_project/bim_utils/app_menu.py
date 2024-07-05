@@ -81,7 +81,7 @@ def local_menu():
 
 
 class AppMenu:
-    __VERSION__ = '1.43c'
+    __version__ = '1.44'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):
@@ -93,7 +93,7 @@ class AppMenu:
 
     def welcome_info_note(self):
         """ first note to be displayed """
-        print(f"v{self.__VERSION__}")
+        print(f"v{self.__version__}")
 
     def get_user_command(self):
         """ Define what the user would like to do """

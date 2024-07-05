@@ -1,26 +1,27 @@
 #
 #
-import logging
 import time
 import requests
 import json
 from tools import Tools
 import auth
 import license
+from log import Logs
 
 
 class User:
 
-    __api_UserObjects_all:str        = 'api/UserObjects/all'
-    __api_Users_currentUser:str      = 'api/Users/current-user'
-    __api_Users:str                  = 'api/Users'
-    __api_Users_full:str             = 'api/Users/full'
-    __api_SystemRoles:str            = 'api/SystemRoles'
-    __api_Users_AddSystemRole:str    = 'api/Users/AddSystemRole'
-    __api_Users_RemoveSystemRole:str = 'api/Users/RemoveSystemRole'
-    License                          = license.License()
-    possible_request_errors          = auth.Auth.possible_request_errors
-    _License_server_exception:bool   = False
+    __api_UserObjects_all: str = 'api/UserObjects/all'
+    __api_Users_currentUser: str = 'api/Users/current-user'
+    __api_Users: str = 'api/Users'
+    __api_Users_full: str = 'api/Users/full'
+    __api_SystemRoles: str = 'api/SystemRoles'
+    __api_Users_AddSystemRole: str = 'api/Users/AddSystemRole'
+    __api_Users_RemoveSystemRole: str = 'api/Users/RemoveSystemRole'
+    License = license.License()
+    possible_request_errors = auth.Auth.possible_request_errors
+    _License_server_exception: bool = False
+    __logger = Logs().f_logger(__name__)
 
 
     def __init__(self):
@@ -40,13 +41,14 @@ class User:
         
         headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
         try:
-            user_obj_request = requests.delete(url=f"{url}/{self.__api_UserObjects_all}", headers=headers, verify=False)
-            if user_obj_request.status_code == 204:
+            response = requests.delete(url=f"{url}/{self.__api_UserObjects_all}", headers=headers, verify=False)
+            if response.status_code == 204:
+                self.__logger.info(response)
                 print("\n   - bimeisterdb.UserObjects table was cleaned successfully.")
             else:
                 print("Something went wrong. Check the log.")
         except self.possible_request_errors as err:
-            logging.error(err)
+            self.__logger.error(err)
 
 
     def get_all_users(self, url, token):
@@ -66,9 +68,9 @@ class User:
             time.sleep(0.15)
             response = request.json()
             if request.status_code != 200:
-                logging.error(request.text)
+                self.__logger.error(request.text)
         except self.possible_request_errors as err:
-            logging.error(f"{err}\n{request.text}")
+            self.__logger.error(f"{err}\n{request.text}")
             return False
         return response
 
@@ -76,11 +78,11 @@ class User:
     def check_user_permissions(self, url, token, username, password, permissions_to_check:tuple):
         ''' Function requires to pass permissions needed to be checked, along with url, token and username. '''
 
-        self.License.privileges_checked:bool = True
+        self.License.privileges_checked = True
         # If there is no active license on the server, no privileges checks could be made.
         if not self.License.get_license_status(url, token, username, password):
             message = "No active license on the server. Can't perform privileges check."
-            logging.info(message)
+            self.__logger.info(message)
             return True # Can't perform check, so need to return True
 
         user_system_roles_id: list = []  # list to collect user's system roles Id.
@@ -89,7 +91,7 @@ class User:
         request = requests.get(url=f"{url}/{self.__api_Users}", headers=headers, verify=False)
         response = request.json()
         if  request.status_code == 500:
-            logging.error(f"{self.__api_Users}: {request.text}")
+            self.__logger.error(f"{self.__api_Users}: {request.text}")
             self._License_server_exception = True
             if json.loads(request.text)['type'] == 'LicenseServiceClientException':
                 print(f"Error: {request.status_code}. LicenseServiceClientException. Check the logs. ")
@@ -118,7 +120,7 @@ class User:
                 request = requests.get(url=f"{url}/{self.__api_SystemRoles}/{id}", headers=headers, verify=False)
                 response = request.json()
             except self.possible_request_errors as err:
-                logging.error(f"{err}\n{request.text}")
+                self.__logger.error(f"{err}\n{request.text}")
 
             for permission in permissions_to_check:
                 if permission in response['permissions']:
@@ -158,14 +160,14 @@ class User:
                     superuser = user
                     put_request = requests.put(url=f"{url}/{self.__api_Users}/{user.get('id')}/activate", headers=headers, verify=False)
                     if not put_request.status_code in (200, 201):
-                        logging.error(f"'{username}' user wasn't activated")
+                        self.__logger.error(f"'{username}' user wasn't activated")
                         return False
                 elif user.get('userName') == username:
                     superuser = user
                     break
         elif post_superuser_request.status_code == 403:
             print("Current user don't have sufficient privileges.")
-            logging.error(post_superuser_request.text)
+            self.__logger.error(post_superuser_request.text)
             return False
         return superuser
 
@@ -174,7 +176,7 @@ class User:
         '''  Create a new system role  '''
 
         headers = {'accept': '*/*', 'Content-type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
-        system_role_name:str = Tools.create_random_name()
+        system_role_name: str = Tools.create_random_name()
         payload = {
                     "name": system_role_name,
                     "permissions": [
@@ -204,14 +206,14 @@ class User:
         try:
             request = requests.post(url=url + '/' + self.__api_SystemRoles, headers=headers, data=data, verify=False)
             if request.status_code == 409 and request.json()['error']['key'] == 'Auth.AlreadyExists.SystemRole':
-                logging.warning("System role already exists.")
+                self.__logger.warning("System role already exists.")
                 altered_data = data.replace(system_role_name, Tools.create_random_name())
                 request = requests.post(url=url + '/' + self.__api_SystemRoles, headers=headers, data=altered_data, verify=False)
             time.sleep(0.05)
             system_role_id = request.json()
-            logging.info("System role was created successfully.") if request.status_code == 201 else logging.error(request.text)
+            self.__logger.info("System role was created successfully.") if request.status_code == 201 else self.__logger.error(request.text)
         except self.possible_request_errors as err:
-            logging.error(f"{err}\n{request.text}")
+            self.__logger.error(f"{err}\n{request.text}")
             return False
         return system_role_id
 
@@ -228,9 +230,9 @@ class User:
         try:
             request = requests.post(url=url + '/' + self.__api_Users_AddSystemRole, headers=headers, data=data, verify=False)
             time.sleep(0.05)
-            logging.info(f"System role '{system_role_id}' to user '{username}' added successfully.")
+            self.__logger.info(f"System role '{system_role_id}' to user '{username}' added successfully.")
         except self.possible_request_errors as err:
-            logging.error(f"{err}\n{request.text}")
+            self.__logger.error(f"{err}\n{request.text}")
             return False
         
         return True
@@ -249,10 +251,10 @@ class User:
             request = requests.post(url=url + '/' + self.__api_Users_RemoveSystemRole, headers=headers, data=data, verify=False)
             time.sleep(0.10)
         except self.possible_request_errors as err:
-            logging.error(f'{err}\n{request.text}')
+            self.__logger.error(f'{err}\n{request.text}')
             return False
         if request.status_code in (200, 201, 204):
-            logging.info(f"System role '{system_role_id}' from user '{username}' removed successfully.")
+            self.__logger.info(f"System role '{system_role_id}' from user '{username}' removed successfully.")
         return True
 
 
@@ -264,9 +266,9 @@ class User:
         try:
             request = requests.delete(url=url_delete_system_role, headers=headers, verify=False)
         except self.possible_request_errors as err:
-            logging.error(f"{err}\n{request.text}")
+            self.__logger.error(f"{err}\n{request.text}")
             return False
-        logging.info(f"New role '{system_role_id}' was deleted successfully.") if request.status_code in (200, 201, 204) else False
+        self.__logger.info(f"New role '{system_role_id}' was deleted successfully.") if request.status_code in (200, 201, 204) else False
         return True
 
 
@@ -278,7 +280,7 @@ class User:
         try:
             request = requests.delete(url=url_delete_user, headers=headers, verify=False)
         except self.possible_request_errors as err:
-            logging.error(f"{err}\n{request.text}")
+            self.__logger.error(f"{err}\n{request.text}")
             return False
-        logging.info(f"Created user <{username}> was deleted successfully.") if request.status_code in (200, 201, 204) else False
+        self.__logger.info(f"Created user <{username}> was deleted successfully.") if request.status_code in (200, 201, 204) else False
         return True

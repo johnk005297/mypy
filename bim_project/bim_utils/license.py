@@ -7,7 +7,6 @@ import time
 import binascii
 from datetime import date
 from datetime import datetime
-from tools import Tools
 from termcolor import colored, cprint
 from log import Logs
 from urllib3 import disable_warnings
