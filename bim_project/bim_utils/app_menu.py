@@ -81,7 +81,7 @@ def local_menu():
 
 
 class AppMenu:
-    __version__ = '1.44'
+    __version__ = '1.44a'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):

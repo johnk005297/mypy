@@ -475,14 +475,20 @@ if __name__ == '__main__':
             main(local=True)
         elif args.command == 'vsphere':
             v = vsphere.Vsphere()
+            headers = v.get_headers()
+            if not headers:
+                sys.exit()
             if args.list_vm:
-                dct = v.get_pool_of_vm()
-                if not dct:
+                array = v.get_array_of_vm(headers)
+                if not array:
                     sys.exit()
-                for value in dct.values():
+                for value in array.values():
                     print(value)
-            if args.restart_all_vm:
-                pass
+            elif args.restart_all_vm:
+                array = v.get_array_of_vm(headers)
+                if not array:
+                    sys.exit()
+                v.restart_os(headers, array)
     except KeyboardInterrupt:
         print('\nKeyboardInterrupt')
 
