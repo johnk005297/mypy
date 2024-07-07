@@ -13,15 +13,13 @@ init(autoreset=True)
 
 
 class K8S:
-
+    __slots__ = ('__namespace', '_ft_token')
     __logger = Logs().f_logger(__name__)
     _bimeister_log_folder = Logs()._bimeister_log_folder + '_k8s'
-
 
     def __init__(self, namespace:str=None):
         self.__namespace     = namespace
         self._ft_token:bool  = False
-
 
     @classmethod
     def __check_kube_config(cls):
@@ -38,10 +36,8 @@ class K8S:
             cls.__logger.error(err)
             return False
 
-
     def get_kube_config(self):
         return True if self.__check_kube_config() else False
-
 
     def k8s_menu(self):
         """ Appearance of docker commands menu. """
@@ -61,9 +57,7 @@ class K8S:
                           \n                                                                                                            \
                           \n   Main                                                                                                     \
                           \n      q                                  exit"
-
         return _k8s_menu
-
 
     def get_CoreV1Api(self):
 
@@ -78,7 +72,6 @@ class K8S:
             print("Couldn't connect to kubernetes API. Check the log.")
             return False
         return v1
-        
 
     def get_ft_pod(self):
         """ Get feature toggle pod. In current version we are checking for redis or keydb."""
@@ -98,7 +91,6 @@ class K8S:
                 print("No feature toggle pod was found. Check for needed pod.")
         return False
 
-
     def get_ft_secret(self):
         """ Get a list of all secrets in the cluster. """
 
@@ -115,7 +107,6 @@ class K8S:
                 return item.metadata.name
             elif count == len(secrets_list):
                 return False
-
 
     def get_ft_secret_pass(self, secret_name):
         """ Get password from the k8s secret of the pod. """
@@ -143,7 +134,6 @@ class K8S:
 
         # passwd = base64.b64decode(list(secret.values())[0]).decode('utf-8')
         return passwd if passwd else False
-
 
     def get_ft_token(self):
         """ Function get's FT token into token variable. During process it creates tmp file after kubectl command, 
@@ -183,9 +173,8 @@ class K8S:
         self._ft_token = True if ft_token else False
         return ft_token
 
-
     def exec_cmd_in_pod(self, pod, container, command, namespace, api_instance):   # Need to test this function!
-        ''' Execute command in pod. '''
+        """ Execute command in pod. """
 
         exec_command = ["/bin/sh", "-c", command]
         try:
@@ -203,9 +192,7 @@ class K8S:
         except Exception as err:
             self.__logger.error(err)
             return False
-
         return resp
-
 
     # def get_ft_token(self):
     #     ''' Function get's FT token into token variable. During process it creates tmp file after kubectl command, read token from the file into var, and delete the file. '''
@@ -239,9 +226,8 @@ class K8S:
     #     self._ft_token = True if ft_token else False
     #     return ft_token
 
-
     def get_namespaces(self):
-        ''' Get collection of namespaces in a cluster. '''
+        """ Get collection of namespaces in a cluster. """
 
         v1 = self.get_CoreV1Api()
         try:
@@ -254,7 +240,7 @@ class K8S:
 
 
     def display_namespaces(self):
-        ''' Display cluster namespaces. '''
+        """ Display cluster namespaces. """
 
         ns = self.get_namespaces()
         if not ns:
@@ -268,7 +254,7 @@ class K8S:
 
 
     def get_pods(self, namespace='bimeister'):
-        ''' Collect dictionary of pods with attributes: ready, status, restarts, namespace. '''
+        """ Collect dictionary of pods with attributes: ready, status, restarts, namespace. """
 
         v1 = self.get_CoreV1Api()
         try:
@@ -281,9 +267,8 @@ class K8S:
         pods:dict = {pod.metadata.name: [pod.status.phase, pod.status.container_statuses[0].ready, pod.status.container_statuses[0].restart_count, pod.metadata.namespace] for pod in pods.items}
         return pods
 
-
     def display_pods(self, namespace='bimeister'):
-        ''' Display list of pods in a pretty table. '''
+        """ Display list of pods in a pretty table. """
 
         pods = self.get_pods(namespace=namespace)
         table = PrettyTable()
@@ -299,7 +284,7 @@ class K8S:
 
     # Function isn't finished
     def get_all_pods_log(self, namespace='bimeister', tail=5000):
-        ''' Function get logs from all the pods in a given namespace. '''
+        """ Function get logs from all the pods in a given namespace. """
 
         v1 = self.get_CoreV1Api()
         # check namespace if it exists
@@ -331,9 +316,8 @@ class K8S:
         Folder.clean_folder(self._bimeister_log_folder, remove=True)
         return True
 
-
     def get_pod_log(self, *args, namespace='bimeister', tail=5000):
-        ''' Function gets logs from the specific pods. '''
+        """ Function gets logs from the specific pods. """
 
         v1 = self.get_CoreV1Api()
         # check namespace if it exists
@@ -358,9 +342,9 @@ class K8S:
                 print(f"Couldn't fetch logs for pod: {pod}. Check the log.")
         return True
 
-
     def check_args_for_namespace(self, user_command):
-        ''' Function checks if -n flag was provided by user. '''
+        """ Function checks if -n flag was provided by user. """
+
         namespace = False
         if '-n' in user_command:
             namespace_idx = user_command.index('-n') + 1

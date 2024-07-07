@@ -437,7 +437,7 @@ if __name__ == '__main__':
     vcenter_flags.add_argument('--restart-all-vm', required=False, action="store_true")
     vcenter_flags.add_argument('--list-vm', required=False, action="store_true")
     db = subparser.add_parser('drop-UO', help='truncate bimeisterdb.UserObjects table')
-    db.add_argument('--url', help='provide full URL to the web', required=True)
+    db.add_argument('-url', help='provide full URL to the web', required=True)
     db.add_argument('-u', '--user', required=False)
     db.add_argument('-p', '--password', required=False)
     sql = subparser.add_parser('sql', help='execute sql query provided in a *.sql file')
@@ -453,21 +453,7 @@ if __name__ == '__main__':
         if not args.command:
             main()
         elif args.command == 'drop-UO':
-            Auth = auth.Auth()
-            User = user.User()
-            if not args.user:
-                username: str = input('Enter username: ')
-                args.user = username
-            if not args.password:
-                from getpass import getpass
-                password: str = getpass('Enter password: ')
-                args.password = password
-            url = Auth.url_validation(args.url)
-            url = url if url else sys.exit()
-            provider_id = Auth.get_providerId(url)
-            user_access_token = Auth.get_user_access_token(url, args.user, args.password, provider_id)
-            user_access_token = user_access_token if user_access_token else sys.exit()
-            User.delete_user_objects(url, user_access_token)
+            postgre.DB.drop_userObjects(args.url, username=args.user, password=args.password)
         elif args.command == 'sql':
             pg = postgre.DB()
             pg.exec_query_from_file(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port, file=args.file)
@@ -479,16 +465,12 @@ if __name__ == '__main__':
             if not headers:
                 sys.exit()
             if args.list_vm:
-                array = v.get_array_of_vm(headers)
-                if not array:
-                    sys.exit()
-                for value in array.values():
-                    print(value)
+                v.print_list_of_vm(headers)
             elif args.restart_all_vm:
-                array = v.get_array_of_vm(headers)
-                if not array:
+                vm_array = v.get_array_of_vm(headers)
+                if not vm_array:
                     sys.exit()
-                v.restart_os(headers, array)
+                v.restart_os(headers, vm_array)
     except KeyboardInterrupt:
         print('\nKeyboardInterrupt')
 

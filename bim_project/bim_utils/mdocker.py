@@ -8,15 +8,13 @@ from log import Logs
 
 
 class Docker:
-
+    __slots__ = ('_ft_token', '_permissions')
     __logger = Logs().f_logger(__name__)
     _bimeister_log_folder = Logs()._bimeister_log_folder + '_docker'
 
-
     def __init__(self):
-        self._ft_token:bool        = False
-        self._permissions:bool     = False
-
+        self._ft_token: bool = False
+        self._permissions: bool = False
 
     @classmethod
     def __check_docker(cls):
@@ -30,7 +28,6 @@ class Docker:
             cls.__logger.error(err)
             return False
 
-
     def get_docker_client(self):
         if self.__check_docker():
             self.__client = docker.from_env()
@@ -43,13 +40,11 @@ class Docker:
         else:
             return False
 
-
     def __getattr__(self, item):
         raise AttributeError("Docker class has no such attribute: " + item)
 
-
     def docker_menu(self):
-        ''' Appearance of docker commands menu. '''
+        """ Appearance of docker commands menu. """
 
         _docker_menu = "Docker options(runs locally on a host):                                                                                                  \
                           \n                                                                                                                                     \
@@ -71,16 +66,12 @@ class Docker:
 
         return _docker_menu
 
-
-
     def check_permissions(self):
-        ''' Function to check needed permissions to work with docker. '''
-
+        """ Function to check needed permissions to work with docker. """
         pass
 
-
     def get_containers(self, all=False):
-        ''' Get a dictionary of all docker containers on the server. '''
+        """ Get a dictionary of all docker containers on the server. """
 
         try:
             if all:
@@ -94,10 +85,9 @@ class Docker:
 
 
     def display_containers(self, all=False):
-        ''' Function to display containers in format 'id  name'. '''
+        """ Function to display containers in format 'id  name'. """
 
         containers = self.get_containers(all=True) if all else self.get_containers()
-
         if not containers:
             print("No docker containers have been found." if all else "No running docker containers have been found.")
             return
@@ -112,9 +102,8 @@ class Docker:
             print("Error: NameError.")
         print(table)
 
-
     def get_container_interactive_logs(self, id):
-        ''' Turn on logs of the specific container in interactive mode. '''
+        """ Turn on logs of the specific container in interactive mode. """
 
         try:
             container = self.__client.containers.get(id)
@@ -135,9 +124,8 @@ class Docker:
 
         return True
 
-
     def get_container_log(self, *args, in_file=False, tail=5000, days=None):
-        ''' Get log from a single container. '''
+        """ Get log from a single container. """
 
         if in_file:
             Folder.create_folder(os.getcwd(), self._bimeister_log_folder)
@@ -172,7 +160,7 @@ class Docker:
 
 
     def get_all_containers_logs(self, tail=5000, days=None):
-        ''' Get logs from all containers in files. '''
+        """ Get logs from all containers in files. """
 
         Folder.create_folder(os.getcwd(), self._bimeister_log_folder)
         containers = self.get_containers(all=True)
@@ -190,25 +178,21 @@ class Docker:
                 with open(self._bimeister_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
                     file.write(log)
                     print(self._bimeister_log_folder + '/' + filename)
-
             except docker.errors.APIError as err:
                 self.__logger.error(err)
                 print("Server error. Check the log.")
-
             except:
                 print("Error occured.")
                 return False
                 
         Tools.zip_files_in_dir(self._bimeister_log_folder, self._bimeister_log_folder)    # pack logs in zip archive
         Folder.clean_folder(self._bimeister_log_folder, remove=True)                      # delete folder with *.log files
-
         return True
-
 
     ################# Feature Toggle block #################
 
     def get_ft_container(self):
-        ''' Function finds needed container for FT. Returns tuple of container id and name. '''
+        """ Function finds needed container for FT. Returns tuple of container id and name. """
 
         ft_container:tuple = ('keydb', 'redis')
         containers = self.__client.containers.list()
@@ -220,11 +204,9 @@ class Docker:
         self.__logger.error(message)
         print(message)
         return False
-            
-
 
     def get_ft_secret_pass(self):
-        ''' Function gets secret from docker container inspectation. '''
+        """ Function gets secret from docker container inspectation. """
 
         try:
             client = docker.APIClient(base_url='unix://var/run/docker.sock')
@@ -238,15 +220,12 @@ class Docker:
         if '--requirepass' in container['Args']:
             idx = container['Args'].index('--requirepass')
             ft_secret = container['Args'][idx + 1]
-
             return ft_secret
-        
         else:
             return False
-        
 
     def get_ft_token(self):
-        ''' Function provides ft token. '''
+        """ Function provides ft token. """
         
         try:
             ft_containerId = self.get_ft_container()[0]
@@ -271,8 +250,6 @@ class Docker:
             self.__logger.error(err)
             print("No FT token was received. Check the logs!")
             return False
-
-
         self._ft_token = True if ft_token else False
         return ft_token
       

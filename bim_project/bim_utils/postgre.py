@@ -1,15 +1,17 @@
 #
 import psycopg2
+import auth
+import sys
 import csv
 from log import Logs
+from user import User
+
 
 class DB:
-
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):
         pass
-
 
     @staticmethod
     def pp(cursor, data=None, rowlens=0):
@@ -59,7 +61,6 @@ class DB:
 
         cursor.close()
         conn.close()
-
 
     def exec_query_from_file(self, **kwargs):
 
@@ -114,3 +115,20 @@ class DB:
                 cursor.close()
                 conn.close()
 
+    @staticmethod
+    def drop_userObjects(url, username='', password=''):
+        """ Truncate bimeisterdb.UserObjects table. """
+
+        Auth = auth.Auth()
+        user = User()
+        if not username:
+            username: str = input('Enter username: ')
+        if not password:
+            from getpass import getpass
+            password: str = getpass('Enter password: ')
+        url = Auth.url_validation(url)
+        url = url if url else sys.exit()
+        provider_id = Auth.get_providerId(url)
+        user_access_token = Auth.get_user_access_token(url, username, password, provider_id)
+        user_access_token = user_access_token if user_access_token else sys.exit()
+        user.delete_user_objects(url, user_access_token)

@@ -11,6 +11,7 @@ disable_warnings(InsecureRequestWarning)
 
 
 class Auth:
+    __slots__ = ('url', 'username', 'password', 'token', 'providerId', 'privateToken')
     __api_Providers: str = 'api/Providers'
     __api_Auth_Login: str = 'api/Auth/Login'
     __api_PrivateToken: str = 'api/PrivateToken'

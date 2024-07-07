@@ -3,10 +3,10 @@
 import time
 import requests
 import json
-from tools import Tools
 import auth
 import license
 from log import Logs
+from tools import Tools
 
 
 class User:
@@ -27,10 +27,8 @@ class User:
     def __init__(self):
         pass
 
-
     def __getattr__(self, item):
         raise AttributeError("User class has no such attribute: " + item)
-
 
     def delete_user_objects(self, url, token):
         """ UserObjects – хранилище Frontend-данных на Backend.
@@ -38,7 +36,7 @@ class User:
             Работа с хранилищем не предполагает валидацию, миграции и прочее. Таким образом, если модели данных меняются, работа с хранилищем, 
             уже наполненным какими-то данными может привести к ошибкам. Чтобы уберечь пользователя от этого, необходимо очищать таблицу.
         """
-        
+
         headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
         try:
             response = requests.delete(url=f"{url}/{self.__api_UserObjects_all}", headers=headers, verify=False)
@@ -50,13 +48,11 @@ class User:
         except self.possible_request_errors as err:
             self.__logger.error(err)
 
-
     def get_all_users(self, url, token):
         headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
         request = requests.get(url=f"{url}/{self.__api_Users_full}", headers=headers, verify=False)
         users = request.json()
         return users # list with dictionaries inside
-
 
     def get_current_user(self, url, token):
         ''' Getting info about current user. Response will provide a dictionary of values. '''
@@ -73,7 +69,6 @@ class User:
             self.__logger.error(f"{err}\n{request.text}")
             return False
         return response
-
 
     def check_user_permissions(self, url, token, username, password, permissions_to_check:tuple):
         ''' Function requires to pass permissions needed to be checked, along with url, token and username. '''
@@ -129,7 +124,6 @@ class User:
                     return False
             return True
 
-
     def create_or_activate_superuser(self, url, token, username, password):
         '''  Function checks for a special user with super privileges. If there is a needed user it will pass, if there isn't or deactivated, it will be created/activated.  '''
 
@@ -170,7 +164,6 @@ class User:
             self.__logger.error(post_superuser_request.text)
             return False
         return superuser
-
 
     def create_system_role(self, url, token):
         '''  Create a new system role  '''
@@ -217,7 +210,6 @@ class User:
             return False
         return system_role_id
 
-
     def add_system_role_to_user(self, url, token, user_id, username, system_role_id):
         ''' Add system role to a user. '''
 
@@ -236,7 +228,6 @@ class User:
             return False
         
         return True
-
 
     def remove_system_role_from_user(self, url, token, user_id, username, system_role_id):
         ''' Remove role from provided user. '''
@@ -257,7 +248,6 @@ class User:
             self.__logger.info(f"System role '{system_role_id}' from user '{username}' removed successfully.")
         return True
 
-
     def delete_system_role(self, url, system_role_id, token):
         ''' Delete created system role '''
 
@@ -270,7 +260,6 @@ class User:
             return False
         self.__logger.info(f"New role '{system_role_id}' was deleted successfully.") if request.status_code in (200, 201, 204) else False
         return True
-
 
     def delete_user(self, url, token, user_id, username):
         ''' Delete created user '''
