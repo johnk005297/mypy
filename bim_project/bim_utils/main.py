@@ -425,7 +425,6 @@ def enable_history_input():
         import readline
 
 
-
 if __name__ == '__main__':
 
     enable_history_input()
@@ -471,6 +470,7 @@ if __name__ == '__main__':
                 if not vm_array:
                     sys.exit()
                 v.restart_os(headers, vm_array)
+
     except KeyboardInterrupt:
         print('\nKeyboardInterrupt')
 
