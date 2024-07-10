@@ -15,6 +15,7 @@ import featureToggle
 import mdocker
 import mk8s
 import vsphere
+import project_services
 from tools import Folder, File, Tools
 from reports import Reports
 from log import Logs
@@ -429,25 +430,28 @@ if __name__ == '__main__':
 
     enable_history_input()
     parser = argparse.ArgumentParser(prog='bim_utils', description='\'Frankenstein\' CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
-    subparser = parser.add_subparsers(dest='command', help='run without arguments for standart use')
-    local = subparser.add_parser('local', help='execute script with locally available options on the current host')
-    vcenter = subparser.add_parser('vsphere', help='performing operations with vSphere API')
-    vcenter_flags = vcenter.add_mutually_exclusive_group(required=True)
-    vcenter_flags.add_argument('--restart-all-vm', required=False, action="store_true")
-    vcenter_flags.add_argument('--list-vm', required=False, action="store_true")
-    db = subparser.add_parser('drop-UO', help='truncate bimeisterdb.UserObjects table')
-    db.add_argument('-url', help='provide full URL to the web', required=True)
+    subparser = parser.add_subparsers(dest='command', help='Run without arguments for standart use.')
+    local = subparser.add_parser('local', help='Execute script with locally available options on the current host.')
+    vcenter = subparser.add_parser('vsphere', help='Performing operations with vSphere API.')
+    vcenter.add_argument('-u', '--user', required=False)
+    vcenter.add_argument('-p', '--password', required=False)
+    vcenter_options = vcenter.add_mutually_exclusive_group(required=True)
+    vcenter_options.add_argument('--restart-all-vm', required=False, action="store_true")
+    vcenter_options.add_argument('--list-vm', required=False, action="store_true")
+    db = subparser.add_parser('drop-UO', help='Truncate bimeisterdb.UserObjects table.')
+    db.add_argument('-url', help='Provide full URL to the web.', required=True)
     db.add_argument('-u', '--user', required=False)
     db.add_argument('-p', '--password', required=False)
-    sql = subparser.add_parser('sql', help='execute sql query provided in a *.sql file')
-    sql.add_argument('-s', '--host', help='db hostname or IP address', required=True)
-    sql.add_argument('-d', '--db', help='db name', required=True)
-    sql.add_argument('-u', '--user', help='username with access to db', required=True)
-    sql.add_argument('-pw', '--password', help='db user password', required=True)
-    sql.add_argument('-p', '--port', help='db port', required=True)
-    sql.add_argument('-f', '--file', help='sql filename containing the query', required=True)
+    sql = subparser.add_parser('sql', help='Execute sql query provided in a *.sql file.')
+    sql.add_argument('-s', '--host', help='DB hostname or IP address.', required=True)
+    sql.add_argument('-d', '--db', help='DB name.', required=True)
+    sql.add_argument('-u', '--user', help='Username with access to db.', required=True)
+    sql.add_argument('-pw', '--password', help='DB user password', required=True)
+    sql.add_argument('-p', '--port', help='DB port', required=True)
+    sql.add_argument('-f', '--file', help='Sql filename containing the query', required=True)
+    services = subparser.add_parser('list-services', help='Get list of services from product-collection.yaml.')
+    services.add_argument('-f', '--file', help='Full path to the product-collection.yaml file.', required=True)
     args = parser.parse_args()
-
     try:
         if not args.command:
             main()
@@ -460,7 +464,7 @@ if __name__ == '__main__':
             main(local=True)
         elif args.command == 'vsphere':
             v = vsphere.Vsphere()
-            headers = v.get_headers()
+            headers = v.get_headers(args.user, args.password)
             if not headers:
                 sys.exit()
             if args.list_vm:
@@ -470,7 +474,9 @@ if __name__ == '__main__':
                 if not vm_array:
                     sys.exit()
                 v.restart_os(headers, vm_array)
-
+        elif args.command == 'list-services':
+            svc_list = project_services.get_project_services(args.file)
+            project_services.print_project_services(svc_list)
     except KeyboardInterrupt:
         print('\nKeyboardInterrupt')
 

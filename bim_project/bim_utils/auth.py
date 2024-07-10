@@ -36,7 +36,6 @@ class Auth:
         raise AttributeError("Auth class instance has no such attribute: " + item)
 
     def establish_connection(self):
-
         try:
             self.url = input("\nEnter URL: ").strip().lower()
             self.url = self.url[:-1] if self.url.endswith('/') else self.url
@@ -59,7 +58,6 @@ class Auth:
 
         if not url.startswith('http'):
             url = 'http://' + url
-
         # Check both ports: 80 and 443
         for x in range(2):
             self.__logger.info(self.__start_connection(url))
@@ -88,20 +86,17 @@ class Auth:
                 else:
                     self.__logger.error(response.text)
                     return False
-
             except requests.exceptions.MissingSchema as err:
                 self.__logger.error(err)
                 if x == 1:
                     print('Invalid URL')
                 return False
-
             except requests.exceptions.ReadTimeout as err:
                 message: str = "Check connection to host."
                 if x == 1:
                     print(message)
                 self.__logger.error(f"{message}\n{err}")
                 return False
-
             except self.possible_request_errors as err:
                 self.__logger.error(f"Connection error via '{url[:url.index(':')]}':\n{err}.")
                 url = url[:4] + url[5:] if url[4] == 's' else url[:4] + 's' + url[4:]
@@ -174,10 +169,9 @@ class Auth:
         data = response.json()
 
         time.sleep(0.07)
-        '''
-        Block is for checking authorization request.
+        """ Block is for checking authorization request.
         Correct response of /api/Auth/Login method suppose to return a .json with 'access_token' and 'refresh_token'.
-        '''
+        """
 
         if response.status_code == 401:
             if data.get('type') and data.get('type') == 'TransitPasswordExpiredBimException':
