@@ -449,7 +449,7 @@ if __name__ == '__main__':
     sql.add_argument('-pw', '--password', help='DB user password', required=True)
     sql.add_argument('-p', '--port', help='DB port', required=True)
     sql.add_argument('-f', '--file', help='Sql filename containing the query', required=True)
-    services = subparser.add_parser('project-services', help='Get list of services from product-collection.yaml.')
+    services = subparser.add_parser('product-list', help='Get list of services from product-collection.yaml.')
     services.add_argument('-f', '--file', help='Full path to the product-collection.yaml file.', required=False)
     args = parser.parse_args()
     try:
@@ -474,10 +474,11 @@ if __name__ == '__main__':
                 if not vm_array:
                     sys.exit()
                 v.restart_os(headers, vm_array)
-        elif args.command == 'project-services':
+        elif args.command == 'product-list':
             ps = project_services
-            svc_list = ps.get_project_services(args.file)
-            ps.print_project_services(svc_list)
+            svc_list, db_list = ps.get_services_and_db_lists(args.file)
+            ps.print_services_and_db(svc_list, db_list)
+
     except KeyboardInterrupt:
         print('\nKeyboardInterrupt')
 
