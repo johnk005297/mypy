@@ -15,7 +15,7 @@ import featureToggle
 import mdocker
 import mk8s
 import vsphere
-import project_services
+import git
 from tools import Folder, File, Tools
 from reports import Reports
 from log import Logs
@@ -435,6 +435,7 @@ if __name__ == '__main__':
     vcenter = subparser.add_parser('vsphere', help='Performing operations with vSphere API.')
     vcenter.add_argument('-u', '--user', required=False)
     vcenter.add_argument('-p', '--password', required=False)
+    vcenter.add_argument('--exclude-vm', type=str, nargs='+', required=False, help='A list of VMs to be excluded from the reboot OS.')
     vcenter_options = vcenter.add_mutually_exclusive_group(required=True)
     vcenter_options.add_argument('--restart-all-vm', required=False, action="store_true")
     vcenter_options.add_argument('--list-vm', required=False, action="store_true")
@@ -449,12 +450,24 @@ if __name__ == '__main__':
     sql.add_argument('-pw', '--password', help='DB user password', required=True)
     sql.add_argument('-p', '--port', help='DB port', required=True)
     sql.add_argument('-f', '--file', help='Sql filename containing the query', required=True)
-    services = subparser.add_parser('product-list', help='Get list of services from product-collection.yaml.')
-    services.add_argument('-f', '--file', help='Full path to the product-collection.yaml file.', required=False)
+    pl = subparser.add_parser('product-list', help='Get list of services and DB for a specific project from product-collection.yaml.')
+    pl_group = pl.add_mutually_exclusive_group(required=False)
+    pl_group.add_argument('--search-branch', required=False)
+    pl_group.add_argument('--commit', required=False)
     args = parser.parse_args()
     try:
-        if not args.command:
-            main()
+        if args.command == 'product-list':
+            g = git.Git()
+            project_id = g.get_bimeister_project_id()
+            if not project_id:
+                sys.exit()
+            if args.search_branch:
+                g.list_branches(project_id, args.search_branch)
+            elif args.commit:
+                data = g.get_product_collection_file_content(project_id, args.commit)
+                if data:
+                    svc_list, db_list = git.parse_product_collection_yaml(data)
+                    git.print_services_and_db(svc_list, db_list)
         elif args.command == 'drop-UO':
             postgre.DB.drop_userObjects(args.url, username=args.user, password=args.password)
         elif args.command == 'sql':
@@ -473,12 +486,9 @@ if __name__ == '__main__':
                 vm_array = v.get_array_of_vm(headers)
                 if not vm_array:
                     sys.exit()
-                v.restart_os(headers, vm_array)
-        elif args.command == 'product-list':
-            ps = project_services
-            svc_list, db_list = ps.get_services_and_db_lists(args.file)
-            ps.print_services_and_db(svc_list, db_list)
-
+                v.restart_os(headers, vm_array, args.exclude_vm)
+        else:
+            main()
     except KeyboardInterrupt:
         print('\nKeyboardInterrupt')
 
