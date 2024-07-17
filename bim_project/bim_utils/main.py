@@ -427,7 +427,6 @@ def enable_history_input():
 
 
 if __name__ == '__main__':
-
     enable_history_input()
     parser = argparse.ArgumentParser(prog='bim_utils', description='\'Frankenstein\' CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
     subparser = parser.add_subparsers(dest='command', help='Run without arguments for standart use.')
@@ -465,9 +464,12 @@ if __name__ == '__main__':
                 g.list_branches(project_id, args.search_branch)
             elif args.commit:
                 data = g.get_product_collection_file_content(project_id, args.commit)
-                if data:
-                    svc_list, db_list = git.parse_product_collection_yaml(data)
-                    git.print_services_and_db(svc_list, db_list)
+                if not data:
+                    sys.exit()
+                svc_db_list = git.parse_product_collection_yaml(data)
+                if not svc_db_list:
+                    sys.exit()
+                git.print_services_and_db(svc_db_list[0], svc_db_list[1])
         elif args.command == 'drop-UO':
             postgre.DB.drop_userObjects(args.url, username=args.user, password=args.password)
         elif args.command == 'sql':
