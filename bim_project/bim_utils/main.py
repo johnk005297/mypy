@@ -450,8 +450,9 @@ if __name__ == '__main__':
     sql.add_argument('-p', '--port', help='DB port', required=True)
     sql.add_argument('-f', '--file', help='Sql filename containing the query', required=True)
     pl = subparser.add_parser('product-list', help='Get list of services and DB for a specific project from product-collection.yaml.')
+    pl.add_argument('--list-branch-folder', required=False, help='Prints the list of files and folders for a given branch.')
     pl_group = pl.add_mutually_exclusive_group(required=False)
-    pl_group.add_argument('--search-branch', required=False)
+    pl_group.add_argument('--search-branch', required=False, help='Get a list of branch names from GitLab.')
     pl_group.add_argument('--commit', required=False)
     args = parser.parse_args()
     try:
@@ -470,6 +471,8 @@ if __name__ == '__main__':
                 if not svc_db_list:
                     sys.exit()
                 git.print_services_and_db(svc_db_list[0], svc_db_list[1])
+            elif args.list_branch_folder:
+                g.get_tree(project_id, args.list_branch_folder)
         elif args.command == 'drop-UO':
             postgre.DB.drop_userObjects(args.url, username=args.user, password=args.password)
         elif args.command == 'sql':

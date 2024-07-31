@@ -32,17 +32,14 @@ class License:
     privileges_granted: bool = False
     privileges_checked: bool = False
 
-
     def __init__(self):
         pass
-
 
     def __getattr__(self, item):
         raise AttributeError('License class has no such attribute: ' + item)
 
-
     def decode_base64(self, encoded_string):
-        ''' Function decodes base64 encoded string and returns dictionary of values. Current version example of license data:
+        """ Function decodes base64 encoded string and returns dictionary of values. Current version example of license data:
             {
              'version': '1', 'LicenseID': 'a7bfd7df-6b90-4ca1-b40e-07d99f38308f', 'ServerID': 'eeaa4ad2-28b7-4eb7-8bfb-3fdd40d257a5', 'From': '10.03.2023 00:00:01',
              'Until': '25.12.2023 23:59:59', 'NumberOfUsers': '100', 'NumberOfIpConnectionsPerUser': '0', 'Product': 'BimeisterEDMS', 'LicenceType': 'Trial',
@@ -51,14 +48,13 @@ class License:
             }
             to the dictionary above we add this key: 'base64_encoded_license' with all the encoded line from the license file. This key 'base64_encoded_license' is used to post and activate license.
 
-        '''
+        """
         decoded_string = base64.b64decode(encoded_string).decode('utf-8')
         data = dict([ [x.split('=', 1)[0].strip(), x.split('=', 1)[1].strip()] for x in tuple(x for x in decoded_string.split('\n') if x) ])
         return data
 
-
     def read_license_token(self):
-        ''' Check if there is a license.lic file, or ask user for a token. Function returns a list of dictionaries with license data, if everything is correct. '''
+        """ Check if there is a license.lic file, or ask user for a token. Function returns a list of dictionaries with license data, if everything is correct. """
 
         data = input('Enter the filename(should have .lic extension) containing token or provide token itself: ').strip()
         if len(data) < 4:
@@ -74,7 +70,6 @@ class License:
             self.__logger.error(no_file_message)
             print(no_file_message)
             return False
-
         elif is_file and is_file_in_place:
             with open(data, "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
                 content = [line for line in file.read().split('\n') if line]
@@ -96,7 +91,6 @@ class License:
                 if not is_present:
                     list_of_licenses.append(data)
                     list_of_licenses[-1]['base64_encoded_license'] = line
-
         else:
             try:
                 list_of_licenses.append(self.decode_base64(data))
@@ -125,16 +119,15 @@ class License:
 
         return list_of_licenses
 
-
     def get_licenses(self, url, token, username, password):
-        ''' Get all the licenses in the system '''
+        """ Get all the licenses in the system """
 
         url_get_licenses: str = f'{url}/{self.__api_License}'
         headers = {'accept': '*/*', 'Content-type':'text/plain', 'Authorization': f"Bearer {token}"}
         payload = {
                     "username": username,
                     "password": password
-                 }
+                  }
         try:
             self.__logger.info(self.__start_connection(url))
             response = requests.get(url=url_get_licenses, data=payload, headers=headers, verify=False)
@@ -146,9 +139,8 @@ class License:
         # response is a list of dictionaries with a set of keys: 'isActive', 'serverId', 'licenseID', 'until', 'activeUsers', 'activeUsersLimit'
         return response.json()
 
-
     def get_license_status(self, url, token, username, password):
-        ''' Check if there is an active license. Return True/False. '''
+        """ Check if there is an active license. Return True/False. """
 
         self.__logger.info("Check license status...")
         licenses = self.get_licenses(url, token, username, password)
@@ -166,7 +158,6 @@ class License:
                 continue
         return False
 
-
     def get_serverID(self, url, token):
 
         headers = {'accept': '*/*', 'Content-type':'text/plain', 'Authorization': f"Bearer {token}"}
@@ -177,9 +168,8 @@ class License:
         message: str = "Current user don't have sufficient privileges."
         return response.text if response.status_code == 200 else message
 
-
     def display_licenses(self, url, token, username, password):
-        ''' Display the list of licenses. '''
+        """ Display the list of licenses. """
 
         licenses: list = self.get_licenses(url, token, username, password)
         license_status: bool = self.get_license_status(url, token, username, password)
@@ -196,7 +186,6 @@ class License:
                         continue
                 for key, value in license.items():
                     print(f"   - {key}: {Fore.RED + str(value)}" if not value and key == 'isActive' else f"   - {key}: {value}")
-
         elif license_status:
             for number, license in enumerate(licenses, 1):
                 # if license.get('isActive'):   # if we want to display only active licenses
@@ -206,22 +195,20 @@ class License:
                 else:
                     for key, value in license.items():
                         print( f"   - {key}: {Fore.GREEN + str(value)}" if value and key == 'isActive' else f"   - {key}: {value}" )
-
         else:
             self.__logger.error("Unpredictable behaviour(license status) in License class.")
 
-
     def delete_license(self, url, token, username, password):
-        '''   Delete active license, if there is one.   '''    
+        """   Delete active license, if there is one.   """    
 
         headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
         self.__logger.info("Delete license:")
         licenses = self.get_licenses(url, token, username, password)
         active_licenses = dict()
-        ''' 
+        """ 
             There is a default trial license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
             After new license will be applied, system trial license will disappear automatically.
-        '''
+        """
         for license in licenses:
             if license.get('isActive') and license['licenseID'] != '00000000-0000-0000-0000-000000000000':
                 active_licenses.setdefault(license['name'], license['licenseID'])
@@ -249,14 +236,12 @@ class License:
 
                 if response.status_code in (200, 201, 204):
                     print(Fore.GREEN + f"   - license '{name}': {id} has been deactivated!")
-
                 else:
                     if response_data and response_data['type'] and response_data['type'] == 'ForbiddenException':
                         print(f"User '{username}' does not have sufficient privileges to do that!")
                     else:
                         self.__logger.error('%s', response.text)
                         print(Fore.RED + f"   - license '{name}': {id} has not been deactivated! Check the logs.")
-
 
     def post_license(self, url, token, username, password):
 
@@ -266,7 +251,6 @@ class License:
         new_license_data: list = self.read_license_token()
         if not new_license_data:
             return False
-
         for license in new_license_data:
             if license['LicenseID'] in licenses_id:
                 self.put_license(url, token, username, password, license['LicenseID'])
@@ -281,18 +265,14 @@ class License:
                     self.put_license(url, token, username, password, license['LicenseID'])
                     self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
                     time.sleep(0.15)
-
                 elif response_data['type'] and response_data['type'] == 'ForbiddenException':
                     print(f"User '{username}' does not have sufficient privileges to do that!")
                     return False
-
                 else:
                     self.__logger.error('%s', response.text)
                     print(Fore.RED + f"\n   - new license has not been posted!")
                     return False
-        
         return True
-
 
     def put_license(self, url: str, token: str, username, password, license_id: str):
 
@@ -323,7 +303,6 @@ class License:
         if response.status_code in (200, 201, 204):
             print(Fore.GREEN + f"   - license '{license_id}' has been activated successfully!")
             return True
-
         else:
             if response_data and response_data['type'] and response_data['type'] == 'ForbiddenException':
                 self.__logger.error('%s', response.text)
@@ -335,7 +314,6 @@ class License:
             else:
                 self.__logger.error('%s', response.text)
                 print(err_message)
-
         return False
 
 
