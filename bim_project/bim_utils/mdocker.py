@@ -18,7 +18,7 @@ class Docker:
         self._permissions: bool = False
 
     @classmethod
-    def __check_docker(cls):
+    def check_docker(cls):
         try:
             docker.from_env()
             return True
@@ -28,9 +28,6 @@ class Docker:
         except Exception as err:
             cls.__logger.error(err)
             return False
-
-    def get_docker_client(self):
-        return True if self.__check_docker() else False
 
     def __getattr__(self, item):
         raise AttributeError("Docker class has no such attribute: " + item)

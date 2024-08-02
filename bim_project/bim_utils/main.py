@@ -215,7 +215,7 @@ def main(local=False):
 
             #    ''' =============================================================================== DOCKER =============================================================================== '''
 
-            case ['docker', *_] if not Docker.get_docker_client():
+            case ['docker', *_] if not Docker.check_docker():
                 print("Error: No docker found in the system, or current user doesn't have accesss to it.")
                 continue
 
