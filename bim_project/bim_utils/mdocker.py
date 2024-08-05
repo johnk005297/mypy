@@ -11,7 +11,7 @@ class Docker:
     __slots__ = ('_ft_token', '_permissions')
     __logger = Logs().f_logger(__name__)
     _bimeister_log_folder = Logs()._bimeister_log_folder + '_docker'
-    docker = docker.from_env()
+    _docker = None
 
     def __init__(self):
         self._ft_token: bool = False
@@ -19,8 +19,9 @@ class Docker:
 
     @classmethod
     def check_docker(cls):
+
         try:
-            docker.from_env()
+            cls._docker = docker.from_env()
             return True
         except docker.errors.DockerException as err:
             cls.__logger.error(err)
@@ -64,10 +65,10 @@ class Docker:
 
         try:
             if all:
-                containers:dict = {x.name: [x.id, x.short_id, x.status] for x in self.docker.containers.list(all)}
+                containers:dict = {x.name: [x.id, x.short_id, x.status] for x in self._docker.containers.list(all)}
                 return containers
             else:
-                containers:dict = {x.name: [x.id, x.short_id, x.status] for x in self.docker.containers.list()}
+                containers:dict = {x.name: [x.id, x.short_id, x.status] for x in self._docker.containers.list()}
                 return containers
         except:
             return False
@@ -95,7 +96,7 @@ class Docker:
         """ Turn on logs of the specific container in interactive mode. """
 
         try:
-            container = self.docker.containers.get(id)
+            container = self._docker.containers.get(id)
             log = container.logs(stream=True, tail=10, timestamps=False)
         except docker.errors.NotFound:
             print("No such docker container: ", id)
@@ -125,11 +126,11 @@ class Docker:
         try:
             for id in args:
                 if not days:
-                    log = self.docker.containers.get(id).logs(tail=tail, timestamps=False).decode()
+                    log = self._docker.containers.get(id).logs(tail=tail, timestamps=False).decode()
                 else:
-                    log = self.docker.containers.get(id).logs(since=delta, timestamps=False).decode()
+                    log = self._docker.containers.get(id).logs(since=delta, timestamps=False).decode()
 
-                filename = self.docker.containers.get(id).name + '.log'
+                filename = self._docker.containers.get(id).name + '.log'
                 if in_file:
                     with open(self._bimeister_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
                         file.write(log)
@@ -159,9 +160,9 @@ class Docker:
 
             try:
                 if not days:
-                    log = self.docker.containers.get(value[1]).logs(tail=tail, timestamps=False).decode()
+                    log = self._docker.containers.get(value[1]).logs(tail=tail, timestamps=False).decode()
                 else:
-                    log = self.docker.containers.get(value[1]).logs(since=delta, timestamps=False).decode()
+                    log = self._docker.containers.get(value[1]).logs(since=delta, timestamps=False).decode()
                 
                 filename = name + '.log'
                 with open(self._bimeister_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
@@ -184,7 +185,7 @@ class Docker:
         """ Function finds needed container for FT. Returns tuple of container id and name. """
 
         ft_container:tuple = ('keydb', 'redis')
-        containers = self.docker.containers.list()
+        containers = self._docker.containers.list()
         for container in containers:
             if container.labels.get('com.docker.compose.service', False) in ft_container and container.status == 'running':
                 return (container.id, container.name)
@@ -229,7 +230,7 @@ class Docker:
         cli = 'keydb-cli'
         exec_command:str = f"{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN"
 
-        ft_container = self.docker.containers.get(ft_containerId)
+        ft_container = self._docker.containers.get(ft_containerId)
         get_ft = ft_container.exec_run(exec_command, stderr=False)
         result = get_ft[1].decode('utf-8')
         try:
