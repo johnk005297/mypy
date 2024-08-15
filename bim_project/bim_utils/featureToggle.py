@@ -25,7 +25,7 @@ class FeatureToggle:
         if self.K8s.get_kube_config():
             self.COS: str = "K8S"
             return self.COS
-        elif self.Docker.get_docker_client():
+        elif self.Docker.check_docker():
             self.COS: str = "Docker"
             return self.COS
         else:

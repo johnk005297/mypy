@@ -82,7 +82,7 @@ def local_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.47a'
+    __version__ = '1.48'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):

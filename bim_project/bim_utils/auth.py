@@ -164,6 +164,7 @@ class Auth:
         }
         data = json.dumps(payload)
         response = requests.post(url=f"{url}/{self.__api_Auth_Login}", data=data, headers=self.headers, verify=False)
+        self.__logger.debug(f"username: {self.username}")
         self.__logger.debug(
             self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
         data = response.json()

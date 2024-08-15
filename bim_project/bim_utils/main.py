@@ -359,7 +359,7 @@ def main(local=False):
 
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
 
-            case ['ft', *_] if not local and not K8s.get_kube_config() and not Docker.get_docker_client():
+            case ['ft', *_] if not local and not K8s.get_kube_config() and not Docker.check_docker():
                 print("No Kubernets or Docker has been found on the localhost. Check the logs.")
                 continue
 
