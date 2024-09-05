@@ -3,10 +3,11 @@ bot_project/
 git.commands
 study
 
+bim_project/bimudils
+bim_project/bim_utils/.env
 bim_project/tmp
 bim_project/archived
 bim_project/bim_utils/*.lic
-bim_project/bim_utils/git.py
 bim_project/bim_utils/project_services.py
 bim_project/bim_utils/transfer_files
 bim_project/bim_utils/archive
