@@ -5,54 +5,55 @@ from log import Logs
 def main_menu():
     """ Help menu of user commands. """
 
-    _main_menu = "\nHelp:                                                                                     \
-                            \n                                                                                \
-                            \n   License                                                                      \
-                            \n      check lic                       check license                             \
-                            \n      get sid                         get serverId                              \
-                            \n      apply lic                       apply new license                         \
-                            \n      delete lic                      delete active license                     \
-                            \n      activate lic                    activate already uploaded license         \
-                            \n                                                                                \
-                            \n   Databases                                                                    \
-                            \n      drop uo                         clean bimeisterdb.UserObjects table       \
-                            \n      drop uo -h                      info about UserObjects table              \
-                            \n                                                                                \
-                            \n   Transfer data                                                                \
-                            \n      export om                       export object model                       \
-                            \n      import om                       import object model                       \
-                            \n      export workflow                 export workflows massively                \
-                            \n      export workflow <id1 id2 ...>   export specific workflows only            \
-                            \n      import workflow                 import workflows                          \
-                            \n      ls workflow                     display workflows(name: id)               \
-                            \n      rm workflow                     delete workflows                          \
-                            \n      rm files                        clean bim_utils transfer files            \
-                            \n                                                                                \
-                            \n   User                                                                         \
-                            \n      ptoken                          get private token                         \
-                            \n      token                           get user access token(Bearer)             \
-                            \n      sh                              run terminal command(current host)        \
-                            \n      ssh connect                     run terminal command(remote host)         \
-                            \n      ls -l                           list current folder content               \
-                            \n                                                                                \
-                            \n   Docker                                                                       \
-                            \n      docker -h                       get a list of available commands          \
-                            \n                                                                                \
-                            \n   K8S                                                                          \
-                            \n      kube -h                         get a list of available commands          \
-                            \n                                                                                \
-                            \n   Feature Toggle                                                               \
-                            \n      ft --list                       display list of features                  \
-                            \n      ft [ft_name] [--on/--off]       turn on/off feature                       \
-                            \n        example:                                                                \
-                            \n        ft Spatium --on                                                         \
-                            \n                                                                                \
-                            \n   Reports                                                                      \
-                            \n      ls report                       get a list of current reports             \
-                            \n                                                                                \
-                            \n   Main                                                                         \
-                            \n      m                               print this menu                           \
-                            \n      q                               exit"
+    _main_menu = "\nHelp:                                                                                      \
+                            \n                                                                                 \
+                            \n   License                                                                       \
+                            \n      check lic                        check license                             \
+                            \n      get sid                          get serverId                              \
+                            \n      apply lic                        apply new license                         \
+                            \n      delete lic                       delete active license                     \
+                            \n      activate lic                     activate already uploaded license         \
+                            \n                                                                                 \
+                            \n   Databases                                                                     \
+                            \n      drop uo                          clean bimeisterdb.UserObjects table       \
+                            \n      drop uo -h                       info about UserObjects table              \
+                            \n                                                                                 \
+                            \n   Transfer data                                                                 \
+                            \n      export om                        export object model                       \
+                            \n      import om                        import object model                       \
+                            \n      export workflows                 export workflows massively                \
+                            \n      export workflows <id1 id2 ...>   export specific workflows only            \
+                            \n      import workflows                 import workflows                          \
+                            \n      ls workflows                     display workflows(name: id)               \
+                            \n        --active, --draft, --archived                                            \
+                            \n      rm workflows                     delete workflows                          \
+                            \n      rm files                         clean bim_utils transfer files            \
+                            \n                                                                                 \
+                            \n   User                                                                          \
+                            \n      ptoken                           get private token                         \
+                            \n      token                            get user access token(Bearer)             \
+                            \n      sh                               run terminal command(current host)        \
+                            \n      ssh connect                      run terminal command(remote host)         \
+                            \n      ls -l                            list current folder content               \
+                            \n                                                                                 \
+                            \n   Docker                                                                        \
+                            \n      docker -h                        get a list of available commands          \
+                            \n                                                                                 \
+                            \n   K8S                                                                           \
+                            \n      kube -h                          get a list of available commands          \
+                            \n                                                                                 \
+                            \n   Feature Toggle                                                                \
+                            \n      ft --list                        display list of features                  \
+                            \n      ft [ft_name] [--on/--off]        turn on/off feature                       \
+                            \n        example:                                                                 \
+                            \n        ft Spatium --on                                                          \
+                            \n                                                                                 \
+                            \n   Reports                                                                       \
+                            \n      ls report                        get a list of current reports             \
+                            \n                                                                                 \
+                            \n   Main                                                                          \
+                            \n      m                                print this menu                           \
+                            \n      q                                exit"
 
     return _main_menu
 
@@ -82,7 +83,7 @@ def local_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.48'
+    __version__ = '1.48b'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):
@@ -101,7 +102,7 @@ class AppMenu:
 
         exit_command = ['q']
         try:
-            user_command = input("\nCommand (m for help): ").strip().lower().split()
+            user_command = input("\nCommand (m for help): ").strip().split()
         except KeyboardInterrupt:
             print('\nKeyboardInterrupt')
             return exit_command

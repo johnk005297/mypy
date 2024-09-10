@@ -16,6 +16,7 @@ import mdocker
 import mk8s
 import vsphere
 import git
+import re
 from tools import Folder, File, Tools
 from reports import Reports
 from log import Logs
@@ -48,7 +49,6 @@ def main(local=False):
 # ---------------------------------------------------------
 
     AppMenu_main.welcome_info_note()
-
     if not local and not Auth.establish_connection():  # if connection was not established, do not continue
         return False
 
@@ -143,40 +143,44 @@ def main(local=False):
             
 
             #    ''' =============================================================================== TRANSFER DATA BLOCK ============================================================================== '''
-            
+
             # Export data
-            case ['export', 'om'] | ['ls', 'workflow'] | ['rm', 'workflow'] | ['export', 'workflow', *_] if not local:
-
+            case ['export', 'om'] if not local:
                 if Export_data_main.is_first_launch_export_data:
-                    Folder.create_folder(os.getcwd(), Export_data_main._transfer_folder)
-                    time.sleep(0.1)
-                    Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._workflows_folder)
-                    time.sleep(0.1)
-                    Folder.create_folder(os.getcwd() + '/' + Export_data_main._transfer_folder, Export_data_main._object_model_folder)
-                    time.sleep(0.1)
-                    Export_data_main.is_first_launch_export_data = False
-
-                
+                    Export_data_main.create_folders_for_export_files()
                 if user_command == ['export', 'om']:
                     Export_data_main.export_server_info(url, token)
-                    Export_data_main.get_object_model(Export_data_main._object_model_file, Auth.url, Auth.token)
+                    Export_data_main.get_object_model(Export_data_main._object_model_file, Auth.url, Auth.token)                
 
-                elif user_command[:2] == ['export', 'workflow']:
+            case ['ls', 'workflows', *_] | ['export', 'workflows', *_] | ['rm', 'workflows', *_] if not local:
+                if Export_data_main.is_first_launch_export_data:
+                    Export_data_main.create_folders_for_export_files()
+                args = user_command[2:]
+                startswith = re.search('--startswith=".+"', ' '.join(args)).group().split('=')[1] if re.search('--startswith=".+"', ' '.join(args)) else ''
+                startswith = re.sub(r"\"", "", startswith)
+                search_for = re.search('--search=".+"', ' '.join(args)).group().split('=')[1] if re.search('--search=".+"', ' '.join(args)) else ''
+                search_for = re.sub(r"\"", "", search_for)
+                wf_id_array = re.search('--id=".+"', ' '.join(args)).group().split('=')[1] if re.search('--id=".+"', ' '.join(args)) else ''
+                wf_id_array = re.sub(r"\"", "", wf_id_array).split()
 
+                if wf_id_array and user_command[:2] == ['export', 'workflows']:
+                    Export_data_main.export_workflows_by_choice(url, token, wf_id_array)
+                    continue
+                workflows = Export_data_main.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for)
+                if not workflows:
+                    continue
+                if user_command[:2] == ['export', 'workflows']:
                     Export_data_main.export_server_info(url, token)
-                    if len(user_command) == 2:
-                        Export_data_main.export_workflows(url, token, at_once=True)
-                    else:
-                        args = user_command[2:]
-                        Export_data_main.export_workflows(url, token, *args, at_once=False)
+                    Export_data_main.export_workflows_at_once(url, token, workflows)
+                elif user_command[:2] == ['ls', 'workflows']:
+                    Export_data_main.display_list_of_workflowsName_and_workflowsId(workflows)
 
-                elif user_command == ['ls', 'workflow']:
-                    Export_data_main.display_list_of_workflowsName_and_workflowsId(url, token)
-                elif user_command == ['rm', 'workflow']:
-                    Export_data_main.delete_workflows(url, token)                
+                elif user_command[:2] == ['rm', 'workflows']:
+                    workflows = Export_data_main.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for)
+                    Export_data_main.delete_workflows(url, token, workflows)
 
             # Import data
-            case ['import', 'workflow'] if not local:
+            case ['import', 'workflows'] if not local:
                 Import_data_main.import_workflows(url, token)
 
             case ['import', 'om'] if not local:
@@ -185,7 +189,7 @@ def main(local=False):
             case ['rm', 'files'] if not local:
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._object_model_folder}")
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._workflows_folder}")
-                File.remove_file(f"{os.getcwd()}/{Export_data_main._transfer_folder}/export_server.info")                
+                File.remove_file(f"{os.getcwd()}/{Export_data_main._transfer_folder}/export_server.info")
 
 
             #    ''' =============================================================================== USER =============================================================================== '''
@@ -406,12 +410,10 @@ def main(local=False):
                 else:
                     print("Unexpected error occured. Check the logs.")
 
-
             #    ''' =============================================================================== REPORTS ========================================================================================== '''
 
             case ['ls', 'report'] if not local:
                 Repo.display_reports(url, token)
-
 
             # wildcard pattern if no cases before where matched
             case _:
@@ -430,7 +432,7 @@ if __name__ == '__main__':
     enable_history_input()
     parser = argparse.ArgumentParser(prog='bim_utils', description='\'Frankenstein\' CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
     subparser = parser.add_subparsers(dest='command', help='Run without arguments for standart use.')
-    local = subparser.add_parser('local', help='Execute script with locally available options on the current host.')
+    parser.add_argument('--local', required=False, action="store_true", help='Execute script with locally available options on the current host.')
     vcenter = subparser.add_parser('vsphere', help='Performing operations with vSphere API.')
     vcenter.add_argument('-u', '--user', required=False)
     vcenter.add_argument('-p', '--password', required=False)
@@ -453,7 +455,7 @@ if __name__ == '__main__':
     pl.add_argument('--list-branch-folder', required=False, help='Prints the list of files and folders for a given branch.')
     pl_group = pl.add_mutually_exclusive_group(required=False)
     pl_group.add_argument('--search-branch', required=False, help='Get a list of branch names from GitLab.')
-    pl_group.add_argument('--commit', required=False)
+    pl_group.add_argument('--commit', required=False, help='Get info from the product-collection.yaml file for a specific commit.')
     args = parser.parse_args()
     try:
         if args.command == 'product-list':
@@ -478,8 +480,6 @@ if __name__ == '__main__':
         elif args.command == 'sql':
             pg = postgre.DB()
             pg.exec_query_from_file(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port, file=args.file)
-        elif args.command == 'local':
-            main(local=True)
         elif args.command == 'vsphere':
             v = vsphere.Vsphere()
             headers = v.get_headers(args.user, args.password)
@@ -492,6 +492,8 @@ if __name__ == '__main__':
                 if not vm_array:
                     sys.exit()
                 v.restart_os(headers, vm_array, args.exclude_vm)
+        elif args.local:
+            main(local=True)
         else:
             main()
     except KeyboardInterrupt:
