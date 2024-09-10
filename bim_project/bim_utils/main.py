@@ -28,7 +28,7 @@ def main(local=False):
     Auth             = auth.Auth()
     User_main        = user.User()
     License_main     = license.License()
-    Export_data_main = export_data.Export_data()
+    Export_data = export_data.Export_data()
     Import_data_main = import_data.Import_data()
     Docker           = mdocker.Docker()
     K8s              = mk8s.K8S(namespace='bimeister')
@@ -146,15 +146,24 @@ def main(local=False):
 
             # Export data
             case ['export', 'om'] if not local:
-                if Export_data_main.is_first_launch_export_data:
-                    Export_data_main.create_folders_for_export_files()
+                if Export_data.is_first_launch_export_data:
+                    Export_data.create_folders_for_export_files()
                 if user_command == ['export', 'om']:
-                    Export_data_main.export_server_info(url, token)
-                    Export_data_main.get_object_model(Export_data_main._object_model_file, Auth.url, Auth.token)                
+                    Export_data.export_server_info(url, token)
+                    Export_data.get_object_model(Export_data._object_model_file, Auth.url, Auth.token)                
 
             case ['ls', 'workflows', *_] | ['export', 'workflows', *_] | ['rm', 'workflows', *_] if not local:
-                if Export_data_main.is_first_launch_export_data:
-                    Export_data_main.create_folders_for_export_files()
+                if user_command == ['ls', 'workflows', '--help'] or user_command == ['ls', 'workflows', '-h']:
+                    Export_data.help_function(ls=True)
+                    continue
+                if user_command == ['export', 'workflows', '--help'] or user_command == ['export', 'workflows', '-h']:
+                    Export_data.help_function(export=True)
+                    continue
+                if user_command == ['rm', 'workflows', '--help'] or user_command == ['rm', 'workflows', '-h']:
+                    Export_data.help_function(remove=True)
+                    continue                
+                if Export_data.is_first_launch_export_data:
+                    Export_data.create_folders_for_export_files()
                 args = user_command[2:]
                 startswith = re.search('--startswith=".+"', ' '.join(args)).group().split('=')[1] if re.search('--startswith=".+"', ' '.join(args)) else ''
                 startswith = re.sub(r"\"", "", startswith)
@@ -164,20 +173,20 @@ def main(local=False):
                 wf_id_array = re.sub(r"\"", "", wf_id_array).split()
 
                 if wf_id_array and user_command[:2] == ['export', 'workflows']:
-                    Export_data_main.export_workflows_by_choice(url, token, wf_id_array)
-                    continue
-                workflows = Export_data_main.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for)
+                    Export_data.export_workflows_by_choice(url, token, wf_id_array)
+                    continue             
+                workflows = Export_data.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for)
                 if not workflows:
                     continue
                 if user_command[:2] == ['export', 'workflows']:
-                    Export_data_main.export_server_info(url, token)
-                    Export_data_main.export_workflows_at_once(url, token, workflows)
+                    Export_data.export_server_info(url, token)
+                    Export_data.export_workflows_at_once(url, token, workflows)
                 elif user_command[:2] == ['ls', 'workflows']:
-                    Export_data_main.display_list_of_workflowsName_and_workflowsId(workflows)
+                    Export_data.display_list_of_workflowsName_and_workflowsId(workflows)
 
                 elif user_command[:2] == ['rm', 'workflows']:
-                    workflows = Export_data_main.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for)
-                    Export_data_main.delete_workflows(url, token, workflows)
+                    workflows = Export_data.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for)
+                    Export_data.delete_workflows(url, token, workflows)
 
             # Import data
             case ['import', 'workflows'] if not local:
@@ -187,9 +196,9 @@ def main(local=False):
                 Import_data_main.import_object_model(url, token)
 
             case ['rm', 'files'] if not local:
-                Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._object_model_folder}")
-                Folder.clean_folder(f"{os.getcwd()}/{Export_data_main._transfer_folder}/{Export_data_main._workflows_folder}")
-                File.remove_file(f"{os.getcwd()}/{Export_data_main._transfer_folder}/export_server.info")
+                Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._object_model_folder}")
+                Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._workflows_folder}")
+                File.remove_file(f"{os.getcwd()}/{Export_data._transfer_folder}/export_server.info")
 
 
             #    ''' =============================================================================== USER =============================================================================== '''

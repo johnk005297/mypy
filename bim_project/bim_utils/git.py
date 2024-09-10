@@ -144,6 +144,34 @@ def parse_product_collection_yaml(data):
     db_list = sorted(list(set(db_list)))
     return services_list, db_list
 
+
+#### TURN ON SINCE SPRINT-132 ####
+# def parse_product_collection_yaml(data):
+#     """ Function returns two lists with services and DB for a chosen project. """
+
+#     if not data:
+#         return False
+#     for num, project in enumerate(data['collections'], 1):
+#         print(f"{num}. {project}")
+#     try:
+#         inp = int(input('Choose number of the project: '))
+#         project = list(data['collections'])[inp - 1]
+#     except ValueError:
+#         print("Wrong input.")
+#         return False
+
+#     modules_and_services: dict = data['modules']
+#     modules = set(data['collections'][project]['modules'])
+#     services: list = [ service for module in modules 
+#                                 for service in modules_and_services[module] ]
+#     services = sorted(list(set(services))) # turn into a set to eliminate duplicates
+
+#     db: list= ['bimeisterdb' if db == 'db' else db for svc in data['services'] if data['services'][svc].get('db') 
+#                 for db in data['services'][svc]['db'] ]
+#     db = sorted(list(set(db)))
+#     return services, db
+
+
 def print_services_and_db(svc, db):
     """ Function for displaying collection on a screen. """
 

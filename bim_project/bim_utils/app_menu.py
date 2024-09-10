@@ -22,10 +22,8 @@ def main_menu():
                             \n      export om                        export object model                       \
                             \n      import om                        import object model                       \
                             \n      export workflows                 export workflows massively                \
-                            \n      export workflows <id1 id2 ...>   export specific workflows only            \
                             \n      import workflows                 import workflows                          \
                             \n      ls workflows                     display workflows(name: id)               \
-                            \n        --active, --draft, --archived                                            \
                             \n      rm workflows                     delete workflows                          \
                             \n      rm files                         clean bim_utils transfer files            \
                             \n                                                                                 \
@@ -83,7 +81,7 @@ def local_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.48b'
+    __version__ = '1.49b'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):

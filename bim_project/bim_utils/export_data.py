@@ -61,8 +61,6 @@ class Export_data:
             response = requests.get(url_get_object_model, headers=headers, verify=False)
             if response.status_code != 200:
                 self.__logger.error(f"{self.get_object_model.__name__}\n{response.text}")
-            # self.__logger.debug(self.__check_response(
-            # url, response.request.method, response.request.path_url, response.status_code))
             data = response.json()
         except self.possible_request_errors as err:
             self.__logger.error(f"{err}")
@@ -87,7 +85,6 @@ class Export_data:
         url_get_all_workflow_nodes = url + '/' + self.__api_WorkFlowNodes
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
         try:
-            # self.__start_connection(url)
             response = requests.get(url=url_get_all_workflow_nodes, headers=headers, verify=False)
             data = response.json()
         except self.possible_request_errors as err:
@@ -211,7 +208,7 @@ class Export_data:
             nodes_to_remove = [node for node in workflow_nodes.keys() if ''.join(('--', node)).lower() not in selected_nodes and len(selected_nodes) > 0]
             {workflow_nodes.__delitem__(node) for node in nodes_to_remove}
         if not selected_nodes:
-            print("At least one of the arguments of the node must be provided: --draft, --active, --archived, --all")
+            print("At least one of the nodes must be provided: --draft, --active, --archived, --all")
             return False
         for name, id in workflow_nodes.items():
                 url_get_workflows = f"{url}/{self.__api_WorkFlowNodes}/{id}/children"
@@ -274,6 +271,48 @@ class Export_data:
         Folder.create_folder(os.getcwd() + '/' + self._transfer_folder, self._object_model_folder)
         time.sleep(0.1)
         self.is_first_launch_export_data = False
+
+    def help_function(self, ls=False, export=False, remove=False):
+        """ Provide help info for the user. """
+
+        ls_workflows: str = """usage: ls workflows [--help] [--startswith=\"TEXT TO FIND\" | --search=\"TEXT TO FIND\"] [--draft] [--active] [--archived] [--all]
+
+options:
+  -h, --help    Show this help message
+  --startswith  Pattern to search from the beginning of the line
+  --search      Pattern to search at any place of the line
+  --draft       Draft node of workflows
+  --active      Active node of workflows
+  --archived    Archived node of workflows
+  --all         All three nodes
+"""
+        export_workflows: str = """usage: export workflows [--help] [--startswith=\"TEXT TO FIND\" | --search=\"TEXT TO FIND\" | --id="WORKFLOW(S) ID"] [--draft] [--active] [--archived] [--all]
+
+options:
+  -h, --help    Show this help message
+  --startswith  Pattern to search from the beginning of the line
+  --search      Pattern to search at any place of the line
+  --id          One or more workflow ID separated with whitespace
+                Doesn't require any flags
+  --draft       Draft node of workflows
+  --active      Active node of workflows
+  --archived    Archived node of workflows
+  --all         All three nodes
+"""
+        remove_workflows: str = """usage: rm workflows [--help] [--draft] [--active] [--archived] [--all]
+
+options:
+  -h, --help    Show this help message
+  --draft       Draft node of workflows
+  --active      Active node of workflows
+  --archived    Archived node of workflows
+  --all         All three nodes
+"""
+
+        if ls: print(ls_workflows)
+        elif export: print(export_workflows)
+        elif remove: print(remove_workflows)
+
 
 
 
