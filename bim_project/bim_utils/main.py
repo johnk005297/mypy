@@ -2,7 +2,6 @@
 # Script for work with license and some other small features.
 import os
 import sys
-import time
 import app_menu
 import auth
 import user
@@ -440,6 +439,7 @@ def enable_history_input():
 if __name__ == '__main__':
     enable_history_input()
     parser = argparse.ArgumentParser(prog='bim_utils', description='\'Frankenstein\' CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
+    parser.add_argument('--version', required=False, action="store_true")
     subparser = parser.add_subparsers(dest='command', help='Run without arguments for standart use.')
     parser.add_argument('--local', required=False, action="store_true", help='Execute script with locally available options on the current host.')
     vcenter = subparser.add_parser('vsphere', help='Performing operations with vSphere API.')
@@ -467,7 +467,9 @@ if __name__ == '__main__':
     pl_group.add_argument('--commit', required=False, help='Get info from the product-collection.yaml file for a specific commit.')
     args = parser.parse_args()
     try:
-        if args.command == 'product-list':
+        if args.version:
+            print(app_menu.AppMenu.__version__)
+        elif args.command == 'product-list':
             g = git.Git()
             project_id = g.get_bimeister_project_id()
             if not project_id:
