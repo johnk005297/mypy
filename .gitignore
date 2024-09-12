@@ -2,7 +2,6 @@ __pycache__
 bot_project/
 git.commands
 study
-
 bim_project/bimudils
 bim_project/bim_utils/.env
 bim_project/tmp
