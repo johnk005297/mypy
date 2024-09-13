@@ -4,14 +4,10 @@ import base64
 import requests
 from log import Logs
 from prettytable import PrettyTable
-from dotenv import load_dotenv
 
-# Load environment variables from the .env file
-load_dotenv()
 
 class Git:
-    token = os.getenv("PRIVATE_TOKEN")
-    __headers = {"PRIVATE-TOKEN": token}
+    __headers = {"PRIVATE-TOKEN": "glpat-qikPoeTbYEVayrnxx165"}
     __url = "https://git.bimeister.io/api/v4"
     __logger = Logs().f_logger(__name__)
     __error_msg = "Unexpected error. Check the logs!"
@@ -20,6 +16,7 @@ class Git:
         """ Get from Gitlab ID of the project bimeister. """
 
         url = f"{self.__url}/search?scope=projects&search=bimeister"
+        response = requests.get(url=url, headers=self.__headers)
         try:
             response = requests.get(url=url, headers=self.__headers)
         except requests.exceptions.ConnectionError as err:
@@ -145,7 +142,7 @@ def parse_product_collection_yaml(data):
     return services_list, db_list
 
 
-#### TURN ON SINCE SPRINT-132 ####
+# ### TURN ON SINCE SPRINT-133 ####
 # def parse_product_collection_yaml(data):
 #     """ Function returns two lists with services and DB for a chosen project. """
 
