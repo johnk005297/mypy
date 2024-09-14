@@ -463,8 +463,9 @@ if __name__ == '__main__':
     pl = subparser.add_parser('product-list', help='Get list of services and DB for a specific project from product-collection.yaml.')
     pl.add_argument('--list-branch-folder', required=False, help='Prints the list of files and folders for a given branch.')
     pl_group = pl.add_mutually_exclusive_group(required=False)
-    pl_group.add_argument('--search-branch', required=False, help='Get a list of branch names from GitLab.')
+    pl_group.add_argument('--search-branch', required=False, nargs='+', help='Get a list of branch names from GitLab.')
     pl_group.add_argument('--commit', required=False, help='Get info from the product-collection.yaml file for a specific commit.')
+    pl_group.add_argument('--compare', required=False, nargs=2, help='Compare two commits for difference in product-collection.yaml in DBs list and services list.')
     args = parser.parse_args()
     try:
         if args.version:
@@ -477,13 +478,22 @@ if __name__ == '__main__':
             if args.search_branch:
                 g.list_branches(project_id, args.search_branch)
             elif args.commit:
-                data = g.get_product_collection_file_content(project_id, args.commit)
+                data: dict = g.get_product_collection_file_content(project_id, args.commit)
                 if not data:
                     sys.exit()
-                svc_db_list = git.parse_product_collection_yaml(data)
-                if not svc_db_list:
+                project_name, services, db = git.parse_product_collection_yaml(data)
+                if not project_name or not services or not db:
                     sys.exit()
-                git.print_services_and_db(svc_db_list[0], svc_db_list[1])
+                git.print_services_and_db(services, db)
+            elif args.compare:
+                first_commit, second_commit = args.compare[0], args.compare[1]
+                first_commit_data: dict = g.get_product_collection_file_content(project_id, first_commit)
+                second_commit_data: dict = g.get_product_collection_file_content(project_id, second_commit)
+                if not first_commit_data or not second_commit_data:
+                    sys.exit()
+                first_commit_project_name, first_commit_services, first_commit_db = git.parse_product_collection_yaml(first_commit_data)
+                second_commit_project_name, second_commit_services, second_commit_db = git.parse_product_collection_yaml(second_commit_data, project_name=first_commit_project_name)
+                git.compare_two_commits(first_commit_services, first_commit_db, second_commit_services, second_commit_db)
             elif args.list_branch_folder:
                 g.get_tree(project_id, args.list_branch_folder)
         elif args.command == 'drop-UO':
