@@ -384,8 +384,8 @@ def main(local=False):
                         if user_command == ['ft', '--list']:
                             FT.display_features(url, ft_token)
                         elif len(user_command) == 3 and user_command[-1] in ('--on', '--off'):
-                            feature:str = user_command[1]
-                            ft_list:list = FT.get_features(url, ft_token)
+                            feature: str = user_command[1].lower()
+                            ft_list: list = FT.get_features(url, ft_token)
                             if feature in ft_list:
                                 try:
                                     FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[-1] == '--on' else False))
@@ -402,8 +402,8 @@ def main(local=False):
                         if user_command == ['ft', '--list']:
                             FT.display_features(url, ft_token)
                         elif len(user_command) == 3 and user_command[-1] in ('--on', '--off'):
-                            feature:str = user_command[1]
-                            ft_list:list = FT.get_features(url, ft_token)
+                            feature: str = user_command[1].lower()
+                            ft_list: list = FT.get_features(url, ft_token)
                             if feature in ft_list:
                                 try:
                                     FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[-1] == '--on' else False))

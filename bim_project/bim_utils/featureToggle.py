@@ -32,7 +32,6 @@ class FeatureToggle:
             self.__logger.debug("No K8S or Docker has been found on localhost. As well as no connection to the API's could be established.")
             return False
 
-
     def get_features(self, url, FeatureAccessToken):
         """ Get list of features. """
 
@@ -49,7 +48,6 @@ class FeatureToggle:
             return False
 
         return ft_list
-
 
     def display_features(self, url, FeatureAccessToken):
         """ Display list of features in pretty table. """
@@ -72,7 +70,6 @@ class FeatureToggle:
             self.__logger.error(request.text)
             return False
         print(table)
-
 
     def set_feature(self, url, feature, bearerToken, FeatureAccessToken, is_enabled=True):
         """ Function to enable/disable FT. """
