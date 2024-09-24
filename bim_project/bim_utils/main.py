@@ -478,11 +478,16 @@ if __name__ == '__main__':
             if args.search_branch:
                 g.list_branches(project_id, args.search_branch)
             elif args.commit:
-                data: dict = g.get_product_collection_file_content(project_id, args.commit)
+                file_content: dict = g.get_product_collection_file_content(project_id, args.commit)
+                if not file_content:
+                    sys.exit()
+                # project_name, services, db = git.parse_product_collection_yaml(file_content)
+                data = git.parse_product_collection_yaml(file_content)
                 if not data:
                     sys.exit()
-                project_name, services, db = git.parse_product_collection_yaml(data)
-                if not project_name or not services or not db:
+                else:
+                    project_name, services, db = data
+                if not services or not db:
                     sys.exit()
                 git.print_services_and_db(services, db)
             elif args.compare:
