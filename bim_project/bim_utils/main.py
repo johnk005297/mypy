@@ -462,6 +462,7 @@ if __name__ == '__main__':
     sql.add_argument('-f', '--file', help='Sql filename containing the query', required=True)
     pl = subparser.add_parser('product-list', help='Get list of services and DB for a specific project from product-collection.yaml.')
     pl.add_argument('--list-branch-folder', required=False, help='Prints the list of files and folders for a given branch.')
+    pl.add_argument('--project-name', required=False, help='Provide project name from the product-collection.yaml without prompt.')
     pl_group = pl.add_mutually_exclusive_group(required=False)
     pl_group.add_argument('--search-branch', required=False, nargs='+', help='Get a list of branch names from GitLab.')
     pl_group.add_argument('--commit', required=False, help='Get info from the product-collection.yaml file for a specific commit.')
@@ -482,7 +483,7 @@ if __name__ == '__main__':
                 if not file_content:
                     sys.exit()
                 # project_name, services, db = git.parse_product_collection_yaml(file_content)
-                data = git.parse_product_collection_yaml(file_content)
+                data = git.parse_product_collection_yaml(file_content, project_name=args.project_name)
                 if not data:
                     sys.exit()
                 else:
