@@ -445,6 +445,7 @@ if __name__ == '__main__':
     vcenter = subparser.add_parser('vsphere', help='Performing operations with vSphere API.')
     vcenter.add_argument('-u', '--user', required=False)
     vcenter.add_argument('-p', '--password', required=False)
+    vcenter.add_argument('--startswith', required=False)
     vcenter.add_argument('--exclude-vm', type=str, nargs='+', required=False, help='A list of VMs to be excluded from the reboot OS.')
     vcenter_options = vcenter.add_mutually_exclusive_group(required=True)
     vcenter_options.add_argument('--restart-all-vm', required=False, action="store_true")
@@ -512,14 +513,12 @@ if __name__ == '__main__':
         elif args.command == 'vsphere':
             v = vsphere.Vsphere()
             headers = v.get_headers(args.user, args.password)
-            if not headers:
+            vm_array = v.get_array_of_vm(headers, args.startswith)
+            if not headers or not vm_array:
                 sys.exit()
             if args.list_vm:
-                v.print_list_of_vm(headers)
+                v.print_list_of_vm(vm_array)
             elif args.restart_all_vm:
-                vm_array = v.get_array_of_vm(headers)
-                if not vm_array:
-                    sys.exit()
                 v.restart_os(headers, vm_array, args.exclude_vm)
         elif args.command == 'bim-version':
             Tools.print_bim_version(args.url)

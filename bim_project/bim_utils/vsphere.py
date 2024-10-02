@@ -78,10 +78,9 @@ class Vsphere:
             self.__logger.error(err)
             return False
 
-    def print_list_of_vm(self, headers):
-        """ Print all VM names from the list. """
+    def print_list_of_vm(self, vm_dict):
+        """ Print all VM names from the dictionary. """
 
-        vm_dict = self.get_array_of_vm(headers)
         if not vm_dict:
             return False
         for value in vm_dict.values():
@@ -98,7 +97,7 @@ class Vsphere:
         group_id: list = [x['folder'] for x in data if x['type'] == 'VIRTUAL_MACHINE' and x['name'] in folders]
         return group_id
 
-    def get_array_of_vm(self, headers):
+    def get_array_of_vm(self, headers, startswith=''):
         """ Get an array of VM in vSphere's cluster with POWERED_ON state. """
 
         # Getting a pool of VMs to be excluded from the reboot list.
@@ -119,7 +118,10 @@ class Vsphere:
         if response.status_code == 200:
             self.__logger.info(response.status_code)
             data = response.json()
-            vm_dict: dict = { vm['vm']: vm['name'] for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] not in exclude_list}
+            if not startswith:
+                vm_dict: dict = { vm['vm']: vm['name'] for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] not in exclude_list}
+            else:
+                vm_dict: dict = { vm['vm']: vm['name'] for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] not in exclude_list and vm['name'].startswith(startswith)}
             vm_dict = dict(sorted(vm_dict.items(), key=lambda item: item[1]))
         else:
             self.__logger.error(response.text)
