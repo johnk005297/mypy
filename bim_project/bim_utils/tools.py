@@ -9,6 +9,7 @@ import random
 import string
 import pathlib
 import zipfile
+import requests
 from datetime import datetime
 from log import Logs
 __logger = Logs().f_logger(__name__)
@@ -166,3 +167,21 @@ class Tools:
         """ Get current user id. """
         user_id = os.getuid()
         return True if user_id == 0 else False
+    
+    def print_bim_version(url):
+        """ Get bimeister commit version. """
+
+        try:
+            url = url + '/assets/version.json' if not url[-1] == '/' else url + 'assets/version.json'
+            response = requests.get(url, verify=False)
+            response.raise_for_status()
+            data = response.json()
+            print(f"name: {data['BRANCH_NAME']}\nversion: {data['BUILD_FULL_VERSION']}")
+        except requests.exceptions.ConnectionError:
+            # __logger.error(err) # doesn't work
+            print("ConnectionError: Check URL address.")
+        except json.JSONDecodeError:
+            # __logger.error(err) # doesn't work
+            print("JSONDecodeError: Check URL address.")
+        except requests.exceptions.MissingSchema:
+            print(f"Invalid URL. Perhaps you meant https://{url}?")

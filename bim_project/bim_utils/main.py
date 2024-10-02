@@ -467,6 +467,8 @@ if __name__ == '__main__':
     pl_group.add_argument('--search-branch', required=False, nargs='+', help='Get a list of branch names from GitLab.')
     pl_group.add_argument('--commit', required=False, help='Get info from the product-collection.yaml file for a specific commit.')
     pl_group.add_argument('--compare', required=False, nargs=2, help='Compare two commits for difference in product-collection.yaml in DBs list and services list.')
+    bim_version = subparser.add_parser('bim-version', help='Get bimeister version information.')
+    bim_version.add_argument('--url', required=True)
     args = parser.parse_args()
     try:
         if args.version:
@@ -519,6 +521,9 @@ if __name__ == '__main__':
                 if not vm_array:
                     sys.exit()
                 v.restart_os(headers, vm_array, args.exclude_vm)
+        elif args.command == 'bim-version':
+            Tools.print_bim_version(args.url)
+            sys.exit()
         elif args.local:
             main(local=True)
         else:
