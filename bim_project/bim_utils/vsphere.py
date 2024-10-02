@@ -48,14 +48,15 @@ class Vsphere:
     def get_session_token(self, username, password):
         """ Function to get token for execution requests. """
 
-        username = os.getenv('user')
-        password = os.getenv('password')
-        username_bytes = username.encode("utf-8")
-        username_encoded = base64.b64decode(username_bytes)
-        username = username_encoded.decode("utf-8").strip()
-        password_bytes = password.encode("utf-8")
-        password_encoded = base64.b64decode(password_bytes)
-        password = password_encoded.decode("utf-8").strip()
+        ## for tests only
+        # username = os.getenv('user')
+        # password = os.getenv('password')
+        # username_bytes = username.encode("utf-8")
+        # username_encoded = base64.b64decode(username_bytes)
+        # username = username_encoded.decode("utf-8").strip()
+        # password_bytes = password.encode("utf-8")
+        # password_encoded = base64.b64decode(password_bytes)
+        # password = password_encoded.decode("utf-8").strip()
 
         creds = self.get_credentials(username, password)
         if not creds:
