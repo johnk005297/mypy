@@ -164,10 +164,9 @@ def main(local=False):
                 if Export_data.is_first_launch_export_data:
                     Export_data.create_folders_for_export_files()
                 args = user_command[2:]
-                startswith = re.search('--startswith=".+"', ' '.join(args)).group().split('=')[1] if re.search('--startswith=".+"', ' '.join(args)) else ''
-                startswith = re.sub(r"\"", "", startswith)
-                search_for = re.search('--search=".+"', ' '.join(args)).group().split('=')[1] if re.search('--search=".+"', ' '.join(args)) else ''
-                search_for = re.sub(r"\"", "", search_for)
+                # at the beginning and at the end of the line we cut the quotation marks with slicing
+                startswith = re.search('--startswith=".+"', ' '.join(args)).group().split('=')[1][1:-1] if re.search('--startswith=".+"', ' '.join(args)) else ''
+                search_for = re.search('--search=".+"', ' '.join(args)).group().split('=')[1][1:-1] if re.search('--search=".+"', ' '.join(args)) else ''
                 wf_id_array = re.search('--id=".+"', ' '.join(args)).group().split('=')[1] if re.search('--id=".+"', ' '.join(args)) else ''
                 wf_id_array = re.sub(r"\"", "", wf_id_array).split()
 
@@ -445,7 +444,7 @@ if __name__ == '__main__':
     vcenter = subparser.add_parser('vsphere', help='Performing operations with vSphere API.')
     vcenter.add_argument('-u', '--user', required=False)
     vcenter.add_argument('-p', '--password', required=False)
-    vcenter.add_argument('--startswith', required=False)
+    vcenter.add_argument('--startswith', required=False, help='Filter VM by first letters of the name.')
     vcenter.add_argument('--exclude-vm', type=str, nargs='+', required=False, help='A list of VMs to be excluded from the reboot OS.')
     vcenter_options = vcenter.add_mutually_exclusive_group(required=True)
     vcenter_options.add_argument('--restart-all-vm', required=False, action="store_true")
