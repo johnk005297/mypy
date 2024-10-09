@@ -177,23 +177,27 @@ class Auth:
         if response.status_code == 401:
             if data.get('type') and data.get('type') == 'TransitPasswordExpiredBimException':
                 message: str = f"Password for '{username}' has been expired!"
+                self.__logger.error(response.text)
                 print(message)
-                self.__logger.warning(message)
                 return False
             elif data.get('type') and data.get('type') == 'IpAddressLoginAttemptsExceededBimException':
                 message = "Too many authorization attempts. IP address has been blocked!"
+                self.__logger.error(response.text)
                 print(message)
-                self.__logger.warning(message)
                 return False
             elif data.get('type') and data.get('type') == 'AuthCommonBimException':
                 message = f"Unauthorized access. Check credentials for user: {username}."
+                self.__logger.error(response.text)
                 print(message)
-                self.__logger.warning(message)
                 return False
             elif data.get('type') and data.get('type') == 'UserPasswordValidationBimException':
                 message = "The password does not match the password policy. Need to create a new password."
+                self.__logger.error(response.text)
                 print(message)
-                self.__logger.warning(message)
+            elif data.get('type') and data.get('type') == 'UserLoginAttemptsExceededBimException':
+                message = "Login attempts exceeded. User was blocked."
+                self.__logger.error(response.text)
+                print(message)
             else:
                 self.__logger.error(response.text)
                 return False
