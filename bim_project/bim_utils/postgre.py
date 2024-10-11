@@ -76,20 +76,24 @@ class DB:
             print(f"Database connection error.\n{err}")
             return False
 
+        with open(kwargs['file'], 'r', encoding='utf-8') as file:
+            sql_query = file.read()
+
         with conn.cursor() as cursor:
-            success_msg:str = "SQL query executed successfully!"
+            success_msg: str = "SQL query executed successfully!"
             try:
-                cursor.execute(open(kwargs['file'], "r").read())
+                # cursor.execute(open(kwargs['file'], "r").read())
+                cursor.execute(sql_query)
                 if cursor.description == None:
-                    print(success_msg)
-                    return True
+                    print("SQL query hasn't been executed.")
+                    return False
                 result = cursor.fetchall()
 
                 # Extract the table headers
                 headers = [i[0] for i in cursor.description]
 
                 # Open CSV file for writing
-                fileName:str = kwargs['file'][:-4] + '.csv'
+                fileName: str = kwargs['file'][:-4] + '.csv'
                 csvFile = csv.writer(open(fileName, 'w', newline=''),
                                     delimiter=',', lineterminator='\r\n',
                                     quoting=csv.QUOTE_ALL, escapechar='\\')
