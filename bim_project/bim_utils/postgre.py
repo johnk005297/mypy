@@ -5,6 +5,7 @@ import sys
 import csv
 from log import Logs
 from user import User
+from getpass import getpass
 
 
 class DB:
@@ -12,58 +13,56 @@ class DB:
 
     def __init__(self):
         pass
+    
+    
+    def connect_to_db(self, **kwargs):
+        """ Function for establishing connection to db. """
 
-    @staticmethod
-    def pp(cursor, data=None, rowlens=0):
-        d = cursor.description
-        if not d:
-            return "#### NO RESULTS ###"
-        names = []
-        lengths = []
-        rules = []
-        if not data:
-            data = cursor.fetchall()
-        for dd in d:    # iterate over description
-            l = dd[1]
-            if not l:
-                l = 12             # or default arg ...
-            l = max(l, len(dd[0])) # Handle long names
-            names.append(dd[0])
-            lengths.append(l)
-        for col in range(len(lengths)):
-            if rowlens:
-                rls = [len(row[col]) for row in data if row[col]]
-                lengths[col] = max([lengths[col]]+rls)
-            rules.append("-"*lengths[col])
-        format = " ".join(["%%-%ss" % l for l in lengths])
-        result = [format % tuple(names)]
-        result.append(format % tuple(rules))
-        for row in data:
-            result.append(format % row)
-        return "\n".join(result)
+        if not kwargs['password']:
+            kwargs['password'] = getpass("Enter db password: ")
+        try:
+            conn = psycopg2.connect(database=kwargs['db'],
+                                    host=kwargs['host'],
+                                    user=kwargs['user'],
+                                    password=kwargs['password'],
+                                    port=kwargs['port']
+                                    )
+        except psycopg2.Error as err:
+            print(f"Database connection error.\n{err}")
+            return False
+        else:
+            return conn
 
+    def exec_query(self, conn, query):
+        """ Function executes passed query in DB. """
 
-    def exec_query(self):
-
-        conn = psycopg2.connect(host='10.169.123.133',
-                                database='authdb',
-                                port='10265',
-                                user='bimauth',
-                                password='dbpass',
-                                )
-        
         cursor = conn.cursor()
-        query = "select * from \"AspNetUsers\" where \"UserName\" = 'admin'"
-        cursor.execute(query)
-        res = cursor.fetchall()
-        column_names = [x[0] for x in cursor.description]
-        print(column_names)
-
-        cursor.close()
-        conn.close()
+        try:
+            cursor.execute(query)
+            result = cursor.fetchall()
+            columns = [x[0] for x in cursor.description]
+            for x in result:
+                print(*x)
+        except psycopg2.ProgrammingError:
+            self.__logger.info(query)
+        except psycopg2.DatabaseError as err:
+            self.__logger.error(err.pgerror)
+            print(err.pgerror)
+            return False
+        except psycopg2.Error as err:
+            if err.pgcode == '42P01':
+                print('Undefined table in the query.')
+            print(err.pgerror)
+            return False
+        finally:
+            conn.commit()
+            cursor.close()
+            conn.close()
 
     def exec_query_from_file(self, **kwargs):
 
+        if not kwargs['password']:
+            kwargs['password'] = getpass("Enter db password: ")
         try:
             conn = psycopg2.connect(database=kwargs['db'],
                                     host=kwargs['host'],
@@ -136,3 +135,90 @@ class DB:
         user_access_token = Auth.get_user_access_token(url, username, password, provider_id)
         user_access_token = user_access_token if user_access_token else sys.exit()
         user.delete_user_objects(url, user_access_token)
+
+
+class Queries:
+
+    @classmethod
+    def get_matviews_list(cls):
+
+        return """ select schemaname, matviewname, matviewowner from pg_catalog.pg_matviews 
+                    where matviewname  like 'sf_%';
+                """
+    
+    @classmethod
+    def create_sf_materialized_view(cls):
+
+        return """
+                    CREATE OR REPLACE FUNCTION sf_drop_materialized_view()
+                    RETURNS void AS $$
+
+                    DECLARE
+                        view_record RECORD;
+                    BEGIN
+                        FOR view_record IN
+                            SELECT schemaname, matviewname
+                            FROM pg_matviews
+                            WHERE matviewname LIKE 'sf_%'
+                        LOOP
+                            EXECUTE 'DROP MATERIALIZED VIEW IF EXISTS '
+                                    || quote_ident(view_record.schemaname) || '.'
+                                    || quote_ident(view_record.matviewname)
+                                    || ' CASCADE';
+                        END LOOP;
+                    END;
+                    $$ LANGUAGE plpgsql; 
+             """
+
+    @classmethod
+    def drop_sf_materialized_view(cls):
+
+        return """
+                    CREATE OR REPLACE FUNCTION sf_drop_materialized_view()
+                    RETURNS void
+                    LANGUAGE plpgsql
+                    AS $$
+                    DECLARE
+                        view_record RECORD;
+                    BEGIN
+                        FOR view_record IN
+                            SELECT schemaname, matviewname
+                            FROM pg_matviews
+                            WHERE matviewname LIKE 'sf_matview_%'
+                        LOOP
+                            EXECUTE 'DROP MATERIALIZED VIEW IF EXISTS '
+                                    || quote_ident(view_record.schemaname) || '.' 
+                                    || quote_ident(view_record.matviewname) 
+                                    || ' CASCADE';
+                        END LOOP;
+                    END;
+                    $$;
+
+                    select sf_drop_materialized_view();
+            """
+    
+    @classmethod
+    def refresh_sf_materialized_view(cls):
+
+        return """
+                    CREATE OR REPLACE FUNCTION sf_refresh_materialized_view()
+                    RETURNS void
+                    LANGUAGE plpgsql
+                    AS $$
+                    DECLARE
+                        view_record RECORD;
+                    BEGIN
+                        FOR view_record IN
+                            SELECT schemaname, matviewname
+                            FROM pg_matviews
+                            WHERE matviewname LIKE 'sf_matview_%'
+                        LOOP
+                            EXECUTE 'REFRESH MATERIALIZED VIEW '
+                                    || quote_ident(view_record.schemaname) || '.' 
+                                    || quote_ident(view_record.matviewname);
+                        END LOOP;
+                    END;
+                    $$;
+
+                    select sf_refresh_materialized_view();
+                """
