@@ -459,12 +459,13 @@ if __name__ == '__main__':
     sql.add_argument('-u', '--user', help='Username with access to db.', required=True)
     sql.add_argument('-pw', '--password', help='DB user password', required=False)
     sql.add_argument('-p', '--port', help='DB port', required=True)
-    sql.add_argument('-f', '--file', help='Sql filename containing the query', required=False)
+    sql.add_argument('-f', '--file', help='Sql filename containing a query.', required=False)
+    sql.add_argument('-o', '--out', help='Output context of the saved .csv file.', required=False, action="store_true")
     sql_matviews = sql.add_mutually_exclusive_group(required=False)
     sql_matviews.add_argument('-lmv', '--list-matviews', action='store_true', help='Get list of materialized views created by implementation department.', required=False)
     sql_matviews.add_argument('-cmv', '--create-matviews', action='store_true', help='Create materialized views created by implementation department.', required=False)
     sql_matviews.add_argument('-dmv', '--drop-matviews', action='store_true', help='Delete materialized views created by implementation department.', required=False)
-    sql_matviews.add_argument('-rmv', '--refresh-matviews', action='store_true', help='Delete materialized views created by implementation department.', required=False)
+    sql_matviews.add_argument('-rmv', '--refresh-matviews', action='store_true', help='Refresh materialized views created by implementation department.', required=False)
     product_list = subparser.add_parser('product-list', help='Get list of services and DB for a specific project from product-collection.yaml.')
     product_list.add_argument('-lbf', '--list-branch-folder', required=False, help='Prints the list of files and folders for a given branch.')
     product_list.add_argument('-p', '--project-name', required=False, help='Provide project name from the product-collection.yaml without prompt.')
@@ -518,7 +519,7 @@ if __name__ == '__main__':
             if not conn:
                 sys.exit()
             if args.file:
-                pg.exec_query_from_file(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port, file=args.file)
+                pg.exec_query(conn, sql_file=args.file, out=args.out)
             elif args.list_matviews:
                 pg.exec_query(conn, query=q.get_matviews_list())
             elif args.create_matviews:

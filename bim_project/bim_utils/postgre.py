@@ -2,7 +2,7 @@
 import psycopg2
 import auth
 import sys
-import csv
+import pandas as pd
 from log import Logs
 from user import User
 from getpass import getpass
@@ -13,7 +13,6 @@ class DB:
 
     def __init__(self):
         pass
-    
     
     def connect_to_db(self, **kwargs):
         """ Function for establishing connection to db. """
@@ -27,24 +26,42 @@ class DB:
                                     password=kwargs['password'],
                                     port=kwargs['port']
                                     )
-        except psycopg2.Error as err:
+        except psycopg2.OperationalError as err:
+            self.__logger.error(err)
             print(f"Database connection error.\n{err}")
+        except psycopg2.Error as err:
+            self.__logger.error(err)
+            print("Error occured. Check the log!")
             return False
         else:
             return conn
 
-    def exec_query(self, conn, query):
+    def exec_query(self, conn, query=False, sql_file=False, out=False):
         """ Function executes passed query in DB. """
 
         cursor = conn.cursor()
+        indent = ' ' * 4
+        if sql_file:
+            result_file = sql_file[:-3] + 'csv'
+            with open(sql_file, 'r', encoding='utf-8') as file:
+                query = file.read()
         try:
             cursor.execute(query)
-            result = cursor.fetchall()
+            data = cursor.fetchall()
             columns = [x[0] for x in cursor.description]
-            for x in result:
-                print(*x)
-        except psycopg2.ProgrammingError:
-            self.__logger.info(query)
+            df = pd.DataFrame.from_records(data, columns=columns)
+            if sql_file:
+                df.to_csv(result_file, index=False)
+                self.__logger.info(f"Execute query:\n{query}".replace('\n', '\n' + indent))
+                if out:
+                    print(pd.read_csv(result_file))
+                print(f"Query result saved in {result_file} file!")
+            else:
+                print(df)
+        except psycopg2.ProgrammingError as err:
+            self.__logger.error(err)
+            print("Error. Check the log!")
+            return False
         except psycopg2.DatabaseError as err:
             self.__logger.error(err.pgerror)
             print(err.pgerror)
@@ -58,65 +75,6 @@ class DB:
             conn.commit()
             cursor.close()
             conn.close()
-
-    def exec_query_from_file(self, **kwargs):
-
-        if not kwargs['password']:
-            kwargs['password'] = getpass("Enter db password: ")
-        try:
-            conn = psycopg2.connect(database=kwargs['db'],
-                                    host=kwargs['host'],
-                                    user=kwargs['user'],
-                                    password=kwargs['password'],
-                                    port=kwargs['port']
-                                    )
-
-        except psycopg2.Error as err:
-            print(f"Database connection error.\n{err}")
-            return False
-
-        with open(kwargs['file'], 'r', encoding='utf-8') as file:
-            sql_query = file.read()
-
-        with conn.cursor() as cursor:
-            success_msg: str = "SQL query executed successfully!"
-            try:
-                # cursor.execute(open(kwargs['file'], "r").read())
-                cursor.execute(sql_query)
-                if cursor.description == None:
-                    print("SQL query hasn't been executed.")
-                    return False
-                result = cursor.fetchall()
-
-                # Extract the table headers
-                headers = [i[0] for i in cursor.description]
-
-                # Open CSV file for writing
-                fileName: str = kwargs['file'][:-4] + '.csv'
-                csvFile = csv.writer(open(fileName, 'w', newline=''),
-                                    delimiter=',', lineterminator='\r\n',
-                                    quoting=csv.QUOTE_ALL, escapechar='\\')
-
-                # Add the header and data to the CSV file
-                csvFile.writerow(headers)
-                csvFile.writerows(result)
-                print(success_msg)
-                print(f"Result saved in {kwargs['file'][:-4]}_result.csv file!")
-
-            except psycopg2.DatabaseError as err:
-                self.__logger.error(err.pgerror)
-                print(err.pgerror)
-                return False
-
-            except psycopg2.Error as err:
-                if err.pgcode == '42P01':
-                    print('Undefined table in the query.')
-                print(err.pgerror)
-                return False
-
-            finally:
-                cursor.close()
-                conn.close()
 
     @staticmethod
     def drop_userObjects(url, username='', password=''):
@@ -143,7 +101,7 @@ class Queries:
     def get_matviews_list(cls):
 
         return """ select schemaname, matviewname, matviewowner from pg_catalog.pg_matviews 
-                    where matviewname  like 'sf_%';
+                   where matviewname  like 'sf_%';
                 """
     
     @classmethod
@@ -214,7 +172,7 @@ class Queries:
                             WHERE matviewname LIKE 'sf_matview_%'
                         LOOP
                             EXECUTE 'REFRESH MATERIALIZED VIEW '
-                                    || quote_ident(view_record.schemaname) || '.' 
+                                    || quote_ident(view_record.schemaname) || '.'
                                     || quote_ident(view_record.matviewname);
                         END LOOP;
                     END;
