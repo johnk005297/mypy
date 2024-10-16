@@ -60,7 +60,7 @@ class DB:
                 print(df)
         except psycopg2.ProgrammingError as err:
             self.__logger.error(err)
-            print("Error. Check the log!")
+            print("SQL programming error. Check the log!")
             return False
         except psycopg2.DatabaseError as err:
             self.__logger.error(err.pgerror)
@@ -100,38 +100,14 @@ class Queries:
     @classmethod
     def get_matviews_list(cls):
 
-        return """ select schemaname, matviewname, matviewowner from pg_catalog.pg_matviews 
+        return """ select schemaname, matviewname, matviewowner from pg_catalog.pg_matviews
                    where matviewname  like 'sf_%';
                 """
-    
-    @classmethod
-    def create_sf_materialized_view(cls):
-
-        return """
-                    CREATE OR REPLACE FUNCTION sf_drop_materialized_view()
-                    RETURNS void AS $$
-
-                    DECLARE
-                        view_record RECORD;
-                    BEGIN
-                        FOR view_record IN
-                            SELECT schemaname, matviewname
-                            FROM pg_matviews
-                            WHERE matviewname LIKE 'sf_%'
-                        LOOP
-                            EXECUTE 'DROP MATERIALIZED VIEW IF EXISTS '
-                                    || quote_ident(view_record.schemaname) || '.'
-                                    || quote_ident(view_record.matviewname)
-                                    || ' CASCADE';
-                        END LOOP;
-                    END;
-                    $$ LANGUAGE plpgsql; 
-             """
 
     @classmethod
     def drop_sf_materialized_view(cls):
 
-        return """
+        return """  
                     CREATE OR REPLACE FUNCTION sf_drop_materialized_view()
                     RETURNS void
                     LANGUAGE plpgsql
@@ -153,7 +129,7 @@ class Queries:
                     $$;
 
                     select sf_drop_materialized_view();
-            """
+             """
     
     @classmethod
     def refresh_sf_materialized_view(cls):

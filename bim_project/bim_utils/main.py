@@ -463,7 +463,6 @@ if __name__ == '__main__':
     sql.add_argument('-o', '--out', help='Output context of the saved .csv file.', required=False, action="store_true")
     sql_matviews = sql.add_mutually_exclusive_group(required=False)
     sql_matviews.add_argument('-lmv', '--list-matviews', action='store_true', help='Get list of materialized views created by implementation department.', required=False)
-    sql_matviews.add_argument('-cmv', '--create-matviews', action='store_true', help='Create materialized views created by implementation department.', required=False)
     sql_matviews.add_argument('-dmv', '--drop-matviews', action='store_true', help='Delete materialized views created by implementation department.', required=False)
     sql_matviews.add_argument('-rmv', '--refresh-matviews', action='store_true', help='Refresh materialized views created by implementation department.', required=False)
     product_list = subparser.add_parser('product-list', help='Get list of services and DB for a specific project from product-collection.yaml.')
@@ -522,8 +521,6 @@ if __name__ == '__main__':
                 pg.exec_query(conn, sql_file=args.file, out=args.out)
             elif args.list_matviews:
                 pg.exec_query(conn, query=q.get_matviews_list())
-            elif args.create_matviews:
-                pg.exec_query(conn, query=q.create_sf_materialized_view())
             elif args.drop_matviews:
                 pg.exec_query(conn, query=q.drop_sf_materialized_view())
             elif args.refresh_matviews:
