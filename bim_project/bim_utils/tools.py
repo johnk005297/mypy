@@ -105,7 +105,7 @@ class Tools:
 
             # two ways(both correct) to format counter, filling first nine digits to two symbols with zero as the first one.
             # return str(start).zfill(2)
-            return "{0:02d}".format(start)
+            return int("{0:02d}".format(start))
         return start_count
 
 

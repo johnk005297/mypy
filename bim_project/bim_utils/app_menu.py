@@ -42,6 +42,7 @@ def main_menu():
                             \n                                                                                 \
                             \n   Feature Toggle                                                                \
                             \n      ft --list                        display list of features                  \
+                            \n      ft --get-token                   print FT token                            \
                             \n      ft [ft_name] [--on/--off]        turn on/off feature                       \
                             \n        example:                                                                 \
                             \n        ft Spatium --on                                                          \
@@ -81,7 +82,7 @@ def local_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.61'
+    __version__ = '1.63'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):
