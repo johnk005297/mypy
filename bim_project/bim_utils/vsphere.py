@@ -1,7 +1,7 @@
 import requests
 import base64
 import time
-import os
+import json
 from log import Logs
 from tools import Tools
 from getpass import getpass
@@ -15,8 +15,9 @@ disable_warnings(InsecureRequestWarning)
 class Vsphere:
 
     __logger = Logs().f_logger(__name__)
-    url_session_id: str = "https://vcenter.bimeister.io/rest/com/vmware/cis/session"
-    url: str = "https://vcenter.bimeister.io/api/vcenter"
+    url: str = "https://vcenter.bimeister.io"
+    connection_err_msg: str = "Connection error. Check the log."
+    vsphere_release_schema: str = "8.0.3.0"
 
     def __init__(self):
         self.username: str = ''
@@ -49,6 +50,7 @@ class Vsphere:
         """ Function to get token for execution requests. """
 
         ## for tests only
+        # import os
         # username = os.getenv('user')
         # password = os.getenv('password')
         # username_bytes = username.encode("utf-8")
@@ -64,7 +66,7 @@ class Vsphere:
         headers = {'Authorization': 'Basic {}'.format(creds)}
         payload = {}
         try:
-            response = requests.post(url=self.url_session_id, headers=headers, data=payload, verify=False)
+            response = requests.post(url=f"{self.url}/rest/com/vmware/cis/session", headers=headers, data=payload, verify=False)
             if response.status_code == 200:
                 self.__logger.info(f"{response.status_code}")
                 data: dict = response.json()
@@ -74,60 +76,91 @@ class Vsphere:
                 print(f"Error: {response.json()['value']['error_type']}\nCheck the logs!")
                 return False
         except requests.exceptions.RequestException as err:
-            print("Connection error. Check the log.")
             self.__logger.error(err)
+            print(self.connection_err_msg)
+            return False
+        except:
+            self.__logger.error(response.text)
+            print(self.connection_err_msg)
             return False
 
-    def print_list_of_vm(self, vm_dict):
+    def print_list_of_vm(self, vm_array):
         """ Print all VM names from the dictionary. """
 
-        if not vm_dict:
+        if not vm_array:
             return False
-        for value in vm_dict.values():
-            print(value)
+        vm_list = sorted([vm_array[vm]['name'] for vm in vm_array])
+        for vm in vm_list:
+            print(vm)
 
     def get_folders_group_id(self, headers, folders: tuple = ()):
         """ Get group's ID needed to be excluded from the reboot list. """
 
-        response = requests.get(url=f"{self.url}/folder", headers=headers, verify=False)
-        if response.status_code != 200:
-            self.__logger.error(response.text)
+        try:
+            response = requests.get(url=f"{self.url}/api/vcenter/folder", headers=headers, verify=False)
+        except requests.exceptions.ConnectionError as err:
+            self.__logger.error(err)
+            print(self.connection_err_msg)
             return False
         data = response.json()
         group_id: list = [x['folder'] for x in data if x['type'] == 'VIRTUAL_MACHINE' and x['name'] in folders]
         return group_id
 
-    def get_array_of_vm(self, headers, startswith=''):
-        """ Get an array of VM in vSphere's cluster with POWERED_ON state. """
+    def get_vm_power_state(self, headers, vm):
+        """ Check for power state for provided VMs. """
+
+        url: str = f"{self.url}/rest/vcenter/vm/{vm}/power"
+        try:
+            response = requests.get(url=url, headers=headers, verify=False)
+            data = response.json()
+            return data['value']['state']
+        except Exception as err:
+            self.__logger.error(err)
+            print("Couldn't get VM power state status. Check the log!")
+            return False
+
+    def get_array_of_vm(self, headers, startswith='', powered_on=False):
+        """ Function returns an array of VM in vSphere's cluster in format {'vm-moId': 'vm-name'}. """
 
         # Getting a pool of VMs to be excluded from the reboot list.
-        folders = ('Implementation', 'Infrastructure')
+        folders = ('Implementation')
         groups_to_exclude = self.get_folders_group_id(headers, folders)
         exclude_list: list = []
         for group in groups_to_exclude:
-            url = f"https://vcenter.bimeister.io/rest/vcenter/vm?filter.folders={group}"
-            response = requests.get(url=url, headers=headers, verify=False)
-            if response.status_code != 200:
-                self.__logger.error(response.text)
+            url = f"{self.url}/rest/vcenter/vm?filter.folders={group}"
+            try:
+                response = requests.get(url=url, headers=headers, verify=False)
+            except ConnectionError as err:
+                self.__logger.error(err)
+                print(self.connection_err_msg)
                 return False
             data = response.json()
             for vm in data['value']:
                 exclude_list.append(vm['name'])
-
-        response = requests.get(url=f"{self.url}/vm", headers=headers, verify=False)
+        try:
+            response = requests.get(url=f"{self.url}/api/vcenter/vm", headers=headers, verify=False)
+        except ConnectionError as err:
+            self.__logger.error(err)
+            print(self.connection_err_msg)
+            return False
         if response.status_code == 200:
             self.__logger.info(response.status_code)
             data = response.json()
             if not startswith:
-                vm_dict: dict = { vm['vm']: vm['name'] for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] not in exclude_list}
+                if powered_on:
+                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] not in exclude_list }
+                else:
+                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] not in exclude_list}
             else:
-                vm_dict: dict = { vm['vm']: vm['name'] for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] not in exclude_list and vm['name'].startswith(startswith)}
-            vm_dict = dict(sorted(vm_dict.items(), key=lambda item: item[1]))
+                if powered_on:
+                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] not in exclude_list and vm['name'].startswith(startswith) }
+                else:
+                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] not in exclude_list and vm['name'].startswith(startswith) }
         else:
             self.__logger.error(response.text)
             print("Error of getting list of VMs. Check the logs!")
             return False
-        return vm_dict
+        return vm_array
 
     def restart_os(self, headers, vm_array, exclude_list):
         """ Function performs OS restart for a given array. """
@@ -137,19 +170,85 @@ class Vsphere:
             return False
         confirm: bool = True if input("YOU ARE ABOUT TO RESTART ALL VM's IN THE CLUSTER!!! ARE YOU SURE?(YES|NO) ").lower() == 'yes' else False
         if not confirm:
-            print("Abort restart procedure!")
+            print("Restart procedure aborted!")
             return False
         counter, number = Tools.counter(), 0
-        for key, value in vm_array.items():
-            if value in exclude_list:
+        for value in vm_array.values():
+            if value['name'] in exclude_list:
                 continue
-            url: str = f"{self.url}/vm/{key}/guest/power?action=reboot"
+            url: str = f"{self.url}/api/vcenter/vm/{value['moId']}/guest/power?action=reboot"
             response = requests.post(url=url, headers=headers, verify=False)
             if response.status_code == 200:
                 number = counter()
-                self.__logger.info(f"{value} {response.status_code}")
+                self.__logger.info(f"{value['name']} {response.status_code}")
                 time.sleep(0.15)
             else:
                 self.__logger.error(response)
-            print(f"Restart OS: {value}  {response.status_code}")
+            print(f"Restart OS: {value['name']}  {response.status_code}")
         print(f"\nAmount of restarted VMs: {number}")
+    
+    def start_vm(self, headers, moId, name):
+        """ Start provided VM in vSphere. """
+
+        url: str = f"{self.url}/rest/vcenter/vm/{moId}/power/start"
+        power_state = self.get_vm_power_state(headers, moId)
+        if power_state == "POWERED_ON":
+            return True
+        try:
+            response = requests.post(url=url, headers=headers, verify=False)
+            if response.status_code != 200:
+                self.__logger.error(f"{name}: {response.text}")
+                return False            
+            print(f"Power On virtual machine: {name}")
+        except requests.exceptions.RequestException as err:
+            self.__logger.error(err)
+            print(f"{name}: Error. Status code: {response.status_code}")
+            return False
+        except Exception as err:
+            self.__logger.error(err)
+            print(f"{name}: Error. Status code: {response.status_code}")
+            return False
+        return True
+
+    def stop_vm(self, headers, moId, name):
+        """ Stop provided VM in vSphere. """
+
+        url: str = f"{self.url}/rest/vcenter/vm/{moId}/guest/power?action=shutdown"
+        power_state = self.get_vm_power_state(headers, moId)
+        if power_state == "POWERED_OFF":
+            return True
+        try:
+            response = requests.post(url=url, headers=headers, verify=False)
+            if response.status_code != 200:
+                return False
+            print(f"Initiate guest OS shutdown: {name}")
+        except requests.exceptions.RequestException as err:
+            self.__logger.error(err)
+            print(f"{name}: Error. Status code: {response.status_code}")
+        except Exception as err:
+            self.__logger.error(err)
+            print(f"{name}: Error. Status code: {response.status_code}")
+        return True
+
+    def take_snapshot(self, headers, moId, vm_name, snap_name='', description=''):
+        """ Function takes snapshot of a given VM. Requires moId of the VM."""
+
+        url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachine/{moId}/CreateSnapshotEx_Task"
+        payload = {"description": description,
+                "memory": False,
+                "name": snap_name}
+        data = json.dumps(payload)
+        try:        
+            response = requests.post(url=url, data=data, headers=headers, verify=False)
+            if response.status_code == 200:
+                data = response.json()
+                self.__logger.info(f"Created snapshot for VM: {vm_name}")
+                self.__logger.debug(data)
+                print(f"Create virtual machine snapshot: {vm_name}")
+                return True
+        except Exception as err:
+            self.__logger.error(err)
+            print("Error. Check the log!")
+            return False
+
+        

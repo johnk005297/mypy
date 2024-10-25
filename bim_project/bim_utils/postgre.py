@@ -128,7 +128,7 @@ class Queries:
                     END;
                     $$;
 
-                    select sf_drop_materialized_view();
+                    --select sf_drop_materialized_view();
              """
     
     @classmethod
@@ -156,3 +156,22 @@ class Queries:
 
                     select sf_refresh_materialized_view();
                 """
+    
+    @classmethod
+    def swith_externalKey_for_mdm_connector(cls, value=''):
+        """ Query for switching ExternalKey. Requires for MDM connector integration. """
+
+        return """
+                    update "ExternalSystems" 
+                    set "IsDefault" = false
+                    from (
+                        select "ExternalKey" as key from "ExternalSystems"
+                        ) as get_key
+                    where "ExternalKey" = get_key.key;
+
+                    update "ExternalSystems" set "IsDefault" = true 
+                    where "ExternalKey" = 'SDI-COD-{0}' ;
+
+                    select "ExternalKey", "IsDefault" from "ExternalSystems" 
+                    where "ExternalKey" = 'SDI-COD-{0}';
+                """.format(value)
