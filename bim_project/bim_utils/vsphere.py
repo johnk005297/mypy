@@ -50,15 +50,15 @@ class Vsphere:
         """ Function to get token for execution requests. """
 
         ## for tests only
-        # import os
-        # username = os.getenv('user')
-        # password = os.getenv('password')
-        # username_bytes = username.encode("utf-8")
-        # username_encoded = base64.b64decode(username_bytes)
-        # username = username_encoded.decode("utf-8").strip()
-        # password_bytes = password.encode("utf-8")
-        # password_encoded = base64.b64decode(password_bytes)
-        # password = password_encoded.decode("utf-8").strip()
+        import os
+        username = os.getenv('user')
+        password = os.getenv('password')
+        username_bytes = username.encode("utf-8")
+        username_encoded = base64.b64decode(username_bytes)
+        username = username_encoded.decode("utf-8").strip()
+        password_bytes = password.encode("utf-8")
+        password_encoded = base64.b64decode(password_bytes)
+        password = password_encoded.decode("utf-8").strip()
 
         creds = self.get_credentials(username, password)
         if not creds:
@@ -234,9 +234,11 @@ class Vsphere:
         """ Function takes snapshot of a given VM. Requires moId of the VM."""
 
         url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachine/{moId}/CreateSnapshotEx_Task"
-        payload = {"description": description,
-                "memory": False,
-                "name": snap_name}
+        payload = {
+                    "description": description,
+                    "memory": False,
+                    "name": snap_name
+                    }
         data = json.dumps(payload)
         try:        
             response = requests.post(url=url, data=data, headers=headers, verify=False)
@@ -246,6 +248,14 @@ class Vsphere:
                 self.__logger.debug(data)
                 print(f"Create virtual machine snapshot: {vm_name}")
                 return True
+            elif str(response.status_code).startswith('5'):
+                self.__logger.debug(response.text)
+                print("Take snapshot request status: 500. Check the log!")
+                return False
+        except requests.exceptions.HTTPError:
+            self.__logger.error(err)
+            print("Error. Check the log!")
+            return False
         except Exception as err:
             self.__logger.error(err)
             print("Error. Check the log!")

@@ -17,6 +17,7 @@ import vsphere
 import git
 import re
 import time
+from datetime import datetime
 from tools import Folder, File, Tools
 from reports import Reports
 from log import Logs
@@ -457,8 +458,8 @@ def parse_args():
     vcenter_options.add_argument('--restart-all-vm', required=False, action="store_true", help='Restart all working VMs in implementation cluster.')
     vcenter_options.add_argument('--list-vm', required=False, action="store_true", help='Print all VMs in implementation cluster.')
     vcenter_options.add_argument('--take-snap', required=False, action="store_true", help='Take snaphost for a given VMs.')
-    vcenter.add_argument('--snap-name', required=False, default='snapshot', help='vSphere snapshot name. Use with --take-snap flag.')
-    vcenter.add_argument('--snap-desc', required=False, help='Description for a snapshot. Use with --take-snap flag.')
+    vcenter.add_argument('--snap-name', required=False, default='{}'.format(datetime.today().strftime("%d.%m.%Y, %H:%M")), help='vSphere snapshot name. Use with --take-snap flag.')
+    vcenter.add_argument('--snap-desc', required=False, default=' ', help='Description for a snapshot. Use with --take-snap flag.')
     vcenter.add_argument('--powered-on', required=False, action="store_true", help='Used with --list-vm flag to print only VM with POWERED_ON status.')
     vcenter.add_argument('--start-vm', required=False, action="store_true", help='Start select VMs in vSphere. Use with --startswith flag.')
     vcenter.add_argument('--stop-vm', required=False, action="store_true", help='Stop select VMs in vSphere. Use with --startswith flag.')
@@ -568,15 +569,20 @@ if __name__ == '__main__':
                 vm_array: dict = v.get_array_of_vm(headers, args.startswith, args.powered_on)
                 for value in vm_array.values():
                     v.stop_vm(headers, value["moId"], value["name"])
+                count = 0
                 while True:
                     time.sleep(5)
-                    count = 0
+                    count+=1
+                    vm_powered_on = 0
                     for value in vm_array.values():
                         power_status = v.get_vm_power_state(headers, value["moId"])
                         if power_status != "POWERED_OFF":
-                            count+=1
-                    if count > 0:
-                        continue
+                            vm_powered_on+=1
+                    if count == 120:
+                        print("Couldn't stop VM within 10 minutes. Check VM status in vCenter!")
+                        break
+                    elif vm_powered_on > 0:
+                        continue                    
                     else:
                         for value in vm_array.values():
                             v.take_snapshot(headers, value["moId"], value["name"], snap_name=args.snap_name, description=args.snap_desc)
