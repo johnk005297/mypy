@@ -6,7 +6,7 @@ import app_menu
 import auth
 import user
 import license
-import argparse
+from arg_parser import Parser
 import export_data
 import import_data
 import postgre
@@ -17,7 +17,6 @@ import vsphere
 import git
 import re
 import time
-from datetime import datetime
 from tools import Folder, File, Tools
 from reports import Reports
 from log import Logs
@@ -25,16 +24,16 @@ from log import Logs
 
 def main(local=False):
 
-    AppMenu_main     = app_menu.AppMenu()
-    Auth             = auth.Auth()
-    User_main        = user.User()
-    License_main     = license.License()
+    AppMenu_main = app_menu.AppMenu()
+    Auth = auth.Auth()
+    User_main = user.User()
+    License_main = license.License()
     Export_data = export_data.Export_data()
     Import_data_main = import_data.Import_data()
-    Docker           = mdocker.Docker()
-    K8s              = mk8s.K8S(namespace='bimeister')
-    FT               = featureToggle.FeatureToggle()
-    Repo             = Reports()
+    Docker = mdocker.Docker()
+    K8s = mk8s.K8S(namespace='bimeister')
+    FT = featureToggle.FeatureToggle()
+    Repo = Reports()
 
 
 
@@ -441,63 +440,12 @@ def enable_history_input():
     if Tools.is_windows():
         import pyreadline3
     else:
-        import readline
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(prog='bim_utils', description='\'Frankenstein\' CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
-    parser.add_argument('--version', required=False, action="store_true")
-    parser.add_argument('--local', required=False, action="store_true", help='Execute script with locally available options on the current host.')    
-    subparser = parser.add_subparsers(dest='command', help='Run without arguments for standart use.')
-    vcenter = subparser.add_parser('vsphere', help='Performing operations with vSphere API.')
-    vcenter.add_argument('-u', '--user', required=False)
-    vcenter.add_argument('-p', '--password', required=False)
-    vcenter.add_argument('--startswith', required=False, help='Filter VM by first letters of the name.')
-    vcenter.add_argument('--exclude-vm', type=str, nargs='+', required=False, help='A list of VMs to be excluded from the reboot OS.')
-    vcenter_options = vcenter.add_mutually_exclusive_group(required=False)
-    vcenter_options.add_argument('--restart-all-vm', required=False, action="store_true", help='Restart all working VMs in implementation cluster.')
-    vcenter_options.add_argument('--list-vm', required=False, action="store_true", help='Print all VMs in implementation cluster.')
-    vcenter_options.add_argument('--take-snap', required=False, action="store_true", help='Take snaphost for a given VMs.')
-    vcenter.add_argument('--snap-name', required=False, default='{}'.format(datetime.today().strftime("%d.%m.%Y, %H:%M")), help='vSphere snapshot name. Use with --take-snap flag.')
-    vcenter.add_argument('--snap-desc', required=False, default=' ', help='Description for a snapshot. Use with --take-snap flag.')
-    vcenter.add_argument('--powered-on', required=False, action="store_true", help='Used with --list-vm flag to print only VM with POWERED_ON status.')
-    vcenter.add_argument('--start-vm', required=False, action="store_true", help='Start select VMs in vSphere. Use with --startswith flag.')
-    vcenter.add_argument('--stop-vm', required=False, action="store_true", help='Stop select VMs in vSphere. Use with --startswith flag.')
-    user_obj = subparser.add_parser('drop-UO', help='Truncate bimeisterdb.UserObjects table.')
-    user_obj.add_argument('--url', help='Provide full URL to the web.', required=True)
-    user_obj.add_argument('-u', '--user', required=False)
-    user_obj.add_argument('-p', '--password', required=False)
-    sql = subparser.add_parser('sql', help='Execute sql query provided in a *.sql file.')
-    sql.add_argument('-s', '--host', help='DB hostname or IP address.', required=True)
-    sql.add_argument('-d', '--db', help='DB name.', required=True)
-    sql.add_argument('-u', '--user', help='Username with access to db.', required=True)
-    sql.add_argument('-pw', '--password', help='DB user password', required=False)
-    sql.add_argument('-p', '--port', help='DB port', required=True)
-    sql.add_argument('-f', '--file', help='Sql filename containing a query.', required=False)
-    sql.add_argument('-o', '--out', help='Output context of the saved .csv file.', required=False, action="store_true")
-    sql_mdm_connection = sql.add_mutually_exclusive_group(required=False)
-    sql_mdm_connection.add_argument('--mdm-prod', action="store_true", help='Switch ExternalKey value to production. Requires for MDM connector integration.', required=False)
-    sql_mdm_connection.add_argument('--mdm-test', action="store_true", help='Switch ExternalKey value to test. Requires for MDM connector integration.', required=False)
-    sql_matviews = sql.add_mutually_exclusive_group(required=False)
-    sql_matviews.add_argument('-lmv', '--list-matviews', action='store_true', help='Get list of materialized views created by implementation department.', required=False)
-    sql_matviews.add_argument('-dmv', '--drop-matviews', action='store_true', help='Delete materialized views created by implementation department.', required=False)
-    sql_matviews.add_argument('-rmv', '--refresh-matviews', action='store_true', help='Refresh materialized views created by implementation department.', required=False)
-    product_list = subparser.add_parser('product-list', help='Get list of services and DB for a specific project from product-collection.yaml.')
-    product_list.add_argument('-lbf', '--list-branch-folder', required=False, help='Prints the list of files and folders for a given branch.')
-    product_list.add_argument('-p', '--project-name', required=False, help='Provide project name from the product-collection.yaml without prompt.')
-    product_list_group = product_list.add_mutually_exclusive_group(required=False)
-    product_list_group.add_argument('-sb', '--search-branch', required=False, nargs='+', help='Get a list of branch names from GitLab.')
-    product_list_group.add_argument('--commit', required=False, help='Get info from the product-collection.yaml file for a specific commit.')
-    product_list_group.add_argument('--compare', required=False, nargs=2, help='Compare two commits for difference in product-collection.yaml in DBs list and services list.')
-    bim_version = subparser.add_parser('bim-version', help='Get bimeister version information.')
-    bim_version.add_argument('-u', '--url', required=True)
-    args = parser.parse_args()
-    return args    
+        import readline    
 
 
 if __name__ == '__main__':
     enable_history_input()
-    args = parse_args()
+    args = Parser().parse_args()
     try:
         if args.version:
             print(app_menu.AppMenu.__version__)
@@ -512,7 +460,6 @@ if __name__ == '__main__':
                 file_content: dict = g.get_product_collection_file_content(project_id, args.commit)
                 if not file_content:
                     sys.exit()
-                # project_name, services, db = git.parse_product_collection_yaml(file_content)
                 data = git.parse_product_collection_yaml(file_content, project_name=args.project_name)
                 if not data:
                     sys.exit()
@@ -552,21 +499,85 @@ if __name__ == '__main__':
                 pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Prod'))
             elif args.mdm_test:
                 pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Test'))
+        # elif args.command == 'vsphere':
+        #     subcommand = sys.argv[2]
+        #     v = vsphere.Vsphere()
+        #     headers = v.get_headers(args.user, args.password)
+        #     if not headers:
+        #         sys.exit()
+        #     elif args.list_vm:
+        #         vm_array = v.get_array_of_vm(headers, args.search, args.powered_on)
+        #         v.print_list_of_vm(vm_array)
+        #     elif args.restart_all_vm:
+        #         vm_array = v.get_array_of_vm(headers, args.search, args.powered_on)
+        #         v.restart_os(headers, vm_array, args.exclude_vm)
+        #     elif args.take_snap:
+        #         # Logic of taking snaps procedure:
+        #         # get needed VMs -> power OFF -> take snaps -> restore power state
+        #         vm_array: dict = v.get_array_of_vm(headers, args.search, args.powered_on)
+        #         for value in vm_array.values():
+        #             v.stop_vm(headers, value["moId"], value["name"])
+        #         count = 0
+        #         while True:
+        #             time.sleep(5)
+        #             count+=1
+        #             vm_powered_on = 0
+        #             for value in vm_array.values():
+        #                 power_status = v.get_vm_power_state(headers, value["moId"])
+        #                 if power_status != "POWERED_OFF":
+        #                     vm_powered_on+=1
+        #             if count == 120:
+        #                 print("Couldn't stop VM within 10 minutes. Check VM status in vCenter!")
+        #                 break
+        #             elif vm_powered_on > 0:
+        #                 continue                    
+        #             else:
+        #                 for value in vm_array.values():
+        #                     v.take_snapshot(headers, value["moId"], value["name"], snap_name=args.snap_name, description=args.snap_desc)
+        #                 break
+        #         for value in vm_array.values():
+        #             if value["power_state"] == "POWERED_ON":
+        #                 v.start_vm(headers, value["moId"], value["name"])
+        #     elif args.start_vm:
+        #         vm_array: dict = v.get_array_of_vm(headers, args.search, args.powered_on)
+        #         for value in vm_array.values():
+        #             v.start_vm(headers, value["moId"], value["name"])
+        #     elif args.stop_vm:
+        #         vm_array: dict = v.get_array_of_vm(headers, args.search, args.powered_on)
+        #         for value in vm_array.values():
+        #             v.stop_vm(headers, value["moId"], value["name"])
         elif args.command == 'vsphere':
+            subcommand = sys.argv[2]
             v = vsphere.Vsphere()
             headers = v.get_headers(args.user, args.password)
             if not headers:
                 sys.exit()
-            elif args.list_vm:
-                vm_array = v.get_array_of_vm(headers, args.startswith, args.powered_on)
+            elif subcommand == 'list-vm':
+                vm_array = v.get_array_of_vm(headers, args.filter, args.powered_on)
                 v.print_list_of_vm(vm_array)
-            elif args.restart_all_vm:
-                vm_array = v.get_array_of_vm(headers, args.startswith, args.powered_on)
-                v.restart_os(headers, vm_array, args.exclude_vm)
-            elif args.take_snap:
+            elif subcommand == 'restart-vm':
+                if args.all:
+                    confirm: bool = True if input("YOU ARE ABOUT TO RESTART ALL VM's IN THE CLUSTER!!! ARE YOU SURE?(YES|NO) ").lower() == 'yes' else False
+                    if not confirm:
+                        print("Restart procedure aborted!")
+                        sys.exit()
+                    vm_array = v.get_array_of_vm(headers, powered_on=True)
+                    v.restart_os(headers, vm_array, args.exclude_vm)
+                else:
+                    vm_array = v.get_array_of_vm(headers, args.filter, powered_on=True)
+                    v.restart_os(headers, vm_array, args.exclude_vm)
+            elif subcommand == 'start-vm':
+                vm_array: dict = v.get_array_of_vm(headers, args.filter)
+                for value in vm_array.values():
+                    v.start_vm(headers, value["moId"], value["name"])
+            elif subcommand == 'stop-vm':
+                vm_array: dict = v.get_array_of_vm(headers, args.filter)
+                for value in vm_array.values():
+                    v.stop_vm(headers, value["moId"], value["name"])                 
+            elif subcommand == 'take-snap':
                 # Logic of taking snaps procedure:
                 # get needed VMs -> power OFF -> take snaps -> restore power state
-                vm_array: dict = v.get_array_of_vm(headers, args.startswith, args.powered_on)
+                vm_array: dict = v.get_array_of_vm(headers, args.filter)
                 for value in vm_array.values():
                     v.stop_vm(headers, value["moId"], value["name"])
                 count = 0
@@ -585,22 +596,13 @@ if __name__ == '__main__':
                         continue                    
                     else:
                         for value in vm_array.values():
-                            v.take_snapshot(headers, value["moId"], value["name"], snap_name=args.snap_name, description=args.snap_desc)
+                            v.take_snapshot(headers, value["moId"], value["name"], snap_name=args.name, description=args.desc)
                         break
                 for value in vm_array.values():
                     if value["power_state"] == "POWERED_ON":
-                        v.start_vm(headers, value["moId"], value["name"])
-            elif args.start_vm:
-                vm_array: dict = v.get_array_of_vm(headers, args.startswith, args.powered_on)
-                for value in vm_array.values():
-                    v.start_vm(headers, value["moId"], value["name"])
-            elif args.stop_vm:
-                vm_array: dict = v.get_array_of_vm(headers, args.startswith, args.powered_on)
-                for value in vm_array.values():
-                    v.stop_vm(headers, value["moId"], value["name"])
+                        v.start_vm(headers, value["moId"], value["name"])       
         elif args.command == 'bim-version':
             Tools.print_bim_version(args.url)
-            sys.exit()
         elif args.local:
             main(local=True)
         else:

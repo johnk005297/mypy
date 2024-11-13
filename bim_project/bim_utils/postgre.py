@@ -50,14 +50,15 @@ class DB:
             data = cursor.fetchall()
             columns = [x[0] for x in cursor.description]
             df = pd.DataFrame.from_records(data, columns=columns)
-            if sql_file:
+            if sql_file and out:
+                print(df)
+            elif sql_file:
                 df.to_csv(result_file, index=False)
                 self.__logger.info(f"Execute query:\n{query}".replace('\n', '\n' + indent))
-                if out:
-                    print(pd.read_csv(result_file))
                 print(f"Query result saved in {result_file} file!")
             else:
-                print(df)
+                print("Error. Check the logs!")
+                self.__logger.error(f"Unexpected error executing query.")
         except psycopg2.ProgrammingError as err:
             self.__logger.error(err)
             print("SQL programming error. Check the log!")

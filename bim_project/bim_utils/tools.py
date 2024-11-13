@@ -174,22 +174,27 @@ class Tools:
         if not url.startswith('http'):
             url = 'https://' + url
         url = url + '/assets/version.json' if not url[-1] == '/' else url + 'assets/version.json'
-        try:
-            response = requests.get(url, verify=False)
-            response.raise_for_status()
-            data = response.json()
-            print(f"name: {data['BRANCH_NAME']}\nversion: {data['BUILD_FULL_VERSION']}")
-            return True
-        except requests.exceptions.ConnectionError:
-            url = url.split(':')
-            url = 'http:' + url[1] 
-            response = requests.get(url, verify=False)
-            if response.status_code not in (200, 201):
-                print("ConnectionError: Check URL address.")
-            else:
+        count = 0
+        while True:
+            try:
+                response = requests.get(url, verify=False)
+                response.raise_for_status()
                 data = response.json()
                 print(f"name: {data['BRANCH_NAME']}\nversion: {data['BUILD_FULL_VERSION']}")
-        except json.JSONDecodeError:
-            print("JSONDecodeError: Check URL address.")
-        except requests.exceptions.MissingSchema:
-            print(f"Invalid URL. MissingSchema.")
+                return True
+            except requests.exceptions.ConnectionError:
+                if count > 0: print("ConnectionError: Check URL address.")
+            except json.JSONDecodeError:
+                if count > 0: print("JSONDecodeError: Check URL address.")
+            except requests.exceptions.MissingSchema:
+                if count > 0: print(f"Invalid URL. MissingSchema.")
+            except Exception:
+                if count > 0: print("ConnectionError: Check URL address.")
+            count += 1
+            if count == 0:
+                url = url.split(':')
+                url = 'http:' + url[1]
+            elif count > 1:
+                break
+        return False
+

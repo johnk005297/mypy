@@ -2,6 +2,7 @@ import requests
 import base64
 import time
 import json
+import re
 from log import Logs
 from tools import Tools
 from getpass import getpass
@@ -119,7 +120,7 @@ class Vsphere:
             print("Couldn't get VM power state status. Check the log!")
             return False
 
-    def get_array_of_vm(self, headers, startswith='', powered_on=False):
+    def get_array_of_vm(self, headers, search_for='', powered_on=False):
         """ Function returns an array of VM in vSphere's cluster in format {'vm-moId': 'vm-name'}. """
 
         # Getting a pool of VMs to be excluded from the reboot list.
@@ -146,16 +147,16 @@ class Vsphere:
         if response.status_code == 200:
             self.__logger.info(response.status_code)
             data = response.json()
-            if not startswith:
+            if not search_for:
                 if powered_on:
                     vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] not in exclude_list }
                 else:
                     vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] not in exclude_list}
             else:
                 if powered_on:
-                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] not in exclude_list and vm['name'].startswith(startswith) }
+                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] not in exclude_list and re.search(search_for.replace('*', '.*'), vm['name']) }
                 else:
-                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] not in exclude_list and vm['name'].startswith(startswith) }
+                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] not in exclude_list and re.search(search_for.replace('*', '.*'), vm['name']) }
         else:
             self.__logger.error(response.text)
             print("Error of getting list of VMs. Check the logs!")
@@ -168,24 +169,20 @@ class Vsphere:
         if not isinstance(vm_array, dict):
             print("Provided array should be a dictionary.")
             return False
-        confirm: bool = True if input("YOU ARE ABOUT TO RESTART ALL VM's IN THE CLUSTER!!! ARE YOU SURE?(YES|NO) ").lower() == 'yes' else False
-        if not confirm:
-            print("Restart procedure aborted!")
-            return False
         counter, number = Tools.counter(), 0
         for value in vm_array.values():
-            if value['name'] in exclude_list:
+            if exclude_list and value['name'] in exclude_list:
                 continue
             url: str = f"{self.url}/api/vcenter/vm/{value['moId']}/guest/power?action=reboot"
             response = requests.post(url=url, headers=headers, verify=False)
-            if response.status_code == 200:
+            if response.status_code in (200, 204):
                 number = counter()
                 self.__logger.info(f"{value['name']} {response.status_code}")
                 time.sleep(0.15)
             else:
                 self.__logger.error(response)
             print(f"Restart OS: {value['name']}  {response.status_code}")
-        print(f"\nAmount of restarted VMs: {number}")
+        print(f"\nRestarted VMs: {number}")
     
     def start_vm(self, headers, moId, name):
         """ Start provided VM in vSphere. """
@@ -260,5 +257,15 @@ class Vsphere:
             self.__logger.error(err)
             print("Error. Check the log!")
             return False
+    
+    def get_vm_snapshots(self, headers, moId, vm_name):
+        """ Get list of snapshots for a given VM. """
 
-        
+        pass
+
+    def remove_vm_snapshots(self, headers, moId, vm_name):
+        """ Remove snapshots for a given VM. """
+
+        pass
+
+
