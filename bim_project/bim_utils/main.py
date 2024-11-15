@@ -455,7 +455,7 @@ if __name__ == '__main__':
             if not project_id:
                 sys.exit()
             if args.search_branch:
-                g.list_branches(project_id, args.search_branch)
+                g.search_branches(project_id, args.search_branch)
             elif args.commit:
                 file_content: dict = g.get_product_collection_file_content(project_id, args.commit)
                 if not file_content:
@@ -479,6 +479,8 @@ if __name__ == '__main__':
                 git.compare_two_commits(first_commit_services, first_commit_db, second_commit_services, second_commit_db)
             elif args.list_branch_folder:
                 g.get_tree(project_id, args.list_branch_folder)
+            elif args.search_tag:
+                g.search_tag(project_id, args.search_tag)
         elif args.command == 'drop-UO':
             postgre.DB.drop_userObjects(args.url, username=args.user, password=args.password)
         elif args.command == 'sql':
@@ -499,53 +501,6 @@ if __name__ == '__main__':
                 pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Prod'))
             elif args.mdm_test:
                 pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Test'))
-        # elif args.command == 'vsphere':
-        #     subcommand = sys.argv[2]
-        #     v = vsphere.Vsphere()
-        #     headers = v.get_headers(args.user, args.password)
-        #     if not headers:
-        #         sys.exit()
-        #     elif args.list_vm:
-        #         vm_array = v.get_array_of_vm(headers, args.search, args.powered_on)
-        #         v.print_list_of_vm(vm_array)
-        #     elif args.restart_all_vm:
-        #         vm_array = v.get_array_of_vm(headers, args.search, args.powered_on)
-        #         v.restart_os(headers, vm_array, args.exclude_vm)
-        #     elif args.take_snap:
-        #         # Logic of taking snaps procedure:
-        #         # get needed VMs -> power OFF -> take snaps -> restore power state
-        #         vm_array: dict = v.get_array_of_vm(headers, args.search, args.powered_on)
-        #         for value in vm_array.values():
-        #             v.stop_vm(headers, value["moId"], value["name"])
-        #         count = 0
-        #         while True:
-        #             time.sleep(5)
-        #             count+=1
-        #             vm_powered_on = 0
-        #             for value in vm_array.values():
-        #                 power_status = v.get_vm_power_state(headers, value["moId"])
-        #                 if power_status != "POWERED_OFF":
-        #                     vm_powered_on+=1
-        #             if count == 120:
-        #                 print("Couldn't stop VM within 10 minutes. Check VM status in vCenter!")
-        #                 break
-        #             elif vm_powered_on > 0:
-        #                 continue                    
-        #             else:
-        #                 for value in vm_array.values():
-        #                     v.take_snapshot(headers, value["moId"], value["name"], snap_name=args.snap_name, description=args.snap_desc)
-        #                 break
-        #         for value in vm_array.values():
-        #             if value["power_state"] == "POWERED_ON":
-        #                 v.start_vm(headers, value["moId"], value["name"])
-        #     elif args.start_vm:
-        #         vm_array: dict = v.get_array_of_vm(headers, args.search, args.powered_on)
-        #         for value in vm_array.values():
-        #             v.start_vm(headers, value["moId"], value["name"])
-        #     elif args.stop_vm:
-        #         vm_array: dict = v.get_array_of_vm(headers, args.search, args.powered_on)
-        #         for value in vm_array.values():
-        #             v.stop_vm(headers, value["moId"], value["name"])
         elif args.command == 'vsphere':
             subcommand = sys.argv[2]
             v = vsphere.Vsphere()
@@ -578,17 +533,24 @@ if __name__ == '__main__':
                 # Logic of taking snaps procedure:
                 # get needed VMs -> power OFF -> take snaps -> restore power state
                 vm_array: dict = v.get_array_of_vm(headers, args.filter)
+                if not vm_array:
+                    sys.exit("No VM were matched. Exit!")
+                for vm in vm_array:
+                    print(vm_array[vm]['name'])
+                confirm = input("\nIs it correct VM list? (Y/N): ").lower()
+                if confirm not in ('y', 'yes'):
+                    sys.exit("Abort procedure")
                 for value in vm_array.values():
                     v.stop_vm(headers, value["moId"], value["name"])
                 count = 0
                 while True:
                     time.sleep(5)
-                    count+=1
+                    count += 1
                     vm_powered_on = 0
                     for value in vm_array.values():
                         power_status = v.get_vm_power_state(headers, value["moId"])
                         if power_status != "POWERED_OFF":
-                            vm_powered_on+=1
+                            vm_powered_on += 1
                     if count == 120:
                         print("Couldn't stop VM within 10 minutes. Check VM status in vCenter!")
                         break
@@ -609,6 +571,6 @@ if __name__ == '__main__':
             main()
     except KeyboardInterrupt:
         print('\nKeyboardInterrupt')
-
-    Logs().set_full_access_to_logs()
+    finally:
+        Logs().set_full_access_to_logs()
 
