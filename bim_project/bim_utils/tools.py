@@ -191,7 +191,7 @@ class Tools:
             except Exception:
                 if count > 0: print("ConnectionError: Check URL address.")
             count += 1
-            if count == 0:
+            if count == 1:
                 url = url.split(':')
                 url = 'http:' + url[1]
             elif count > 1:

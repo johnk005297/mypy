@@ -556,7 +556,8 @@ if __name__ == '__main__':
                         print("Couldn't stop VM within 10 minutes. Check VM status in vCenter!")
                         break
                     elif vm_powered_on_count > 0:
-                        print(f"Waiting for shutdown guest OS --> {vm_powered_on}")
+                        time.sleep(5)
+                        print(f"Awaiting guest OS shutdown: {vm_powered_on}")
                         continue                    
                     else:
                         for value in vm_array.values():
