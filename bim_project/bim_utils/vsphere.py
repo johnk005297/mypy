@@ -3,6 +3,8 @@ import base64
 import time
 import json
 import re
+import binascii
+from os import environ
 from log import Logs
 from tools import Tools
 from getpass import getpass
@@ -21,17 +23,16 @@ class Vsphere:
     vsphere_release_schema: str = "8.0.3.0"
 
     def __init__(self):
-        self.username: str = ''
-        self.password: str = ''
+        pass
 
     def get_credentials(self, username=None, password=None):
         """ Function prompts user's credentials and encode it into base64 proper format. """
 
-        self.username: list = input("Enter username: ").split("@") if not username else username.split("@")
-        self.password: str = getpass("Enter password: ") if not password else password
+        username: list = input("Enter username: ").split("@") if not username else username.split("@")
+        password: str = getpass("Enter password: ") if not password else password
 
-        if self.username and self.password:
-            creds: str = self.username[0] + '@bimeister.com' + ':' + self.password
+        if username and password:
+            creds: str = username[0] + '@bimeister.com' + ':' + password
         else:
             self.__logger.error("No correct credentials were provided.")
             return False
@@ -41,27 +42,32 @@ class Vsphere:
         return creds_base64
 
     def get_headers(self, username=None, password=None):
+        """ Form expected headers for vCenter API. """
+
         token: str = self.get_session_token(username=username, password=password)
         if not token:
             return False
         headers = {'vmware-api-session-id': token}
         return headers
 
-    def get_session_token(self, username, password):
+    def get_session_token(self, username='', password=''):
         """ Function to get token for execution requests. """
 
-        ## for tests only
-        # import os
-        # username = os.getenv('user')
-        # password = os.getenv('password')
-        # username_bytes = username.encode("utf-8")
-        # username_encoded = base64.b64decode(username_bytes)
-        # username = username_encoded.decode("utf-8").strip()
-        # password_bytes = password.encode("utf-8")
-        # password_encoded = base64.b64decode(password_bytes)
-        # password = password_encoded.decode("utf-8").strip()
+        try:
+            if environ.get('VCENTER_USER') and not username:
+                username_utf_encoded = environ.get('VCENTER_USER').encode("utf-8")
+                username_b64_decoded = base64.b64decode(username_utf_encoded)
+                username = username_b64_decoded.decode("utf-8").strip() # username utf decoded
+            if environ.get('VCENTER_PASSWORD') and not password:
+                password_utf_encoded = environ.get('VCENTER_PASSWORD').encode("utf-8")
+                password_b64_decoded = base64.b64decode(password_utf_encoded)
+                password = password_b64_decoded.decode("utf-8").strip() # password utf decoded
+        except binascii.Error as err:
+            self.__logger.error(err)
+            print("Invalid base64-encoded string. Check the logs. Exit!")
+            return False
 
-        creds = self.get_credentials(username, password)
+        creds = self.get_credentials(username=username, password=password)
         if not creds:
             return False
         headers = {'Authorization': 'Basic {}'.format(creds)}

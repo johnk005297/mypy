@@ -449,7 +449,7 @@ if __name__ == '__main__':
     try:
         if args.version:
             print(app_menu.AppMenu.__version__)
-        elif args.command == 'product-list':
+        elif args.command == 'git':
             g = git.Git()
             project_id = g.get_bimeister_project_id()
             if not project_id:

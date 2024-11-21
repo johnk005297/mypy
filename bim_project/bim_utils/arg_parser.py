@@ -1,6 +1,5 @@
 import argparse
 from datetime import datetime
-import sys
 
 
 class Parser():
@@ -13,7 +12,7 @@ class Parser():
         """ Function for parsing arguments of the command line. """
 
         # create the top-level parser
-        parser = argparse.ArgumentParser(prog='bim_utils', description='\'Frankenstein\' CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
+        parser = argparse.ArgumentParser(prog='bim_utils', description='Frankenstein CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
         parser.add_argument('-V', '--version', required=False, action="store_true", help='Get version of the bim_utils')
         parser.add_argument('--local', required=False, action="store_true", help='Execute script with locally available options on the current host')
 
@@ -68,9 +67,9 @@ class Parser():
         sql_exclusive.add_argument('-rmv', '--refresh-matviews', action='store_true', help='Refresh materialized views created by implementation department')
         sql_exclusive.add_argument('-f', '--file', required=False, help='Sql filename containing a query')
 
-        # create parser for the "product-list" subcommand
-        product_list = subparser.add_parser('product-list', help='Get list of services and DB for a specific project from product-collection.yaml')
-        product_list.add_argument('-lbf', '--list-branch-folder', required=False, help='Prints the list of files and folders for a given branch')
+        # create parser for the "git" subcommand
+        product_list = subparser.add_parser('git', help='Get info from product-collection.yaml. Search branches, tags, commits in git')
+        product_list.add_argument('-lbf', '--list-branch-folder', required=False, help='Prints a list of files and folders for a given branch')
         product_list.add_argument('-p', '--project-name', required=False, help='Option allows to provide project name from the product-collection.yaml without prompt')
         product_list_group = product_list.add_mutually_exclusive_group(required=False)
         product_list_group.add_argument('-sb', '--search-branch', required=False, nargs='+', help='Search for a branch by it\'s name')
@@ -80,6 +79,6 @@ class Parser():
 
         # create parser for the "bim-version" subcommand
         bim_version = subparser.add_parser('bim-version', help='Get bimeister version information')
-        bim_version.add_argument('-u', '--url', required=True)        
+        bim_version.add_argument('-u', '--url', required=True)
         args = parser.parse_args()
         return args
