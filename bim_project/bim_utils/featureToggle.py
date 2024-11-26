@@ -71,20 +71,21 @@ class FeatureToggle:
             return False
         print(table)
 
-    def set_feature(self, url, feature, bearerToken, FeatureAccessToken, is_enabled=True):
+    def set_feature(self, url, features: list, bearerToken, FeatureAccessToken, is_enabled=True):
         """ Function to enable/disable FT. """
 
+        ft_list = self.get_features(url, FeatureAccessToken)
         headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}', 'Authorization': f'Bearer {bearerToken}', 'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
         json_data = is_enabled
-        result: str = 'enabled' if is_enabled else 'disabled'
-
-        request = requests.put(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
-        
-        if request.status_code in (200, 201, 204):
-            self.__logger.info(f"{url}/{self._api_Features}/{feature} {request}")
-            print(f"Result: {feature} {result} successfully.")
-            return True
-        else:
-            self.__logger.error(request.status_code, '\n', request.text)
-            print(f"Result: {feature} wasn't enabled. Check the log. Error: {request.status_code}.")
-            return False
+        for feature in features:
+            if feature.lower() not in ft_list:
+                print(f"Incorrect FT name: {feature}")
+                continue
+            request = requests.put(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
+            if request.status_code in (200, 201, 204):
+                self.__logger.info(f"{url}/{self._api_Features}/{feature} {request}")
+                print("Result: {0} {1} successfully.".format(feature, 'enabled' if is_enabled else 'disabled'))
+            else:
+                self.__logger.error(request.status_code, '\n', request.text)
+                print(f"Result: {feature} wasn't enabled. Check the log. Error: {request.status_code}.")
+        return

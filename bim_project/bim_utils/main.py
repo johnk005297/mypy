@@ -1,5 +1,4 @@
 #
-# Script for work with license and some other small features.
 import os
 import sys
 import app_menu
@@ -377,7 +376,6 @@ def main(local=False):
 
             case ['ft', _, *_] if not local:
                 COS = FT.define_COS()
-
                 if COS == 'K8S':
                     ft_token = K8s.get_ft_token() if not K8s._ft_token else ft_token
                     # In case if ft_token has not been received from NoSQL db, try to find it in webapi logs
@@ -386,19 +384,17 @@ def main(local=False):
                     if ft_token:
                         if user_command == ['ft', '--list']:
                             FT.display_features(url, ft_token)
-                        elif len(user_command) == 3 and user_command[-1] in ('--on', '--off'):
-                            feature: str = user_command[1].lower()
-                            ft_list: list = FT.get_features(url, ft_token)
-                            if feature in ft_list:
-                                try:
-                                    FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[-1] == '--on' else False))
-                                except UnboundLocalError as err:
-                                    print(err)
-                                    continue
-                                except Exception:
-                                    print("Unpredictable behaviour in k8s set feature.")
-                            else:
-                                print("Incorrect FT name.")
+                        elif '--on' in user_command or '--off' in user_command:
+                            features: list = [x for x in user_command if x not in ('--on', '--off', 'ft')]
+                            try:
+                                FT.set_feature(url, features, token, ft_token, is_enabled=(True if '--on' in user_command else False))
+                            except UnboundLocalError as err:
+                                print(err)
+                                continue
+                            except Exception as err:
+                                print(err)
+                                print("Unpredictable behaviour in k8s set feature.")
+                                continue
                         elif user_command == ['ft', '--get-token']:
                             print(f"FT token: {ft_token}")
                     else:
@@ -408,20 +404,17 @@ def main(local=False):
                     if ft_token:
                         if user_command == ['ft', '--list']:
                             FT.display_features(url, ft_token)
-                        elif len(user_command) == 3 and user_command[-1] in ('--on', '--off'):
-                            feature: str = user_command[1].lower()
-                            ft_list: list = FT.get_features(url, ft_token)
-                            if feature in ft_list:
-                                try:
-                                    FT.set_feature(url, feature, token, ft_token, is_enabled=(True if user_command[-1] == '--on' else False))
-                                except UnboundLocalError as err:
-                                    print(err)
-                                    continue
-                                except Exception:
-                                    print("Unpredictable behaviour in docker set feature.")
-                            else:
-                                print("Incorrect FT name.")
-
+                        elif '--on' in user_command or '--off' in user_command:
+                            features: list = [x for x in user_command if x not in ('--on', '--off', 'ft')]
+                            try:
+                                FT.set_feature(url, features, token, ft_token, is_enabled=(True if '--on' in user_command else False))
+                            except UnboundLocalError as err:
+                                print(err)
+                                continue
+                            except Exception as err:
+                                print(err)
+                                print("Unpredictable behaviour in k8s set feature.")
+                                continue
                 else:
                     print("Unexpected error occured. Check the logs.")
 
