@@ -381,42 +381,26 @@ def main(local=False):
                     # In case if ft_token has not been received from NoSQL db, try to find it in webapi logs
                     if not ft_token:
                         ft_token = K8s.get_ft_token_from_webapi_logs() if not K8s._ft_token else ft_token
-                    if ft_token:
-                        if user_command == ['ft', '--list']:
-                            FT.display_features(url, ft_token)
-                        elif '--on' in user_command or '--off' in user_command:
-                            features: list = [x for x in user_command if x not in ('--on', '--off', 'ft')]
-                            try:
-                                FT.set_feature(url, features, token, ft_token, is_enabled=(True if '--on' in user_command else False))
-                            except UnboundLocalError as err:
-                                print(err)
-                                continue
-                            except Exception as err:
-                                print(err)
-                                print("Unpredictable behaviour in k8s set feature.")
-                                continue
-                        elif user_command == ['ft', '--get-token']:
-                            print(f"FT token: {ft_token}")
-                    else:
-                        print("No FT token has been received. Check the logs!")
                 elif COS == 'Docker':
                     ft_token = Docker.get_ft_token() if not Docker._ft_token else ft_token
-                    if ft_token:
-                        if user_command == ['ft', '--list']:
-                            FT.display_features(url, ft_token)
-                        elif '--on' in user_command or '--off' in user_command:
-                            features: list = [x for x in user_command if x not in ('--on', '--off', 'ft')]
-                            try:
-                                FT.set_feature(url, features, token, ft_token, is_enabled=(True if '--on' in user_command else False))
-                            except UnboundLocalError as err:
-                                print(err)
-                                continue
-                            except Exception as err:
-                                print(err)
-                                print("Unpredictable behaviour in k8s set feature.")
-                                continue
+                if ft_token:
+                    if user_command == ['ft', '--list']:
+                        FT.display_features(url, ft_token)
+                    elif '--on' in user_command or '--off' in user_command:
+                        features: list = [x for x in user_command if x not in ('--on', '--off', 'ft')]
+                        try:
+                            FT.set_feature(url, features, token, ft_token, is_enabled=(True if '--on' in user_command else False))
+                        except UnboundLocalError as err:
+                            print(err)
+                            continue
+                        except Exception as err:
+                            print(err)
+                            print("Unpredictable behaviour in k8s set feature.")
+                            continue
+                    elif user_command == ['ft', '--get-token']:
+                        print(f"FT token: {ft_token}")
                 else:
-                    print("Unexpected error occured. Check the logs.")
+                    print("No FT token has been received. Check the logs!")
 
             #    ''' =============================================================================== REPORTS ========================================================================================== '''
 
@@ -425,7 +409,7 @@ def main(local=False):
 
             # wildcard pattern if no cases before where matched
             case _:
-                print("Unknown command.")
+                print("Unknown command")
 
 
 def enable_history_input():
