@@ -45,6 +45,8 @@ class DB:
             result_file = sql_file[:-3] + 'csv'
             with open(sql_file, 'r', encoding='utf-8') as file:
                 query = file.read()
+        if not sql_file and not query:
+            return False
         try:
             cursor.execute(query)
             data = cursor.fetchall()
@@ -57,8 +59,7 @@ class DB:
                 self.__logger.info(f"Execute query:\n{query}".replace('\n', '\n' + indent))
                 print(f"Query result saved in {result_file} file!")
             else:
-                print("Error. Check the logs!")
-                self.__logger.error(f"Unexpected error executing query.")
+                print(df)
         except psycopg2.ProgrammingError as err:
             self.__logger.error(err)
             print("SQL programming error. Check the log!")
@@ -176,3 +177,8 @@ class Queries:
                     select "ExternalKey", "IsDefault" from "ExternalSystems" 
                     where "ExternalKey" = 'SDI-COD-{0}';
                 """.format(value)
+    
+    @classmethod
+    def get_list_of_all_db(cls):
+
+        return """ select datname from pg_database; """

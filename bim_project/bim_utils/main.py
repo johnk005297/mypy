@@ -478,6 +478,8 @@ if __name__ == '__main__':
                 pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Prod'))
             elif args.mdm_test:
                 pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Test'))
+            elif args.list_db:
+                pg.exec_query(conn, query=q.get_list_of_all_db())
         elif args.command == 'vsphere':
             subcommand = sys.argv[2]
             v = vsphere.Vsphere()
