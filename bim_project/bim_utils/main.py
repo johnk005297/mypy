@@ -131,15 +131,13 @@ def main(local=False):
                 license_id:str = input("Enter license id: ").strip()
                 License_main.put_license(url, token, username, password, license_id)
 
-
             #    ''' =============================================================================== User objects BLOCK =============================================================================== '''
-            
+
             case ['drop', 'uo'] if not local:
                 User_main.delete_user_objects(url, token)
-            
+
             case ['drop', 'uo', '-h'] if not local:
                 print(User_main.delete_user_objects.__doc__)
-            
 
             #    ''' =============================================================================== TRANSFER DATA BLOCK ============================================================================== '''
 
@@ -160,20 +158,24 @@ def main(local=False):
                     continue
                 if user_command == ['rm', 'workflows', '--help'] or user_command == ['rm', 'workflows', '-h']:
                     Export_data.help_function(remove=True)
-                    continue                
+                    continue
                 if Export_data.is_first_launch_export_data:
                     Export_data.create_folders_for_export_files()
                 args = user_command[2:]
+
                 # at the beginning and at the end of the line we cut the quotation marks with slicing
                 startswith = re.search('--startswith=".+"', ' '.join(args)).group().split('=')[1][1:-1] if re.search('--startswith=".+"', ' '.join(args)) else ''
                 search_for = re.search('--search=".+"', ' '.join(args)).group().split('=')[1][1:-1] if re.search('--search=".+"', ' '.join(args)) else ''
                 wf_id_array = re.search('--id=".+"', ' '.join(args)).group().split('=')[1] if re.search('--id=".+"', ' '.join(args)) else ''
                 wf_id_array = re.sub(r"\"", "", wf_id_array).split()
+                wf_type = re.search('--type=".+"', ' '.join(args)).group().split('=')[1].lower() if re.search('--type=".+"', ' '.join(args)) else ''
+                wf_type = re.sub(r"\"", "", wf_type)
 
                 if wf_id_array and user_command[:2] == ['export', 'workflows']:
+                    Export_data.export_server_info(url, token)
                     Export_data.export_workflows_by_choice(url, token, wf_id_array)
-                    continue             
-                workflows = Export_data.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for)
+                    continue
+                workflows = Export_data.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for, type=wf_type)
                 if not workflows:
                     continue
                 if user_command[:2] == ['export', 'workflows']:
@@ -181,9 +183,7 @@ def main(local=False):
                     Export_data.export_workflows_at_once(url, token, workflows)
                 elif user_command[:2] == ['ls', 'workflows']:
                     Export_data.display_list_of_workflowsName_and_workflowsId(workflows)
-
                 elif user_command[:2] == ['rm', 'workflows']:
-                    workflows = Export_data.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for)
                     Export_data.delete_workflows(url, token, workflows)
 
             # Import data
@@ -197,7 +197,6 @@ def main(local=False):
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._object_model_folder}")
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._workflows_folder}")
                 File.remove_file(f"{os.getcwd()}/{Export_data._transfer_folder}/export_server.info")
-
 
             #    ''' =============================================================================== USER =============================================================================== '''
 
@@ -507,7 +506,11 @@ if __name__ == '__main__':
             elif subcommand == 'stop-vm':
                 vm_array: dict = v.get_array_of_vm(headers, args.filter)
                 for value in vm_array.values():
-                    v.stop_vm(headers, value["moId"], value["name"])                 
+                    v.stop_vm(headers, value["moId"], value["name"])
+            elif subcommand == 'show-snap':
+                vm_array: dict = v.get_array_of_vm(headers, args.filter)
+                for value in vm_array.values():
+                    v.get_vm_snapshots(headers, value["moId"], value["name"])
             elif subcommand == 'take-snap':
                 # Logic of taking snaps procedure:
                 # get needed VMs -> power OFF -> take snaps -> restore power state

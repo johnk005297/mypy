@@ -115,12 +115,10 @@ class Export_data:
 
         count = Tools.counter()
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
-
         nodes_to_remove = [node for node in workflows if not workflows[node]]
         {workflows.__delitem__(node) for node in nodes_to_remove}
         workflows_id = [id for node in workflows.values() for id in node]
         self.remove_duplicate_workflows_id(workflows_id)
-
         with open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as file:
             for node in workflows:
                 for id, name in workflows[node].items():
@@ -202,7 +200,7 @@ class Export_data:
         if kwargs['startswith'] and kwargs['search_for']:
             print("Can't use both arguments '--startswith' and '--search' together")
             return
-        selected_nodes = [x for x in args[0] if x in ('--draft', '--active', '--archived', '--all')] # drop anything except 0, 1, 2, 3 values from the selected node list
+        selected_nodes = [x for x in args[0] if x in ('--draft', '--active', '--archived', '--all')]
         if '--all' not in selected_nodes:
             nodes_to_remove = [node for node in workflow_nodes.keys() if ''.join(('--', node)).lower() not in selected_nodes and len(selected_nodes) > 0]
             {workflow_nodes.__delitem__(node) for node in nodes_to_remove}
@@ -217,6 +215,8 @@ class Export_data:
                 except self.possible_request_errors as err:
                     self.__logger.error(f"{err}\n{response.text}")
                 for workflow in data['workFlows']:
+                    if kwargs['type'] and kwargs['type'] != self.get_workflow_type(url, token, workflow['id']):
+                        continue
                     if kwargs['startswith'] and workflow['name'].startswith(kwargs['startswith']):
                         workflows[name][workflow['id']] = workflow['name']
                     elif kwargs['search_for'] and workflow['name'].find(kwargs['search_for']) != -1:
@@ -271,6 +271,23 @@ class Export_data:
         time.sleep(0.1)
         self.is_first_launch_export_data = False
 
+    def get_workflow_type(self, url, token, id):
+        """ Get information about workflow """
+
+        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
+        url = f"{url}/{self.__api_WorkFlows}/{id}"
+        try:
+            response = requests.get(url=url, headers=headers, verify=False)
+            if response.status_code != 200:
+                self.__logger.error(f"{id}: {response.status_code}\n{response.text}")
+                print(f"Error: check the log!")
+            data = response.json()
+            return data['type'].lower()
+        except self.possible_request_errors as err:
+            self.__logger.error(f"{err}\n{response.text}")
+            return False
+
+
     def help_function(self, ls=False, export=False, remove=False):
         """ Provide help info for the user. """
 
@@ -284,6 +301,7 @@ options:
   --active      Active node of workflows
   --archived    Archived node of workflows
   --all         All three nodes
+  --type        Workflows type
 """
         export_workflows: str = """usage: export workflows [--help] [--startswith=\"TEXT TO FIND\" | --search=\"TEXT TO FIND\" | --id="WORKFLOW(S) ID"] [--draft] [--active] [--archived] [--all]
 
@@ -292,7 +310,6 @@ options:
   --startswith  Pattern to search from the beginning of the line
   --search      Pattern to search at any place of the line
   --id          One or more workflow ID separated with whitespace
-                Doesn't require any flags
   --draft       Draft node of workflows
   --active      Active node of workflows
   --archived    Archived node of workflows

@@ -12,7 +12,7 @@ import zipfile
 import requests
 from datetime import datetime
 from log import Logs
-__logger = Logs().f_logger(__name__)
+# __logger = Logs().f_logger(__name__)
 
 
 class Folder:
@@ -24,7 +24,7 @@ class Folder:
                 os.mkdir(path + '/' + folder_name)        
         except OSError as err:
             print("ERROR in create folder function.")
-            __logger.error(err)
+            # __logger.error(err)
             return False
 
     @staticmethod
@@ -43,7 +43,7 @@ class Folder:
             else:
                 print(f'   - no {filename} folder was found.')
         except OSError as err:
-            __logger.error(err)
+            # __logger.error(err)
             print("Error occured. Check the logs.")
             return False
         return True
@@ -67,14 +67,14 @@ class File:
                         content = json.load(file)
                     except json.JSONDecodeError as err:
                         print(f"Error with the {filename} file. Check the logs.")
-                        __logger.error(f"Error with {filename}.\n{err}")
+                        # __logger.error(f"Error with {filename}.\n{err}")
                         return False
                     return content
                 else:
                     content = file.read()
                     return content
         except OSError as err:
-            __logger.error(err)
+            # __logger.error(err)
             return False
 
 
@@ -133,7 +133,7 @@ class Tools:
         try:
             os.system(command)
         except OSError as err:
-            __logger.error(err)
+            # __logger.error(err)
             return False
 
     def zip_files_in_dir(dirName, archName):
