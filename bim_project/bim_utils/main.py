@@ -468,9 +468,9 @@ if __name__ == '__main__':
             if args.file:
                 pg.exec_query(conn, sql_file=args.file, out=args.out)
             elif args.list_matviews:
-                pg.exec_query(conn, query=q.get_matviews_list())
-            elif args.drop_matviews:
-                pg.exec_query(conn, query=q.drop_sf_materialized_view())
+                pg.exec_query(conn, query=q.get_matviews_list(args.list_matviews))
+            elif args.drop_matviews:                
+                pg.exec_query(conn, query=q.drop_sf_materialized_view(args.drop_matviews))
             elif args.refresh_matviews:
                 pg.exec_query(conn, query=q.refresh_sf_materialized_view())
             elif args.mdm_prod:

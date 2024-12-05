@@ -65,9 +65,9 @@ class Parser():
         sql_mdm_connection.add_argument('--mdm-prod', required=False, action="store_true", help='Switch ExternalKey value to production. Requires for MDM connector integration')
         sql_mdm_connection.add_argument('--mdm-test', required=False, action="store_true", help='Switch ExternalKey value to test. Requires for MDM connector integration')
         sql_exclusive = sql.add_mutually_exclusive_group(required=False)
-        sql_exclusive.add_argument('-lmv', '--list-matviews', required=False, action='store_true', help='Get list of materialized views created by implementation department')
-        sql_exclusive.add_argument('-dmv', '--drop-matviews', required=False, action='store_true', help='Delete materialized views created by implementation department')
-        sql_exclusive.add_argument('-rmv', '--refresh-matviews', action='store_true', help='Refresh materialized views created by implementation department')
+        sql_exclusive.add_argument('-lmv', '--list-matviews', required=False, nargs='?', const='*', help='Get list of materialized views created by implementation department')
+        sql_exclusive.add_argument('-dmv', '--drop-matviews', required=False, nargs='?', const='*', help='Delete materialized views by it\'s name pattern')
+        sql_exclusive.add_argument('-rmv', '--refresh-matviews', required=False, nargs='?', const='*', help='Refresh materialized views created by implementation department')
         sql_exclusive.add_argument('-f', '--file', required=False, help='Sql filename containing a query')
 
         # create parser for the "git" subcommand

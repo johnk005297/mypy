@@ -100,47 +100,40 @@ class DB:
 class Queries:
 
     @classmethod
-    def get_matviews_list(cls):
+    def get_matviews_list(cls, name='%'):
 
         return """ select schemaname, matviewname, matviewowner from pg_catalog.pg_matviews
-                   where matviewname  like 'sf_%';
-                """
+                   where matviewname  like '{0}';
+                """.format(name.replace('*', '%'))
 
     @classmethod
-    def drop_sf_materialized_view(cls):
-
-        return """  
-                    CREATE OR REPLACE FUNCTION sf_drop_materialized_view()
-                    RETURNS void
-                    LANGUAGE plpgsql
-                    AS $$
+    def drop_sf_materialized_view(cls, name='%'):
+      
+        return """ 
+                    DO $$
                     DECLARE
                         view_record RECORD;
                     BEGIN
                         FOR view_record IN
                             SELECT schemaname, matviewname
                             FROM pg_matviews
-                            WHERE matviewname LIKE 'sf_matview_%'
+                            WHERE matviewname LIKE '{0}'
                         LOOP
                             EXECUTE 'DROP MATERIALIZED VIEW IF EXISTS '
-                                    || quote_ident(view_record.schemaname) || '.' 
-                                    || quote_ident(view_record.matviewname) 
+                                    || quote_ident(view_record.schemaname) || '.'
+                                    || quote_ident(view_record.matviewname)
                                     || ' CASCADE';
                         END LOOP;
                     END;
                     $$;
-
-                    --select sf_drop_materialized_view();
-             """
+                    select matviewname from pg_catalog.pg_matviews;
+        """.format(name.replace('*', '%'))
     
     @classmethod
-    def refresh_sf_materialized_view(cls):
+    def refresh_sf_materialized_view(cls, name='%'):
 
         return """
-                    CREATE OR REPLACE FUNCTION sf_refresh_materialized_view()
-                    RETURNS void
-                    LANGUAGE plpgsql
-                    AS $$
+                    DO $$
                     DECLARE
                         view_record RECORD;
                     BEGIN
@@ -155,9 +148,8 @@ class Queries:
                         END LOOP;
                     END;
                     $$;
-
-                    select sf_refresh_materialized_view();
-                """
+                    select schemaname, matviewname from pg_matviews where matviewname LIKE '{0}';
+                """.format(name.replace('*', '%'))
     
     @classmethod
     def swith_externalKey_for_mdm_connector(cls, value=''):
