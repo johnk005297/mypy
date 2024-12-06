@@ -94,6 +94,17 @@ def main(local=False):
 
             #    ''' =============================================================================== MAIN BLOCK ======================================================================================= '''
 
+        # args = Parser().parse_args_main(user_command)
+        # if args.command == 'exit':
+        #     break
+        # elif args.command == 'm':
+        #     print(AppMenu_main._main_menu)
+        # elif args.quit:
+        #     break
+
+
+
+
         match user_command:
 
             # if nothing to check, loop over.
@@ -121,8 +132,6 @@ def main(local=False):
 
             case ['apply', 'lic'] if not local:
                 License_main.post_license(url, token, username, password)
-                # license_id:str = License_main.post_license_new(url, token, username, password)
-                # License_main.put_license(url, token, license_id=license_id[0]) if license_id else print("Post license wasn't successful. Check the logs.")
 
             case  ['delete', 'lic'] if not local:
                 License_main.delete_license(url, token, username, password)
@@ -222,7 +231,6 @@ def main(local=False):
                     print("Incorrect data. Can't connect.")
                     continue
 
-
             #    ''' =============================================================================== DOCKER =============================================================================== '''
 
             case ['docker', *_] if not Docker.check_docker():
@@ -317,7 +325,6 @@ def main(local=False):
                 containers_id = [x for x in user_command[2:]]
                 Docker.get_container_log(*containers_id)
 
-
             #    ''' =============================================================================== K8S ============================================================================================== '''
 
             case ['kube', *_] if not K8s.get_kube_config():
@@ -366,7 +373,6 @@ def main(local=False):
                     pods = tuple(pod for pod in user_command[3:] if not pod.startswith('-'))
                     K8s.get_pod_log(*pods) if not namespace else K8s.get_pod_log(*pods, namespace=namespace)                    
 
-
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
 
             case ['ft', *_] if not local and not K8s.get_kube_config() and not Docker.check_docker():
@@ -382,7 +388,7 @@ def main(local=False):
                         ft_token = K8s.get_ft_token_from_webapi_logs() if not K8s._ft_token else ft_token
                 elif COS == 'Docker':
                     ft_token = Docker.get_ft_token() if not Docker._ft_token else ft_token
-                if ft_token:
+                if ft_token and ' '.join(user_command).startswith('ft --list'):
                     if user_command == ['ft', '--list']:
                         FT.display_features(url, ft_token)
                     elif '--on' in user_command or '--off' in user_command:
@@ -398,6 +404,10 @@ def main(local=False):
                             continue
                     elif user_command == ['ft', '--get-token']:
                         print(f"FT token: {ft_token}")
+                    elif user_command == ['ft', '--list', '--enabled']:
+                        FT.display_features(url, ft_token, enabled=True)
+                    elif user_command == ['ft', '--list', '--disabled']:
+                        FT.display_features(url, ft_token, disabled=True)
                 else:
                     print("No FT token has been received. Check the logs!")
 

@@ -32,60 +32,62 @@ class FeatureToggle:
             self.__logger.debug("No K8S or Docker has been found on localhost. As well as no connection to the API's could be established.")
             return False
 
-    def get_features(self, url, FeatureAccessToken):
+    def get_list_of_features(self, url, FeatureAccessToken):
         """ Get list of features. """
 
         headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}' }
-        request = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)
+        response = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)
 
-        if request.status_code == 200:
-            self.__logger.info(f"{self._api_GetFeatures} {request}")
-            response: dict = request.json()
-            ft_list: list = [ft for ft in response]
+        if response.status_code == 200:
+            self.__logger.info(f"{self._api_GetFeatures} {response}")
+            data: dict = response.json()
+            ft_list: list = [ft for ft in data]
         else:
-            print(f"Error {request.status_code} occurred during GetFeatures request. Check the logs.")
-            self.__logger.error(request.text)
+            print(f"Error {response.status_code} occurred during GetFeatures request. Check the logs.")
+            self.__logger.error(response.text)
             return False
-
         return ft_list
 
-    def display_features(self, url, FeatureAccessToken):
+    def display_features(self, url, FeatureAccessToken, enabled=False, disabled=False):
         """ Display list of features in pretty table. """
 
         headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}' }
-        request = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)
-
+        response = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)
         table = PrettyTable()
         table.field_names = ['FEATURE', 'STATUS']
         table.align = 'l'
-        if request.status_code == 200:
-            self.__logger.info(f"{self._api_GetFeatures} {request}")
-            response: dict = request.json()
+        if response.status_code == 200:
+            self.__logger.info(f"{self._api_GetFeatures} {response}")
+            data: dict = response.json()
             print()
-            for key,value in sorted(response.items()):
-                # print(" {0}:  {1}".format(k.capitalize(), v))
-                table.add_row([key.capitalize(), Fore.GREEN + str(value) + Fore.RESET if value else Fore.RED + str(value) + Fore.RESET])
+            for key,value in sorted(data.items()):
+                if enabled and value:
+                    table.add_row([key.capitalize(), Fore.GREEN + str(value) + Fore.RESET])
+                elif disabled and not value:
+                    table.add_row([key.capitalize(), Fore.RED + str(value) + Fore.RESET])
+                elif not enabled and not disabled:
+                    table.add_row([key.capitalize(), Fore.GREEN + str(value) + Fore.RESET if value else Fore.RED + str(value) + Fore.RESET])
         else:
-            print(f"Error {request.status_code} occurred during GetFeatures request. Check the logs.")
-            self.__logger.error(request.text)
+            print(f"Error {response.status_code} occurred during GetFeatures request. Check the logs.")
+            self.__logger.error(response.text)
             return False
         print(table)
 
     def set_feature(self, url, features: list, bearerToken, FeatureAccessToken, is_enabled=True):
         """ Function to enable/disable FT. """
 
-        ft_list = self.get_features(url, FeatureAccessToken)
+        ft_list = self.get_list_of_features(url, FeatureAccessToken)
         headers = {'FeatureToggleAuthorization': f'FeatureAccessToken {FeatureAccessToken}', 'Authorization': f'Bearer {bearerToken}', 'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
         json_data = is_enabled
         for feature in features:
             if feature.lower() not in ft_list:
                 print(f"Incorrect FT name: {feature}")
                 continue
-            request = requests.put(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
-            if request.status_code in (200, 201, 204):
-                self.__logger.info(f"{url}/{self._api_Features}/{feature} {request}")
+            response = requests.put(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
+            if response.status_code in (200, 201, 204):
+                self.__logger.info(f"{url}/{self._api_Features}/{feature} {response}")
                 print("Result: {0} {1} successfully.".format(feature, 'enabled' if is_enabled else 'disabled'))
             else:
-                self.__logger.error(request.status_code, '\n', request.text)
-                print(f"Result: {feature} wasn't enabled. Check the log. Error: {request.status_code}.")
+                self.__logger.error(response.status_code, '\n', response.text)
+                print(f"Result: {feature} wasn't enabled. Check the log. Error: {response.status_code}.")
         return
