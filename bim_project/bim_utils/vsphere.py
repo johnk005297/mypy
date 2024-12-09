@@ -300,19 +300,12 @@ class Vsphere:
         """ Revert chosen VM(s) to a given snapshot. """
 
         url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachineSnapshot/{moId}/RevertToSnapshot_Task"
-        payload = {
-                    "host": {
-                        "_typeName": "ManagedObjectReference",
-                        "type": "VirtualMachine",
-                        "value": vm_id
-                    },
-                    "suppressPowerOn": False
-                }
         try:
-            response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
+            response = requests.post(url=url, headers=headers, verify=False)
             if response.status_code == 200:
                 data = response.json() if bool(response.text) else False
                 self.__logger.info(f"Revert to snapshot VM: {vm_name}")
+                print(data)
                 return data
         except requests.exceptions.HTTPError as err:
             self.__logger.error(err)

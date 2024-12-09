@@ -238,7 +238,6 @@ class Docker:
             self.__logger.info(f"Received FT: {ft_token}")
         except json.decoder.JSONDecodeError as err:
             self.__logger.error(err)
-            print("No FT token was received. Check the logs!")
             return False
         self._ft_token = True if ft_token else False
         return ft_token

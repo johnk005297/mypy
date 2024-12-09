@@ -524,7 +524,7 @@ if __name__ == '__main__':
             elif subcommand == 'revert-snap':
                 # vm_array: dict = v.get_array_of_vm(headers, args.filter)
                 # for value in vm_array.values():
-                v.revert_to_snapshot(headers, "snapshot-273725")
+                v.revert_to_snapshot(headers, "snapshot-273740", "vm-125614", "sandbox-3")
             elif subcommand == 'take-snap':
                 # Logic of taking snaps procedure:
                 # get needed VMs -> power OFF -> take snaps -> restore power state
