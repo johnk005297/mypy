@@ -521,6 +521,10 @@ if __name__ == '__main__':
                 vm_array: dict = v.get_array_of_vm(headers, args.filter)
                 for value in vm_array.values():
                     v.get_vm_snapshots(headers, value["moId"], value["name"])
+            elif subcommand == 'revert-snap':
+                # vm_array: dict = v.get_array_of_vm(headers, args.filter)
+                # for value in vm_array.values():
+                v.revert_to_snapshot(headers, "snapshot-273725")
             elif subcommand == 'take-snap':
                 # Logic of taking snaps procedure:
                 # get needed VMs -> power OFF -> take snaps -> restore power state
@@ -557,7 +561,7 @@ if __name__ == '__main__':
                         break
                 for value in vm_array.values():
                     if value["power_state"] == "POWERED_ON":
-                        v.start_vm(headers, value["moId"], value["name"])       
+                        v.start_vm(headers, value["moId"], value["name"])
         elif args.command == 'bim-version':
             Tools.print_bim_version(args.url)
         elif args.local:

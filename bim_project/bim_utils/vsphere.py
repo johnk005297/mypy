@@ -268,16 +268,12 @@ class Vsphere:
         """ Get list of snapshots for a given VM. """
 
         url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachine/{moId}/snapshot"
+        snapshots: list = []
         try:
             response = requests.get(url=url, headers=headers, verify=False)
             if response.status_code == 200:
-                data = response.json()
-                self.__logger.info(f"Get list of snapshots vm: {vm_name}")
-                print(vm_name,':')
-                for x in data['rootSnapshotList']:
-                    print(x['name'])
-                    print(x['childSnapshotList'][0]['name'])
-                return True
+                data = response.json() if bool(response.text) else False
+                self.__logger.info(f"Get list of snapshots VM: {vm_name}")                
         except requests.exceptions.HTTPError as err:
             self.__logger.error(err)
             print("Error. Check the log!")
@@ -286,6 +282,46 @@ class Vsphere:
             self.__logger.error(err)
             print("Error. Check the log!")
             return False
+
+        print(data)
+        # recursion to loop through nested lists with dictionaries and get snapshot names
+        def collect_snapshot_name(data, depth=0):
+            for x in data:
+                snapshots.append(f"{' '*depth}{x['name']}")
+                if x.get('childSnapshotList'):
+                    collect_snapshot_name(x['childSnapshotList'], depth+2)
+        if isinstance(data, dict) and data.get('rootSnapshotList'):
+            collect_snapshot_name(data['rootSnapshotList'])
+        else:
+            return False
+        return snapshots
+
+    def revert_to_snapshot(self, headers, moId, vm_id, vm_name):
+        """ Revert chosen VM(s) to a given snapshot. """
+
+        url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachineSnapshot/{moId}/RevertToSnapshot_Task"
+        payload = {
+                    "host": {
+                        "_typeName": "ManagedObjectReference",
+                        "type": "VirtualMachine",
+                        "value": vm_id
+                    },
+                    "suppressPowerOn": False
+                }
+        try:
+            response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
+            if response.status_code == 200:
+                data = response.json() if bool(response.text) else False
+                self.__logger.info(f"Revert to snapshot VM: {vm_name}")
+                return data
+        except requests.exceptions.HTTPError as err:
+            self.__logger.error(err)
+            print("Error. Check the log!")
+            return False
+        except Exception as err:
+            self.__logger.error(err)
+            print("Error. Check the log!")
+            return False            
 
     def remove_vm_snapshots(self, headers, moId, vm_name):
         """ Remove snapshots for a given VM. """
