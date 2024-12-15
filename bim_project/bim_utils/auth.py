@@ -11,7 +11,7 @@ disable_warnings(InsecureRequestWarning)
 
 
 class Auth:
-    __slots__ = ('url', 'username', 'password', 'token', 'providerId', 'privateToken')
+    __slots__ = ('url', 'username', 'password', 'token', 'privateToken')
     __api_Providers: str = 'api/Providers'
     __api_Auth_Login: str = 'api/Auth/Login'
     __api_PrivateToken: str = 'api/PrivateToken'
@@ -29,7 +29,6 @@ class Auth:
         self.username = username
         self.password = password
         self.token = None
-        self.providerId = None
         self.privateToken = None
 
     def __getattr__(self, item):
@@ -49,10 +48,11 @@ class Auth:
             return False
         if not self.url_validation(self.url):
             return False
+        # self.providerId = self.get_providerId(self.url)
         if not self.get_providerId(self.url):
             return False
         self.get_credentials()
-        return True if self.get_user_access_token(self.url, self.username, self.password, self.providerId) else False
+        return True if self.get_user_access_token(self.url, self.username, self.password) else False
 
     def url_validation(self, url):
 
@@ -119,14 +119,12 @@ class Auth:
 
         response = requests.get(url=f"{url}/{self.__api_Providers}", verify=False, allow_redirects=False,
                                 timeout=2)
-
         if response.status_code == 200:
             api_providers: list = response.json()
         elif response.status_code != 200:
             print("Couldn't establish connection. Check the logs!")
             Auth.__logger.error(response.text)
             return False
-
         if len(api_providers) == 1:
             providerId = api_providers[0]['id']
             return providerId
@@ -154,26 +152,27 @@ class Auth:
         except Exception:
             sys.exit()
 
-    def get_user_access_token(self, url, username, password, providerId):
+    def get_user_access_token(self, url, username, password):
         """ Basically this is a login into system, after what we get an access token. """
 
         payload = {
             "username": username,
-            "password": password,
-            "providerId": providerId
+            "password": password
         }
         data = json.dumps(payload)
-        response = requests.post(url=f"{url}/{self.__api_Auth_Login}", data=data, headers=self.headers, verify=False)
-        self.__logger.debug(f"username: {self.username}")
-        self.__logger.debug(
-            self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
-        data = response.json()
-
+        try:
+            response = requests.post(url=f"{url}/{self.__api_Auth_Login}", data=data, headers=self.headers, verify=False)
+            self.__logger.debug(f"username: {self.username}")
+            self.__logger.debug(
+                self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+            data = response.json()
+        except self.possible_request_errors as err:
+            self.__logger.error(err)
+            print(f"Login attempt failed. Repsonse code: {response.status_code}. Check services are running!")
         time.sleep(0.07)
         """ Block is for checking authorization request.
         Correct response of /api/Auth/Login method suppose to return a .json with 'access_token' and 'refresh_token'.
         """
-
         if response.status_code == 401:
             if data.get('type') and data.get('type') == 'TransitPasswordExpiredBimException':
                 message: str = f"Password for '{username}' has been expired!"
@@ -205,7 +204,6 @@ class Auth:
             self.token = data['access_token']
             return self.token
         else:
-            self.__logger.error(response.text)
             return False
 
     def get_private_token(self, url, token):

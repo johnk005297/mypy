@@ -91,103 +91,6 @@ class K8S:
                 print("No feature toggle pod was found. Check for needed pod.")
         return False
 
-    def get_secret_with_ft_token(self):
-        """ Function returns a k8s secret name from the cluster. """
-
-        v1 = self.get_CoreV1Api()
-        secrets_list: list = v1.list_namespaced_secret(self.__namespace).items  # Getting a list of all the secrets
-
-        # Getting a needed secret for FT activation
-        possible_ft_secrets: list = ['redis', 'keydb']
-        counter = Tools.counter()
-        for item in secrets_list:
-            count = counter()
-            secret = item.metadata.name.split('-')
-            if secret[0] == self.__namespace and secret[1] in possible_ft_secrets:
-                return item.metadata.name
-            elif count == len(secrets_list):
-                return False
-
-    def get_ft_secret_pass(self, secret_name):
-        """ Get password from the k8s secret of the pod. """
-
-        v1 = self.get_CoreV1Api()
-        try:
-            secret: dict = v1.read_namespaced_secret(secret_name, self.__namespace).data
-            if secret_name.split('-')[1] == 'redis':
-                passwd: str = base64.b64decode(secret['REDIS_PASSWORD']).decode('utf-8')
-
-            else:
-                # keydb secret is encoded. Need to decode it first, then extract the password.
-                decode: str = base64.b64decode(secret['server.sh']).decode('utf-8')
-                for string in range(len(decode.split())):
-                    if 'requirepass' in decode.split()[string]:
-                        passwd = decode.split()[string + 1].strip("\"")
-
-        except ApiException as err:
-            self.__logger.error(err)
-            return False
-        
-        except Exception as err:
-            self.__logger.error(err)
-            return False
-
-        # passwd = base64.b64decode(list(secret.values())[0]).decode('utf-8')
-        return passwd if passwd else False
-
-    def get_ft_token(self):
-        """ Function get's FT token into token variable. During process it creates tmp file after kubectl command, 
-        read token from the file into var, and delete the file.
-        """
-        
-        ft_pod = self.get_ft_pod()
-        ft_secret = self.get_secret_with_ft_token()
-        if ft_pod and ft_secret:
-            ft_secret_pass = self.get_ft_secret_pass(ft_secret)
-        else:
-            return False
-
-        # define what cli we need to use: redis or keydb
-        cli = 'redis-cli' if ft_secret.split('-')[1] == 'redis' else 'keydb-cli'
-
-        v1 = self.get_CoreV1Api()
-        exec_command: str = f"{cli} -a '{ft_secret_pass}' GET FEATURE_ACCESS_TOKEN"
-        data = self.exec_cmd_in_pod(ft_pod, ft_secret.split('-')[1], exec_command, self.__namespace, v1)
-        if not data:
-            self.__logger.error(f"No FT token was received from {cli}. Check the logs!")
-            return False
-
-        # search for token in data's sting, and convert string '{"Token":"<token>}"' into dictionary using eval
-        ft_token = eval(re.search('.*\{.*\}', data).group())['Token']
-        self._ft_token = True if ft_token else False
-        return ft_token
-
-    def get_ft_token_from_webapi_logs(self):
-        """ Function get's FT token from webapi pod logs. """
-
-        v1 = self.get_CoreV1Api()
-        pods = v1.list_pod_for_all_namespaces(watch=False, field_selector=f"metadata.namespace={self.__namespace}")
-        counter = Tools.counter()
-        webapi_pods = list()
-        ft_token = str()
-        for item in pods.items:
-            count = counter()
-            if item.spec.containers[0].name == 'webapi' and item.status.phase == 'Running':
-                webapi_pod: str = item.metadata.name
-                webapi_pods.append(webapi_pod)
-            elif count == len(pods.items) and not webapi_pods:
-                print("Running webapi pod wasn't found. Check for needed pod.")
-                return False
-        for pod in webapi_pods:
-            pod_log = v1.read_namespaced_pod_log(name=pod, namespace=self.__namespace)
-            index = pod_log.find('FEATURE_ACCESS_TOKEN')
-            if index != -1:
-                ft_token = pod_log[index:].split()[1]
-        if not ft_token:
-            self.__logger.error("No FT token was received from webapi logs. Check the logs!")
-            return False
-        return ft_token
-
     def exec_cmd_in_pod(self, pod, container, command, namespace, api_instance):   # Need to test this function!
         """ Execute command in pod. """
 
@@ -333,3 +236,103 @@ class K8S:
             namespace_idx = user_command.index('-n') + 1
             namespace = user_command[namespace_idx]
         return namespace
+
+
+#### DEPRECATED FUNCTIONS ####
+# class K8S:
+#     def get_ft_token(self):
+#         """ Function get's FT token into token variable. During process it creates tmp file after kubectl command, 
+#         read token from the file into var, and delete the file.
+#         """
+        
+#         ft_pod = self.get_ft_pod()
+#         ft_secret = self.get_secret_with_ft_token()
+#         if ft_pod and ft_secret:
+#             ft_secret_pass = self.get_ft_secret_pass(ft_secret)
+#         else:
+#             return False
+
+#         # define what cli we need to use: redis or keydb
+#         cli = 'redis-cli' if ft_secret.split('-')[1] == 'redis' else 'keydb-cli'
+
+#         v1 = self.get_CoreV1Api()
+#         exec_command: str = f"{cli} -a '{ft_secret_pass}' GET FEATURE_ACCESS_TOKEN"
+#         data = self.exec_cmd_in_pod(ft_pod, ft_secret.split('-')[1], exec_command, self.__namespace, v1)
+#         if not data:
+#             self.__logger.error(f"No FT token was received from {cli}. Check the logs!")
+#             return False
+
+#         # search for token in data's sting, and convert string '{"Token":"<token>}"' into dictionary using eval
+#         ft_token = eval(re.search('.*\{.*\}', data).group())['Token']
+#         self._ft_token = True if ft_token else False
+#         return ft_token
+
+#     def get_ft_token_from_webapi_logs(self):
+#         """ Function get's FT token from webapi pod logs. """
+
+#         v1 = self.get_CoreV1Api()
+#         pods = v1.list_pod_for_all_namespaces(watch=False, field_selector=f"metadata.namespace={self.__namespace}")
+#         counter = Tools.counter()
+#         webapi_pods = list()
+#         ft_token = str()
+#         for item in pods.items:
+#             count = counter()
+#             if item.spec.containers[0].name == 'webapi' and item.status.phase == 'Running':
+#                 webapi_pod: str = item.metadata.name
+#                 webapi_pods.append(webapi_pod)
+#             elif count == len(pods.items) and not webapi_pods:
+#                 print("Running webapi pod wasn't found. Check for needed pod.")
+#                 return False
+#         for pod in webapi_pods:
+#             pod_log = v1.read_namespaced_pod_log(name=pod, namespace=self.__namespace)
+#             index = pod_log.find('FEATURE_ACCESS_TOKEN')
+#             if index != -1:
+#                 ft_token = pod_log[index:].split()[1]
+#         if not ft_token:
+#             self.__logger.error("No FT token was received from webapi logs. Check the logs!")
+#             return False
+#         return ft_token
+
+#     def get_secret_with_ft_token(self):
+#         """ Function returns a k8s secret name from the cluster. """
+
+#         v1 = self.get_CoreV1Api()
+#         secrets_list: list = v1.list_namespaced_secret(self.__namespace).items  # Getting a list of all the secrets
+
+#         # Getting a needed secret for FT activation
+#         possible_ft_secrets: list = ['redis', 'keydb']
+#         counter = Tools.counter()
+#         for item in secrets_list:
+#             count = counter()
+#             secret = item.metadata.name.split('-')
+#             if secret[0] == self.__namespace and secret[1] in possible_ft_secrets:
+#                 return item.metadata.name
+#             elif count == len(secrets_list):
+#                 return False
+
+#     def get_ft_secret_pass(self, secret_name):
+#         """ Get password from the k8s secret of the pod. """
+
+#         v1 = self.get_CoreV1Api()
+#         try:
+#             secret: dict = v1.read_namespaced_secret(secret_name, self.__namespace).data
+#             if secret_name.split('-')[1] == 'redis':
+#                 passwd: str = base64.b64decode(secret['REDIS_PASSWORD']).decode('utf-8')
+
+#             else:
+#                 # keydb secret is encoded. Need to decode it first, then extract the password.
+#                 decode: str = base64.b64decode(secret['server.sh']).decode('utf-8')
+#                 for string in range(len(decode.split())):
+#                     if 'requirepass' in decode.split()[string]:
+#                         passwd = decode.split()[string + 1].strip("\"")
+
+#         except ApiException as err:
+#             self.__logger.error(err)
+#             return False
+        
+#         except Exception as err:
+#             self.__logger.error(err)
+#             return False
+
+#         # passwd = base64.b64decode(list(secret.values())[0]).decode('utf-8')
+#         return passwd if passwd else False

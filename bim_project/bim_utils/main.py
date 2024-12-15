@@ -103,8 +103,6 @@ def main(local=False):
         #     break
 
 
-
-
         match user_command:
 
             # if nothing to check, loop over.
@@ -214,7 +212,7 @@ def main(local=False):
                 print(f"\n{private_token}")
 
             case ['token'] if not local:
-                user_access_token = Auth.get_user_access_token(url, username, password, Auth.providerId)
+                user_access_token = Auth.get_user_access_token(url, username, password)
                 print(f"\n{user_access_token}")
 
             case ['sh']:
@@ -374,45 +372,28 @@ def main(local=False):
                     K8s.get_pod_log(*pods) if not namespace else K8s.get_pod_log(*pods, namespace=namespace)                    
 
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
-
-            case ['ft', *_] if not local and not K8s.get_kube_config() and not Docker.check_docker():
-                print("No Kubernets or Docker has been found on the localhost. Check the logs.")
-                continue
-
-            case ['ft', _, *_] if not local:
-                COS = FT.define_COS()
-                if COS == 'K8S':
-                    ft_token = K8s.get_ft_token() if not K8s._ft_token else ft_token
-                    # In case if ft_token has not been received from NoSQL db, try to find it in webapi logs
-                    if not ft_token:
-                        ft_token = K8s.get_ft_token_from_webapi_logs() if not K8s._ft_token else ft_token
-                elif COS == 'Docker':
-                    ft_token = Docker.get_ft_token() if not Docker._ft_token else ft_token
-                if ft_token and ' '.join(user_command).startswith('ft --list'):
+            case ['ft', _, *_] if not local:                
+                if ' '.join(user_command).startswith('ft --list'):
                     if user_command == ['ft', '--list']:
-                        FT.display_features(url, ft_token)
-                    elif '--on' in user_command or '--off' in user_command:
-                        features: list = [x for x in user_command if x not in ('--on', '--off', 'ft')]
-                        try:
-                            FT.set_feature(url, features, token, ft_token, is_enabled=(True if '--on' in user_command else False))
-                        except UnboundLocalError as err:
-                            print(err)
-                            continue
-                        except Exception as err:
-                            print(err)
-                            print("Unpredictable behaviour in k8s set feature.")
-                            continue
-                    elif user_command == ['ft', '--get-token']:
-                        print(f"FT token: {ft_token}")
+                        FT.display_features(url)
                     elif user_command == ['ft', '--list', '--enabled']:
-                        FT.display_features(url, ft_token, enabled=True)
+                        FT.display_features(url, enabled=True)
                     elif user_command == ['ft', '--list', '--disabled']:
-                        FT.display_features(url, ft_token, disabled=True)
-                else:
-                    print("No FT token has been received. Check the logs!")
+                        FT.display_features(url, disabled=True)                        
+                elif '--on' in user_command or '--off' in user_command:
+                    features: list = [x for x in user_command if x not in ('--on', '--off', 'ft')]
+                    try:
+                        FT.set_feature(url, token, features, is_enabled=(True if '--on' in user_command else False))
+                    except UnboundLocalError as err:
+                        print(err)
+                        continue
+                    except Exception as err:
+                        print(err)
+                        print("Unpredictable behaviour in k8s set feature.")
+                        continue
+
 
             #    ''' =============================================================================== REPORTS ========================================================================================== '''
-
             case ['ls', 'report'] if not local:
                 Repo.display_reports(url, token)
 

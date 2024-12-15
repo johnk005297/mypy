@@ -179,66 +179,67 @@ class Docker:
         Folder.clean_folder(self._bimeister_log_folder, remove=True)                      # delete folder with *.log files
         return True
 
-    ################# Feature Toggle block #################
+    
+#### DEPRECATED FUNCTIONS ####
+# class Docker:
+#     def get_ft_container(self):
+#         """ Function finds needed container for FT. Returns tuple of container id and name. """
 
-    def get_ft_container(self):
-        """ Function finds needed container for FT. Returns tuple of container id and name. """
-
-        ft_container:tuple = ('keydb', 'redis')
-        containers = self._docker.containers.list()
-        for container in containers:
-            if container.labels.get('com.docker.compose.service', False) in ft_container and container.status == 'running':
-                return (container.id, container.name)
+#         ft_container:tuple = ('keydb', 'redis')
+#         containers = self._docker.containers.list()
+#         for container in containers:
+#             if container.labels.get('com.docker.compose.service', False) in ft_container and container.status == 'running':
+#                 return (container.id, container.name)
         
-        message:str = f"No {ft_container} were found with Running status among containers. Check for it."
-        self.__logger.error(message)
-        print(message)
-        return False
+#         message:str = f"No {ft_container} were found with Running status among containers. Check for it."
+#         self.__logger.error(message)
+#         print(message)
+#         return False
 
-    def get_ft_secret_pass(self):
-        """ Function gets secret from docker container inspectation. """
+#     def get_ft_secret_pass(self):
+#         """ Function gets secret from docker container inspectation. """
 
-        try:
-            client = docker.APIClient(base_url='unix://var/run/docker.sock')
-        except:
-            print("Smth is wrong with the docker. Couldn't run docker.APIClient.")
-            return False
+#         try:
+#             client = docker.APIClient(base_url='unix://var/run/docker.sock')
+#         except:
+#             print("Smth is wrong with the docker. Couldn't run docker.APIClient.")
+#             return False
         
-        id = self.get_ft_container()[0]
-        container = dict(client.inspect_container(id))
+#         id = self.get_ft_container()[0]
+#         container = dict(client.inspect_container(id))
 
-        if '--requirepass' in container['Args']:
-            idx = container['Args'].index('--requirepass')
-            ft_secret = container['Args'][idx + 1]
-            return ft_secret
-        else:
-            return False
+#         if '--requirepass' in container['Args']:
+#             idx = container['Args'].index('--requirepass')
+#             ft_secret = container['Args'][idx + 1]
+#             return ft_secret
+#         else:
+#             return False
 
-    def get_ft_token(self):
-        """ Function provides ft token. """
+#     def get_ft_token(self):
+#         """ Function provides ft token. """
         
-        try:
-            ft_containerId = self.get_ft_container()[0]
-        except TypeError as err:
-            self.__logger.error(err)
-            return False
-        except Exception as err:
-            self.__logger.error(err)
-            return False
+#         try:
+#             ft_containerId = self.get_ft_container()[0]
+#         except TypeError as err:
+#             self.__logger.error(err)
+#             return False
+#         except Exception as err:
+#             self.__logger.error(err)
+#             return False
 
-        ft_secret_pass = self.get_ft_secret_pass()
-        cli = 'keydb-cli'
-        exec_command:str = f"{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN"
+#         ft_secret_pass = self.get_ft_secret_pass()
+#         cli = 'keydb-cli'
+#         exec_command:str = f"{cli} -a {ft_secret_pass} GET FEATURE_ACCESS_TOKEN"
 
-        ft_container = self._docker.containers.get(ft_containerId)
-        get_ft = ft_container.exec_run(exec_command, stderr=False)
-        result = get_ft[1].decode('utf-8')
-        try:
-            ft_token = json.loads(result)['Token']  # json.loads performs a dictionary from the result var, and then ask for it's 'Token' key value.            
-            self.__logger.info(f"Received FT: {ft_token}")
-        except json.decoder.JSONDecodeError as err:
-            self.__logger.error(err)
-            return False
-        self._ft_token = True if ft_token else False
-        return ft_token
+#         ft_container = self._docker.containers.get(ft_containerId)
+#         get_ft = ft_container.exec_run(exec_command, stderr=False)
+#         result = get_ft[1].decode('utf-8')
+#         try:
+#             ft_token = json.loads(result)['Token']  # json.loads performs a dictionary from the result var, and then ask for it's 'Token' key value.            
+#             self.__logger.info(f"Received FT: {ft_token}")
+#         except json.decoder.JSONDecodeError as err:
+#             self.__logger.error(err)
+#             return False
+#         self._ft_token = True if ft_token else False
+#         return ft_token
       
