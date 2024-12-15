@@ -16,7 +16,6 @@ class FeatureToggle:
     __logger = Logs().f_logger(__name__)
     Docker = mdocker.Docker()
     K8s = mk8s.K8S(namespace='bimeister')
-    COS = False
     headers = {'accept': '*/*', 'Content-type': 'application/json; charset=utf-8'}
 
 
@@ -71,32 +70,34 @@ class FeatureToggle:
             response = requests.put(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
             if response.status_code in (200, 201, 204):
                 self.__logger.info(f"{url}/{self._api_Features}/{feature} {response}")
-                print("{0} successfully {1}.".format(feature, 'enabled' if is_enabled else 'disabled'))
+                response = requests.get(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
+                ft_enabled: bool = response.json()
+                print("{0}: {1}".format(feature, 'enabled' if ft_enabled else 'disabled'))
             else:
                 self.__logger.error(response.status_code, '\n', response.text)
                 print(f"{feature} wasn't enabled. Check the log. Error: {response.status_code}.")
         return
 
 
-    def define_COS(self):
-        """ Define which container orchestration system(K8S or Docker) is used. 
-            Temporary not in use, because of swithing work with FT via API. But this could be useful in future.
-        """
-
-        if self.K8s.get_kube_config():
-            self.COS: str = "K8S"
-            return self.COS
-        elif self.Docker.check_docker():
-            self.COS: str = "Docker"
-            return self.COS
-        else:
-            self.__logger.debug("No K8S or Docker has been found on localhost. As well as no connection to the API's could be established.")
-            return False
-
 
 
 #### DEPRECATED FUNCTIONS ####
 # class FeatureToggle:
+
+#     def define_COS(self):
+#         """ Define which container orchestration system(K8S or Docker) is used. 
+#             Temporary not in use, because of swithing work with FT via API. But this could be useful in future.
+#         """
+
+#         if self.K8s.get_kube_config():
+#             self.COS: str = "K8S"
+#             return self.COS
+#         elif self.Docker.check_docker():
+#             self.COS: str = "Docker"
+#             return self.COS
+#         else:
+#             self.__logger.debug("No K8S or Docker has been found on localhost. As well as no connection to the API's could be established.")
+#             return False
 
 #     def get_list_of_features_using_ft_token(self, url, FeatureAccessToken):
 #         """ Get list of features. """

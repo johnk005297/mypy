@@ -283,7 +283,6 @@ class Vsphere:
             print("Error. Check the log!")
             return False
 
-        print(data)
         # recursion to loop through nested lists with dictionaries and get snapshot names
         def collect_snapshot_name(data, depth=0):
             for x in data:
@@ -295,6 +294,10 @@ class Vsphere:
         else:
             return False
         return snapshots
+
+    def print_vm_snapshots(self, vm_name, snapshots: list):
+        print(f"{vm_name} snapshots:")
+        for snap in snapshots: print(snap)
 
     def revert_to_snapshot(self, headers, moId, vm_id, vm_name):
         """ Revert chosen VM(s) to a given snapshot. """

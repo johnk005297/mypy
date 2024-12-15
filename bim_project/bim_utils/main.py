@@ -501,7 +501,8 @@ if __name__ == '__main__':
             elif subcommand == 'show-snap':
                 vm_array: dict = v.get_array_of_vm(headers, args.filter)
                 for value in vm_array.values():
-                    v.get_vm_snapshots(headers, value["moId"], value["name"])
+                    snapshots: list = v.get_vm_snapshots(headers, value["moId"], value["name"])
+                    v.print_vm_snapshots(value["name"], snapshots)
             elif subcommand == 'revert-snap':
                 # vm_array: dict = v.get_array_of_vm(headers, args.filter)
                 # for value in vm_array.values():
