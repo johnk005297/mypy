@@ -11,7 +11,7 @@ disable_warnings(InsecureRequestWarning)
 
 
 class Auth:
-    __slots__ = ('url', 'username', 'password', 'token', 'privateToken')
+    __slots__ = ('url', 'username', 'password', 'token', 'providerId', 'privateToken')
     __api_Providers: str = 'api/Providers'
     __api_Auth_Login: str = 'api/Auth/Login'
     __api_PrivateToken: str = 'api/PrivateToken'
@@ -30,6 +30,7 @@ class Auth:
         self.password = password
         self.token = None
         self.privateToken = None
+        self.providerId = None
 
     def __getattr__(self, item):
         raise AttributeError("Auth class instance has no such attribute: " + item)
@@ -52,7 +53,7 @@ class Auth:
         if not self.get_providerId(self.url):
             return False
         self.get_credentials()
-        return True if self.get_user_access_token(self.url, self.username, self.password) else False
+        return True if self.get_user_access_token(self.url, self.username, self.password, self.providerId) else False
 
     def url_validation(self, url):
 
@@ -126,16 +127,16 @@ class Auth:
             Auth.__logger.error(response.text)
             return False
         if len(api_providers) == 1:
-            providerId = api_providers[0]['id']
-            return providerId
+            self.providerId = api_providers[0]['id']
+            return self.providerId
         else:
             print('    Choose authorization type:')
             for num, obj in enumerate(api_providers, 1):
                 print(f"      {str(num)}. {obj['name']} ({obj['providerTypeOption']})")
             try:
                 inp = int(input('    value: '))
-                providerId = api_providers[inp - 1]['id']
-                return providerId
+                self.providerId = api_providers[inp - 1]['id']
+                return self.providerId
             except ValueError:
                 print('Wrong input.')
                 return False
@@ -152,12 +153,13 @@ class Auth:
         except Exception:
             sys.exit()
 
-    def get_user_access_token(self, url, username, password):
+    def get_user_access_token(self, url, username, password, providerId):
         """ Basically this is a login into system, after what we get an access token. """
 
         payload = {
             "username": username,
-            "password": password
+            "password": password,
+            "providerId": providerId
         }
         data = json.dumps(payload)
         try:
