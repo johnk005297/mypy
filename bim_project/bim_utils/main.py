@@ -501,15 +501,11 @@ if __name__ == '__main__':
             elif subcommand == 'show-snap':
                 vm_array: dict = v.get_array_of_vm(headers, args.filter)
                 for value in vm_array.values():
-                    snapshots: list = v.get_vm_snapshots(headers, value["moId"], value["name"])
+                    snapshots: dict = v.get_vm_snapshots(headers, value["moId"], value["name"])
                     v.print_vm_snapshots(value["name"], snapshots)
-            elif subcommand == 'revert-snap':
-                # vm_array: dict = v.get_array_of_vm(headers, args.filter)
-                # for value in vm_array.values():
-                v.revert_to_snapshot(headers, "snapshot-273740", "vm-125614", "sandbox-3")
-            elif subcommand == 'take-snap':
-                # Logic of taking snaps procedure:
-                # get needed VMs -> power OFF -> take snaps -> restore power state
+            elif subcommand in ('take-snap', 'revert-snap'):
+                # Logic of taking/revering snaps procedure:
+                # get needed VMs -> power OFF -> take/revert snaps -> restore power state
                 vm_array: dict = v.get_array_of_vm(headers, args.filter)
                 if not vm_array:
                     sys.exit("No VM were matched. Exit!")
@@ -517,7 +513,7 @@ if __name__ == '__main__':
                     print(vm_array[vm]['name'])
                 confirm = input("\nIs it correct VM list? (Y/N): ").lower()
                 if confirm not in ('y', 'yes'):
-                    sys.exit("Abort procedure")
+                    sys.exit("Abort procedure!")
                 for value in vm_array.values():
                     v.stop_vm(headers, value["moId"], value["name"])
                 count = 0
@@ -536,11 +532,24 @@ if __name__ == '__main__':
                     elif vm_powered_on_count > 0:
                         time.sleep(5)
                         print(f"Awaiting guest OS shutdown: {vm_powered_on}")
-                        continue                    
+                        continue
                     else:
                         for value in vm_array.values():
-                            v.take_snapshot(headers, value["moId"], value["name"], snap_name=args.name, description=args.desc)
+                            if subcommand == 'take-snap':
+                                v.take_snapshot(headers, value['moId'], value['name'], snap_name=args.name.strip(), description=args.desc)
+                            elif subcommand == 'revert-snap':
+                                snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
+                                snap_id = None
+                                for snap in snapshots.values():
+                                    if snap['snapName'].strip() == args.name.strip():
+                                        snap_id = snap['snapId']
+                                        break
+                                if snap_id:
+                                  v.revert_to_snapshot(headers, snap_id, value['name'])  
+                                else:
+                                    print(f"Incorrect snapshot name for vm: {value['name']}")
                         break
+                # Restoring power state
                 for value in vm_array.values():
                     if value["power_state"] == "POWERED_ON":
                         v.start_vm(headers, value["moId"], value["name"])

@@ -265,10 +265,10 @@ class Vsphere:
             return False
     
     def get_vm_snapshots(self, headers, moId, vm_name):
-        """ Get list of snapshots for a given VM. """
+        """ Get snapshot Id, virtual machine Id, snapshot name for a given VM. """
 
         url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachine/{moId}/snapshot"
-        snapshots: list = []
+        snapshots: dict = {}
         try:
             response = requests.get(url=url, headers=headers, verify=False)
             if response.status_code == 200:
@@ -284,32 +284,40 @@ class Vsphere:
             return False
 
         # recursion to loop through nested lists with dictionaries and get snapshot names
-        def collect_snapshot_name(data, depth=0):
+        def collect_snapshot_name(data, depth=0, count=1):
             for x in data:
-                snapshots.append(f"{' '*depth}{x['name']}")
+                snapshots[count] = {'snapId': x['snapshot']['value'], 'vmId': x['vm']['value'], 'snapName': ' '*depth + x['name']}
                 if x.get('childSnapshotList'):
-                    collect_snapshot_name(x['childSnapshotList'], depth+2)
+                    collect_snapshot_name(x['childSnapshotList'], depth+2, count+1)
         if isinstance(data, dict) and data.get('rootSnapshotList'):
             collect_snapshot_name(data['rootSnapshotList'])
         else:
             return False
         return snapshots
 
-    def print_vm_snapshots(self, vm_name, snapshots: list):
+    def print_vm_snapshots(self, vm_name, snapshots: dict):
         print(f"{vm_name} snapshots:")
-        for snap in snapshots: print(snap)
+        for snap in snapshots.values(): print(snap['snapName'])
 
-    def revert_to_snapshot(self, headers, moId, vm_id, vm_name):
+    def revert_to_snapshot(self, headers, moId, vm_name):
         """ Revert chosen VM(s) to a given snapshot. """
 
         url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachineSnapshot/{moId}/RevertToSnapshot_Task"
         try:
-            response = requests.post(url=url, headers=headers, verify=False)
+            payload = {
+                        "suppressPowerOn": True
+                        }
+            response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
             if response.status_code == 200:
                 data = response.json() if bool(response.text) else False
-                self.__logger.info(f"Revert to snapshot VM: {vm_name}")
-                print(data)
+                msg: str = f"Revert to snapshot VM: {vm_name}"
+                self.__logger.info(msg)
+                print(msg)
                 return data
+            elif response.status_code == 500:
+                data = response.json() if bool(response.text) else False
+                self.__logger.error(data)
+                return False
         except requests.exceptions.HTTPError as err:
             self.__logger.error(err)
             print("Error. Check the log!")

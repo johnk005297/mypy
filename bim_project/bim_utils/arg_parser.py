@@ -33,6 +33,7 @@ class Parser():
         list_snap_parser = vcenter_subparser.add_parser('show-snap', help='Print list of snapshots for a given VMs', parents=[vcenter_parent_parser])
         list_snap_parser.add_argument('--filter', required=True, help='Filter VMs by occurrences in the name')
         revert_snap_parser = vcenter_subparser.add_parser('revert-snap', help='Revert to snapshot for a given VMs', parents=[vcenter_parent_parser])
+        revert_snap_parser.add_argument('--name', required=True, help='Snapshot name')
         revert_snap_parser.add_argument('--filter', required=False, help='Filter VMs by occurrences in the name')
         take_snap_parser = vcenter_subparser.add_parser('take-snap', help='Take snaphost for a given VMs', parents=[vcenter_parent_parser])
         take_snap_parser.add_argument('--name', required=False, default='{}'.format(datetime.today().strftime("%d.%m.%Y_%H:%M:%S")), help='vSphere snapshot name')
