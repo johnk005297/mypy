@@ -477,7 +477,8 @@ if __name__ == '__main__':
             if not headers:
                 sys.exit()
             elif subcommand == 'list-vm':
-                vm_array = v.get_array_of_vm(headers, args.filter, args.powered_on)
+                exclude_vm: list = args.exclude.split() if args.exclude else []
+                vm_array = v.get_array_of_vm(headers, exclude_vm, args.filter, args.powered_on)
                 v.print_list_of_vm(vm_array)
             elif subcommand == 'restart-vm':
                 if args.all:
@@ -485,28 +486,34 @@ if __name__ == '__main__':
                     if not confirm:
                         print("Restart procedure aborted!")
                         sys.exit()
-                    vm_array = v.get_array_of_vm(headers, powered_on=True)
+                    exclude_vm: list = args.exclude.split() if args.exclude else []
+                    vm_array = v.get_array_of_vm(headers, exclude_vm, powered_on=True)
                     v.restart_os(headers, vm_array, args.exclude_vm)
                 else:
-                    vm_array = v.get_array_of_vm(headers, args.filter, powered_on=True)
+                    exclude_vm: list = args.exclude.split() if args.exclude else []
+                    vm_array = v.get_array_of_vm(headers, exclude_vm, args.filter, powered_on=True)
                     v.restart_os(headers, vm_array, args.exclude_vm)
             elif subcommand == 'start-vm':
-                vm_array: dict = v.get_array_of_vm(headers, args.filter)
+                exclude_vm: list = args.exclude.split() if args.exclude else []
+                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
                 for value in vm_array.values():
                     v.start_vm(headers, value["moId"], value["name"])
             elif subcommand == 'stop-vm':
-                vm_array: dict = v.get_array_of_vm(headers, args.filter)
+                exclude_vm: list = args.exclude.split() if args.exclude else []
+                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
                 for value in vm_array.values():
                     v.stop_vm(headers, value["moId"], value["name"])
             elif subcommand == 'show-snap':
-                vm_array: dict = v.get_array_of_vm(headers, args.filter)
+                exclude_vm: list = args.exclude.split() if args.exclude else []
+                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
                 for value in vm_array.values():
                     snapshots: dict = v.get_vm_snapshots(headers, value["moId"], value["name"])
                     v.print_vm_snapshots(value["name"], snapshots)
             elif subcommand in ('take-snap', 'revert-snap'):
                 # Logic of taking/revering snaps procedure:
                 # get needed VMs -> power OFF -> take/revert snaps -> restore power state
-                vm_array: dict = v.get_array_of_vm(headers, args.filter)
+                exclude_vm: list = args.exclude.split() if args.exclude else []
+                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
                 if not vm_array:
                     sys.exit("No VM were matched. Exit!")
                 for vm in vm_array:

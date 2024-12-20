@@ -109,13 +109,6 @@ class Auth:
                 continue
             continue
 
-    def get_local_providerId(self, url):  # temporary disabled. Function needs to check the user's privileges.
-        api_providers_response = requests.get(url=f"{url}/{self.__api_Providers}", verify=False)
-        providers: list = api_providers_response.json()
-        for provider in providers:
-            if provider.get('name') == 'Local':
-                return provider['id']
-
     def get_providerId(self, url):
 
         response = requests.get(url=f"{url}/{self.__api_Providers}", verify=False, allow_redirects=False,

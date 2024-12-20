@@ -126,24 +126,9 @@ class Vsphere:
             print("Couldn't get VM power state status. Check the log!")
             return False
 
-    def get_array_of_vm(self, headers, search_for='', powered_on=False):
+    def get_array_of_vm(self, headers, exclude: list, search_for='', powered_on=False):
         """ Function returns an array of VM in vSphere's cluster in format {'vm-moId': 'vm-name'}. """
 
-        # Getting a pool of VMs to be excluded from the reboot list.
-        folders = ('Implementation')
-        groups_to_exclude = self.get_folders_group_id(headers, folders)
-        exclude_list: list = []
-        for group in groups_to_exclude:
-            url = f"{self.url}/rest/vcenter/vm?filter.folders={group}"
-            try:
-                response = requests.get(url=url, headers=headers, verify=False)
-            except ConnectionError as err:
-                self.__logger.error(err)
-                print(self.connection_err_msg)
-                return False
-            data = response.json()
-            for vm in data['value']:
-                exclude_list.append(vm['name'])
         try:
             response = requests.get(url=f"{self.url}/api/vcenter/vm", headers=headers, verify=False)
         except ConnectionError as err:
@@ -155,14 +140,14 @@ class Vsphere:
             data = response.json()
             if not search_for:
                 if powered_on:
-                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] not in exclude_list }
+                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] and vm['name'] not in exclude }
                 else:
-                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] not in exclude_list}
+                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] and vm['name'] not in exclude }
             else:
                 if powered_on:
-                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] not in exclude_list and re.search(search_for.replace('*', '.*'), vm['name']) }
+                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude }
                 else:
-                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] not in exclude_list and re.search(search_for.replace('*', '.*'), vm['name']) }
+                    vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude }
         else:
             self.__logger.error(response.text)
             print("Error of getting list of VMs. Check the logs!")

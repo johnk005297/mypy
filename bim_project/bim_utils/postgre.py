@@ -140,7 +140,7 @@ class Queries:
                         FOR view_record IN
                             SELECT schemaname, matviewname
                             FROM pg_matviews
-                            WHERE matviewname LIKE 'sf_matview_%'
+                            WHERE matviewname LIKE '{0}'
                         LOOP
                             EXECUTE 'REFRESH MATERIALIZED VIEW '
                                     || quote_ident(view_record.schemaname) || '.'
@@ -148,20 +148,21 @@ class Queries:
                         END LOOP;
                     END;
                     $$;
-                    select schemaname, matviewname from pg_matviews where matviewname LIKE '{0}';
+                    select matviewname from pg_catalog.pg_matviews where matviewname LIKE '{0}';
                 """.format(name.replace('*', '%'))
     
     @classmethod
     def swith_externalKey_for_mdm_connector(cls, value=''):
-        """ Query for switching ExternalKey. Requires for MDM connector integration. """
+        """ Query for switching ExternalKey. Requires for MDM connector integration. 
+            Query applies in data_synchronizer_db.
+        """
 
         return """
                     update "ExternalSystems" 
                     set "IsDefault" = false
-                    from (
-                        select "ExternalKey" as key from "ExternalSystems"
-                        ) as get_key
-                    where "ExternalKey" = get_key.key;
+                    from 
+                        ( select "Id" as id from "ExternalSystems" ) as extSysObjId
+                    where "Id" = extSysObjId.id;
 
                     update "ExternalSystems" set "IsDefault" = true 
                     where "ExternalKey" = 'SDI-COD-{0}' ;
