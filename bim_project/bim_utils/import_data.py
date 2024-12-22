@@ -341,32 +341,34 @@ class Abac:
     def __init__(self):
         pass
 
-    def collect_asset_performance_management_data(self, url, permissionObject_file=None, roles_file=None, rolesMapping_file=None):
+    def collect_asset_performance_management_data(self, url, permissionObject_file=None, roles_file=None, rolesMapping_file=None, notification_file=None):
         """ Import abac files for asset-performance-management service. """
 
-        # headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         data: dict = {}
-        for x in (permissionObject_file, roles_file, rolesMapping_file):
+        for x in (permissionObject_file, roles_file, rolesMapping_file, notification_file):
             if x and permissionObject_file:
                 data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_asset_performance_management}", 'file': permissionObject_file}})
             if x and roles_file:
                 data.update({'Roles': {'url': f"{url}/{self.__api_upload_roles_asset_performance_management}", 'file': roles_file}})
             if x and rolesMapping_file:
                 data.update({'Roles_Mapping': {'url': f"{url}/{self.__api_upload_roles_mapping_asset_performance_management}", 'file': rolesMapping_file}})
+            if x and notification_file:
+                data.update({'Notifications': {'url': f"{url}/{self.__api_upload_event_rules_asset_performance_management}", 'file': notification_file}})
         return data
 
-    def collect_maintenance_planning_data(self, url, permissionObject_file=None, roles_file=None, rolesMapping_file=None):
+    def collect_maintenance_planning_data(self, url, permissionObject_file=None, roles_file=None, rolesMapping_file=None, notification_file=None):
         """ Import abac files for maintenance-planning service. """
 
-        # headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         data: dict = {}
-        for x in (permissionObject_file, roles_file, rolesMapping_file):
+        for x in (permissionObject_file, roles_file, rolesMapping_file, notification_file):
             if x and permissionObject_file:
                 data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_maintenance_planning}", 'file': permissionObject_file}})
             if x and roles_file:
                 data.update({'Roles': {'url': f"{url}/{self.__api_upload_roles_maintenance_planning}", 'file': roles_file}})
             if x and rolesMapping_file:
                 data.update({'Roles_Mapping': {'url': f"{url}/{self.__api_upload_roles_mapping_maintenance_planning}", 'file': rolesMapping_file}})
+            if x and notification_file:
+                data.update({'Notifications': {'url': f"{url}/{self.__api_upload_event_rules_maintenance_planning}", 'file': notification_file}})            
         return data
 
     def import_data(self, token, data: dict):

@@ -26,12 +26,12 @@ class Parser():
         abac_subparser = abac_parser.add_subparsers(help='Subcommands for "abac" commands')
         abac_import_parser = abac_subparser.add_parser('import', help='Import permission objects, roles and roles mapping', parents=[abac_parent_parser])
         abac_import_parser_group = abac_import_parser.add_mutually_exclusive_group(required=False)
-        abac_import_parser_group.add_argument('-apm', '--asset-performance-management', required=False, action="store_true", help='Flag for asset performance management service')
-        abac_import_parser_group.add_argument('-mp', '--maintenance-planning', required=False, action="store_true", help='Flag for maintenance planning service')
+        abac_import_parser_group.add_argument('-apm', '--asset-performance-management', required=False, action="store_true", help='Asset performance management service')
+        abac_import_parser_group.add_argument('-mp', '--maintenance-planning', required=False, action="store_true", help='Maintenance planning service')
         abac_import_parser.add_argument('--permission-objects', required=False, help='Config file with permission objects')
         abac_import_parser.add_argument('--roles', required=False, help='Config file with roles')
         abac_import_parser.add_argument('--roles-mapping', required=False, help='Config file with roles mapping')
-
+        abac_import_parser.add_argument('--notification', required=False, help='Config file with notifications')
 
         # create parent parser for "vsphere" subcommand
         vcenter_parent_parser = argparse.ArgumentParser(add_help=False)

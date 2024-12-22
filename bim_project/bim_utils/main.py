@@ -424,10 +424,10 @@ if __name__ == '__main__':
             if not Auth.establish_connection():
                 sys.exit()
             if args.maintenance_planning:
-                data: dict = abac.collect_maintenance_planning_data(Auth.url, permissionObject_file=args.permission_objects, roles_file=args.roles, rolesMapping_file=args.roles_mapping)
+                data: dict = abac.collect_maintenance_planning_data(Auth.url, permissionObject_file=args.permission_objects, roles_file=args.roles, rolesMapping_file=args.roles_mapping, notification_file=args.notification)
                 abac.import_data(Auth.token, data)
             elif args.asset_performance_management:
-                data: dict = abac.collect_asset_performance_management_data(Auth.url, permissionObject_file=args.permission_objects, roles_file=args.roles, rolesMapping_file=args.roles_mapping)
+                data: dict = abac.collect_asset_performance_management_data(Auth.url, permissionObject_file=args.permission_objects, roles_file=args.roles, rolesMapping_file=args.roles_mapping, notification_file=args.notification)
                 abac.import_data(Auth.token, data)
         elif args.command == 'git':
             g = git.Git()
