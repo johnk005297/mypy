@@ -49,7 +49,6 @@ class Auth:
             return False
         if not self.url_validation(self.url):
             return False
-        # self.providerId = self.get_providerId(self.url)
         if not self.get_providerId(self.url):
             return False
         self.get_credentials()
@@ -128,10 +127,13 @@ class Auth:
                 print(f"      {str(num)}. {obj['name']} ({obj['providerTypeOption']})")
             try:
                 inp = int(input('    value: '))
+                if inp > len(api_providers):
+                    print("Incorrect input")
+                    return False
                 self.providerId = api_providers[inp - 1]['id']
                 return self.providerId
             except ValueError:
-                print('Wrong input.')
+                print('Input should be a number')
                 return False
 
     def get_credentials(self):

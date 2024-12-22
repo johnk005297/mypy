@@ -173,7 +173,6 @@ class License:
 
         licenses: list = self.get_licenses(url, token, username, password)
         license_status: bool = self.get_license_status(url, token, username, password)
-
         if not license_status:
             for number, license in enumerate(licenses, 1):
                 print(f"\n  License {number}:")

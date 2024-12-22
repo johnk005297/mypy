@@ -4,8 +4,6 @@ import logging
 import sys
 
 
-
-
 class Logs:
 
     def __init__(self):
@@ -21,20 +19,17 @@ class Logs:
                 print(f"Couldn't create bimUtils_logs folder in: {os.getcwd()}\n{err}")
                 sys.exit()
 
-
     def http_connect(self):
         def log_message(self, url):
             message:str = f"Starting new HTTP connection: {url}"
             return message
         return log_message
 
-
     def http_response(self):
         def log_message(self, url, method, path_url, status_code):
             message:str = f"{url} \"{method} {path_url} \" {status_code}"
             return message
         return log_message
-
 
     def f_logger(self, module_name, logLevel=logging.DEBUG):
         """ Create a custom logger with file output. """
@@ -57,7 +52,6 @@ class Logs:
         logger.addHandler(f_handler)
 
         return logger
-
 
     def set_full_access_to_logs(self):
         """ Need to make bimUtils_logs folder accessible for all users to escape errors at launch. """

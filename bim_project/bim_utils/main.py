@@ -52,6 +52,8 @@ def main(local=False):
         return False
 
     url, token, username, password = Auth.url, Auth.token, Auth.username, Auth.password
+    if not License_main.get_license_status(url, token, username, password):
+        print("Warning!!! Incorrect license detected! Please check!".upper())
     while True:
         user_command = AppMenu_main.get_user_command()
 
@@ -212,7 +214,7 @@ def main(local=False):
                 print(f"\n{private_token}")
 
             case ['token'] if not local:
-                user_access_token = Auth.get_user_access_token(url, username, password)
+                user_access_token = Auth.get_user_access_token(url, username, password, Auth.providerId)
                 print(f"\n{user_access_token}")
 
             case ['sh']:
@@ -416,6 +418,17 @@ if __name__ == '__main__':
     try:
         if args.version:
             print(app_menu.AppMenu.__version__)
+        elif args.command == 'abac':
+            abac = import_data.Abac()
+            Auth = auth.Auth()
+            if not Auth.establish_connection():
+                sys.exit()
+            if args.maintenance_planning:
+                data: dict = abac.collect_maintenance_planning_data(Auth.url, permissionObject_file=args.permission_objects, roles_file=args.roles, rolesMapping_file=args.roles_mapping)
+                abac.import_data(Auth.token, data)
+            elif args.asset_performance_management:
+                data: dict = abac.collect_asset_performance_management_data(Auth.url, permissionObject_file=args.permission_objects, roles_file=args.roles, rolesMapping_file=args.roles_mapping)
+                abac.import_data(Auth.token, data)
         elif args.command == 'git':
             g = git.Git()
             project_id = g.get_bimeister_project_id()

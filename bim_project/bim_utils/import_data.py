@@ -13,6 +13,7 @@ from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 
+logger = Logs().f_logger(__name__)
 
 class Import_data:
 
@@ -28,7 +29,6 @@ class Import_data:
     Export_data = export_data.Export_data()
     License = license.License()
     possible_request_errors = auth.Auth().possible_request_errors
-    __logger = Logs().f_logger(__name__)
 
     def __init__(self):
         self.export_serverId = None
@@ -42,7 +42,7 @@ class Import_data:
             ask_for_confirmation: bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
             return True if ask_for_confirmation == 'y' else False
         elif not server_info:
-            self.__logger.error("Can't local server info ID in server_info file.")
+            logger.error("Can't local server info ID in server_info file.")
             return False
         else:
             self.export_serverId = server_info.split()[1]
@@ -69,7 +69,6 @@ class Import_data:
 
         # Read the file with workflows in the list without blank lines
         workflows = [x for x in File.read_file(f'{self._transfer_folder}/{self._workflows_folder}', self.Export_data._exported_workflows_list).split('\n') if x.split()]
-
         count = Tools.counter()
         for workflow in workflows:
             id = workflow.split(' '*2, 2)[1].strip()
@@ -78,20 +77,19 @@ class Import_data:
                 with open(f'{self._transfer_folder}/{self._workflows_folder}/{id}.zip', mode='rb') as file:
                     response = requests.post(url=url_import, headers=headers, files={'file': file}, verify=False)
                     time.sleep(0.1)
-
                     if response.status_code != 200:
                         print(f"  {count()}) ERROR {response.status_code} >>> {name}, id: {id}.")
-                        self.__logger.error(response.text)
+                        logger.error(response.text)
                         continue
 
-                    self.__logger.debug(f'{response.request.method} "{name}: {id}" {response.status_code}')
+                    logger.debug(f'{response.request.method} "{name}: {id}" {response.status_code}')
                     print(f"   {count()}) {name}.")   # display the name of the process in the output
 
             except FileNotFoundError:
                 print(f"Process not found: {name}")
                 continue
             except:
-                self.__logger.error()
+                logger.error()
                 continue
 
         return
@@ -127,7 +125,7 @@ class Import_data:
                     post_request = requests.post(url=url_create_workflow_import, data=post_payload, headers=headers_import, verify=False)  # verify=False to eliminate SSL check which causes Error
                     post_response = post_request.json()
                 except self.possible_request_errors as err:
-                    self.__logger.error(f"{err}\n{post_request.text}")
+                    logger.error(f"{err}\n{post_request.text}")
                     return False
 
                 bimClass_id = self.get_BimClassId_of_current_process(post_response['originalId'], url, token)
@@ -155,8 +153,8 @@ class Import_data:
                     requests.put(url=f"{url_create_workflow_import}/{post_response['originalId']}", data=changed_put_payload, headers=headers_import, verify=False)  # /api/WorkFlows/{workFlowOriginalId}
                     time.sleep(0.2)
                 except self.possible_request_errors as err:
-                    self.__logger.error(err)
-                    self.__logger.debug("Workflow name: " + workflow["name"])
+                    logger.error(err)
+                    logger.debug("Workflow name: " + workflow["name"])
                     print(f"Error with the workflow {workflow['name']} import. Check the logs.")
                     return False
                 '''  END OF PUT REQUEST  '''
@@ -168,7 +166,7 @@ class Import_data:
                 try:           
                     post_xml_request = requests.post(url=f"{url_create_workflow_import}/{post_response['originalId']}/Diagram?contentType=file", headers=headers_for_xml_import, data=payload, files=files, verify=False)
                 except self.possible_request_errors as err:
-                    self.__logger.error(f"{err}\n{post_xml_request.text}")
+                    logger.error(f"{err}\n{post_xml_request.text}")
 
                 print("   - " + post_response['name'] + " " + ('' if post_xml_request.status_code == 200 else "  --->  error"))
                 time.sleep(0.2)
@@ -245,13 +243,12 @@ class Import_data:
                     File.replace_str_in_file(modified_OM_file, modified_OM_file, value_from_export_json, insert_data[key][key_from_export_json])
                     time.sleep(0.1)
                 except (KeyError, ValueError, TypeError, UnicodeError, UnicodeDecodeError, UnicodeEncodeError, SyntaxError) as err:
-                    self.__logger.error(err)
+                    logger.error(err)
                     return False
 
-        self.__logger.info(f"Preparation object model file is finished. '{self.Export_data._object_model_file}' was altered into a '{self._modified_object_model_file}' file.")
+        logger.info(f"Preparation object model file is finished. '{self.Export_data._object_model_file}' was altered into a '{self._modified_object_model_file}' file.")
         print("\n   - preparing object model file:        done")
         return True
-
 
     def fix_defaulValues_in_object_model(self):
         '''  The function checks for 'defaultValues' keys in 'bimProperties'. If all values in the list are null, it will be replaced with an empty list [].  '''
@@ -271,11 +268,10 @@ class Import_data:
                 json.dump(modified_obj_model_json, file, ensure_ascii=False, indent=4)
             if count > 0:
                 print(f"   - corrupted 'defaultValues':       {count}")
-            self.__logger.info(f"Fixing defaultValues in '{self._modified_object_model_file}' file is finished. Corrupted defaulValues: {count}")
+            logger.info(f"Fixing defaultValues in '{self._modified_object_model_file}' file is finished. Corrupted defaulValues: {count}")
             return True
         else:
             return False
-
 
     def post_object_model(self, url, token):
 
@@ -287,18 +283,17 @@ class Import_data:
         try:
             post_request = requests.post(url=url_post_object_model, data=data.encode("utf-8"),  headers=headers_import, verify=False)
         except self.possible_request_errors as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Error with POST object model. Check the logs.")
             return False
 
         if post_request.status_code not in (200, 201, 204):
-            self.__logger.error(f"\n{post_request.text}")
+            logger.error(f"\n{post_request.text}")
             print("   - post object model:                  error ", post_request.status_code)
             return False
         else:
             print("   - post object model:                  done")
             return True
-
 
     def import_object_model(self, url, token):
         server_validation: bool = self.validate_import_server(url, token)
@@ -317,7 +312,6 @@ class Import_data:
             print("No object_model for import." if not os.path.isfile(f'{self._transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}') else "")
             return False
 
-
     def import_workflows(self, url, token):
         server_validation: bool = self.validate_import_server(url, token)
         workflows_folder_exists: bool = os.path.isdir(self._transfer_folder + '/' + self._workflows_folder)
@@ -330,3 +324,68 @@ class Import_data:
         else:
             print("No workflows for import." if not os.listdir(f'{self._transfer_folder}/{self._workflows_folder}') else "")
             return False
+
+
+class Abac:
+
+    __api_upload_permission_objects_asset_performance_management: str = "api/asset-performance-management/AbacConfiguration/UploadPermissionObjectsConfiguration"
+    __api_upload_roles_asset_performance_management: str = "api/asset-performance-management/AbacConfiguration/UploadRolesConfiguration"
+    __api_upload_roles_mapping_asset_performance_management: str = "api/asset-performance-management/AbacConfiguration/UploadRolesMappingConfiguration"
+    __api_upload_event_rules_asset_performance_management: str = "api/asset-performance-management/NotificationHub/upload-event-rules"
+
+    __api_upload_permission_objects_maintenance_planning: str = "api/maintenance-planning/AbacConfiguration/UploadPermissionObjectsConfiguration"
+    __api_upload_roles_maintenance_planning: str = "api/maintenance-planning/AbacConfiguration/UploadRolesConfiguration"
+    __api_upload_roles_mapping_maintenance_planning: str = "api/maintenance-planning/AbacConfiguration/UploadRolesMappingConfiguration"
+    __api_upload_event_rules_maintenance_planning: str = "api/EnterpriseAssetManagementNotificationHub/upload-event-rules"
+
+    def __init__(self):
+        pass
+
+    def collect_asset_performance_management_data(self, url, permissionObject_file=None, roles_file=None, rolesMapping_file=None):
+        """ Import abac files for asset-performance-management service. """
+
+        # headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        data: dict = {}
+        for x in (permissionObject_file, roles_file, rolesMapping_file):
+            if x and permissionObject_file:
+                data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_asset_performance_management}", 'file': permissionObject_file}})
+            if x and roles_file:
+                data.update({'Roles': {'url': f"{url}/{self.__api_upload_roles_asset_performance_management}", 'file': roles_file}})
+            if x and rolesMapping_file:
+                data.update({'Roles_Mapping': {'url': f"{url}/{self.__api_upload_roles_mapping_asset_performance_management}", 'file': rolesMapping_file}})
+        return data
+
+    def collect_maintenance_planning_data(self, url, permissionObject_file=None, roles_file=None, rolesMapping_file=None):
+        """ Import abac files for maintenance-planning service. """
+
+        # headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        data: dict = {}
+        for x in (permissionObject_file, roles_file, rolesMapping_file):
+            if x and permissionObject_file:
+                data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_maintenance_planning}", 'file': permissionObject_file}})
+            if x and roles_file:
+                data.update({'Roles': {'url': f"{url}/{self.__api_upload_roles_maintenance_planning}", 'file': roles_file}})
+            if x and rolesMapping_file:
+                data.update({'Roles_Mapping': {'url': f"{url}/{self.__api_upload_roles_mapping_maintenance_planning}", 'file': rolesMapping_file}})
+        return data
+
+    def import_data(self, token, data: dict):
+        """ Import data from collected functions above. """
+
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        for key,value in data.items():
+            try:
+                with open(value['file'], mode='rb') as file:
+                    response = requests.post(url=value['url'], files={'file': file}, headers=headers, verify=False)
+                    if response.status_code == 200:
+                        logger.debug(value['url'])
+                        print(f"{key} configuration uploaded successfully")
+                    else:
+                        print(f"Error: {response.status_code}")
+                        print(response.text)
+            except FileNotFoundError as err:
+                logger.error(err)
+                print(err)
+            except Exception as err:
+                logger.error(err)
+                print("Error! Check the log.")
