@@ -397,7 +397,6 @@ def main(local=False):
 
             #    ''' =============================================================================== ABAC ============================================================================================= '''
             case ['abac', 'import', *_]:
-                # abac import data-sync --permission-objects permissionObjects.json --roles-mapping rolesMapping.json --roles roles.json asset --roles roles.json --roles-mapping roleMapping.json --events EventRules.json
                 args = user_command[2:]
                 # accessible services and keys
                 svc = ('data-sync', 'asset', 'maintenance')
@@ -536,11 +535,11 @@ if __name__ == '__main__':
                         sys.exit()
                     exclude_vm: list = args.exclude.split() if args.exclude else []
                     vm_array = v.get_array_of_vm(headers, exclude_vm, powered_on=True)
-                    v.restart_os(headers, vm_array, args.exclude_vm)
+                    v.restart_os(headers, vm_array)
                 else:
                     exclude_vm: list = args.exclude.split() if args.exclude else []
                     vm_array = v.get_array_of_vm(headers, exclude_vm, args.filter, powered_on=True)
-                    v.restart_os(headers, vm_array, args.exclude_vm)
+                    v.restart_os(headers, vm_array)
             elif subcommand == 'start-vm':
                 exclude_vm: list = args.exclude.split() if args.exclude else []
                 vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)

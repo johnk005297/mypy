@@ -154,7 +154,7 @@ class Vsphere:
             return False
         return vm_array
 
-    def restart_os(self, headers, vm_array, exclude_list):
+    def restart_os(self, headers, vm_array):
         """ Function performs OS restart for a given array. """
 
         if not isinstance(vm_array, dict):
@@ -162,8 +162,6 @@ class Vsphere:
             return False
         counter, number = Tools.counter(), 0
         for value in vm_array.values():
-            if exclude_list and value['name'] in exclude_list:
-                continue
             url: str = f"{self.url}/api/vcenter/vm/{value['moId']}/guest/power?action=reboot"
             response = requests.post(url=url, headers=headers, verify=False)
             if response.status_code in (200, 204):

@@ -408,3 +408,44 @@ class Abac:
             except Exception as err:
                 logger.error(err)
                 print("Error! Check the log.")
+
+#     def help_function(self, ls=False, export=False, remove=False):
+#         """ Provide help info for the user. """
+
+#         ls_workflows: str = """usage: ls workflows [--help] [--startswith=\"TEXT TO FIND\" | --search=\"TEXT TO FIND\"] [--draft] [--active] [--archived] [--all]
+
+# options:
+#   -h, --help    Show this help message
+#   --startswith  Pattern to search from the beginning of the line
+#   --search      Pattern to search at any place of the line
+#   --draft       Draft node of workflows
+#   --active      Active node of workflows
+#   --archived    Archived node of workflows
+#   --all         All three nodes
+#   --type        Workflows type
+# """
+#         export_workflows: str = """usage: export workflows [--help] [--startswith=\"TEXT TO FIND\" | --search=\"TEXT TO FIND\" | --id="WORKFLOW(S) ID"] [--draft] [--active] [--archived] [--all]
+
+# options:
+#   -h, --help    Show this help message
+#   --startswith  Pattern to search from the beginning of the line
+#   --search      Pattern to search at any place of the line
+#   --id          One or more workflow ID separated with whitespace
+#   --draft       Draft node of workflows
+#   --active      Active node of workflows
+#   --archived    Archived node of workflows
+#   --all         All three nodes
+# """
+#         remove_workflows: str = """usage: rm workflows [--help] [--draft] [--active] [--archived] [--all]
+
+# options:
+#   -h, --help    Show this help message
+#   --draft       Draft node of workflows
+#   --active      Active node of workflows
+#   --archived    Archived node of workflows
+#   --all         All three nodes
+# """
+
+#         if ls: print(ls_workflows)
+#         elif export: print(export_workflows)
+#         elif remove: print(remove_workflows)

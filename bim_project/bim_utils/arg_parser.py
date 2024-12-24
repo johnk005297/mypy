@@ -64,6 +64,7 @@ class Parser():
         stop_vm_parser.add_argument('--filter', required=True, help='Filter VMs by occurrences in the name')
         stop_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
         restart_vm_parser = vcenter_subparser.add_parser('restart-vm', help='Perform guest OS reboot for VMs in implementation cluster', parents=[vcenter_parent_parser])
+        restart_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
         restart_vm_group = restart_vm_parser.add_mutually_exclusive_group(required=False)
         restart_vm_group.add_argument('--filter', required=False, help='Filter VMs by occurrences in the name')
         restart_vm_group.add_argument('--all', required=False, action="store_true", help='Restart all working VMs in implementation cluster')
