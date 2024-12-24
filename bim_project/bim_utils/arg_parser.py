@@ -19,7 +19,7 @@ class Parser():
         # create main subparser
         subparser = parser.add_subparsers(dest='command', required=False)
 
-        # create parent parser for "abac" subcommand
+        # create parent parser for "abac" command
         abac_parent_parser = argparse.ArgumentParser(add_help=False)
         # create parser for "abac" subcommand
         abac_parser = subparser.add_parser('abac', help='Perform operations with Attribute-Based Access Control files')
@@ -33,7 +33,7 @@ class Parser():
         abac_import_parser.add_argument('--roles-mapping', required=False, help='Config file with roles mapping')
         abac_import_parser.add_argument('--notification', required=False, help='Config file with notifications')
 
-        # create parent parser for "vsphere" subcommand
+        # create parent parser for "vsphere" command
         vcenter_parent_parser = argparse.ArgumentParser(add_help=False)
         vcenter_parent_parser.add_argument('-u', '--user', required=False, help='Login account for vCenter')
         vcenter_parent_parser.add_argument('-p', '--password', required=False, help='Password for vCenter')

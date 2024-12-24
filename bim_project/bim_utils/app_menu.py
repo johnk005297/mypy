@@ -65,7 +65,7 @@ def local_menu():
                             \n   User                                                                     \
                             \n      sh                          run terminal command(current host)        \
                             \n      ssh connect                 run terminal command(remote host)         \
-                            \n      ls -l                       list current folder content               \
+                            \n      ls                          list current folder content               \
                             \n                                                                            \
                             \n   Docker                                                                   \
                             \n      docker -h                   get a list of available commands          \
@@ -82,7 +82,7 @@ def local_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.78.11'
+    __version__ = '1.78.12'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):

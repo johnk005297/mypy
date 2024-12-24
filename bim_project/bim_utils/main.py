@@ -17,7 +17,6 @@ import git
 import re
 import time
 from tools import Folder, File, Tools
-from reports import Reports
 from log import Logs
 
 
@@ -29,11 +28,10 @@ def main(local=False):
     License_main = license.License()
     Export_data = export_data.Export_data()
     Import_data_main = import_data.Import_data()
+    Abac = import_data.Abac()
     Docker = mdocker.Docker()
     K8s = mk8s.K8S(namespace='bimeister')
     FT = featureToggle.FeatureToggle()
-    Repo = Reports()
-
 
 
 # ---------------------------------------------------------
@@ -220,8 +218,11 @@ def main(local=False):
             case ['sh']:
                 Tools.run_terminal_command()
             
-            case ['ls', '-l']:
-                Tools.run_terminal_command(Folder.get_content())
+            case ['ls', *_]:
+                if len(user_command) == 1:
+                    Tools.run_terminal_command(Folder.get_content())
+                else:
+                    Tools.run_terminal_command(Folder.get_content(user_command[1]))
             
             case ['ssh', 'connect']:
                 connection_data:list = input("Enter 'remote host' and 'username' separated by a space: ").strip().split()
@@ -394,10 +395,55 @@ def main(local=False):
                         print("Unpredictable behaviour in k8s set feature.")
                         continue
 
-
-            #    ''' =============================================================================== REPORTS ========================================================================================== '''
-            case ['ls', 'report'] if not local:
-                Repo.display_reports(url, token)
+            #    ''' =============================================================================== ABAC ============================================================================================= '''
+            case ['abac', 'import', *_]:
+                # abac import data-sync --permission-objects permissionObjects.json --roles-mapping rolesMapping.json --roles roles.json asset --roles roles.json --roles-mapping roleMapping.json --events EventRules.json
+                args = user_command[2:]
+                # accessible services and keys
+                svc = ('data-sync', 'asset', 'maintenance')
+                keys= ('--roles', '--roles-mapping', '--permission-objects', '--events')
+                incorrect_keys = [x for x in args if x.startswith('--') and x not in keys]
+                if incorrect_keys:
+                    print("Attention! Incorrect key!")
+                parsed_args = dict()
+                for x in range(len(args)):
+                    if args[x] in svc and args[x] not in parsed_args.keys():
+                        parsed_args[args[x]] = {}
+                        for y in range(x+1, len(args)):
+                            if args[y] not in svc:
+                                if args[y] in keys:
+                                    try:
+                                        parsed_args[args[x]].update({args[y]: args[y+1]})
+                                    except IndexError:
+                                        print("Incorrect input! Check for the filename after the --[key]")
+                            else:
+                                break
+                if parsed_args.get('maintenance'):
+                    data: dict = Abac.collect_maintenance_planning_data(
+                                                                        url,
+                                                                        permissionObjects_file=parsed_args['maintenance'].get('--permission-objects'),
+                                                                        roles_file=parsed_args['maintenance'].get('--roles'),
+                                                                        rolesMapping_file=parsed_args['maintenance'].get('--roles-mapping'),
+                                                                        notification_file=parsed_args['maintenance'].get('--events')
+                                                                        )
+                    Abac.import_abac(token, data, 'maintenance-planning')
+                if parsed_args.get('asset'):
+                    data: dict = Abac.collect_asset_performance_management_data(
+                                                                                url,
+                                                                                permissionObjects_file=parsed_args['asset'].get('--permission-objects'),
+                                                                                roles_file=parsed_args['asset'].get('--roles'),
+                                                                                rolesMapping_file=parsed_args['asset'].get('--roles-mapping'),
+                                                                                notification_file=parsed_args['asset'].get('--events')                        
+                                                                                )
+                    Abac.import_abac(token, data, 'asset-performance-management')
+                if parsed_args.get('data-sync'):
+                    data: dict = Abac.collect_data_synchronizer_data(
+                                                                    url,
+                                                                    permissionObjects_file=parsed_args['data-sync'].get('--permission-objects'),
+                                                                    roles_file=parsed_args['data-sync'].get('--roles'),
+                                                                    rolesMapping_file=parsed_args['data-sync'].get('--roles-mapping')
+                                                                    )
+                    Abac.import_abac(token, data, 'data-synchronizer-api')
 
             # wildcard pattern if no cases before where matched
             case _:
@@ -418,17 +464,6 @@ if __name__ == '__main__':
     try:
         if args.version:
             print(app_menu.AppMenu.__version__)
-        elif args.command == 'abac':
-            abac = import_data.Abac()
-            Auth = auth.Auth()
-            if not Auth.establish_connection():
-                sys.exit()
-            if args.maintenance_planning:
-                data: dict = abac.collect_maintenance_planning_data(Auth.url, permissionObject_file=args.permission_objects, roles_file=args.roles, rolesMapping_file=args.roles_mapping, notification_file=args.notification)
-                abac.import_data(Auth.token, data)
-            elif args.asset_performance_management:
-                data: dict = abac.collect_asset_performance_management_data(Auth.url, permissionObject_file=args.permission_objects, roles_file=args.roles, rolesMapping_file=args.roles_mapping, notification_file=args.notification)
-                abac.import_data(Auth.token, data)
         elif args.command == 'git':
             g = git.Git()
             project_id = g.get_bimeister_project_id()

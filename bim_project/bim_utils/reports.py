@@ -1,4 +1,4 @@
-#
+## DEPRECATED MODULE ##
 
 import requests
 from log import Logs

@@ -338,16 +338,20 @@ class Abac:
     __api_upload_roles_mapping_maintenance_planning: str = "api/maintenance-planning/AbacConfiguration/UploadRolesMappingConfiguration"
     __api_upload_event_rules_maintenance_planning: str = "api/EnterpriseAssetManagementNotificationHub/upload-event-rules"
 
+    __api_upload_permission_objects_data_synchronizer: str = "api/data-synchronizer/AbacConfiguration/UploadPermissionObjectsConfiguration"
+    __api_upload_roles_asset_data_synchronizer: str = "api/data-synchronizer/AbacConfiguration/UploadRolesConfiguration"
+    __api_upload_roles_mapping_data_synchronizer: str = "api/data-synchronizer/AbacConfiguration/UploadRolesMappingConfiguration"
+
     def __init__(self):
         pass
 
-    def collect_asset_performance_management_data(self, url, permissionObject_file=None, roles_file=None, rolesMapping_file=None, notification_file=None):
+    def collect_asset_performance_management_data(self, url, permissionObjects_file=None, roles_file=None, rolesMapping_file=None, notification_file=None):
         """ Import abac files for asset-performance-management service. """
 
         data: dict = {}
-        for x in (permissionObject_file, roles_file, rolesMapping_file, notification_file):
-            if x and permissionObject_file:
-                data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_asset_performance_management}", 'file': permissionObject_file}})
+        for x in (permissionObjects_file, roles_file, rolesMapping_file, notification_file):
+            if x and permissionObjects_file:
+                data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_asset_performance_management}", 'file': permissionObjects_file}})
             if x and roles_file:
                 data.update({'Roles': {'url': f"{url}/{self.__api_upload_roles_asset_performance_management}", 'file': roles_file}})
             if x and rolesMapping_file:
@@ -356,13 +360,13 @@ class Abac:
                 data.update({'Notifications': {'url': f"{url}/{self.__api_upload_event_rules_asset_performance_management}", 'file': notification_file}})
         return data
 
-    def collect_maintenance_planning_data(self, url, permissionObject_file=None, roles_file=None, rolesMapping_file=None, notification_file=None):
+    def collect_maintenance_planning_data(self, url, permissionObjects_file=None, roles_file=None, rolesMapping_file=None, notification_file=None):
         """ Import abac files for maintenance-planning service. """
 
         data: dict = {}
-        for x in (permissionObject_file, roles_file, rolesMapping_file, notification_file):
-            if x and permissionObject_file:
-                data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_maintenance_planning}", 'file': permissionObject_file}})
+        for x in (permissionObjects_file, roles_file, rolesMapping_file, notification_file):
+            if x and permissionObjects_file:
+                data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_maintenance_planning}", 'file': permissionObjects_file}})
             if x and roles_file:
                 data.update({'Roles': {'url': f"{url}/{self.__api_upload_roles_maintenance_planning}", 'file': roles_file}})
             if x and rolesMapping_file:
@@ -371,7 +375,20 @@ class Abac:
                 data.update({'Notifications': {'url': f"{url}/{self.__api_upload_event_rules_maintenance_planning}", 'file': notification_file}})            
         return data
 
-    def import_data(self, token, data: dict):
+    def collect_data_synchronizer_data(self, url, permissionObjects_file=None, roles_file=None, rolesMapping_file=None):
+        """ Import abac files for data-synchronizer service. """
+
+        data: dict = {}
+        for x in (permissionObjects_file, roles_file, rolesMapping_file):
+            if x and permissionObjects_file:
+                data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_data_synchronizer}", 'file': permissionObjects_file}})
+            if x and roles_file:
+                data.update({'Roles': {'url': f"{url}/{self.__api_upload_roles_asset_data_synchronizer}", 'file': roles_file}})
+            if x and rolesMapping_file:
+                data.update({'Roles_Mapping': {'url': f"{url}/{self.__api_upload_roles_mapping_data_synchronizer}", 'file': rolesMapping_file}})         
+        return data
+
+    def import_abac(self, token, data: dict, svc_name):
         """ Import data from collected functions above. """
 
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
@@ -380,8 +397,8 @@ class Abac:
                 with open(value['file'], mode='rb') as file:
                     response = requests.post(url=value['url'], files={'file': file}, headers=headers, verify=False)
                     if response.status_code == 200:
-                        logger.debug(value['url'])
-                        print(f"{key} configuration uploaded successfully")
+                        logger.debug(f"{value['url']}: {response.status_code}")
+                        print(f"{svc_name}: {key} configuration uploaded successfully")
                     else:
                         print(f"Error: {response.status_code}")
                         print(response.text)
