@@ -397,6 +397,9 @@ def main(local=False):
 
             #    ''' =============================================================================== ABAC ============================================================================================= '''
             case ['abac', 'import', *_]:
+                if user_command == ['abac', 'import', '-h'] or user_command == ['abac', 'import', '--help']:
+                    Abac.help_function()
+                    continue
                 args = user_command[2:]
                 # accessible services and keys
                 svc = ('data-sync', 'asset', 'maintenance')

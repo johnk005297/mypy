@@ -47,8 +47,9 @@ def main_menu():
                             \n        example:                                                                    \
                             \n        ft Spatium Bim2d Importbcf --on                                             \
                             \n                                                                                    \
-                            \n   Reports                                                                          \
-                            \n      ls report                           get a list of current reports             \
+                            \n   ABAC                                                                             \
+                            \n      abac import                         get a list of current reports             \
+                            \n        -h                                help message                              \
                             \n                                                                                    \
                             \n   Main                                                                             \
                             \n      m                                   print this menu                           \
@@ -82,7 +83,7 @@ def local_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.78.13'
+    __version__ = '1.78.14'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):

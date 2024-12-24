@@ -409,43 +409,19 @@ class Abac:
                 logger.error(err)
                 print("Error! Check the log.")
 
-#     def help_function(self, ls=False, export=False, remove=False):
-#         """ Provide help info for the user. """
+    def help_function(self):
+        """ Provide help info for the user. """
 
-#         ls_workflows: str = """usage: ls workflows [--help] [--startswith=\"TEXT TO FIND\" | --search=\"TEXT TO FIND\"] [--draft] [--active] [--archived] [--all]
+        message: str = """usage: abac import [--help] [data-sync] [asset] [maintenance] [--permission-objects <file>] [--roles-mapping <file>] [--roles <file>] [--events <file>]
+example: abac import asset --permission-objects asset/permissionObjects.json --roles asset/roles.json data-sync data-api/roles.json --roles-mapping data-api/rolesMapping.json maintenance --events notification/Events.json
 
-# options:
-#   -h, --help    Show this help message
-#   --startswith  Pattern to search from the beginning of the line
-#   --search      Pattern to search at any place of the line
-#   --draft       Draft node of workflows
-#   --active      Active node of workflows
-#   --archived    Archived node of workflows
-#   --all         All three nodes
-#   --type        Workflows type
-# """
-#         export_workflows: str = """usage: export workflows [--help] [--startswith=\"TEXT TO FIND\" | --search=\"TEXT TO FIND\" | --id="WORKFLOW(S) ID"] [--draft] [--active] [--archived] [--all]
-
-# options:
-#   -h, --help    Show this help message
-#   --startswith  Pattern to search from the beginning of the line
-#   --search      Pattern to search at any place of the line
-#   --id          One or more workflow ID separated with whitespace
-#   --draft       Draft node of workflows
-#   --active      Active node of workflows
-#   --archived    Archived node of workflows
-#   --all         All three nodes
-# """
-#         remove_workflows: str = """usage: rm workflows [--help] [--draft] [--active] [--archived] [--all]
-
-# options:
-#   -h, --help    Show this help message
-#   --draft       Draft node of workflows
-#   --active      Active node of workflows
-#   --archived    Archived node of workflows
-#   --all         All three nodes
-# """
-
-#         if ls: print(ls_workflows)
-#         elif export: print(export_workflows)
-#         elif remove: print(remove_workflows)
+options:
+  -h, --help            Show this help message
+  data-sync             Data-synchronizer-api service
+  asset                 Asset-performance-management service
+  maintenance           Maintenance-planning service
+  --permission-objects  Flag to point a file with permission objects configuration 
+  --roles-mapping       Flag to point a file with roles mapping configuration
+  --roles               Flag to point a file with roles configuration
+"""
+        print(message)
