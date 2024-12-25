@@ -2,58 +2,69 @@
 import requests
 import mdocker
 import mk8s
-from prettytable import PrettyTable
+from rich.console import Console
+from rich.table import Table
+from tools import Tools
 from log import Logs
-from colorama import init, Fore
-init(autoreset=True)
 
-
+logger = Logs().f_logger(__name__)
 
 class FeatureToggle:
 
     _api_GetFeatures: str = 'api/Features/GetFeatures'
     _api_Features: str = 'api/Features'
-    __logger = Logs().f_logger(__name__)
     Docker = mdocker.Docker()
     K8s = mk8s.K8S(namespace='bimeister')
     headers = {'accept': '*/*', 'Content-type': 'application/json; charset=utf-8'}
 
-
     def display_features(self, url, enabled=False, disabled=False):
         """ Display list of features in pretty table. """
 
-        response = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=self.headers, verify=False)
-        table = PrettyTable()
-        table.field_names = ['FEATURE', 'STATUS']
-        table.align = 'l'
+        try:
+            response = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=self.headers, verify=False)
+        except Exception as err:
+            logger.error(err)
+            print("Error! Couldn't get list of features. Check the logs.")
+            return False
+        table = Table()
+        table.add_column("No.", style="cyan")
+        table.add_column("Feature", style="magenta")
+        table.add_column("Status", justify="center", highlight=False)
+        count = Tools.counter()
         if response.status_code == 200:
-            self.__logger.info(f"{self._api_GetFeatures} {response}")
+            logger.info(f"{self._api_GetFeatures} {response}")
             data: dict = response.json()
             print()
             for key,value in sorted(data.items()):
                 if enabled and value:
-                    table.add_row([key.capitalize(), Fore.GREEN + str(value) + Fore.RESET])
+                    table.add_row(str(count()), key.capitalize(), "[green]✅[/green]")
                 elif disabled and not value:
-                    table.add_row([key.capitalize(), Fore.RED + str(value) + Fore.RESET])
+                    table.add_row(str(count()), key.capitalize(), "[red]❌[/red]")
                 elif not enabled and not disabled:
-                    table.add_row([key.capitalize(), Fore.GREEN + str(value) + Fore.RESET if value else Fore.RED + str(value) + Fore.RESET])
+                    table.add_row(str(count()), key.capitalize(), "[green]✅[/green]" if value else "[red]❌[/red]")
         else:
             print(f"Error {response.status_code} occurred during GetFeatures request. Check the logs.")
-            self.__logger.error(response.text)
+            logger.error(response.text)
             return False
-        print(table)
+        console = Console()
+        console.print(table)
 
     def get_list_of_features(self, url):
         """ Get list of features. """
 
-        response = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=self.headers, verify=False)
+        try:
+            response = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=self.headers, verify=False)
+        except Exception as err:
+            logger.error(err)
+            print("Error! Couldn't get list of features. Check the logs.")
+            return False
         if response.status_code == 200:
-            self.__logger.info(f"{self._api_GetFeatures} {response}")
+            logger.info(f"{self._api_GetFeatures} {response}")
             data: dict = response.json()
             ft_list: list = [ft for ft in data]
         else:
             print(f"Error {response.status_code} occurred during GetFeatures request. Check the logs.")
-            self.__logger.error(response.text)
+            logger.error(response.text)
             return False
         return ft_list
 
@@ -69,12 +80,12 @@ class FeatureToggle:
                 continue
             response = requests.put(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
             if response.status_code in (200, 201, 204):
-                self.__logger.info(f"{url}/{self._api_Features}/{feature} {response}")
+                logger.info(f"{url}/{self._api_Features}/{feature} {response}")
                 response = requests.get(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
                 ft_enabled: bool = response.json()
                 print("{0}: {1}".format(feature, 'enabled' if ft_enabled else 'disabled'))
             else:
-                self.__logger.error(response.status_code, '\n', response.text)
+                logger.error(response.status_code, '\n', response.text)
                 print(f"{feature} wasn't enabled. Check the log. Error: {response.status_code}.")
         return
 
@@ -96,7 +107,7 @@ class FeatureToggle:
 #             self.COS: str = "Docker"
 #             return self.COS
 #         else:
-#             self.__logger.debug("No K8S or Docker has been found on localhost. As well as no connection to the API's could be established.")
+#             logger.debug("No K8S or Docker has been found on localhost. As well as no connection to the API's could be established.")
 #             return False
 
 #     def get_list_of_features_using_ft_token(self, url, FeatureAccessToken):
@@ -106,12 +117,12 @@ class FeatureToggle:
 #         response = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=headers, verify=False)
 
 #         if response.status_code == 200:
-#             self.__logger.info(f"{self._api_GetFeatures} {response}")
+#             logger.info(f"{self._api_GetFeatures} {response}")
 #             data: dict = response.json()
 #             ft_list: list = [ft for ft in data]
 #         else:
 #             print(f"Error {response.status_code} occurred during GetFeatures request. Check the logs.")
-#             self.__logger.error(response.text)
+#             logger.error(response.text)
 #             return False
 #         return ft_list
 
@@ -124,7 +135,7 @@ class FeatureToggle:
 #         table.field_names = ['FEATURE', 'STATUS']
 #         table.align = 'l'
 #         if response.status_code == 200:
-#             self.__logger.info(f"{self._api_GetFeatures} {response}")
+#             logger.info(f"{self._api_GetFeatures} {response}")
 #             data: dict = response.json()
 #             print()
 #             for key,value in sorted(data.items()):
@@ -136,7 +147,7 @@ class FeatureToggle:
 #                     table.add_row([key.capitalize(), Fore.GREEN + str(value) + Fore.RESET if value else Fore.RED + str(value) + Fore.RESET])
 #         else:
 #             print(f"Error {response.status_code} occurred during GetFeatures request. Check the logs.")
-#             self.__logger.error(response.text)
+#             logger.error(response.text)
 #             return False
 #         print(table)
 
@@ -152,9 +163,33 @@ class FeatureToggle:
 #                 continue
 #             response = requests.put(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
 #             if response.status_code in (200, 201, 204):
-#                 self.__logger.info(f"{url}/{self._api_Features}/{feature} {response}")
+#                 logger.info(f"{url}/{self._api_Features}/{feature} {response}")
 #                 print("Result: {0} {1} successfully.".format(feature, 'enabled' if is_enabled else 'disabled'))
 #             else:
-#                 self.__logger.error(response.status_code, '\n', response.text)
+#                 logger.error(response.status_code, '\n', response.text)
 #                 print(f"Result: {feature} wasn't enabled. Check the log. Error: {response.status_code}.")
 #         return
+
+    # def display_features(self, url, enabled=False, disabled=False):
+    #     """ Display list of features in pretty table. """
+
+    #     response = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=self.headers, verify=False)
+    #     table = PrettyTable()
+    #     table.field_names = ['FEATURE', 'STATUS']
+    #     table.align = 'l'
+    #     if response.status_code == 200:
+    #         logger.info(f"{self._api_GetFeatures} {response}")
+    #         data: dict = response.json()
+    #         print()
+    #         for key,value in sorted(data.items()):
+    #             if enabled and value:
+    #                 table.add_row([key.capitalize(), Fore.GREEN + str(value) + Fore.RESET])
+    #             elif disabled and not value:
+    #                 table.add_row([key.capitalize(), Fore.RED + str(value) + Fore.RESET])
+    #             elif not enabled and not disabled:
+    #                 table.add_row([key.capitalize(), Fore.GREEN + str(value) + Fore.RESET if value else Fore.RED + str(value) + Fore.RESET])
+    #     else:
+    #         print(f"Error {response.status_code} occurred during GetFeatures request. Check the logs.")
+    #         logger.error(response.text)
+    #         return False
+    #     print(table)

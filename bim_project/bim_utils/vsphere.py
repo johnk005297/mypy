@@ -171,7 +171,6 @@ class Vsphere:
             else:
                 self.__logger.error(response)
             print(f"Restart OS: {value['name']}  {response.status_code}")
-        print(f"\nRestarted VMs: {number}")
     
     def start_vm(self, headers, moId, name):
         """ Start provided VM in vSphere. """

@@ -409,7 +409,7 @@ class Abac:
                 logger.error(err)
                 print("Error! Check the log.")
 
-    def help_function(self):
+    def print_help(self):
         """ Provide help info for the user. """
 
         message: str = """usage: abac import [--help] [data-sync] [asset] [maintenance] [--permission-objects <file>] [--roles-mapping <file>] [--roles <file>] [--events <file>]
