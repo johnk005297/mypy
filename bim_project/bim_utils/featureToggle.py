@@ -27,7 +27,7 @@ class FeatureToggle:
             print("Error! Couldn't get list of features. Check the logs.")
             return False
         table = Table()
-        table.add_column("No.", style="cyan")
+        table.add_column("No.", style="cyan", no_wrap=True)
         table.add_column("Feature", style="magenta")
         table.add_column("Status", justify="center", highlight=False)
         count = Tools.counter()
