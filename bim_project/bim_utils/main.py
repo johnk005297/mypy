@@ -56,7 +56,6 @@ def main(local=False):
         user_command = AppMenu_main.get_user_command()
 
         match user_command:
-
             case False: # if nothing to check, loop over
                 continue
 
@@ -396,6 +395,16 @@ def main(local=False):
                                                                     rolesMapping_file=parsed_args['data-sync'].get('--roles-mapping')
                                                                     )
                     Abac.import_abac(token, data, 'data-synchronizer-api')
+            
+            case ['apply', 'customUI', *_]:
+                if '-f' not in user_command:
+                    print("Unknown command")
+                    continue
+                try:
+                    file = user_command[2:][1]
+                except IndexError as err:
+                    print("Incorrect command. No file pointed out.")
+                Tools.apply_bimeister_customUI(url, token, file)
 
             # wildcard pattern if no cases before where matched
             case _:

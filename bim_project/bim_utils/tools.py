@@ -201,3 +201,20 @@ class Tools:
                 break
         return False
 
+    def apply_bimeister_customUI(url, token, file):
+
+        url = f"{url}/api/Settings/CustomUI"
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        try:
+            with open(file, mode='rb') as file:
+                response = requests.post(url=url, headers=headers, files={'file': file}, verify=False)
+                print(f"Response: {response.status_code}")
+        except FileNotFoundError as err:
+            logger.error(err)
+            print(err)
+        except requests.RequestException as err:
+            logger.error(err)
+            print("Error! Check the log.")
+        except Exception as err:
+            logger.error(err)
+            print("Error! Check the log.")

@@ -51,6 +51,9 @@ def main_menu():
                             \n      abac import                         get a list of current reports             \
                             \n        -h                                help message                              \
                             \n                                                                                    \
+                            \n  Custom UI                                                                         \
+                            \n      apply customUI -f [filename]       apply custom user interface                \
+                            \n                                                                                    \
                             \n   Main                                                                             \
                             \n      m                                   print this menu                           \
                             \n      q                                   exit"
@@ -83,7 +86,7 @@ def local_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.78.16'
+    __version__ = '1.78.17'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):
