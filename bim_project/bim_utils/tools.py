@@ -202,13 +202,21 @@ class Tools:
         return False
 
     def apply_bimeister_customUI(url, token, file):
+        """ Function to upload custom user intreface files. """
 
         url = f"{url}/api/Settings/CustomUI"
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         try:
             with open(file, mode='rb') as file:
                 response = requests.post(url=url, headers=headers, files={'file': file}, verify=False)
-                print(f"Response: {response.status_code}")
+                if response.status_code == 403:
+                    print(response.status_code)
+                    print("User doesn't have sufficient privileges!")
+                elif response.status_code == 404:
+                    print(response.status_code)
+                    print("No API route was found!")
+                elif response.status_code == 204:
+                    print("Files uploaded successfully.")
         except FileNotFoundError as err:
             logger.error(err)
             print(err)

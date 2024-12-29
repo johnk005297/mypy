@@ -396,7 +396,7 @@ def main(local=False):
                                                                     )
                     Abac.import_abac(token, data, 'data-synchronizer-api')
             
-            case ['apply', 'customUI', *_]:
+            case ['apply', 'custom-ui', *_]:
                 if '-f' not in user_command:
                     print("Unknown command")
                     continue
