@@ -5,6 +5,8 @@ import base64
 import auth
 import time
 import binascii
+from rich.console import Console
+from rich.table import Table
 from datetime import date
 from datetime import datetime
 from termcolor import colored, cprint
@@ -172,16 +174,12 @@ class License:
         """ Display the list of licenses. """
 
         licenses: list = self.get_licenses(url, token, username, password)
-        from rich.console import Console
-        from rich.table import Table
-        from rich import box
         table = Table(show_lines=True)
         table.add_column("Name", justify="left")
         table.add_column("Server Id", justify="left")
         table.add_column("Users", justify="left")
         table.add_column("Expiration date", justify="left")
         table.add_column("Status", justify="center")
-
         for license in licenses:
             # convert str format of expiration date to datetime format
             format = "%Y-%m-%dT%H:%M:%S"
@@ -191,7 +189,7 @@ class License:
                           license["serverId"],
                           f"{license['activeUsers']}/{license['activeUsersLimit']}",
                           expiration_date,
-                          "[green]✅[/green]" if license["isActive"] else "[red]❌[/red]", style="dim cyan" if not license["isActive"] else "cyan"
+                          "[green]✅[/green]" if license["isActive"] else "[red]❌[/red]", style="cyan" if license["isActive"] else "dim cyan"
                           )
         console = Console()
         console.print(table)
