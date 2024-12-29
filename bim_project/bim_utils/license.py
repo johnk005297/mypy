@@ -168,35 +168,6 @@ class License:
         message: str = "Current user don't have sufficient privileges."
         return response.text if response.status_code == 200 else message
 
-    # def display_licenses(self, url, token, username, password):
-    #     """ Display the list of licenses. """
-
-    #     licenses: list = self.get_licenses(url, token, username, password)
-    #     license_status: bool = self.get_license_status(url, token, username, password)
-    #     if not license_status:
-    #         for number, license in enumerate(licenses, 1):
-    #             print(f"\n  License {number}:")
-    #             if license['licenseID'] == '00000000-0000-0000-0000-000000000000':
-    #                 if license['until'] < str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S"):
-    #                     print(f"   - trial deploy license\n   - validation period: expired")
-    #                     continue
-    #                 else:
-    #                     print(f"   - trial deploy license\n   - validation period: {license['until'][:19]}")
-    #                     continue
-    #             for key, value in license.items():
-    #                 print(f"   - {key}: {Fore.RED + str(value)}" if not value and key == 'isActive' else f"   - {key}: {value}")
-    #     elif license_status:
-    #         for number, license in enumerate(licenses, 1):
-    #             # if license.get('isActive'):   # if we want to display only active licenses
-    #             print(f"\n License {number}:")
-    #             if license.get('licenseID') == '00000000-0000-0000-0000-000000000000':
-    #                 print(f"   - trial deploy license\n   - validation period: {license['until'][:19]}")
-    #             else:
-    #                 for key, value in license.items():
-    #                     print( f"   - {key}: {Fore.GREEN + str(value)}" if value and key == 'isActive' else f"   - {key}: {value}" )
-    #     else:
-    #         self.__logger.error("Unpredictable behaviour(license status) in License class.")
-
     def display_licenses(self, url, token, username, password):
         """ Display the list of licenses. """
 
