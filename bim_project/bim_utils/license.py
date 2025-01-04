@@ -180,6 +180,7 @@ class License:
         table.add_column("Users", justify="left")
         table.add_column("Expiration date", justify="left")
         table.add_column("Status", justify="center")
+        current_date: str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
         for license in licenses:
             # convert str format of expiration date to datetime format
             format = "%Y-%m-%dT%H:%M:%S"
@@ -188,7 +189,7 @@ class License:
                           license["name"],
                           license["serverId"],
                           f"{license['activeUsers']}/{license['activeUsersLimit']}",
-                          expiration_date,
+                          f"[red]{expiration_date}[/red]" if license["until"] < current_date and license["isActive"] else expiration_date,
                           "[green]✅[/green]" if license["isActive"] else "[red]❌[/red]", style="cyan" if license["isActive"] else "dim cyan"
                           )
         console = Console()
