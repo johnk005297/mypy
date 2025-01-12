@@ -11,7 +11,6 @@ from log import Logs
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 
-
 class Export_data:
 
     __api_Integration_ObjectModel_Export: str = 'api/Integration/ObjectModel/Export'
@@ -192,7 +191,7 @@ class Export_data:
         workflows: dict = {'Draft': {}, 'Active': {}, 'Archived': {}}
         workflow_nodes = self.get_workflow_nodes_id(url, token)
         if len(args) < 1:
-            print("At least one of the arguments must be provided: --draft, --active, --archived, --all")
+            print("At least one of the arguments must be provided: --draft --active --archived --all")
             return
         if kwargs['startswith'] and kwargs['search_for']:
             print("Can't use both arguments '--startswith' and '--search' together")

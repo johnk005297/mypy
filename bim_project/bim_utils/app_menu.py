@@ -5,57 +5,57 @@ from log import Logs
 def main_menu():
     """ Help menu of user commands. """
 
-    _main_menu = "\nHelp:                                                                                         \
-                            \n                                                                                    \
-                            \n   License                                                                          \
-                            \n      check lic                           check license                             \
-                            \n      get sid                             get serverId                              \
-                            \n      apply lic                           apply new license                         \
-                            \n      delete lic                          delete active license                     \
-                            \n      activate lic                        activate already uploaded license         \
-                            \n                                                                                    \
-                            \n   Databases                                                                        \
-                            \n      drop uo                             clean bimeisterdb.UserObjects table       \
-                            \n      drop uo -h                          info about UserObjects table              \
-                            \n                                                                                    \
-                            \n   Transfer data                                                                    \
-                            \n      export om                           export object model                       \
-                            \n      import om                           import object model                       \
-                            \n      export workflows                    export workflows massively                \
-                            \n      import workflows                    import workflows                          \
-                            \n      ls workflows                        display workflows(name: id)               \
-                            \n      rm workflows                        delete workflows                          \
-                            \n      rm files                            clean bim_utils transfer files            \
-                            \n                                                                                    \
-                            \n   User                                                                             \
-                            \n      ptoken                              get private token                         \
-                            \n      token                               get user access token(Bearer)             \
-                            \n      sh                                  run terminal command(current host)        \
-                            \n      ssh connect                         run terminal command(remote host)         \
-                            \n      ls -l                               list current folder content               \
-                            \n                                                                                    \
-                            \n   Docker                                                                           \
-                            \n      docker -h                           get a list of available commands          \
-                            \n                                                                                    \
-                            \n   K8S                                                                              \
-                            \n      kube -h                             get a list of available commands          \
-                            \n                                                                                    \
-                            \n   Feature Toggle                                                                   \
-                            \n      ft --list                           display list of features                  \
-                            \n        optional: [--enabled/--disabled]  display only enabled/disabled FT          \
-                            \n      ft [ft_name] [--on/--off]           turn on/off features                      \
-                            \n        example:                                                                    \
-                            \n        ft Spatium Bim2d Importbcf --on                                             \
-                            \n                                                                                    \
-                            \n   ABAC                                                                             \
-                            \n      abac import                         get a list of current reports             \
-                            \n        -h                                help message                              \
-                            \n                                                                                    \
-                            \n   Custom UI                                                                        \
-                            \n      apply customUI -f [filename]       apply custom user interface                \
-                            \n                                                                                    \
-                            \n   Main                                                                             \
-                            \n      m                                   print this menu                           \
+    _main_menu = "\nHelp:                                                                                               \
+                            \n                                                                                          \
+                            \n   License                                                                                \
+                            \n      check lic                           check license                                   \
+                            \n      get sid                             get serverId                                    \
+                            \n      apply lic                           apply new license                               \
+                            \n      delete lic                          delete active license                           \
+                            \n      activate lic                        activate already uploaded license               \
+                            \n                                                                                          \
+                            \n   Databases                                                                              \
+                            \n      drop uo                             clean bimeisterdb.UserObjects table             \
+                            \n      drop uo -h                          info about UserObjects table                    \
+                            \n                                                                                          \
+                            \n   Transfer data                                                                          \
+                            \n      export om                           export object model                             \
+                            \n      import om                           import object model                             \
+                            \n      export workflows                    export workflows massively                      \
+                            \n      import workflows                    import workflows                                \
+                            \n      ls workflows                        display workflows(name: id)                     \
+                            \n      rm workflows                        delete workflows                                \
+                            \n      rm files                            clean bim_utils transfer files                  \
+                            \n                                                                                          \
+                            \n   User                                                                                   \
+                            \n      ptoken                              get private token                               \
+                            \n      token                               get user access token(Bearer)                   \
+                            \n      sh                                  run terminal command(current host)              \
+                            \n      ssh connect                         run terminal command(remote host)               \
+                            \n      ls -l                               list current folder content                     \
+                            \n                                                                                          \
+                            \n   Docker                                                                                 \
+                            \n      docker -h                           get a list of available commands                \
+                            \n                                                                                          \
+                            \n   K8S                                                                                    \
+                            \n      kube -h                             get a list of available commands                \
+                            \n                                                                                          \
+                            \n   Feature Toggle                                                                         \
+                            \n      ft --list                           display list of features                        \
+                            \n        optional: [--enabled/--disabled]  display only enabled/disabled FT                \
+                            \n      ft [ft_name] [--on/--off]           turn on/off features                            \
+                            \n        example:                                                                          \
+                            \n        ft Spatium Bim2d Importbcf --on                                                   \
+                            \n                                                                                          \
+                            \n   ABAC                                                                                   \
+                            \n      abac import                         import attribute-based access control file(s)   \
+                            \n        -h                                help message                                    \
+                            \n                                                                                          \
+                            \n   Custom UI                                                                              \
+                            \n      apply UI -f [filename]       apply custom user interface                      \
+                            \n                                                                                          \
+                            \n   Main                                                                                   \
+                            \n      m                                   print this menu                                 \
                             \n      q                                   exit"
 
     return _main_menu
@@ -86,7 +86,7 @@ def local_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.78.19'
+    __version__ = '1.78.20'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):

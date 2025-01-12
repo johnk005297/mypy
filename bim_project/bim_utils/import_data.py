@@ -346,7 +346,7 @@ class Abac:
         pass
 
     def collect_asset_performance_management_data(self, url, permissionObjects_file=None, roles_file=None, rolesMapping_file=None, notification_file=None):
-        """ Import abac files for asset-performance-management service. """
+        """ Collect data for abac asset-performance-management service. """
 
         data: dict = {}
         for x in (permissionObjects_file, roles_file, rolesMapping_file, notification_file):
@@ -361,7 +361,7 @@ class Abac:
         return data
 
     def collect_maintenance_planning_data(self, url, permissionObjects_file=None, roles_file=None, rolesMapping_file=None, notification_file=None):
-        """ Import abac files for maintenance-planning service. """
+        """ Collect data for abac maintenance-planning service. """
 
         data: dict = {}
         for x in (permissionObjects_file, roles_file, rolesMapping_file, notification_file):
@@ -376,7 +376,7 @@ class Abac:
         return data
 
     def collect_data_synchronizer_data(self, url, permissionObjects_file=None, roles_file=None, rolesMapping_file=None):
-        """ Import abac files for data-synchronizer service. """
+        """ Collect data for abac for data-synchronizer service. """
 
         data: dict = {}
         for x in (permissionObjects_file, roles_file, rolesMapping_file):
@@ -423,5 +423,6 @@ options:
   --permission-objects  Flag to point a file with permission objects configuration 
   --roles-mapping       Flag to point a file with roles mapping configuration
   --roles               Flag to point a file with roles configuration
+  --events              Flag to point a file with notifications
 """
         print(message)

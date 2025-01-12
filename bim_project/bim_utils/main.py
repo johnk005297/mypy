@@ -355,7 +355,7 @@ def main(local=False):
                 keys= ('--roles', '--roles-mapping', '--permission-objects', '--events')
                 incorrect_keys = [x for x in args if x.startswith('--') and x not in keys]
                 if incorrect_keys:
-                    print("Attention! Incorrect key!")
+                    print("Attention! Incorrect key provided!")
                 parsed_args = dict()
                 for x in range(len(args)):
                     if args[x] in svc and args[x] not in parsed_args.keys():
@@ -396,7 +396,7 @@ def main(local=False):
                                                                     )
                     Abac.import_abac(token, data, 'data-synchronizer-api')
             
-            case ['apply', 'custom-ui', *_]:
+            case ['apply', 'UI', *_]:
                 if '-f' not in user_command:
                     print("Unknown command")
                     continue
@@ -470,9 +470,9 @@ if __name__ == '__main__':
             elif args.list_matviews:
                 pg.exec_query(conn, query=q.get_matviews_list(args.list_matviews))
             elif args.drop_matviews:                
-                pg.exec_query(conn, query=q.drop_sf_materialized_view(args.drop_matviews))
+                pg.exec_query(conn, query=q.drop_materialized_view(args.drop_matviews))
             elif args.refresh_matviews:
-                pg.exec_query(conn, query=q.refresh_sf_materialized_view())
+                pg.exec_query(conn, query=q.refresh_materialized_view())
             elif args.mdm_prod:
                 pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Prod'))
             elif args.mdm_test:

@@ -13,7 +13,7 @@ class DB:
 
     def __init__(self):
         pass
-    
+
     def connect_to_db(self, **kwargs):
         """ Function for establishing connection to db. """
 
@@ -107,8 +107,8 @@ class Queries:
                 """.format(name.replace('*', '%'))
 
     @classmethod
-    def drop_sf_materialized_view(cls, name='%'):
-      
+    def drop_materialized_view(cls, name='%'):
+
         return """ 
                     DO $$
                     DECLARE
@@ -128,9 +128,9 @@ class Queries:
                     $$;
                     select matviewname from pg_catalog.pg_matviews;
         """.format(name.replace('*', '%'))
-    
+
     @classmethod
-    def refresh_sf_materialized_view(cls, name='%'):
+    def refresh_materialized_view(cls, name='%'):
 
         return """
                     DO $$
@@ -150,7 +150,7 @@ class Queries:
                     $$;
                     select matviewname from pg_catalog.pg_matviews where matviewname LIKE '{0}';
                 """.format(name.replace('*', '%'))
-    
+
     @classmethod
     def swith_externalKey_for_mdm_connector(cls, value=''):
         """ Query for switching ExternalKey. Requires for MDM connector integration. 
@@ -170,7 +170,7 @@ class Queries:
                     select "ExternalKey", "IsDefault" from "ExternalSystems" 
                     where "ExternalKey" = 'SDI-COD-{0}';
                 """.format(value)
-    
+
     @classmethod
     def get_list_of_all_db(cls):
 
