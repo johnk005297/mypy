@@ -175,7 +175,7 @@ class License:
 
         licenses: list = self.get_licenses(url, token, username, password)
         table = Table(show_lines=True)
-        table.add_column("Name", justify="left")
+        table.add_column("Name", justify="left", no_wrap=True)
         table.add_column("Server Id", justify="left")
         table.add_column("Users", justify="left")
         table.add_column("Expiration date", justify="left")

@@ -351,7 +351,7 @@ def main(local=False):
                     continue
                 args = user_command[2:]
                 # accessible services and keys
-                svc = ('data-sync', 'asset', 'maintenance')
+                svc = ('data-sync', 'asset', 'maintenance', 'work-permits')
                 keys= ('--roles', '--roles-mapping', '--permission-objects', '--events')
                 incorrect_keys = [x for x in args if x.startswith('--') and x not in keys]
                 if incorrect_keys:
@@ -395,7 +395,16 @@ def main(local=False):
                                                                     rolesMapping_file=parsed_args['data-sync'].get('--roles-mapping')
                                                                     )
                     Abac.import_abac(token, data, 'data-synchronizer-api')
-            
+                if parsed_args.get('work-permits'):
+                    data: dict = Abac.collect_work_permits_management_data(
+                                                                    url,
+                                                                    permissionObjects_file=parsed_args['work-permits'].get('--permission-objects'),
+                                                                    roles_file=parsed_args['work-permits'].get('--roles'),
+                                                                    rolesMapping_file=parsed_args['work-permits'].get('--roles-mapping')
+                                                                    )
+                    Abac.import_abac(token, data, 'work-permits-management')
+
+            #    ''' =============================================================================== Custom UI ======================================================================================== '''
             case ['apply', 'UI', *_]:
                 if '-f' not in user_command:
                     print("Unknown command")
