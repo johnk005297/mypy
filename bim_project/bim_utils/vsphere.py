@@ -198,14 +198,17 @@ class Vsphere:
     def stop_vm(self, headers, moId, name):
         """ Stop provided VM in vSphere. """
 
-        url: str = f"{self.url}/rest/vcenter/vm/{moId}/guest/power?action=shutdown"
+        url_shutdown: str = f"{self.url}/rest/vcenter/vm/{moId}/guest/power?action=shutdown"
+        url_stop: str = f"{self.url}/api/vcenter/vm/{moId}/power?action=stop"
         power_state = self.get_vm_power_state(headers, moId)
         if power_state == "POWERED_OFF":
             return True
         try:
-            response = requests.post(url=url, headers=headers, verify=False)
-            if response.status_code != 200:
-                return False
+            response = requests.post(url=url_shutdown, headers=headers, verify=False)
+            if response.status_code not in (200, 204):
+                response = requests.post(url=url_stop, headers=headers, verify=False)
+                if response.status_code not in (200, 204):
+                    return False
             print(f"Initiate guest OS shutdown: {name}")
         except requests.exceptions.RequestException as err:
             self.__logger.error(err)

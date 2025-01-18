@@ -430,7 +430,7 @@ class Abac:
         """ Provide help info for the user. """
 
         message: str = """usage: abac import [--help] [data-sync] [asset] [maintenance] [--permission-objects <file>] [--roles-mapping <file>] [--roles <file>] [--events <file>]
-example: abac import asset --permission-objects asset/permissionObjects.json --roles asset/roles.json data-sync data-api/roles.json --roles-mapping data-api/rolesMapping.json maintenance --events notification/Events.json
+example: abac import asset --permission-objects permissionObjects.json --roles roles.json data-sync roles.json --roles-mapping rolesMapping.json maintenance --events Events.json
 
 options:
   -h, --help            Show this help message
