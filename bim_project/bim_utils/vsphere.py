@@ -6,7 +6,6 @@ import re
 import binascii
 from os import environ
 from log import Logs
-from tools import Tools
 from getpass import getpass
 from dotenv import load_dotenv
 load_dotenv()
@@ -160,17 +159,19 @@ class Vsphere:
         if not isinstance(vm_array, dict):
             print("Provided array should be a dictionary.")
             return False
-        counter, number = Tools.counter(), 0
         for value in vm_array.values():
             url: str = f"{self.url}/api/vcenter/vm/{value['moId']}/guest/power?action=reboot"
-            response = requests.post(url=url, headers=headers, verify=False)
-            if response.status_code in (200, 204):
-                number = counter()
-                self.__logger.info(f"{value['name']} {response.status_code}")
-                time.sleep(0.15)
+            if self.get_vm_power_state(headers=headers, vm=value['moId']) == 'POWERED_ON':
+                response = requests.post(url=url, headers=headers, verify=False)
+                if response.status_code in (200, 204):
+                    self.__logger.info(f"{value['name']} {response.status_code}")
+                    print(f"Initiate guest OS reboot: {value['name']}")
+                    time.sleep(0.15)
+                else:
+                    self.__logger.error(response)
+                    print(f"Error: {value['name']}")
             else:
-                self.__logger.error(response)
-            print(f"Restart OS: {value['name']}  {response.status_code}")
+                continue
     
     def start_vm(self, headers, moId, name):
         """ Start provided VM in vSphere. """
@@ -209,6 +210,9 @@ class Vsphere:
                 response = requests.post(url=url_stop, headers=headers, verify=False)
                 if response.status_code not in (200, 204):
                     return False
+                else:
+                    print(f"Power Off virtual machine: {name}")
+                    return True
             print(f"Initiate guest OS shutdown: {name}")
         except requests.exceptions.RequestException as err:
             self.__logger.error(err)
@@ -312,9 +316,23 @@ class Vsphere:
             print("Error. Check the log!")
             return False            
 
-    def remove_vm_snapshots(self, headers, moId, vm_name):
+    def remove_vm_snapshot(self, headers, moId):
         """ Remove snapshots for a given VM. """
 
-        pass
-
+        url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachineSnapshot/{moId}/RemoveSnapshot_Task"
+        try:
+            payload = {
+                        "removeChildren": False
+                        }
+            response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
+            if response.status_code in (200, 204):
+                return True
+        except requests.exceptions.HTTPError as err:
+            self.__logger.error(err)
+            print("Error. Check the log!")
+            return False
+        except Exception as err:
+            self.__logger.error(err)
+            print("Error. Check the log!")
+            return False
 

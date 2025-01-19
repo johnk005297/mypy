@@ -18,6 +18,8 @@ import re
 import time
 from tools import Folder, File, Tools
 from log import Logs
+from rich.console import Console
+from rich.table import Table
 
 
 def main(local=False):
@@ -527,7 +529,7 @@ if __name__ == '__main__':
                 for value in vm_array.values():
                     snapshots: dict = v.get_vm_snapshots(headers, value["moId"], value["name"])
                     v.print_vm_snapshots(value["name"], snapshots)
-            elif subcommand in ('take-snap', 'revert-snap'):
+            elif subcommand in ('take-snap', 'revert-snap', 'remove-snap'):
                 # Logic of taking/revering snaps procedure:
                 # get needed VMs -> power OFF -> take/revert snaps -> restore power state
                 exclude_vm: list = args.exclude.split() if args.exclude else []
@@ -559,6 +561,12 @@ if __name__ == '__main__':
                         print(f"Awaiting guest OS shutdown: {vm_powered_on}")
                         continue
                     else:
+                        # create table for output
+                        table = Table(show_lines=True)
+                        table.add_column("Task Name", justify="left", no_wrap=True)
+                        table.add_column("Target", justify="left")
+                        table.add_column("Snapshot Name", justify="left")
+                        table.add_column("Status", justify="center")
                         for value in vm_array.values():
                             if subcommand == 'take-snap':
                                 v.take_snapshot(headers, value['moId'], value['name'], snap_name=args.name.strip(), description=args.desc)
@@ -573,7 +581,25 @@ if __name__ == '__main__':
                                   v.revert_to_snapshot(headers, snap_id, value['name'])  
                                 else:
                                     print(f"Incorrect snapshot name for vm: {value['name']}")
+                            elif subcommand == 'remove-snap':
+                                snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
+                                match = False
+                                for snap in snapshots.values():
+                                    if snap['snapName'].strip() == args.name.strip():
+                                        match = True
+                                        remove_snap_status = v.remove_vm_snapshot(headers, snap['snapId'])
+                                        time.sleep(1.5)
+                                        table.add_row(
+                                                    "Remove snapshot",
+                                                    value['name'],
+                                                    snap['snapName'].strip(),
+                                                    "[green]✅[/green]" if remove_snap_status else "[red]❌[/red]", style="magenta"
+                                                    )
+                                if not match:    
+                                    print(f"Incorrect snapshot name for vm: {value['name']}")
                         break
+                console = Console()
+                console.print(table)                
                 # Restoring power state
                 for value in vm_array.values():
                     if value["power_state"] == "POWERED_ON":
