@@ -238,19 +238,15 @@ class Vsphere:
                 data = response.json()
                 self.__logger.info(f"Created snapshot for VM: {vm_name}")
                 self.__logger.debug(data)
-                print(f"Create virtual machine snapshot: {vm_name}")
                 return True
             elif str(response.status_code).startswith('5'):
                 self.__logger.debug(response.text)
-                print("Take snapshot request status: 500. Check the log!")
                 return False
         except requests.exceptions.HTTPError:
             self.__logger.error(err)
-            print("Error. Check the log!")
             return False
         except Exception as err:
             self.__logger.error(err)
-            print("Error. Check the log!")
             return False
     
     def get_vm_snapshots(self, headers, moId, vm_name):
@@ -298,11 +294,9 @@ class Vsphere:
                         }
             response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
             if response.status_code == 200:
-                data = response.json() if bool(response.text) else False
                 msg: str = f"Revert to snapshot VM: {vm_name}"
                 self.__logger.info(msg)
-                print(msg)
-                return data
+                return True
             elif response.status_code == 500:
                 data = response.json() if bool(response.text) else False
                 self.__logger.error(data)
@@ -326,6 +320,7 @@ class Vsphere:
                         }
             response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
             if response.status_code in (200, 204):
+                self.__logger.info(f"Remove snapshot: {moId}")
                 return True
         except requests.exceptions.HTTPError as err:
             self.__logger.error(err)

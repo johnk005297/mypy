@@ -565,12 +565,21 @@ if __name__ == '__main__':
                         table = Table(show_lines=True)
                         table.add_column("Task Name", justify="left", no_wrap=True)
                         table.add_column("Target", justify="left")
-                        table.add_column("Snapshot Name", justify="left")
+                        table.add_column("Snapshot name", justify="left")
                         table.add_column("Status", justify="center")
                         for value in vm_array.values():
                             if subcommand == 'take-snap':
-                                v.take_snapshot(headers, value['moId'], value['name'], snap_name=args.name.strip(), description=args.desc)
+                                print_table: bool = True
+                                take_snap_status: bool = v.take_snapshot(headers, value['moId'], value['name'], snap_name=args.name.strip(), description=args.desc)
+                                time.sleep(1)
+                                table.add_row(
+                                            "Create snapshot",
+                                            value['name'],
+                                            args.name.strip(),
+                                            "[green]✅[/green]" if take_snap_status else "[red]❌[/red]", style="magenta"
+                                             )
                             elif subcommand == 'revert-snap':
+                                print_table: bool = False
                                 snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
                                 snap_id = None
                                 for snap in snapshots.values():
@@ -578,17 +587,27 @@ if __name__ == '__main__':
                                         snap_id = snap['snapId']
                                         break
                                 if snap_id:
-                                  v.revert_to_snapshot(headers, snap_id, value['name'])  
+                                  print_table = True
+                                  revert_snap_status = v.revert_to_snapshot(headers, snap_id, value['name'])
+                                  time.sleep(1)
+                                  table.add_row(
+                                                "Revert snapshot",
+                                                value['name'],
+                                                args.name.strip(),
+                                                "[green]✅[/green]" if revert_snap_status else "[red]❌[/red]", style="magenta"
+                                                )
                                 else:
                                     print(f"Incorrect snapshot name for vm: {value['name']}")
                             elif subcommand == 'remove-snap':
+                                print_table: bool = False
                                 snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
                                 match = False
                                 for snap in snapshots.values():
                                     if snap['snapName'].strip() == args.name.strip():
                                         match = True
+                                        print_table = True
                                         remove_snap_status = v.remove_vm_snapshot(headers, snap['snapId'])
-                                        time.sleep(1.5)
+                                        time.sleep(1)
                                         table.add_row(
                                                     "Remove snapshot",
                                                     value['name'],
@@ -598,8 +617,9 @@ if __name__ == '__main__':
                                 if not match:    
                                     print(f"Incorrect snapshot name for vm: {value['name']}")
                         break
-                console = Console()
-                console.print(table)                
+                if print_table:
+                    console = Console()
+                    console.print(table)                
                 # Restoring power state
                 for value in vm_array.values():
                     if value["power_state"] == "POWERED_ON":
