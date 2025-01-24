@@ -32,7 +32,7 @@ def main_menu():
                             \n      token                               get user access token(Bearer)                   \
                             \n      sh                                  run terminal command(current host)              \
                             \n      ssh connect                         run terminal command(remote host)               \
-                            \n      ls -l                               list current folder content                     \
+                            \n      ls                                  list current folder content                     \
                             \n                                                                                          \
                             \n   Docker                                                                                 \
                             \n      docker -h                           get a list of available commands                \
@@ -52,7 +52,7 @@ def main_menu():
                             \n        -h                                help message                                    \
                             \n                                                                                          \
                             \n   Custom UI                                                                              \
-                            \n      apply UI -f [filename]       apply custom user interface                      \
+                            \n      apply UI -f [filename]       apply custom user interface                            \
                             \n                                                                                          \
                             \n   Main                                                                                   \
                             \n      m                                   print this menu                                 \
@@ -86,7 +86,7 @@ def local_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.78.25'
+    __version__ = '1.78.26'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):

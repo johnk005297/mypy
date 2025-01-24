@@ -74,6 +74,7 @@ class Parser():
         sql_parser.add_argument('-p', '--port', required=True, help='DB port')
         sql_parser.add_argument('-o', '--out', required=False, action="store_true", help='Print SQL query response on a screen')
         sql_parser.add_argument('--list-db', required=False, action="store_true", help='Print list of all databases')
+        sql_parser.add_argument('--list-tables', required=False, action="store_true", help='Print list of all tables for a given databases')
         mdm_exclusive_group = sql_parser.add_mutually_exclusive_group(required=False)
         mdm_exclusive_group.add_argument('--mdm-prod', required=False, action="store_true", help='Switch ExternalKey value to production. Requires for MDM connector integration')
         mdm_exclusive_group.add_argument('--mdm-test', required=False, action="store_true", help='Switch ExternalKey value to test. Requires for MDM connector integration')

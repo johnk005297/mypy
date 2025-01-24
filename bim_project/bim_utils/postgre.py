@@ -58,6 +58,8 @@ class DB:
                 df.to_csv(result_file, index=False)
                 self.__logger.info(f"Execute query:\n{query}".replace('\n', '\n' + indent))
                 print(f"Query result saved in {result_file} file!")
+            elif not sql_file and out:
+                df.to_csv('result.csv', index=False)
             else:
                 print(df)
         except psycopg2.ProgrammingError as err:
@@ -175,3 +177,12 @@ class Queries:
     def get_list_of_all_db(cls):
 
         return """ select datname from pg_database; """
+
+    @classmethod
+    def get_list_of_db_tables(cls):
+        """ Get list of tables for a given database. """
+
+        return """ 
+                    SELECT table_name FROM information_schema.tables
+                        WHERE table_schema = 'public';
+                """

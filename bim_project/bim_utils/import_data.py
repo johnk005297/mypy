@@ -328,84 +328,26 @@ class Import_data:
 
 class Abac:
 
-    __api_upload_permission_objects_asset_performance_management: str = "api/asset-performance-management/AbacConfiguration/UploadPermissionObjectsConfiguration"
-    __api_upload_roles_asset_performance_management: str = "api/asset-performance-management/AbacConfiguration/UploadRolesConfiguration"
-    __api_upload_roles_mapping_asset_performance_management: str = "api/asset-performance-management/AbacConfiguration/UploadRolesMappingConfiguration"
-    __api_upload_event_rules_asset_performance_management: str = "api/asset-performance-management/NotificationHub/upload-event-rules"
-
-    __api_upload_permission_objects_maintenance_planning: str = "api/maintenance-planning/AbacConfiguration/UploadPermissionObjectsConfiguration"
-    __api_upload_roles_maintenance_planning: str = "api/maintenance-planning/AbacConfiguration/UploadRolesConfiguration"
-    __api_upload_roles_mapping_maintenance_planning: str = "api/maintenance-planning/AbacConfiguration/UploadRolesMappingConfiguration"
-    __api_upload_event_rules_maintenance_planning: str = "api/EnterpriseAssetManagementNotificationHub/upload-event-rules"
-
-    __api_upload_permission_objects_data_synchronizer: str = "api/data-synchronizer/AbacConfiguration/UploadPermissionObjectsConfiguration"
-    __api_upload_roles_data_synchronizer: str = "api/data-synchronizer/AbacConfiguration/UploadRolesConfiguration"
-    __api_upload_roles_mapping_data_synchronizer: str = "api/data-synchronizer/AbacConfiguration/UploadRolesMappingConfiguration"
-
-    __api_upload_permission_objects_work_permits_management: str = "api/work-permits-management/AbacConfiguration/UploadPermissionObjectsConfiguration"
-    __api_upload_roles_work_permits_management: str = "api/work-permits-management/AbacConfiguration/UploadRolesConfiguration"
-    __api_upload_roles_mapping_work_permits_management: str = "api/work-permits-management/AbacConfiguration/UploadRolesMappingConfiguration"
-
     def __init__(self):
         pass
 
-    def collect_work_permits_management_data(self, url, permissionObjects_file=None, roles_file=None, rolesMapping_file=None):
-        """ Collect data for abac for work-permits-management service. """
+    def collect_abac_data(self, **kwargs):
+        """ Collect data needed for abac import. """
 
         data: dict = {}
-        for x in (permissionObjects_file, roles_file, rolesMapping_file):
-            if x and permissionObjects_file:
-                data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_work_permits_management}", 'file': permissionObjects_file}})
-            if x and roles_file:
-                data.update({'Roles': {'url': f"{url}/{self.__api_upload_roles_work_permits_management}", 'file': roles_file}})
-            if x and rolesMapping_file:
-                data.update({'Roles_Mapping': {'url': f"{url}/{self.__api_upload_roles_mapping_work_permits_management}", 'file': rolesMapping_file}})         
+        for x in kwargs:
+            if x and kwargs['permissionObjects_file']:
+                data.update({'Permission_Objects': {'url': kwargs['url_permission'], 'file': kwargs['permissionObjects_file']}})
+            if x and kwargs['roles_file']:
+                data.update({'Roles': {'url': kwargs['url_roles'], 'file': kwargs['roles_file']}})
+            if x and kwargs['rolesMapping_file']:
+                data.update({'Roles_Mapping': {'url': kwargs['url_roles_mapping'], 'file': kwargs['rolesMapping_file']}})
+            if x and kwargs['notification_file']:
+                data.update({'Notifications': {'url': kwargs['url_events'], 'file': kwargs['notification_file']}})
         return data
 
-    def collect_asset_performance_management_data(self, url, permissionObjects_file=None, roles_file=None, rolesMapping_file=None, notification_file=None):
-        """ Collect data for abac asset-performance-management service. """
 
-        data: dict = {}
-        for x in (permissionObjects_file, roles_file, rolesMapping_file, notification_file):
-            if x and permissionObjects_file:
-                data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_asset_performance_management}", 'file': permissionObjects_file}})
-            if x and roles_file:
-                data.update({'Roles': {'url': f"{url}/{self.__api_upload_roles_asset_performance_management}", 'file': roles_file}})
-            if x and rolesMapping_file:
-                data.update({'Roles_Mapping': {'url': f"{url}/{self.__api_upload_roles_mapping_asset_performance_management}", 'file': rolesMapping_file}})
-            if x and notification_file:
-                data.update({'Notifications': {'url': f"{url}/{self.__api_upload_event_rules_asset_performance_management}", 'file': notification_file}})
-        return data
-
-    def collect_maintenance_planning_data(self, url, permissionObjects_file=None, roles_file=None, rolesMapping_file=None, notification_file=None):
-        """ Collect data for abac maintenance-planning service. """
-
-        data: dict = {}
-        for x in (permissionObjects_file, roles_file, rolesMapping_file, notification_file):
-            if x and permissionObjects_file:
-                data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_maintenance_planning}", 'file': permissionObjects_file}})
-            if x and roles_file:
-                data.update({'Roles': {'url': f"{url}/{self.__api_upload_roles_maintenance_planning}", 'file': roles_file}})
-            if x and rolesMapping_file:
-                data.update({'Roles_Mapping': {'url': f"{url}/{self.__api_upload_roles_mapping_maintenance_planning}", 'file': rolesMapping_file}})
-            if x and notification_file:
-                data.update({'Notifications': {'url': f"{url}/{self.__api_upload_event_rules_maintenance_planning}", 'file': notification_file}})            
-        return data
-
-    def collect_data_synchronizer_data(self, url, permissionObjects_file=None, roles_file=None, rolesMapping_file=None):
-        """ Collect data for abac for data-synchronizer service. """
-
-        data: dict = {}
-        for x in (permissionObjects_file, roles_file, rolesMapping_file):
-            if x and permissionObjects_file:
-                data.update({'Permission_Objects': {'url': f"{url}/{self.__api_upload_permission_objects_data_synchronizer}", 'file': permissionObjects_file}})
-            if x and roles_file:
-                data.update({'Roles': {'url': f"{url}/{self.__api_upload_roles_data_synchronizer}", 'file': roles_file}})
-            if x and rolesMapping_file:
-                data.update({'Roles_Mapping': {'url': f"{url}/{self.__api_upload_roles_mapping_data_synchronizer}", 'file': rolesMapping_file}})         
-        return data
-
-    def import_abac(self, token, data: dict, svc_name):
+    def import_abac_and_events(self, token, data: dict, svc_name):
         """ Import data from collected functions above. """
 
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
@@ -417,14 +359,14 @@ class Abac:
                         logger.debug(f"{value['url']}: {response.status_code}")
                         print(f"{svc_name}: {key} configuration uploaded successfully")
                     else:
-                        print(f"Error: {response.status_code}")
-                        print(response.text)
+                        print(f"Error: {response.status_code} - {svc_name}")
             except FileNotFoundError as err:
                 logger.error(err)
                 print(err)
             except Exception as err:
                 logger.error(err)
                 print("Error! Check the log.")
+
 
     def print_help(self):
         """ Provide help info for the user. """
@@ -438,6 +380,11 @@ options:
   asset                 Asset-performance-management service
   maintenance           Maintenance-planning service
   work-permits          Work-permits-management service
+  fmeca                 Fmeca service
+  rcm                   reliability-centered-maintenance service
+  rca                   root-cause-analysis service
+  rbi                   risk-based-inspections service
+  rm                    recommendation-management service
   --permission-objects  Flag to point a file with permission objects configuration 
   --roles-mapping       Flag to point a file with roles mapping configuration
   --roles               Flag to point a file with roles configuration

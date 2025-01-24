@@ -353,11 +353,14 @@ def main(local=False):
                     continue
                 args = user_command[2:]
                 # accessible services and keys
-                svc = ('data-sync', 'asset', 'maintenance', 'work-permits')
+                svc = ('data-sync', 'asset', 'maintenance', 'work-permits', 'fmeca', 'rca', 'rbi', 'rcm', 'rm')
+                check_svc = [x for x in args if x in svc]
+                if not check_svc:
+                    print(f"Incorrect service(s) provided! Available options: {svc}")
                 keys= ('--roles', '--roles-mapping', '--permission-objects', '--events')
                 incorrect_keys = [x for x in args if x.startswith('--') and x not in keys]
                 if incorrect_keys:
-                    print("Attention! Incorrect key provided!")
+                    print(f"Incorrect key provided! Available options: {keys}")
                 parsed_args = dict()
                 for x in range(len(args)):
                     if args[x] in svc and args[x] not in parsed_args.keys():
@@ -368,43 +371,110 @@ def main(local=False):
                                     try:
                                         parsed_args[args[x]].update({args[y]: args[y+1]})
                                     except IndexError:
-                                        print("Incorrect input! Check for the filename after the --[key]")
+                                        print("Incorrect input! Check for the filename after the [--key]")
                             else:
                                 break
                 if parsed_args.get('maintenance'):
-                    data: dict = Abac.collect_maintenance_planning_data(
-                                                                        url,
-                                                                        permissionObjects_file=parsed_args['maintenance'].get('--permission-objects'),
-                                                                        roles_file=parsed_args['maintenance'].get('--roles'),
-                                                                        rolesMapping_file=parsed_args['maintenance'].get('--roles-mapping'),
-                                                                        notification_file=parsed_args['maintenance'].get('--events')
-                                                                        )
-                    Abac.import_abac(token, data, 'maintenance-planning')
+                    data: dict = Abac.collect_abac_data(
+                                                        url_permission=f"{url}/api/maintenance-planning/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/maintenance-planning/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/maintenance-planning/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        url_events=f"{url}/api/EnterpriseAssetManagementNotificationHub/upload-event-rules",
+                                                        permissionObjects_file=parsed_args['maintenance'].get('--permission-objects'),
+                                                        roles_file=parsed_args['maintenance'].get('--roles'),
+                                                        rolesMapping_file=parsed_args['maintenance'].get('--roles-mapping'),
+                                                        notification_file=parsed_args['maintenance'].get('--events')
+                                                        )
+                    Abac.import_abac_and_events(token, data, 'maintenance-planning')
                 if parsed_args.get('asset'):
-                    data: dict = Abac.collect_asset_performance_management_data(
-                                                                                url,
-                                                                                permissionObjects_file=parsed_args['asset'].get('--permission-objects'),
-                                                                                roles_file=parsed_args['asset'].get('--roles'),
-                                                                                rolesMapping_file=parsed_args['asset'].get('--roles-mapping'),
-                                                                                notification_file=parsed_args['asset'].get('--events')                        
+                    data: dict = Abac.collect_abac_data(
+                                                        url_permission=f"{url}/api/asset-performance-management/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/asset-performance-management/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/asset-performance-management/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        url_events=f"{url}/api/asset-performance-management/NotificationHub/upload-event-rules",
+                                                        permissionObjects_file=parsed_args['asset'].get('--permission-objects'),
+                                                        roles_file=parsed_args['asset'].get('--roles'),
+                                                        rolesMapping_file=parsed_args['asset'].get('--roles-mapping'),
+                                                        notification_file=parsed_args['asset'].get('--events')
                                                                                 )
-                    Abac.import_abac(token, data, 'asset-performance-management')
+                    Abac.import_abac_and_events(token, data, 'asset-performance-management')
                 if parsed_args.get('data-sync'):
-                    data: dict = Abac.collect_data_synchronizer_data(
-                                                                    url,
-                                                                    permissionObjects_file=parsed_args['data-sync'].get('--permission-objects'),
-                                                                    roles_file=parsed_args['data-sync'].get('--roles'),
-                                                                    rolesMapping_file=parsed_args['data-sync'].get('--roles-mapping')
-                                                                    )
-                    Abac.import_abac(token, data, 'data-synchronizer-api')
+                    data: dict = Abac.collect_abac_data(
+                                                        url_permission=f"{url}/api/data-synchronizer/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/data-synchronizer/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/data-synchronizer/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=parsed_args['data-sync'].get('--permission-objects'),
+                                                        roles_file=parsed_args['data-sync'].get('--roles'),
+                                                        rolesMapping_file=parsed_args['data-sync'].get('--roles-mapping'),
+                                                        notification_file=None
+                                                        )
+                    Abac.import_abac_and_events(token, data, 'data-synchronizer-api')
                 if parsed_args.get('work-permits'):
-                    data: dict = Abac.collect_work_permits_management_data(
-                                                                    url,
-                                                                    permissionObjects_file=parsed_args['work-permits'].get('--permission-objects'),
-                                                                    roles_file=parsed_args['work-permits'].get('--roles'),
-                                                                    rolesMapping_file=parsed_args['work-permits'].get('--roles-mapping')
-                                                                    )
-                    Abac.import_abac(token, data, 'work-permits-management')
+                    data: dict = Abac.collect_abac_data(
+                                                        url_permission=f"{url}/api/work-permits-management/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/work-permits-management/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/work-permits-management/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=parsed_args['work-permits'].get('--permission-objects'),
+                                                        roles_file=parsed_args['work-permits'].get('--roles'),
+                                                        rolesMapping_file=parsed_args['work-permits'].get('--roles-mapping'),
+                                                        notification_file=None
+                                                        )
+                    Abac.import_abac_and_events(token, data, 'work-permits-management')
+                if parsed_args.get('fmeca'):
+                    data: dict = Abac.collect_abac_data(
+                                                        url_permission=f"{url}/api/fmeca/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/fmeca/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/fmeca/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=parsed_args['fmeca'].get('--permission-objects'),
+                                                        roles_file=parsed_args['fmeca'].get('--roles'),
+                                                        rolesMapping_file=parsed_args['fmeca'].get('--roles-mapping'),
+                                                        notification_file=None
+                                                        )
+                    Abac.import_abac_and_events(token, data, 'fmeca')
+                if parsed_args.get('rca'):
+                    data: dict = Abac.collect_abac_data(
+                                                        url_permission=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=parsed_args['rca'].get('--permission-objects'),
+                                                        roles_file=parsed_args['rca'].get('--roles'),
+                                                        rolesMapping_file=parsed_args['rca'].get('--roles-mapping'),
+                                                        notification_file=None
+                                                        )
+                    Abac.import_abac_and_events(token, data, 'root-cause-analysis')
+                if parsed_args.get('rbi'):
+                    data: dict = Abac.collect_abac_data(
+                                                        url_permission=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=parsed_args['rbi'].get('--permission-objects'),
+                                                        roles_file=parsed_args['rbi'].get('--roles'),
+                                                        rolesMapping_file=parsed_args['rbi'].get('--roles-mapping'),
+                                                        notification_file=None
+                                                        )
+                    Abac.import_abac_and_events(token, data, 'risk-based-inspections')
+                if parsed_args.get('rcm'):
+                    data: dict = Abac.collect_abac_data(
+                                                        url_permission=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=parsed_args['rcm'].get('--permission-objects'),
+                                                        roles_file=parsed_args['rcm'].get('--roles'),
+                                                        rolesMapping_file=parsed_args['rcm'].get('--roles-mapping'),
+                                                        notification_file=None
+                                                        )
+                    Abac.import_abac_and_events(token, data, 'reliability-centered-maintenance')
+                if parsed_args.get('rm'):
+                    data: dict = Abac.collect_abac_data(
+                                                        url_permission=f"{url}/api/recommendation-management/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/recommendation-management/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/recommendation-management/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=parsed_args['rm'].get('--permission-objects'),
+                                                        roles_file=parsed_args['rm'].get('--roles'),
+                                                        rolesMapping_file=parsed_args['rm'].get('--roles-mapping'),
+                                                        notification_file=None
+                                                        )
+                    Abac.import_abac_and_events(token, data, 'recommendation-management')                                        
 
             #    ''' =============================================================================== Custom UI ======================================================================================== '''
             case ['apply', 'UI', *_]:
@@ -490,6 +560,8 @@ if __name__ == '__main__':
                 pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Test'))
             elif args.list_db:
                 pg.exec_query(conn, query=q.get_list_of_all_db())
+            elif args.list_tables:
+                pg.exec_query(conn, query=q.get_list_of_db_tables(), out=args.out)
         elif args.command == 'vsphere':
             subcommand = sys.argv[2]
             v = vsphere.Vsphere()
@@ -573,31 +645,28 @@ if __name__ == '__main__':
                                 take_snap_status: bool = v.take_snapshot(headers, value['moId'], value['name'], snap_name=args.name.strip(), description=args.desc)
                                 time.sleep(1)
                                 table.add_row(
-                                            "Create snapshot",
-                                            value['name'],
-                                            args.name.strip(),
-                                            "[green]✅[/green]" if take_snap_status else "[red]❌[/red]", style="magenta"
-                                             )
+                                                "Create snapshot",
+                                                value['name'],
+                                                args.name.strip(),
+                                                "[green]✅[/green]" if take_snap_status else "[red]❌[/red]", style="magenta"
+                                                )
                             elif subcommand == 'revert-snap':
                                 print_table: bool = False
                                 snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
-                                snap_id = None
                                 for snap in snapshots.values():
                                     if snap['snapName'].strip() == args.name.strip():
-                                        snap_id = snap['snapId']
+                                        print_table = True
+                                        revert_snap_status = v.revert_to_snapshot(headers, snap['snapId'], value['name'])
+                                        time.sleep(1)
+                                        table.add_row(
+                                                        "Revert snapshot",
+                                                        value['name'],
+                                                        args.name.strip(),
+                                                        "[green]✅[/green]" if revert_snap_status else "[red]❌[/red]", style="magenta"
+                                                        )
                                         break
-                                if snap_id:
-                                  print_table = True
-                                  revert_snap_status = v.revert_to_snapshot(headers, snap_id, value['name'])
-                                  time.sleep(1)
-                                  table.add_row(
-                                                "Revert snapshot",
-                                                value['name'],
-                                                args.name.strip(),
-                                                "[green]✅[/green]" if revert_snap_status else "[red]❌[/red]", style="magenta"
-                                                )
-                                else:
-                                    print(f"Incorrect snapshot name for vm: {value['name']}")
+                                    else:
+                                        print(f"Incorrect snapshot name for vm: {value['name']}")
                             elif subcommand == 'remove-snap':
                                 print_table: bool = False
                                 snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
@@ -614,12 +683,12 @@ if __name__ == '__main__':
                                                     snap['snapName'].strip(),
                                                     "[green]✅[/green]" if remove_snap_status else "[red]❌[/red]", style="magenta"
                                                     )
-                                if not match:    
+                                if not match:
                                     print(f"Incorrect snapshot name for vm: {value['name']}")
                         break
                 if print_table:
                     console = Console()
-                    console.print(table)                
+                    console.print(table)
                 # Restoring power state
                 for value in vm_array.values():
                     if value["power_state"] == "POWERED_ON":
