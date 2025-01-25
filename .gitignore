@@ -3,7 +3,6 @@ bot_project/
 git.commands
 study
 bim_project/bim_utils/.env
-bim_project/bim_utils/git.py
 bim_project/tmp
 bim_project/archived
 bim_project/bim_utils/*.lic

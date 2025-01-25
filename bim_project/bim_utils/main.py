@@ -511,8 +511,8 @@ if __name__ == '__main__':
             project_id = g.get_bimeister_project_id()
             if not project_id:
                 sys.exit()
-            if args.search_branch:
-                g.search_branches(project_id, args.search_branch)
+            if args.search:
+                g.search_branches(project_id, args.search)
             elif args.commit:
                 file_content: dict = g.get_product_collection_file_content(project_id, args.commit)
                 if not file_content:
@@ -536,8 +536,6 @@ if __name__ == '__main__':
                 git.compare_two_commits(first_commit_services, first_commit_db, second_commit_services, second_commit_db)
             elif args.list_branch_folder:
                 g.get_tree(project_id, args.list_branch_folder)
-            elif args.search_tag:
-                g.search_tag(project_id, args.search_tag)
         elif args.command == 'drop-UO':
             postgre.DB.drop_userObjects(args.url, username=args.user, password=args.password)
         elif args.command == 'sql':

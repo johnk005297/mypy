@@ -12,7 +12,7 @@ class Parser():
         """ Function for parsing arguments of the command line. """
 
         # create the top-level parser
-        parser = argparse.ArgumentParser(description='Frankenstein CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
+        parser = argparse.ArgumentParser(description="Frankenstein's CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, gitlab, vCenter, etc.")
         parser.add_argument('-V', '--version', required=False, action="store_true", help='Get version of the bim_utils')
         parser.add_argument('--local', required=False, action="store_true", help='Execute script with locally available options on the current host')
 
@@ -89,10 +89,10 @@ class Parser():
         product_list_parser.add_argument('-lbf', '--list-branch-folder', required=False, help='Prints a list of files and folders for a given branch')
         product_list_parser.add_argument('-p', '--project-name', required=False, help='Option allows to provide project name from the product-collection.yaml without prompt')
         product_list_group = product_list_parser.add_mutually_exclusive_group(required=False)
-        product_list_group.add_argument('-sb', '--search-branch', required=False, nargs='+', help='Search for a branch by it\'s name')
+        product_list_group.add_argument('-s', '--search', required=False, nargs='+', help='Search for branches and tags by it\'s name')
         product_list_group.add_argument('--commit', required=False, help='Get info from the product-collection.yaml file for a specific commit')
         product_list_group.add_argument('--compare', required=False, nargs=2, help='Compare two commits for difference in product-collection.yaml in DBs list and services list')
-        product_list_group.add_argument('-st', '--search-tag', required=False, nargs='+', help='Search for a tag by it\'s name')
+        # product_list_group.add_argument('-st', '--search-tag', required=False, nargs='+', help='Search for a tag by it\'s name')
 
         # create parser for the "bim-version" subcommand
         bim_version = subparser.add_parser('bim-version', help='Get bimeister version information')
