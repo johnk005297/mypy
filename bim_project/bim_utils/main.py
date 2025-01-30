@@ -18,7 +18,8 @@ import re
 import time
 from tools import Folder, File, Tools
 from log import Logs
-from rich.console import Console
+# from rich.console import Console
+from rich.live import Live
 from rich.table import Table
 
 
@@ -599,6 +600,7 @@ if __name__ == '__main__':
                 for value in vm_array.values():
                     snapshots: dict = v.get_vm_snapshots(headers, value["moId"], value["name"])
                     v.print_vm_snapshots(value["name"], snapshots)
+                    print()
             elif subcommand in ('take-snap', 'revert-snap', 'remove-snap'):
                 # Logic of taking/revering snaps procedure:
                 # get needed VMs -> power OFF -> take/revert snaps -> restore power state
@@ -613,21 +615,19 @@ if __name__ == '__main__':
                     sys.exit("Abort procedure!")
                 for value in vm_array.values():
                     v.stop_vm(headers, value["moId"], value["name"])
-                count = 0
+                count = Tools.counter()
                 while True:
-                    time.sleep(5)
-                    count += 1
                     vm_powered_on_count = 0
                     for value in vm_array.values():
                         power_status = v.get_vm_power_state(headers, value["moId"])
                         if power_status != "POWERED_OFF":
                             vm_powered_on = value["name"]
                             vm_powered_on_count += 1
-                    if count == 120:
-                        print("Couldn't stop VM within 10 minutes. Check VM status in vCenter!")
+                    if count() == 20:
+                        print("Couldn't stop VM within 10 minutes. Check VM status in vCenter. Exit!")
                         break
                     elif vm_powered_on_count > 0:
-                        time.sleep(5)
+                        time.sleep(30)
                         print(f"Awaiting guest OS shutdown: {vm_powered_on}")
                         continue
                     else:
@@ -637,56 +637,49 @@ if __name__ == '__main__':
                         table.add_column("Target", justify="left")
                         table.add_column("Snapshot name", justify="left")
                         table.add_column("Status", justify="center")
-                        for value in vm_array.values():
-                            if subcommand == 'take-snap':
-                                print_table: bool = True
-                                take_snap_status: bool = v.take_snapshot(headers, value['moId'], value['name'], snap_name=args.name.strip(), description=args.desc)
-                                time.sleep(1)
-                                table.add_row(
-                                                "Create snapshot",
-                                                value['name'],
-                                                args.name.strip(),
-                                                "[green]✅[/green]" if take_snap_status else "[red]❌[/red]", style="magenta"
-                                                )
-                            elif subcommand == 'revert-snap':
-                                print_table: bool = False
-                                snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
-                                for snap in snapshots.values():
-                                    if snap['snapName'].strip() == args.name.strip():
-                                        print_table = True
-                                        revert_snap_status = v.revert_to_snapshot(headers, snap['snapId'], value['name'])
-                                        time.sleep(1)
-                                        table.add_row(
-                                                        "Revert snapshot",
-                                                        value['name'],
-                                                        args.name.strip(),
-                                                        "[green]✅[/green]" if revert_snap_status else "[red]❌[/red]", style="magenta"
-                                                        )
-                                        break
-                                    else:
-                                        print(f"Incorrect snapshot name for vm: {value['name']}")
-                            elif subcommand == 'remove-snap':
-                                print_table: bool = False
-                                snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
-                                match = False
-                                for snap in snapshots.values():
-                                    if snap['snapName'].strip() == args.name.strip():
-                                        match = True
-                                        print_table = True
-                                        remove_snap_status = v.remove_vm_snapshot(headers, snap['snapId'])
-                                        time.sleep(1)
-                                        table.add_row(
-                                                    "Remove snapshot",
+                        with Live(table, refresh_per_second=4):
+                            for value in vm_array.values():
+                                if subcommand == 'take-snap':
+                                    take_snap_status: bool = v.take_snapshot(headers, value['moId'], value['name'], snap_name=args.name.strip(), description=args.desc)
+                                    time.sleep(1)
+                                    table.add_row(
+                                                    "Create snapshot",
                                                     value['name'],
-                                                    snap['snapName'].strip(),
-                                                    "[green]✅[/green]" if remove_snap_status else "[red]❌[/red]", style="magenta"
+                                                    args.name.strip(),
+                                                    "[green]✅[/green]" if take_snap_status else "[red]❌[/red]", style="magenta"
                                                     )
-                                if not match:
-                                    print(f"Incorrect snapshot name for vm: {value['name']}")
-                        break
-                if print_table:
-                    console = Console()
-                    console.print(table)
+                                elif subcommand == 'revert-snap':
+                                    snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
+                                    for snap in snapshots.values():
+                                        if snap['snapName'].strip() == args.name.strip():
+                                            revert_snap_status = v.revert_to_snapshot(headers, snap['snapId'], value['name'])
+                                            time.sleep(1)
+                                            table.add_row(
+                                                            "Revert snapshot",
+                                                            value['name'],
+                                                            args.name.strip(),
+                                                            "[green]✅[/green]" if revert_snap_status else "[red]❌[/red]", style="magenta"
+                                                            )
+                                            break
+                                        else:
+                                            print(f"Incorrect snapshot name for vm: {value['name']}")
+                                elif subcommand == 'remove-snap':
+                                    snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
+                                    match = False
+                                    for snap in snapshots.values():
+                                        if snap['snapName'].strip() == args.name.strip():
+                                            match = True
+                                            remove_snap_status = v.remove_vm_snapshot(headers, snap['snapId'])
+                                            time.sleep(1)
+                                            table.add_row(
+                                                        "Remove snapshot",
+                                                        value['name'],
+                                                        snap['snapName'].strip(),
+                                                        "[green]✅[/green]" if remove_snap_status else "[red]❌[/red]", style="magenta"
+                                                        )
+                                    if not match:
+                                        print(f"Incorrect snapshot name for vm: {value['name']}")
+                            break
                 # Restoring power state
                 for value in vm_array.values():
                     if value["power_state"] == "POWERED_ON":

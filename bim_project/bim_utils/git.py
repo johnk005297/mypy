@@ -9,8 +9,8 @@ from rich.console import Console
 from rich.table import Table
 
 class Git:
-    __headers = {"PRIVATE-TOKEN": "my-token"}
-    __url = "https://git.mycorp.io/api/v4"
+    __headers = {"PRIVATE-TOKEN": "my_token"}
+    __url = "https://git.bimeister.io/api/v4"
     __logger = Logs().f_logger(__name__)
     __error_msg = "Unexpected error. Check the logs!"
 
@@ -103,7 +103,7 @@ class Git:
                 return False
             for tag in data:
                 branch = self.get_branch_name_using_commit(project_id, tag['commit']['short_id'])
-                tag_data[tag['commit']['short_id']] = {'tag_name': 'release-' + tag['name'], 'branch_name': branch}
+                tag_data[tag['commit']['short_id']] = {'tag_name': tag['name'], 'branch_name': branch}
         if not tag_data:
             return False
         else:
@@ -117,7 +117,7 @@ class Git:
         table = Table(show_lines=False)
         table.add_column("Branch", justify="left", no_wrap=True, style="#875fff")
         table.add_column("Commit", justify="left", style="#875fff")
-        table.add_column("Tag", justify="left", style="#875fff")        
+        table.add_column("Tag", justify="left", style="#875fff")
         for x in search:
             url = f"{self.__url}/projects/{project_id}/repository/branches?regex=\D{x}"
             try:
@@ -127,20 +127,21 @@ class Git:
                 print(self.__error_msg)
                 self.__logger.error(err)
                 return False
-            for y in response.json():
-                branches.append(y)
-            for branch in branches:
+            for branch in response.json():
                 if tags and tags.get(branch['commit']['short_id']):
-                    table.add_row(branch['name'], branch['commit']['short_id'], 'release-' + tags[branch['commit']['short_id']]['tag_name'])
+                    branches.append([branch['name'], branch['commit']['short_id'], tags[branch['commit']['short_id']]['tag_name']])
                     tags.pop(branch['commit']['short_id'], None)
                 else:
-                    table.add_row(branch['name'], branch['commit']['short_id'], '-')
+                    branches.append([branch['name'], branch['commit']['short_id'], '-'])
             if tags:
                 for tag in tags:
-                    table.add_row(tags[tag]['branch_name'], tag, tags[tag]['tag_name'])
+                    branches.append([tags[tag]['branch_name'], tag, tags[tag]['tag_name']])
         if not branches:
             print("No branches were found!")
             return True
+        result_data = list(map(list,set(map(tuple, branches)))) # remove duplicates from the final result search
+        for x in result_data:
+            table.add_row(x[0], x[1], x[2])
         console = Console()
         console.print(table)
 
@@ -213,35 +214,6 @@ def parse_product_collection_yaml(data: dict, project_name=''):
     return project, services, db
 
 
-def compare_two_commits(first_commit_services: list, first_commit_db: list, second_commit_services: list, second_commit_db: list):
-    """ Compare to commits with each other. Search for the difference in DBs lists and services lists. """
-
-    first_commit_services: set = set(first_commit_services)
-    first_commit_db: set = set(first_commit_db)
-    second_commit_services: set = set(second_commit_services)
-    second_commit_db: set = set(second_commit_db)
-
-    if not first_commit_db == second_commit_db:
-        db_removed = first_commit_db.difference(second_commit_db)
-        db_added = second_commit_db.difference(first_commit_db)
-        print("\nDatabases:", end=" ")
-        if db_removed:
-            print(Fore.RED + "\n  Removed: {0}".format(db_removed))
-        if db_added:
-            print(Fore.GREEN + "{0}  Added: {1}".format("" if db_removed else "\n", db_added))
-    else:
-        print("\nDatabases: Total match!")
-    if not first_commit_services == second_commit_services:
-        svc_removed = first_commit_services.difference(second_commit_services)
-        svc_added = second_commit_services.difference(first_commit_services)
-        print("Services:", end=" ")
-        if svc_removed:
-            print(Fore.RED + "\n  Removed: {0}".format(svc_removed))
-        if svc_added:
-            print(Fore.GREEN + "{0}  Added: {1}".format("" if svc_removed else "\n", svc_added))
-    else:
-        print("Services: Total match!")
-
 # def compare_two_commits(first_commit_services: list, first_commit_db: list, second_commit_services: list, second_commit_db: list):
 #     """ Compare to commits with each other. Search for the difference in DBs lists and services lists. """
 
@@ -249,20 +221,6 @@ def compare_two_commits(first_commit_services: list, first_commit_db: list, seco
 #     first_commit_db: set = set(first_commit_db)
 #     second_commit_services: set = set(second_commit_services)
 #     second_commit_db: set = set(second_commit_db)
-
-#     table = Table()
-#     table.add_column("Services", justify="left", no_wrap=True)
-#     table.add_column("Databases", justify="left")
-#     if not first_commit_services == second_commit_services:
-#         svc_removed = first_commit_services.difference(second_commit_services)
-#         svc_added = second_commit_services.difference(first_commit_services)
-#         if svc_removed:
-#             print(Fore.RED + "\n  Removed: {0}".format(svc_removed))
-#         if svc_added:
-#             print(Fore.GREEN + "{0}  Added: {1}".format("" if svc_removed else "\n", svc_added))
-#     else:
-#         table.add_row("Total match!")
-
 
 #     if not first_commit_db == second_commit_db:
 #         db_removed = first_commit_db.difference(second_commit_db)
@@ -274,6 +232,39 @@ def compare_two_commits(first_commit_services: list, first_commit_db: list, seco
 #             print(Fore.GREEN + "{0}  Added: {1}".format("" if db_removed else "\n", db_added))
 #     else:
 #         print("\nDatabases: Total match!")
+#     if not first_commit_services == second_commit_services:
+#         svc_removed = first_commit_services.difference(second_commit_services)
+#         svc_added = second_commit_services.difference(first_commit_services)
+#         print("Services:", end=" ")
+#         if svc_removed:
+#             print(Fore.RED + "\n  Removed: {0}".format(svc_removed))
+#         if svc_added:
+#             print(Fore.GREEN + "{0}  Added: {1}".format("" if svc_removed else "\n", svc_added))
+#     else:
+#         print("Services: Total match!")
+
+def compare_two_commits(first_commit_services: list, first_commit_db: list, second_commit_services: list, second_commit_db: list):
+    """ Compare to commits with each other. Search for the difference in DBs lists and services lists. """
+
+    first_commit_services: set = set(first_commit_services)
+    first_commit_db: set = set(first_commit_db)
+    second_commit_services: set = set(second_commit_services)
+    second_commit_db: set = set(second_commit_db)
+    table = Table()
+    table.add_column("Services", justify="left", no_wrap=True, style="magenta")
+    table.add_column("Databases", justify="left", style="magenta")
+    if not first_commit_services == second_commit_services:
+        svc_removed = first_commit_services.difference(second_commit_services)
+        svc_added = second_commit_services.difference(first_commit_services)
+    else:
+        table.add_row("Total match!")
+    if not first_commit_db == second_commit_db:
+        db_removed = first_commit_db.difference(second_commit_db)
+        db_added = second_commit_db.difference(first_commit_db)
+    else:
+        table.add_row("Total match!")
+    console = Console()
+    console.print(table)
 
 def print_services_and_db(svc: list, db: list, project_name=''):
     """ Function for displaying collection on a screen. """
