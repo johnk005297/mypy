@@ -32,6 +32,7 @@ def main(local=False):
     Export_data = export_data.Export_data()
     Import_data_main = import_data.Import_data()
     Abac = import_data.Abac()
+    Mdm = import_data.Mdmconnector()
     Docker = mdocker.Docker()
     K8s = mk8s.K8S(namespace='bimeister')
     FT = featureToggle.FeatureToggle()
@@ -475,7 +476,18 @@ def main(local=False):
                                                         rolesMapping_file=parsed_args['rm'].get('--roles-mapping'),
                                                         notification_file=None
                                                         )
-                    Abac.import_abac_and_events(token, data, 'recommendation-management')                                        
+                    Abac.import_abac_and_events(token, data, 'recommendation-management')
+
+            #    ''' =============================================================================== MDM connector ==================================================================================== '''
+            case ['mdm', 'import', *_]:
+                try:
+                    search_idx = user_command.index('-f')
+                    file = user_command[search_idx + 1]
+                    Mdm.import_mdm_config(url, token, file)
+                except ValueError:
+                    print("Incorrect command. Use '-f' flag to point the filename.")
+                except IndexError:
+                    print("Incorrect command. No filename was found after '-f' flag.")
 
             #    ''' =============================================================================== Custom UI ======================================================================================== '''
             case ['apply', 'UI', *_]:

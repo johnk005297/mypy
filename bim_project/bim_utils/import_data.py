@@ -367,7 +367,6 @@ class Abac:
                 logger.error(err)
                 print("Error! Check the log.")
 
-
     def print_help(self):
         """ Provide help info for the user. """
 
@@ -391,3 +390,32 @@ options:
   --events              Flag to point a file with notifications
 """
         print(message)
+
+
+class Mdmconnector:
+
+    def __init__(self):
+        pass
+
+    def import_mdm_config(self, url, token, file):
+        """ Import mdm config file for mdm connector. """
+
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        url = url + "/mdmconnector-api/v1/AutoSetup/file"
+        try:
+            with open(file, mode='rb') as f:
+                response = requests.patch(url=url, file={'file': f}, headers=headers, verify=False)
+                if response.status_code in (200, 204):
+                    logger.debug(f"{url}: {response.status_code}")
+                    print(f"{file} for mdm-connector uploaded successfully")
+                else:
+                    print(f"Error: {response.status_code}. Check logs!")
+        except FileNotFoundError as err:
+            logger.error(err)
+            print(f"File not found: {file}")
+            return False
+        except Exception as err:
+            logger.error(err)
+            print("Error! Check the log.")
+            return False
+        

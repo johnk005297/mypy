@@ -12,7 +12,8 @@ load_dotenv()
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
-
+from rich.tree import Tree
+from rich import print as rprint
 
 class Vsphere:
 
@@ -253,7 +254,6 @@ class Vsphere:
         """ Get snapshot Id, virtual machine Id, snapshot name for a given VM. """
 
         url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachine/{moId}/snapshot"
-        snapshots: dict = {}
         try:
             response = requests.get(url=url, headers=headers, verify=False)
             if response.status_code == 200:
@@ -267,22 +267,33 @@ class Vsphere:
             self.__logger.error(err)
             print("Error. Check the log!")
             return False
-
-        # recursion to loop through nested lists with dictionaries and get snapshot names
-        def collect_snapshot_name(data, depth=0, count=1):
+        snapshots: dict = {}
+        snapId, vmId, snapName = [], [], []
+        def collect_snapshot_names(data, depth=0, count=1):
             for x in data:
-                snapshots[count] = {'snapId': x['snapshot']['value'], 'vmId': x['vm']['value'], 'snapName': ' '*depth + x['name']}
-                if x.get('childSnapshotList'):
-                    collect_snapshot_name(x['childSnapshotList'], depth+2, count+1)
-        if isinstance(data, dict) and data.get('rootSnapshotList'):
-            collect_snapshot_name(data['rootSnapshotList'])
-        else:
-            return False
+                for k,v in x.items():
+                    if k == 'snapshot':
+                        snapId.append(v['value'])
+                    if k == 'vm':
+                        vmId.append(v['value'])
+                    if k == 'name':
+                        snapName.append(' '*depth + v)
+                    if isinstance(v, list):
+                        collect_snapshot_names(v, depth+2, count+1) # recursion to loop through nested lists with dictionaries and get snapshot names
+        collect_snapshot_names(data['rootSnapshotList'])
+        # add result data into snapshots dictionary
+        result = list(zip(snapId, vmId, snapName))
+        for num, x in enumerate(result, 1):
+            snapshots[num] = {'snapId': x[0], 'vmId': x[1], 'snapName': x[2]}
         return snapshots
 
     def print_vm_snapshots(self, vm_name, snapshots: dict):
-        print(f"{vm_name} snapshots:")
-        for snap in snapshots.values(): print(snap['snapName'])
+        """ Print VM snapshots. """
+
+        tree = Tree(vm_name)
+        for snap in snapshots.values():
+            tree.add(snap['snapName'])
+        rprint(tree)
 
     def revert_to_snapshot(self, headers, moId, vm_name):
         """ Revert chosen VM(s) to a given snapshot. """
