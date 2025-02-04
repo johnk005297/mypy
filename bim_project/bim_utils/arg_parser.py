@@ -97,6 +97,12 @@ class Parser():
         # create parser for the "bim-version" subcommand
         bim_version = subparser.add_parser('bim-version', help='Get bimeister version information')
         bim_version.add_argument('-u', '--url', required=True)
+
+        # mdm connector import config
+        mdm_connector = subparser.add_parser('mdm', help='Import MDM autosetup config file. Requires for MDM connector integration')
+        mdm_connector.add_argument('--import-file', required=True, help='Point .json config file for MDM autosetup')
+        mdm_connector.add_argument('--url', required=True)
+
         args = parser.parse_args()
         return args
     

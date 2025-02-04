@@ -397,18 +397,20 @@ class Mdmconnector:
     def __init__(self):
         pass
 
-    def import_mdm_config(self, url, token, file):
+    def import_mdm_config(self, url, file):
         """ Import mdm config file for mdm connector. """
 
-        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        headers = {'accept': 'text/plain'}
+        # url = "https://mdmconn-dtoir-t.imp.bimeister.io/mdmconnector-api/v1/AutoSetup/file"
         url = url + "/mdmconnector-api/v1/AutoSetup/file"
         try:
             with open(file, mode='rb') as f:
-                response = requests.patch(url=url, file={'file': f}, headers=headers, verify=False)
+                response = requests.patch(url=url, files={'file': f}, headers=headers, verify=False)
                 if response.status_code in (200, 204):
                     logger.debug(f"{url}: {response.status_code}")
-                    print(f"{file} for mdm-connector uploaded successfully")
+                    print(f"{file} file uploaded successfully")
                 else:
+                    logger.error(response.text)
                     print(f"Error: {response.status_code}. Check logs!")
         except FileNotFoundError as err:
             logger.error(err)

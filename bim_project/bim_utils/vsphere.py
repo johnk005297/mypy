@@ -280,7 +280,8 @@ class Vsphere:
                         snapName.append(' '*depth + v)
                     if isinstance(v, list):
                         collect_snapshot_names(v, depth+2, count+1) # recursion to loop through nested lists with dictionaries and get snapshot names
-        collect_snapshot_names(data['rootSnapshotList'])
+        if data:
+            collect_snapshot_names(data['rootSnapshotList'])
         # add result data into snapshots dictionary
         result = list(zip(snapId, vmId, snapName))
         for num, x in enumerate(result, 1):
@@ -292,7 +293,8 @@ class Vsphere:
 
         tree = Tree(vm_name)
         for snap in snapshots.values():
-            tree.add(snap['snapName'])
+            if snap['snapName']:
+                tree.add(snap['snapName'])
         rprint(tree)
 
     def revert_to_snapshot(self, headers, moId, vm_name):
