@@ -688,7 +688,11 @@ if __name__ == '__main__':
             Tools.print_bim_version(args.url)
         elif args.command == 'mdm':
             mdm = import_data.Mdmconnector()
-            mdm.import_mdm_config(args.import_file)
+            url = mdm.check_url(args.url)
+            if args.export_file:
+                mdm.export_mdm_config(url)
+            else:
+                mdm.import_mdm_config(url, args.import_file)
         elif args.local:
             main(local=True)
         else:

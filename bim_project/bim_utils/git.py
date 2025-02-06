@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.table import Table
 
 class Git:
-    __headers = {"PRIVATE-TOKEN": "my-token"}
+    # __headers = {"PRIVATE-TOKEN": "my-token"}
     __url = "https://git.bimeister.io/api/v4"
     __logger = Logs().f_logger(__name__)
     __error_msg = "Unexpected error. Check the logs!"

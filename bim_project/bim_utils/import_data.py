@@ -394,15 +394,28 @@ options:
 
 class Mdmconnector:
 
+    export_url = "/mdmconnector-api/v1/AutoSetup/export"
+    import_url = "/mdmconnector-api/v1/AutoSetup/file"
+
     def __init__(self):
         pass
+
+    def check_url(self, url):
+        """ Check if there is 'https' in the provided url. """
+
+        url = url[:-1] if url[-1] == '/' else url
+        if not url.startswith("http"):
+            url = "https://" + url
+        else:
+            if url[4] != 's':
+                url = url[:4] + 's' + url[4:]
+        return url
 
     def import_mdm_config(self, url, file):
         """ Import mdm config file for mdm connector. """
 
         headers = {'accept': 'text/plain'}
-        # url = "https://mdmconn-dtoir-t.imp.bimeister.io/mdmconnector-api/v1/AutoSetup/file"
-        url = url + "/mdmconnector-api/v1/AutoSetup/file"
+        url = url + self.import_url
         try:
             with open(file, mode='rb') as f:
                 response = requests.patch(url=url, files={'file': f}, headers=headers, verify=False)
@@ -420,4 +433,24 @@ class Mdmconnector:
             logger.error(err)
             print("Error! Check the log.")
             return False
-        
+
+    def export_mdm_config(self, url):
+        """ Import mdm config file for mdm connector. """
+
+        headers = {'accept': 'text/plain'}
+        url = url + self.export_url
+        try:
+            response = requests.patch(url=url, headers=headers, verify=False)
+            if response.status_code in (200, 204):
+                data = response.json()
+                with open("mdm-connector-setup.json", mode='w') as file:
+                    file.write(json.dumps(data, indent=2))
+                logger.info(f"{url}: {response.status_code}")
+                print(f"Config file 'mdm-connector-setup.json' uploaded successfully")
+            else:
+                logger.error(response.text)
+                print(f"Error: {response.status_code}. Check logs!")
+        except Exception as err:
+            logger.error(err)
+            print("Error! Check the log.")
+            return False    

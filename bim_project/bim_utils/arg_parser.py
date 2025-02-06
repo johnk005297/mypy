@@ -99,9 +99,11 @@ class Parser():
         bim_version.add_argument('-u', '--url', required=True)
 
         # mdm connector import config
-        mdm_connector = subparser.add_parser('mdm', help='Import MDM autosetup config file. Requires for MDM connector integration')
-        mdm_connector.add_argument('--import-file', required=True, help='Point .json config file for MDM autosetup')
-        mdm_connector.add_argument('--url', required=True)
+        mdm_connector_parser = subparser.add_parser('mdm', help='Import MDM autosetup config file. Requires for MDM connector integration')
+        mdm_connector_parser.add_argument('--url', required=True)
+        mdm_connector_group = mdm_connector_parser.add_mutually_exclusive_group(required=True)
+        mdm_connector_group.add_argument('--import-file', help='Point .json config file for MDM autosetup for import')
+        mdm_connector_group.add_argument('--export-file', action="store_true", help='Export .json config file for MDM autosetup')
 
         args = parser.parse_args()
         return args
