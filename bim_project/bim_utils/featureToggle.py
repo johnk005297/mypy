@@ -37,11 +37,11 @@ class FeatureToggle:
             print()
             for key,value in sorted(data.items()):
                 if enabled and value:
-                    table.add_row(str(count()), key.capitalize(), "[green]✅[/green]")
+                    table.add_row(str(count()), key.capitalize(), "[green]on[/green]")
                 elif disabled and not value:
-                    table.add_row(str(count()), key.capitalize(), "[red]❌[/red]")
+                    table.add_row(str(count()), key.capitalize(), "[red]off[/red]")
                 elif not enabled and not disabled:
-                    table.add_row(str(count()), key.capitalize(), "[green]✅[/green]" if value else "[red]❌[/red]")
+                    table.add_row(str(count()), key.capitalize(), "[green]on[/green]" if value else "[red]off[/red]")
         else:
             print(f"Error {response.status_code} occurred during GetFeatures request. Check the logs.")
             logger.error(response.text)

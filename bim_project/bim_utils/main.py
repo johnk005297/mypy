@@ -334,7 +334,7 @@ def main(local=False):
                     elif user_command == ['ft', '--list', '--enabled']:
                         FT.display_features(url, enabled=True)
                     elif user_command == ['ft', '--list', '--disabled']:
-                        FT.display_features(url, disabled=True)                        
+                        FT.display_features(url, disabled=True)
                 elif '--on' in user_command or '--off' in user_command:
                     features: list = [x for x in user_command if x not in ('--on', '--off', 'ft')]
                     try:

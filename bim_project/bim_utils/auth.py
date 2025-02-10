@@ -62,7 +62,7 @@ class Auth:
         for x in range(2):
             self.__logger.info(self.__start_connection(url))
             try:
-                response = requests.get(url=url, verify=False, allow_redirects=False, timeout=2)                
+                response = requests.get(url=url, verify=False, allow_redirects=False, timeout=2)
                 self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url,
                                                           response.status_code))
                 if response.status_code == 200:
