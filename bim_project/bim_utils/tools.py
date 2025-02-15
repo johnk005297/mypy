@@ -180,26 +180,34 @@ class Tools:
         count = 0
         while True:
             try:
-                response = requests.get(url, verify=False)
+                response = requests.get(url, verify=False, timeout=1)
                 response.raise_for_status()
                 data = response.json()
                 print(f"name: {data['BRANCH_NAME']}\nversion: {data['BUILD_FULL_VERSION']}")
                 return True
-            except requests.exceptions.ConnectionError:
-                if count > 0: print("ConnectionError: Check URL address.")
-            except json.JSONDecodeError:
-                if count > 0: print("JSONDecodeError: Check URL address.")
-            except requests.exceptions.MissingSchema:
-                if count > 0: print(f"Invalid URL. MissingSchema.")
-            except Exception:
-                if count > 0: print("ConnectionError: Check URL address.")
+            except requests.exceptions.ConnectionError as err:
+                logger.error(err)
+                if count > 0: 
+                    print("Connection error: Check URL address.")
+                    return False
+            except json.JSONDecodeError as err:
+                print("JSONDecodeError: Check URL address.")
+                logger.error(err)
+                return False
+            except requests.exceptions.MissingSchema as err:
+                print(f"Invalid URL. MissingSchema.")
+                logger.error(err)
+                return False
+            except Exception as err:
+                print("Unexpected error. Check the logs.")
+                logger.error(err)
+                return False
             count += 1
             if count == 1:
                 url = url.split(':')
-                url = 'http:' + url[1]
+                url = 'http:' + url[1] if url[0] == 'https' else 'https:' + url[1]
             elif count > 1:
-                break
-        return False
+                return False
 
     def apply_bimeister_customUI(url, token, file):
         """ Function to upload custom user intreface files. """
