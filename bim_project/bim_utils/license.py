@@ -190,7 +190,7 @@ class License:
                           license["serverId"],
                           f"{license['activeUsers']}/{license['activeUsersLimit']}",
                           f"[red]{expiration_date}[/red]" if license["until"] < current_date and license["isActive"] else expiration_date,
-                          "[green]✅[/green]" if license["isActive"] else "[red]❌[/red]", style="cyan" if license["isActive"] else "dim cyan"
+                        "[green]Active[/green]" if license["isActive"] else "[red]Inactive[/red]", style="cyan" if license["isActive"] else "dim cyan"
                           )
         console = Console()
         console.print(table)

@@ -354,11 +354,11 @@ def main(local=False):
                     continue
                 args = user_command[2:]
                 # accessible services and keys
-                svc = ('data-sync', 'asset', 'maintenance', 'work-permits', 'fmeca', 'rca', 'rbi', 'rcm', 'rm')
+                svc: list = ['data-sync', 'asset', 'maintenance', 'work-permits', 'fmeca', 'rca', 'rbi', 'rcm', 'rm']
                 check_svc = [x for x in args if x in svc]
                 if not check_svc:
-                    print(f"Incorrect service(s) provided! Available options: {svc}")
-                keys= ('--roles', '--roles-mapping', '--permission-objects', '--events')
+                    print(f"Incorrect service was provided! Available options: {svc}")
+                keys: list = ['--roles', '--roles-mapping', '--permission-objects', '--events']
                 incorrect_keys = [x for x in args if x.startswith('--') and x not in keys]
                 if incorrect_keys:
                     print(f"Incorrect key provided! Available options: {keys}")
@@ -366,11 +366,19 @@ def main(local=False):
                 for x in range(len(args)):
                     if args[x] in svc and args[x] not in parsed_args.keys():
                         parsed_args[args[x]] = {}
-                        for y in range(x+1, len(args)):
+                        for y in range(x + 1, len(args)):
                             if args[y] not in svc:
                                 if args[y] in keys:
+                                    if args[y + 1].startswith('"'):
+                                        second_quotes_idx: int = ' '.join(args[y + 1:]).find('"', 1)
+                                        if second_quotes_idx == -1:
+                                            print(f"Missing quotes in file name for {args[y]} key!")
+                                        else:
+                                            filename: str = ' '.join(args[y + 1:])[1:second_quotes_idx]
+                                    else: 
+                                        filename: str = args[y + 1]
                                     try:
-                                        parsed_args[args[x]].update({args[y]: args[y+1]})
+                                        parsed_args[args[x]].update({args[y]: filename})
                                     except IndexError:
                                         print("Incorrect input! Check for the filename after the [--key]")
                             else:
