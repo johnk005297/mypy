@@ -10,155 +10,267 @@ from rich.table import Table
 
 class Git:
     __headers = {"PRIVATE-TOKEN": "my-token"}
-    __url = "https://git.bimeister.io/api/v4"
-    __logger = Logs().f_logger(__name__)
-    __error_msg = "Unexpected error. Check the logs!"
+    _url = "https://git.bimeister.io/api/v4"
+    _logger = Logs().f_logger(__name__)
+    _error_msg = "Unexpected error. Check logs!"
 
+    def __init__(self):
+        self.tag = Tag
+        self.project = Project
+        self.branch = Branch
+        self.job = Job
+        self.pipeline = Pipeline
+        self.product_collection = Product_collection_file
 
-    def get_pipelines(self, project_id):
-        """ Get a list of pipelines. """
+    def display_table_with_branches_commits_tags_jobs(self, data) -> Table:
+        """ Create table, fill with data(branches, commits, tags, helm chart job status, FT job status) and print it out. """
 
-        url = f"{self.__url}/projects/{project_id}/pipelines"
-        response = requests.get(url=url, headers=self.__headers)
-        data = response.json()
-        print(data)
-
-    def get_tree(self, project_id, branch_name):
-        """ Get a list of tree. """
-
-        url = f"{self.__url}/projects/{project_id}/repository/tree?ref={branch_name}"
-        try:
-            response = requests.get(url=url, headers=self.__headers)
-            response.raise_for_status()
-            data = response.json()
-        except requests.exceptions.RequestException as err:
-            print(self.__error_msg)
-            self.__logger.error(err)
-            return False
-        for x in data:
-            print(x['name'])
-
-    def get_branch_name_using_commit(self, project_id, commit):
-        """ Get needed commit from a given repository. """
-
-        url = f"{self.__url}/projects/{project_id}/repository/commits/{commit}/refs?type=branch"
-        try:
-            response = requests.get(url=url, headers=self.__headers)
-            response.raise_for_status()
-            data = response.json()
-            return data[0]['name'] if data else "-"
-        except requests.exceptions.RequestException as err:
-            self.__logger.error(err)
-            print(self.__error_msg)
-            return False
-
-    def get_bimeister_project_id(self):
-        """ Get from Gitlab ID of the project bimeister. """
-
-        url = f"{self.__url}/search?scope=projects&search=bimeister"
-        try:
-            response = requests.get(url=url, headers=self.__headers)
-            response.raise_for_status()
-            data = response.json()
-        except requests.exceptions.ConnectionError as err:
-            self.__logger.error(err)
-            print("No connection to gitlab. Check the logs. Exit!")
-            return False
-        except requests.exceptions.RequestException as err:
-            print(self.__error_msg)
-            self.__logger.error(err)
-            return False
-        project: dict = [x for x in data if x['name'] == 'bimeister'][0]
-        return project['id']
-
-    ### Need to rebuild ##
-    def get_tags(self, project_id):
-        """ Get needed tags for provided project_id. """
-
-        url = f"{self.__url}/projects/{project_id}/repository/tags"
-        try:
-            response = requests.get(url=url, headers=self.__headers)
-            response.raise_for_status()
-            data = response.json()
-        except requests.exceptions.RequestException as err:
-            self.__logger.error(err)
-            print(self.__error_msg)
-            return False
-        return data
-
-    def search_tag(self, project_id, search: list):
-        """ Search for needed tags. """
-
-        url = f"{self.__url}/projects/{project_id}/repository/tags"
-        tag_data = dict()
-        for x in search:
-            try:
-                payload = {'search': x}
-                response = requests.get(url=url, headers=self.__headers, params=payload, verify=False)
-                response.raise_for_status()
-                data = response.json()
-            except requests.exceptions.RequestException as err:
-                self.__logger.error(err)
-                print(self.__error_msg)
-                return False
-            for tag in data:
-                branch = self.get_branch_name_using_commit(project_id, tag['commit']['short_id'])
-                tag_data[tag['commit']['short_id']] = {'tag_name': tag['name'], 'branch_name': branch}
-        if not tag_data:
-            return False
-        else:
-            return tag_data
-
-    def search_branches(self, project_id, search: list):
-        """ Search and print list of branches with their commits and tags. """
-
-        tags: dict = self.search_tag(project_id, search)
-        branches: list = []
         table = Table(show_lines=False)
         table.add_column("Branch", justify="left", no_wrap=True, style="#875fff")
         table.add_column("Commit", justify="left", style="#875fff")
         table.add_column("Tag", justify="left", style="#875fff")
-        for x in search:
-            url = f"{self.__url}/projects/{project_id}/repository/branches?regex=\D{x}"
-            try:
-                response = requests.get(url=url, headers=self.__headers)
-                response.raise_for_status()
-            except requests.exceptions.RequestException as err:
-                print(self.__error_msg)
-                self.__logger.error(err)
-                return False
-            for branch in response.json():
-                if tags and tags.get(branch['commit']['short_id']):
-                    branches.append([branch['name'], branch['commit']['short_id'], tags[branch['commit']['short_id']]['tag_name']])
-                    tags.pop(branch['commit']['short_id'], None)
-                else:
-                    branches.append([branch['name'], branch['commit']['short_id'], '-'])
-            if tags:
-                for tag in tags:
-                    branches.append([tags[tag]['branch_name'], tag, tags[tag]['tag_name']])
-        if not branches:
-            print("No branches were found!")
-            return True
-        result_data = list(map(list,set(map(tuple, branches)))) # remove duplicates from the final result search
-        for x in result_data:
-            table.add_row(x[0], x[1], x[2])
+        table.add_column("Helm charts", justify="left", style="#875fff")
+        table.add_column("FT", justify="left", style="#875fff")
+        table.add_column("Pipeline", justify="left", style="#875fff")
+        for x in data:
+            table.add_row(x[0], x[1], x[2], x[3], x[4], str(x[5]))
         console = Console()
         console.print(table)
+
+
+class Project(Git):
+
+    def get_project_id(self, project='bimeister') -> int:
+        """ Get from Gitlab ID of the project bimeister. """
+
+        __url = f"{self._url}/search?scope=projects&search={project}"
+        try:
+            response = requests.get(url=__url, headers=self._headers, verify=False)
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.ConnectionError as err:
+            self._logger.error(err)
+            print("No connection to gitlab. Check the logs. Exit!")
+            return False
+        except requests.exceptions.RequestException as err:
+            print(self._error_msg)
+            self._logger.error(err)
+            return False
+        project: dict = [x for x in data if x['name'] == project][0]
+        return project['id'] if project else False
+
+
+class Tag(Git):
+
+    def search_tag(self, project_id, search: list) -> dict:
+        """ Search for needed tags. """
+
+        __url = f"{self._url}/projects/{project_id}/repository/tags"
+        tag_data = dict()
+        for x in search:
+            try:
+                payload = {'search': x}
+                response = requests.get(url=__url, headers=self._headers, params=payload, verify=False)
+                response.raise_for_status()
+                data = response.json()
+            except requests.exceptions.RequestException as err:
+                self._logger.error(err)
+                print(self._error_msg)
+                return False
+            for tag in data:
+                branch: list = self.branch().get_branch_name_using_commit(project_id, tag['commit']['short_id'])
+                tag_data[tag['commit']['short_id']] = {'tag_name': tag['name'], 'branch_name': branch}
+        if not tag_data:
+            return False
+        else:
+            '''Some tags may have more than one branch, and they may have the same branches like another tags which has only one branch in the list.
+               Need to remove duplicate branches from such tags.
+            '''
+            branches = set(branch for v in tag_data.values() for branch in v['branch_name'] if len(v['branch_name']) == 1 )
+            for value in tag_data.values():
+                if len(value['branch_name']) > 1:
+                    for branch in value['branch_name'][:]:
+                        if branch in branches:
+                            value['branch_name'].remove(branch)
+            return tag_data
+
+
+class Branch(Git):
+
+    def search_branches_commits_tags_jobs(self, project_id, search: list):
+        """ Search and print list of branches with their commits, tags and jobs. """
+
+        tags: dict = self.tag().search_tag(project_id, search)
+        result_data: list = []
+        for x in search:
+            url = f"{self._url}/projects/{project_id}/repository/branches?regex=\D{x}"
+            try:
+                response = requests.get(url=url, headers=self._headers)
+                response.raise_for_status()
+            except requests.exceptions.RequestException as err:
+                print(self._error_msg)
+                self._logger.error(err)
+                return False
+            for branch in response.json():
+                jobs: dict = self.job().get_specific_jobs(project_id, branch['commit']['short_id'])
+                if tags and tags.get(branch['commit']['short_id']):
+                    result_data.append([
+                        branch['name'],
+                        branch['commit']['short_id'],
+                        tags[branch['commit']['short_id']]['tag_name'],
+                        'Ready' if jobs.get('build_chart') and jobs['build_chart']['status'] == 'success' else 'Not ready',
+                        'Ready' if jobs.get('add_features_toggle_by_product') and jobs['add_features_toggle_by_product']['status'] == 'success' else 'Not ready',
+                        jobs['pipeline_id'] if jobs['pipeline_id'] else '-'
+                            ])
+                    tags.pop(branch['commit']['short_id'], None)
+                else:
+                    result_data.append([
+                        branch['name'],
+                        branch['commit']['short_id'],
+                        '-',
+                        'Ready' if jobs.get('build_chart') and jobs['build_chart']['status'] == 'success' else 'Not ready',
+                        'Ready' if jobs.get('add_features_toggle_by_product') and jobs['add_features_toggle_by_product']['status'] == 'success' else 'Not ready',
+                        jobs['pipeline_id'] if jobs['pipeline_id'] else '-'
+                            ])
+            if tags:
+                for tag in tags:
+                    jobs: dict = self.job().get_specific_jobs(project_id, tag)
+                    result_data.append([
+                        ' '.join(tags[tag]['branch_name']),
+                        tag,
+                        tags[tag]['tag_name'],
+                        'Ready' if jobs.get('build_chart') and jobs['build_chart']['status'] == 'success' else 'Not ready',
+                        'Ready' if jobs.get('add_features_toggle_by_product') and jobs['add_features_toggle_by_product']['status'] == 'success' else 'Not ready',
+                        jobs['pipeline_id'] if jobs['pipeline_id'] else '-'
+                                     ])
+        if not result_data:
+            print("No branches were found!")
+            return True
+        return result_data
+
+    def get_branch_name_using_commit(self, project_id, commit) -> list:
+        """ Get branch name(s) using commit from a given repository. """
+
+        url = f"{self._url}/projects/{project_id}/repository/commits/{commit}/refs?type=branch"
+        try:
+            response = requests.get(url=url, headers=self._headers, verify=False)
+            response.raise_for_status()
+            branches: list = [x['name'] for x in response.json()]
+            return branches if branches else False
+        except requests.exceptions.RequestException as err:
+            self._logger.error(err)
+            print(self._error_msg)
+            return False
+
+
+class Job(Git):
+
+    _jobs: tuple = (
+                "add features toggle by product", 
+                "build chart"
+                    )
+
+    def get_pipeline_jobs(self, project_id, pipeline_id) -> list:
+        """ Get a list of jobs for provided pipeline. """
+
+        if not pipeline_id:
+            return []
+        url = f"{self._url}/projects/{project_id}/pipelines/{pipeline_id}/jobs"
+        try:
+            response = requests.get(url=url, headers=self._headers, verify=False)
+            response.raise_for_status()
+            jobs = response.json()
+        except requests.exceptions.RequestException as err:
+            self._logger.error(err)
+            return False
+        return jobs
+
+    def get_specific_jobs(self, project_id: int, commit: str) -> dict:
+        """ Get id, status, name of jobs and pipeline_id pointed out in 'specific_jobs' tuple from pipeline. """
+
+        check_pipelines: int = self.pipeline().get_pipelines(project_id, commit)
+        pipeline_id = check_pipelines[0]['id'] if check_pipelines else False
+        if not pipeline_id:
+            needed_jobs: dict = {'pipeline_id': False}
+            return needed_jobs
+        all_jobs: list = self.get_pipeline_jobs(project_id, pipeline_id)
+        needed_jobs: dict = {'pipeline_id': pipeline_id}
+        for j in all_jobs:
+            if j['name'].lower() in self._jobs:
+                name: str = '_'.join((j['name'].lower().split()))
+                needed_jobs[name] = {'id': j['id'], 'name': name, 'status': j['status']}
+        return needed_jobs
+
+    def run_job(self, project_id: int, job_id: list):
+        """ Execute job run for a given job id list. """
+
+        if not project_id or not job_id or not isinstance(job_id, list):
+            self._logger.error(f"{self.job.__qualname__} Incorrect data transferred.")
+            raise TypeError("Run job function accepts project_id and job_id as a list.")
+        for id in job_id:
+            url = f"{self._url}/projects/{project_id}/jobs/{id}/play"
+            try:
+                response = requests.post(url=url, headers=self._headers, verify=False)
+                response.raise_for_status()
+                data = response.json()
+                if response.status_code == 200:
+                    print(f"Job started successfully                \
+                          \nname: {data['name']}                    \
+                          \npipeline id: {data['pipeline']['id']}   \
+                          \nref: {data['pipeline']['ref']}          \
+                          \nurl: {data['pipeline']['web_url']}      ")
+            except requests.exceptions.RequestException as err:
+                print(self._error_msg)
+                self._logger.error(err)
+                return False                
+            except Exception as err:
+                self._logger.error(err)
+                return False                
+
+
+class Pipeline(Git):
+
+    def get_pipelines(self, project_id, commit) -> list:
+        """ Get list of pipeline(s) with 'success' status for provided commit. """
+
+        branches: list = self.branch().get_branch_name_using_commit(project_id, commit)
+        pipelines: list = []
+        if not branches:
+            return False
+        for branch in branches:
+            url = f"{self._url}/projects/{project_id}/pipelines?ref={branch}"
+            try:
+                payload = {
+                    "order_by": "updated_at",
+                    "status": "success"
+                        }
+                response = requests.get(url=url, headers=self._headers, params=payload, verify=False)
+                response.raise_for_status()
+                for pipeline in response.json():
+                    pipelines.append(pipeline)
+            except requests.exceptions.RequestException as err:
+                self._logger.error(err)
+                print("Error getting pipelines. Check the log.")
+                return False
+        return pipelines
+
+
+class Product_collection_file(Git):
 
     def get_product_collection_file_content(self, project_id, commit):
         """ Get a product-collection.yaml file content. """
 
-        url = f"{self.__url}/projects/{project_id}/repository/files/product-collections%2Eyaml?ref={commit}"
+        url = f"{self._url}/projects/{project_id}/repository/files/product-collections%2Eyaml?ref={commit}"
         try:
-            response = requests.get(url=url, headers=self.__headers)
+            response = requests.get(url=url, headers=self._headers)
             response.raise_for_status()
         except requests.exceptions.HTTPError as err:
-            print(self.__error_msg)
-            self.__logger.error(err)
+            print(self._error_msg)
+            self._logger.error(err)
             return False
         except requests.exceptions.RequestException as err:
-            print(self.__error_msg)
-            self.__logger.error(err)
+            print(self._error_msg)
+            self._logger.error(err)
             return False
         data_base64 = response.json()['content']
         data_bytes = data_base64.encode('utf-8')
@@ -167,123 +279,125 @@ class Git:
         data: dict = yaml.safe_load(decode_string)
         return(data)
 
-def parse_product_collection_yaml(data: dict, project_name=''):
-    """ Function returns a tuple with the project name and two lists of services and DB for a chosen project. """
+    def parse_product_collection_yaml(self, data: dict, project_name=''):
+        """ Function returns a tuple with the project name and two lists of services and DB for a chosen project. """
 
-    if not data:
-        return False
-    if not project_name:
-        for num, project in enumerate(data['collections'], 1):
-            print(f"{num}. {project}")
-        try:
-            inp = int(input('Choose number of the project: '))
-            project = list(data['collections'])[inp - 1]
-        except ValueError:
-            print("Wrong input.")
+        if not data:
             return False
-    else:
-        project = project_name
-    modules_and_services: dict = data['modules']
-    modules = set(data['collections'][project]['modules'])
-    # cache = data['collections'][project]['infrastructure']['caсhe'] # The key 'cache' was copied from the product-collection.yaml file, because it has a flow with unicode. Does not work when just type 'cache' from keyboard.
-    services: list = []
-    for module in modules:
-        if module not in modules_and_services:
-            print(f"<{module}> module does not exist in the global modules list!")
-            continue
-        elif module == 'spatium':
-            for x in data['services']['spatium']['additional_containers']:
-                services.append('spatium_api') if x == 'api' else services.append(x)
-        for service in modules_and_services[module]:
-            if service not in services and service != 'spatium':
-                services.append(service)
-    services = sorted(services)
-    db: list = []
-    for svc in services:
-        try:
-            if svc in data['services']['spatium']['additional_containers'] or svc == 'spatium_api':
-                db.extend(data['services']['spatium']['db'])
-            elif data['services'][svc].get('db') and data['services'][svc]['db'] == ['db']:
-                db.append('bimeisterdb')
-            elif data['services'][svc].get('db'):
-                db.extend(data['services'][svc]['db'])
-        except TypeError:
-            print("Warning! This version works with product-collection.yaml file only since release-133.")
+        if not project_name:
+            for num, project in enumerate(data['collections'], 1):
+                print(f"{num}. {project}")
+            try:
+                inp = int(input('Choose number of the project: '))
+                project = list(data['collections'])[inp - 1]
+            except ValueError:
+                print("Wrong input.")
+                return False
+        else:
+            project = project_name
+        modules_and_services: dict = data['modules']
+        modules = set(data['collections'][project]['modules'])
+        # cache = data['collections'][project]['infrastructure']['caсhe'] # The key 'cache' was copied from the product-collection.yaml file, because it has a flow with unicode. Does not work when just type 'cache' from keyboard.
+        services: list = []
+        for module in modules:
+            if module not in modules_and_services:
+                print(f"<{module}> module does not exist in the global modules list!")
+                continue
+            elif module == 'spatium':
+                for x in data['services']['spatium']['additional_containers']:
+                    services.append('spatium_api') if x == 'api' else services.append(x)
+            for service in modules_and_services[module]:
+                if service not in services and service != 'spatium':
+                    services.append(service)
+        services = sorted(services)
+        db: list = []
+        for svc in services:
+            try:
+                if svc in data['services']['spatium']['additional_containers'] or svc == 'spatium_api':
+                    db.extend(data['services']['spatium']['db'])
+                elif data['services'][svc].get('db') and data['services'][svc]['db'] == ['db']:
+                    db.append('bimeisterdb')
+                elif data['services'][svc].get('db'):
+                    db.extend(data['services'][svc]['db'])
+            except TypeError:
+                print("Warning! This version works with product-collection.yaml file only since release-133.")
+                return False
+        db = sorted(set(db)) # remove duplicates from the list using set
+        return project, services, db
+
+    def compare_two_commits(self, first_commit_services: list, first_commit_db: list, second_commit_services: list, second_commit_db: list):
+        """ Compare to commits with each other. Search for the difference in DBs lists and services lists. """
+
+        first_commit_services: set = set(first_commit_services)
+        first_commit_db: set = set(first_commit_db)
+        second_commit_services: set = set(second_commit_services)
+        second_commit_db: set = set(second_commit_db)
+
+        if not first_commit_db == second_commit_db:
+            db_removed = first_commit_db.difference(second_commit_db)
+            db_added = second_commit_db.difference(first_commit_db)
+            print("\nDatabases:", end=" ")
+            if db_removed:
+                print(Fore.RED + "\n  Removed: {0}".format(db_removed))
+            if db_added:
+                print(Fore.GREEN + "{0}  Added: {1}".format("" if db_removed else "\n", db_added))
+        else:
+            print("\nDatabases: Total match!")
+        if not first_commit_services == second_commit_services:
+            svc_removed = first_commit_services.difference(second_commit_services)
+            svc_added = second_commit_services.difference(first_commit_services)
+            print("Services:", end=" ")
+            if svc_removed:
+                print(Fore.RED + "\n  Removed: {0}".format(svc_removed))
+            if svc_added:
+                print(Fore.GREEN + "{0}  Added: {1}".format("" if svc_removed else "\n", svc_added))
+        else:
+            print("Services: Total match!")
+
+    def print_services_and_db(self, svc: list, db: list, project_name=''):
+        """ Function for displaying collection on a screen. """
+
+        table = Table(title=project_name, show_footer=True)
+        table.add_column("Services", style="cyan", justify="left", no_wrap=True, footer=f"Total: {len(svc)}")
+        table.add_column("Databases", style="cyan", justify="left", footer=f"Total: {len(db)}")
+        if not svc or not db:
             return False
-    db = sorted(set(db)) # remove duplicates from the list using set
-    return project, services, db
+        # make lists 'db' and 'svc' equal length
+        max_length: int = max(len(svc), len(db))
+        svc.extend([''] * (max_length - len(svc)))
+        db.extend([''] * (max_length - len(db)))
+        for service, database in zip(svc, db):
+            table.add_row(service, database)
+        console = Console()
+        console.print(table)
 
 
-def compare_two_commits(first_commit_services: list, first_commit_db: list, second_commit_services: list, second_commit_db: list):
-    """ Compare to commits with each other. Search for the difference in DBs lists and services lists. """
+    ### NOT IN USE ###
+    # def get_tree(self, project_id, branch_name):
+    #     """ Get a list of tree. """
 
-    first_commit_services: set = set(first_commit_services)
-    first_commit_db: set = set(first_commit_db)
-    second_commit_services: set = set(second_commit_services)
-    second_commit_db: set = set(second_commit_db)
+    #     url = f"{self.__url}/projects/{project_id}/repository/tree?ref={branch_name}"
+    #     try:
+    #         response = requests.get(url=url, headers=self._headers)
+    #         response.raise_for_status()
+    #         data = response.json()
+    #     except requests.exceptions.RequestException as err:
+    #         print(self._error_msg)
+    #         self._logger.error(err)
+    #         return False
+    #     for x in data:
+    #         print(x['name'])
 
-    if not first_commit_db == second_commit_db:
-        db_removed = first_commit_db.difference(second_commit_db)
-        db_added = second_commit_db.difference(first_commit_db)
-        print("\nDatabases:", end=" ")
-        if db_removed:
-            print(Fore.RED + "\n  Removed: {0}".format(db_removed))
-        if db_added:
-            print(Fore.GREEN + "{0}  Added: {1}".format("" if db_removed else "\n", db_added))
-    else:
-        print("\nDatabases: Total match!")
-    if not first_commit_services == second_commit_services:
-        svc_removed = first_commit_services.difference(second_commit_services)
-        svc_added = second_commit_services.difference(first_commit_services)
-        print("Services:", end=" ")
-        if svc_removed:
-            print(Fore.RED + "\n  Removed: {0}".format(svc_removed))
-        if svc_added:
-            print(Fore.GREEN + "{0}  Added: {1}".format("" if svc_removed else "\n", svc_added))
-    else:
-        print("Services: Total match!")
+    # def get_tags(self, project_id):
+    #     """ Get needed tags for provided project_id. """
 
-# def compare_two_commits(first_commit_services: list, first_commit_db: list, second_commit_services: list, second_commit_db: list):
-#     """ Compare to commits with each other. Search for the difference in DBs lists and services lists. """
-
-#     from rich.panel import Panel
-#     from rich.columns import Columns
-#     first_commit_services: set = set(first_commit_services)
-#     first_commit_db: set = set(first_commit_db)
-#     second_commit_services: set = set(second_commit_services)
-#     second_commit_db: set = set(second_commit_db)
-#     svc_added: set = {}
-#     svc_removed: set = {}
-#     db_added: set = {}
-#     db_removed: set = {}
-#     table = Table()
-#     table.add_column("Services", justify="left", no_wrap=True, style="magenta")
-#     # table.add_column("Databases", justify="left", style="magenta")
-#     if not first_commit_services == second_commit_services:
-#         # svc_removed = first_commit_services.difference(second_commit_services)
-#         svc_removed = {'risk-management-assesment'}
-#         svc_added = second_commit_services.difference(first_commit_services)
-#     if not first_commit_db == second_commit_db:
-#         db_removed = first_commit_db.difference(second_commit_db)
-#         db_added = second_commit_db.difference(first_commit_db)
-#     if not svc_removed and not svc_added and not db_added and not db_removed:
-#         table.add_row("Total match")
-#     console = Console(record=True)
-
-
-def print_services_and_db(svc: list, db: list, project_name=''):
-    """ Function for displaying collection on a screen. """
-
-    table = Table(title=project_name, show_footer=True)
-    table.add_column("Services", style="cyan", justify="left", no_wrap=True, footer=f"Total: {len(svc)}")
-    table.add_column("Databases", style="cyan", justify="left", footer=f"Total: {len(db)}")
-    if not svc or not db:
-        return False
-    # make lists 'db' and 'svc' equal length
-    max_length: int = max(len(svc), len(db))
-    svc.extend([''] * (max_length - len(svc)))
-    db.extend([''] * (max_length - len(db)))
-    for service, database in zip(svc, db):
-        table.add_row(service, database)
-    console = Console()
-    console.print(table)
+    #     url = f"{self.__url}/projects/{project_id}/repository/tags"
+    #     try:
+    #         response = requests.get(url=url, headers=self.__headers, verify=False)
+    #         response.raise_for_status()
+    #         data = response.json()
+    #     except requests.exceptions.RequestException as err:
+    #         self.__logger.error(err)
+    #         print(self.__error_msg)
+    #         return False
+    #     return data

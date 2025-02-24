@@ -13,9 +13,9 @@ import featureToggle
 import mdocker
 import mk8s
 import vsphere
-import git
 import re
 import time
+from git import Git
 from tools import Folder, File, Tools
 from log import Logs
 # from rich.console import Console
@@ -516,33 +516,63 @@ if __name__ == '__main__':
         if args.version:
             print(app_menu.AppMenu.__version__)
         elif args.command == 'git':
-            g = git.Git()
-            project_id = g.get_bimeister_project_id()
+            g = Git()
+            project = g.project()
+            branch = g.branch()
+            product_collection = g.product_collection()
+            job = g.job()
+            project_id = project.get_project_id(project='bimeister')
             if not project_id:
                 sys.exit()
             if args.search:
-                g.search_branches(project_id, args.search)
+                data = branch.search_branches_commits_tags_jobs(project_id, args.search)
+                g.display_table_with_branches_commits_tags_jobs(data)
+            elif args.add_ft or args.build_charts:
+                no_pipe_msg: str = "No pipelines with 'success' status. Can't run the job."
+                ft_jobs = job.get_specific_jobs(project_id, args.add_ft)
+                ft_jobs_check = ft_jobs['pipeline_id']
+                charts_jobs = job.get_specific_jobs(project_id, args.build_charts)
+                charts_jobs_check = charts_jobs['pipeline_id']
+                if args.add_ft and args.build_charts:
+                    if not ft_jobs_check:
+                        print("Add feature toggles:", no_pipe_msg)
+                    else:
+                        job.run_job(project_id, str(ft_jobs['add_features_toggle_by_product']['id']).split())
+                    if not charts_jobs_check:
+                        print("Helm charts:", no_pipe_msg)
+                    else:
+                        job.run_job(project_id, str(charts_jobs['build_chart']['id']).split())
+                elif args.add_ft:
+                    if not ft_jobs_check:
+                        print("Add feature toggles:", no_pipe_msg)
+                        sys.exit()
+                    job.run_job(project_id, str(ft_jobs['add_features_toggle_by_product']['id']).split())
+                else:
+                    if not charts_jobs_check:
+                        print("Helm charts:", no_pipe_msg)
+                        sys.exit()
+                    job.run_job(project_id, str(charts_jobs['build_chart']['id']).split())
             elif args.commit:
-                file_content: dict = g.get_product_collection_file_content(project_id, args.commit)
+                file_content: dict = product_collection.get_product_collection_file_content(project_id, args.commit)
                 if not file_content:
                     sys.exit()
-                data = git.parse_product_collection_yaml(file_content, project_name=args.project_name)
+                data = product_collection.parse_product_collection_yaml(file_content, project_name=args.project_name)
                 if not data:
                     sys.exit()
                 else:
                     project_name, services, db = data
                 if not services or not db:
                     sys.exit()
-                git.print_services_and_db(services, db)
+                product_collection.print_services_and_db(services, db)
             elif args.compare:
                 first_commit, second_commit = args.compare[0], args.compare[1]
-                first_commit_data: dict = g.get_product_collection_file_content(project_id, first_commit)
-                second_commit_data: dict = g.get_product_collection_file_content(project_id, second_commit)
+                first_commit_data: dict = product_collection.get_product_collection_file_content(project_id, first_commit)
+                second_commit_data: dict = product_collection.get_product_collection_file_content(project_id, second_commit)
                 if not first_commit_data or not second_commit_data:
                     sys.exit()
-                first_commit_project_name, first_commit_services, first_commit_db = git.parse_product_collection_yaml(first_commit_data)
-                second_commit_project_name, second_commit_services, second_commit_db = git.parse_product_collection_yaml(second_commit_data, project_name=first_commit_project_name)
-                git.compare_two_commits(first_commit_services, first_commit_db, second_commit_services, second_commit_db)
+                first_commit_project_name, first_commit_services, first_commit_db = product_collection.parse_product_collection_yaml(first_commit_data)
+                second_commit_project_name, second_commit_services, second_commit_db = product_collection.parse_product_collection_yaml(second_commit_data, project_name=first_commit_project_name)
+                product_collection.compare_two_commits(first_commit_services, first_commit_db, second_commit_services, second_commit_db)
             elif args.list_branch_folder:
                 g.get_tree(project_id, args.list_branch_folder)
         elif args.command == 'drop-UO':

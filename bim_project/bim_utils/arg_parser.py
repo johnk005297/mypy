@@ -87,6 +87,8 @@ class Parser():
         # create parser for the "git" subcommand
         product_list_parser = subparser.add_parser('git', help='Get info from product-collection.yaml. Search branches, tags, commits in git')
         product_list_parser.add_argument('-lbf', '--list-branch-folder', required=False, help='Prints a list of files and folders for a given branch')
+        product_list_parser.add_argument('--build-charts', required=False, help='Requires commit to activate "Build Charts" job.')
+        product_list_parser.add_argument('--add-ft', required=False, help='Requires commit to activate "Add Feature Toggles by product" job.')
         product_list_parser.add_argument('-p', '--project-name', required=False, help='Option allows to provide project name from the product-collection.yaml without prompt')
         product_list_group = product_list_parser.add_mutually_exclusive_group(required=False)
         product_list_group.add_argument('-s', '--search', required=False, nargs='+', help='Search for branches and tags by it\'s name')
