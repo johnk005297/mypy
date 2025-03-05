@@ -75,9 +75,7 @@ class Parser():
         sql_parser.add_argument('-o', '--out', required=False, action="store_true", help='Print SQL query response on a screen')
         sql_parser.add_argument('--list-db', required=False, action="store_true", help='Print list of all databases')
         sql_parser.add_argument('--list-tables', required=False, action="store_true", help='Print list of all tables for a given databases')
-        mdm_exclusive_group = sql_parser.add_mutually_exclusive_group(required=False)
-        mdm_exclusive_group.add_argument('--mdm-prod', required=False, action="store_true", help='Switch ExternalKey value to production. Requires for MDM connector integration')
-        mdm_exclusive_group.add_argument('--mdm-test', required=False, action="store_true", help='Switch ExternalKey value to test. Requires for MDM connector integration')
+        sql_parser.add_argument('--mdm', required=False, help='Switch ExternalKey value to production or test. Requires for MDM connector integration')
         matviews_exclusive_group = sql_parser.add_mutually_exclusive_group(required=False)
         matviews_exclusive_group.add_argument('-lmv', '--list-matviews', required=False, nargs='?', const='*', help='Get list of materialized views created by implementation department')
         matviews_exclusive_group.add_argument('-dmv', '--drop-matviews', required=False, nargs='?', const='*', help='Delete materialized views by it\'s name pattern')
@@ -86,9 +84,8 @@ class Parser():
 
         # create parser for the "git" subcommand
         product_list_parser = subparser.add_parser('git', help='Get info from product-collection.yaml. Search branches, tags, commits in git')
-        product_list_parser.add_argument('-lbf', '--list-branch-folder', required=False, help='Prints a list of files and folders for a given branch')
+        product_list_parser.add_argument('-lbf', '--ls-branch-folder', required=False, help='Prints a list of files and folders for a given branch')
         product_list_parser.add_argument('--build-charts', required=False, help='Requires commit to activate "Build Charts" job.')
-        product_list_parser.add_argument('--add-ft', required=False, help='Requires commit to activate "Add Feature Toggles by product" job.')
         product_list_parser.add_argument('-p', '--project-name', required=False, help='Option allows to provide project name from the product-collection.yaml without prompt')
         product_list_group = product_list_parser.add_mutually_exclusive_group(required=False)
         product_list_group.add_argument('-s', '--search', required=False, nargs='+', help='Search for branches and tags by it\'s name')

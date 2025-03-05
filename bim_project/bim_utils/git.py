@@ -9,8 +9,8 @@ from rich.console import Console
 from rich.table import Table
 
 class Git:
-    __headers = {"PRIVATE-TOKEN": "my-token"}
-    _url = "https://git.bimeister.io/api/v4"
+    _headers = {"PRIVATE-TOKEN": "my-token"}
+    _url = "https://git.company.io/api/v4"
     _logger = Logs().f_logger(__name__)
     _error_msg = "Unexpected error. Check logs!"
 
@@ -20,20 +20,20 @@ class Git:
         self.branch = Branch
         self.job = Job
         self.pipeline = Pipeline
+        self.tree = Tree
         self.product_collection = Product_collection_file
 
     def display_table_with_branches_commits_tags_jobs(self, data) -> Table:
         """ Create table, fill with data(branches, commits, tags, helm chart job status, FT job status) and print it out. """
 
         table = Table(show_lines=False)
-        table.add_column("Branch", justify="left", no_wrap=True, style="#875fff")
+        table.add_column("Branch", justify="left", no_wrap=True, style="#875fff", max_width=55)
         table.add_column("Commit", justify="left", style="#875fff")
         table.add_column("Tag", justify="left", style="#875fff")
         table.add_column("Helm charts", justify="left", style="#875fff")
-        table.add_column("FT", justify="left", style="#875fff")
         table.add_column("Pipeline", justify="left", style="#875fff")
         for x in data:
-            table.add_row(x[0], x[1], x[2], x[3], x[4], str(x[5]))
+            table.add_row(x[0], x[1], x[2], x[3], str(x[4]))
         console = Console()
         console.print(table)
 
@@ -98,7 +98,7 @@ class Tag(Git):
 class Branch(Git):
 
     def search_branches_commits_tags_jobs(self, project_id, search: list):
-        """ Search and print list of branches with their commits, tags and jobs. """
+        """ Search branches with their commits, tags and jobs. """
 
         tags: dict = self.tag().search_tag(project_id, search)
         result_data: list = []
@@ -112,14 +112,13 @@ class Branch(Git):
                 self._logger.error(err)
                 return False
             for branch in response.json():
-                jobs: dict = self.job().get_specific_jobs(project_id, branch['commit']['short_id'])
+                jobs: dict = self.job().get_specific_jobs(project_id, branch['commit']['short_id'], branch['name'])
                 if tags and tags.get(branch['commit']['short_id']):
                     result_data.append([
                         branch['name'],
                         branch['commit']['short_id'],
                         tags[branch['commit']['short_id']]['tag_name'],
                         'Ready' if jobs.get('build_chart') and jobs['build_chart']['status'] == 'success' else 'Not ready',
-                        'Ready' if jobs.get('add_features_toggle_by_product') and jobs['add_features_toggle_by_product']['status'] == 'success' else 'Not ready',
                         jobs['pipeline_id'] if jobs['pipeline_id'] else '-'
                             ])
                     tags.pop(branch['commit']['short_id'], None)
@@ -129,18 +128,16 @@ class Branch(Git):
                         branch['commit']['short_id'],
                         '-',
                         'Ready' if jobs.get('build_chart') and jobs['build_chart']['status'] == 'success' else 'Not ready',
-                        'Ready' if jobs.get('add_features_toggle_by_product') and jobs['add_features_toggle_by_product']['status'] == 'success' else 'Not ready',
                         jobs['pipeline_id'] if jobs['pipeline_id'] else '-'
                             ])
             if tags:
                 for tag in tags:
-                    jobs: dict = self.job().get_specific_jobs(project_id, tag)
+                    jobs: dict = self.job().get_specific_jobs(project_id, tag, tag['branch_name'])
                     result_data.append([
                         ' '.join(tags[tag]['branch_name']),
                         tag,
                         tags[tag]['tag_name'],
                         'Ready' if jobs.get('build_chart') and jobs['build_chart']['status'] == 'success' else 'Not ready',
-                        'Ready' if jobs.get('add_features_toggle_by_product') and jobs['add_features_toggle_by_product']['status'] == 'success' else 'Not ready',
                         jobs['pipeline_id'] if jobs['pipeline_id'] else '-'
                                      ])
         if not result_data:
@@ -159,15 +156,13 @@ class Branch(Git):
             return branches if branches else False
         except requests.exceptions.RequestException as err:
             self._logger.error(err)
-            print(self._error_msg)
             return False
 
 
 class Job(Git):
 
     _jobs: tuple = (
-                "add features toggle by product", 
-                "build chart"
+                "build chart",
                     )
 
     def get_pipeline_jobs(self, project_id, pipeline_id) -> list:
@@ -185,11 +180,17 @@ class Job(Git):
             return False
         return jobs
 
-    def get_specific_jobs(self, project_id: int, commit: str) -> dict:
+    def get_specific_jobs(self, project_id: int, commit: str, branch_name: str) -> dict:
         """ Get id, status, name of jobs and pipeline_id pointed out in 'specific_jobs' tuple from pipeline. """
 
-        check_pipelines: int = self.pipeline().get_pipelines(project_id, commit)
-        pipeline_id = check_pipelines[0]['id'] if check_pipelines else False
+        pipelines = self.pipeline().get_pipelines(project_id, commit)
+        pipeline_id = False
+        if pipelines:
+            for pipeline in pipelines:
+                if pipeline['ref'] == branch_name:
+                    pipeline_id = pipeline['id']
+                    break
+        
         if not pipeline_id:
             needed_jobs: dict = {'pipeline_id': False}
             return needed_jobs
@@ -255,6 +256,28 @@ class Pipeline(Git):
         return pipelines
 
 
+class Tree(Git):
+
+    def print_list_of_branch_files(self, project_id, branch_name):
+        """ Get a list of tree. """
+
+        url = f"{self._url}/projects/{project_id}/repository/tree?ref={branch_name}"
+        try:
+            response = requests.get(url=url, headers=self._headers)
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as err:
+            self._logger.error(err)
+            print(self._error_msg)
+            return False
+        except Exception as err:
+            self._logger.error(err)
+            print(self._error_msg)
+            return False
+        for x in data:
+            print(x['name'])
+
+
 class Product_collection_file(Git):
 
     def get_product_collection_file_content(self, project_id, commit):
@@ -291,7 +314,7 @@ class Product_collection_file(Git):
                 inp = int(input('Choose number of the project: '))
                 project = list(data['collections'])[inp - 1]
             except ValueError:
-                print("Wrong input.")
+                print("Incorrect input.")
                 return False
         else:
             project = project_name
@@ -373,21 +396,6 @@ class Product_collection_file(Git):
 
 
     ### NOT IN USE ###
-    # def get_tree(self, project_id, branch_name):
-    #     """ Get a list of tree. """
-
-    #     url = f"{self.__url}/projects/{project_id}/repository/tree?ref={branch_name}"
-    #     try:
-    #         response = requests.get(url=url, headers=self._headers)
-    #         response.raise_for_status()
-    #         data = response.json()
-    #     except requests.exceptions.RequestException as err:
-    #         print(self._error_msg)
-    #         self._logger.error(err)
-    #         return False
-    #     for x in data:
-    #         print(x['name'])
-
     # def get_tags(self, project_id):
     #     """ Get needed tags for provided project_id. """
 

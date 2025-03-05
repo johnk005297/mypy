@@ -359,7 +359,8 @@ class Abac:
                         logger.debug(f"{value['url']}: {response.status_code}")
                         print(f"{svc_name}: {key} configuration uploaded successfully")
                     else:
-                        print(f"Error: {response.status_code} - {svc_name}")
+                        print(f"Error: {response.status_code} - {svc_name}. Check logs.")
+                        logger.error(response.text)
             except FileNotFoundError as err:
                 logger.error(err)
                 print(err)

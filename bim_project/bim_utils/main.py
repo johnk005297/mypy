@@ -521,37 +521,25 @@ if __name__ == '__main__':
             branch = g.branch()
             product_collection = g.product_collection()
             job = g.job()
+            tree = g.tree()
             project_id = project.get_project_id(project='bimeister')
             if not project_id:
                 sys.exit()
             if args.search:
                 data = branch.search_branches_commits_tags_jobs(project_id, args.search)
                 g.display_table_with_branches_commits_tags_jobs(data)
-            elif args.add_ft or args.build_charts:
-                no_pipe_msg: str = "No pipelines with 'success' status. Can't run the job."
-                ft_jobs = job.get_specific_jobs(project_id, args.add_ft)
-                ft_jobs_check = ft_jobs['pipeline_id']
-                charts_jobs = job.get_specific_jobs(project_id, args.build_charts)
-                charts_jobs_check = charts_jobs['pipeline_id']
-                if args.add_ft and args.build_charts:
-                    if not ft_jobs_check:
-                        print("Add feature toggles:", no_pipe_msg)
-                    else:
-                        job.run_job(project_id, str(ft_jobs['add_features_toggle_by_product']['id']).split())
-                    if not charts_jobs_check:
-                        print("Helm charts:", no_pipe_msg)
-                    else:
-                        job.run_job(project_id, str(charts_jobs['build_chart']['id']).split())
-                elif args.add_ft:
-                    if not ft_jobs_check:
-                        print("Add feature toggles:", no_pipe_msg)
-                        sys.exit()
-                    job.run_job(project_id, str(ft_jobs['add_features_toggle_by_product']['id']).split())
+            elif args.build_charts:
+                branches: list = branch.get_branch_name_using_commit(project_id, args.build_charts)
+                if len(branches) == 1:
+                    branch_name = branches[0]
                 else:
-                    if not charts_jobs_check:
-                        print("Helm charts:", no_pipe_msg)
-                        sys.exit()
-                    job.run_job(project_id, str(charts_jobs['build_chart']['id']).split())
+                    branch_name = input(f"{args.build_charts} commit appears in several branches: {branches}\nChoose your branch: ")
+                charts_jobs = job.get_specific_jobs(project_id, args.build_charts, branch_name)
+                pipeline_id = charts_jobs['pipeline_id']
+                if not pipeline_id:
+                    print("No pipelines with 'success' status. Can't run the job.")
+                    sys.exit()
+                job.run_job(project_id, str(charts_jobs['build_chart']['id']).split())
             elif args.commit:
                 file_content: dict = product_collection.get_product_collection_file_content(project_id, args.commit)
                 if not file_content:
@@ -570,11 +558,17 @@ if __name__ == '__main__':
                 second_commit_data: dict = product_collection.get_product_collection_file_content(project_id, second_commit)
                 if not first_commit_data or not second_commit_data:
                     sys.exit()
-                first_commit_project_name, first_commit_services, first_commit_db = product_collection.parse_product_collection_yaml(first_commit_data)
-                second_commit_project_name, second_commit_services, second_commit_db = product_collection.parse_product_collection_yaml(second_commit_data, project_name=first_commit_project_name)
+                data = product_collection.parse_product_collection_yaml(first_commit_data)
+                if not data:
+                    sys.exit()
+                first_commit_project_name, first_commit_services, first_commit_db = data
+                data = product_collection.parse_product_collection_yaml(second_commit_data, project_name=first_commit_project_name)
+                if not data:
+                    sys.exit()
+                second_commit_project_name, second_commit_services, second_commit_db = data
                 product_collection.compare_two_commits(first_commit_services, first_commit_db, second_commit_services, second_commit_db)
-            elif args.list_branch_folder:
-                g.get_tree(project_id, args.list_branch_folder)
+            elif args.ls_branch_folder:
+                tree.print_list_of_branch_files(project_id, args.ls_branch_folder)
         elif args.command == 'drop-UO':
             postgre.DB.drop_userObjects(args.url, username=args.user, password=args.password)
         elif args.command == 'sql':
@@ -591,10 +585,12 @@ if __name__ == '__main__':
                 pg.exec_query(conn, query=q.drop_materialized_view(args.drop_matviews))
             elif args.refresh_matviews:
                 pg.exec_query(conn, query=q.refresh_materialized_view())
-            elif args.mdm_prod:
-                pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Prod'))
-            elif args.mdm_test:
-                pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Test'))
+            elif args.mdm:
+                if args.mdm == 'prod':
+                    pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Prod'))
+                elif args.mdm == 'test':
+                    pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Test'))
+                else: print("mdm option has two values: prod or test.")
             elif args.list_db:
                 pg.exec_query(conn, query=q.get_list_of_all_db())
             elif args.list_tables:
