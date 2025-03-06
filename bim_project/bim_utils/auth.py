@@ -109,32 +109,44 @@ class Auth:
             continue
 
     def get_providerId(self, url):
-
-        response = requests.get(url=f"{url}/{self.__api_Providers}", verify=False, allow_redirects=False,
-                                timeout=2)
-        if response.status_code == 200:
-            api_providers: list = response.json()
-        elif response.status_code != 200:
-            print("Couldn't establish connection. Check the logs!")
-            Auth.__logger.error(response.text)
-            return False
-        if len(api_providers) == 1:
-            self.providerId = api_providers[0]['id']
-            return self.providerId
-        else:
-            print('    Choose authorization type:')
-            for num, obj in enumerate(api_providers, 1):
-                print(f"      {str(num)}. {obj['name']} ({obj['providerTypeOption']})")
-            try:
-                inp = int(input('    value: '))
-                if inp > len(api_providers):
-                    print("Incorrect input")
-                    return False
-                self.providerId = api_providers[inp - 1]['id']
-                return self.providerId
-            except ValueError:
-                print('Input should be a number')
+        """ Get providers from bimeister. """
+        try:
+            response = requests.get(url=f"{url}/{self.__api_Providers}", verify=False, allow_redirects=False,
+                                    timeout=2)
+            if response.status_code == 200:
+                api_providers: list = response.json()
+            elif response.status_code != 200:
+                print("Couldn't establish connection. Check the logs!")
+                Auth.__logger.error(response.text)
                 return False
+            if len(api_providers) == 1:
+                self.providerId = api_providers[0]['id']
+                return self.providerId
+            else:
+                print('    Choose authorization type:')
+                for num, obj in enumerate(api_providers, 1):
+                    print(f"      {str(num)}. {obj['name']} ({obj['providerTypeOption']})")
+                try:
+                    inp = int(input('    value: '))
+                    if inp > len(api_providers):
+                        print("Incorrect input")
+                        return False
+                    self.providerId = api_providers[inp - 1]['id']
+                    return self.providerId
+                except ValueError:
+                    print('Input should be a number')
+                    return False
+        except requests.exceptions.ReadTimeout as err:
+            message: str = "Check connection to host."
+            Auth.__logger.error(f"{message}\n{err}")
+            print(message)
+        except Exception as err:
+            Auth.__logger.error(f"{message}\n{err}")
+            message: str = "Check connection to host."
+            print(message)
+
+
+
 
     def get_credentials(self):
         try:

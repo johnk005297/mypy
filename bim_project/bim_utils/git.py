@@ -26,6 +26,8 @@ class Git:
     def display_table_with_branches_commits_tags_jobs(self, data) -> Table:
         """ Create table, fill with data(branches, commits, tags, helm chart job status, FT job status) and print it out. """
 
+        if not data:
+            return False
         table = Table(show_lines=False)
         table.add_column("Branch", justify="left", no_wrap=True, style="#875fff", max_width=55)
         table.add_column("Commit", justify="left", style="#875fff")
@@ -112,37 +114,25 @@ class Branch(Git):
                 self._logger.error(err)
                 return False
             for branch in response.json():
-                jobs: dict = self.job().get_specific_jobs(project_id, branch['commit']['short_id'], branch['name'])
+                branch_commit = branch['commit']['short_id']
                 if tags and tags.get(branch['commit']['short_id']):
-                    result_data.append([
-                        branch['name'],
-                        branch['commit']['short_id'],
-                        tags[branch['commit']['short_id']]['tag_name'],
-                        'Ready' if jobs.get('build_chart') and jobs['build_chart']['status'] == 'success' else 'Not ready',
-                        jobs['pipeline_id'] if jobs['pipeline_id'] else '-'
-                            ])
-                    tags.pop(branch['commit']['short_id'], None)
+                    tag_name =  tags[branch['commit']['short_id']]['tag_name']
+                elif tags and tags.get(branch['commit']['parent_ids'][0][:8]):
+                    branch_commit = branch['commit']['parent_ids'][0][:8]
+                    tag_name = tags.get(branch['commit']['parent_ids'][0][:8])['tag_name']
                 else:
-                    result_data.append([
-                        branch['name'],
-                        branch['commit']['short_id'],
-                        '-',
-                        'Ready' if jobs.get('build_chart') and jobs['build_chart']['status'] == 'success' else 'Not ready',
-                        jobs['pipeline_id'] if jobs['pipeline_id'] else '-'
-                            ])
-            if tags:
-                for tag in tags:
-                    jobs: dict = self.job().get_specific_jobs(project_id, tag, tag['branch_name'])
-                    result_data.append([
-                        ' '.join(tags[tag]['branch_name']),
-                        tag,
-                        tags[tag]['tag_name'],
-                        'Ready' if jobs.get('build_chart') and jobs['build_chart']['status'] == 'success' else 'Not ready',
-                        jobs['pipeline_id'] if jobs['pipeline_id'] else '-'
-                                     ])
+                    tag_name = '-'
+                build_chart_job: dict = self.job().get_job(project_id, branch_commit, branch['name'], self.job._build_job)                    
+                result_data.append([
+                    branch['name'],
+                    branch_commit,
+                    tag_name,
+                    'Ready' if build_chart_job and build_chart_job['status'] == 'success' else 'Not ready',
+                    build_chart_job['pipeline_id'] if build_chart_job and build_chart_job['pipeline_id'] else '-'
+                                ])
         if not result_data:
             print("No branches were found!")
-            return True
+            return False
         return result_data
 
     def get_branch_name_using_commit(self, project_id, commit) -> list:
@@ -164,6 +154,7 @@ class Job(Git):
     _jobs: tuple = (
                 "build chart",
                     )
+    _build_job: str = "build_chart"
 
     def get_pipeline_jobs(self, project_id, pipeline_id) -> list:
         """ Get a list of jobs for provided pipeline. """
@@ -201,6 +192,30 @@ class Job(Git):
                 name: str = '_'.join((j['name'].lower().split()))
                 needed_jobs[name] = {'id': j['id'], 'name': name, 'status': j['status']}
         return needed_jobs
+
+    def get_job(self, project_id: int, commit: str, branch_name: str, job_name: str) -> dict:
+        """ Get id, status, name and pipeline_id of job from pipeline. """
+
+        pipelines = self.pipeline().get_pipelines(project_id, commit)
+        pipeline_id = False
+        if pipelines:
+            for pipeline in pipelines:
+                if pipeline['ref'] == branch_name:
+                    pipeline_id = pipeline['id']
+                    break
+        job: dict = {}
+        if not pipeline_id:
+            return job
+        all_jobs: list = self.get_pipeline_jobs(project_id, pipeline_id)
+        for j in all_jobs:
+            if '_'.join((j['name'].lower().split())) == job_name:
+                job.update({'id': j['id'], 
+                            'name': job_name,
+                            'status': j['status'],
+                            'pipeline_id': pipeline_id,
+                            'branch': branch_name
+                             })
+        return job
 
     def run_job(self, project_id: int, job_id: list):
         """ Execute job run for a given job id list. """
