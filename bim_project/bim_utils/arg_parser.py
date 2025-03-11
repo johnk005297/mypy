@@ -72,7 +72,6 @@ class Parser():
         sql_parser.add_argument('-u', '--user', required=True, help='Username with access to db')
         sql_parser.add_argument('-pw', '--password', required=False, help='DB user password')
         sql_parser.add_argument('-p', '--port', required=True, help='DB port')
-        sql_parser.add_argument('-o', '--out', required=False, action="store_true", help='Print SQL query response on a screen')
         sql_parser.add_argument('--list-db', required=False, action="store_true", help='Print list of all databases')
         sql_parser.add_argument('--list-tables', required=False, action="store_true", help='Print list of all tables for a given databases')
         sql_parser.add_argument('--mdm', required=False, help='Switch ExternalKey value to production or test. Requires for MDM connector integration')

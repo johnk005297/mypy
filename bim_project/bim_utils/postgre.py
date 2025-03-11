@@ -2,10 +2,14 @@
 import psycopg2
 import auth
 import sys
+import os
 import pandas as pd
 from log import Logs
 from user import User
 from getpass import getpass
+from time import perf_counter
+from datetime import timedelta
+from tools import Tools
 
 
 class DB:
@@ -36,49 +40,111 @@ class DB:
         else:
             return conn
 
-    def exec_query(self, conn, query=False, sql_file=False, out=False):
-        """ Function executes passed query in DB. """
+    ### DEPRECATED FUNCTION
+    # def exec_query(self, conn, query):
+    #     """ Function executes passed query in DB. """
 
-        cursor = conn.cursor()
-        indent = ' ' * 4
+    #     cursor = conn.cursor()
+    #     data = None
+    #     try:
+    #         cursor.execute(query)
+    #         data = cursor.fetchall()
+    #         columns = [x[0] for x in cursor.description]
+    #         df = pd.DataFrame.from_records(data, columns=columns)
+    #         print(df)
+    #     except psycopg2.ProgrammingError as err:
+    #         if not data:
+    #             self.__logger.info(f"Execute query: {cursor.statusmessage}")
+    #             print(cursor.statusmessage)
+    #             return True
+    #         else:
+    #             self.__logger.error(err)
+    #             print("SQL programming error. Check the log!")
+    #             return False
+    #     except psycopg2.DatabaseError as err:
+    #         self.__logger.error(err.pgerror)
+    #         print(err.pgerror)
+    #         return False
+    #     except psycopg2.Error as err:
+    #         if err.pgcode == '42P01':
+    #             print('Undefined table in the query.')
+    #         print(err.pgerror)
+    #         return False
+    #     finally:
+    #         if conn:
+    #             conn.commit()
+    #             cursor.close()
+    #             conn.close()
+    #             print("Database connection closed.")
+
+    def execute_query_in_batches(self, conn, sql_file=None, chunk_size: int = 10_000, sql_query=None):
+        """Execute query in batches to optimize local memory usage"""
+
+        def _record_batches():
+            while True:
+                batch_rows = cur.fetchmany(chunk_size)
+                column_names = [col[0] for col in cur.description]
+                if not batch_rows:
+                    break
+                yield pd.DataFrame(batch_rows, columns=column_names)
+
+        if not conn:
+            return False
         if sql_file:
-            result_file = sql_file[:-3] + 'csv'
+            output_file = sql_file[:-3] + 'csv' if sql_file.find(' ') == -1 else 'query_result.csv'
             with open(sql_file, 'r', encoding='utf-8') as file:
                 query = file.read()
-        if not sql_file and not query:
+        elif sql_query:
+            output_file = 'query_result.csv'
+            query = sql_query
+        else:
             return False
-        try:
-            cursor.execute(query)
-            data = cursor.fetchall()
-            columns = [x[0] for x in cursor.description]
-            df = pd.DataFrame.from_records(data, columns=columns)
-            if sql_file and out:
-                print(df)
-            elif sql_file:
-                df.to_csv(result_file, index=False)
-                self.__logger.info(f"Execute query:\n{query}".replace('\n', '\n' + indent))
-                print(f"Query result saved in {result_file} file!")
-            elif not sql_file and out:
-                df.to_csv('result.csv', index=False)
-            else:
-                print(df)
-        except psycopg2.ProgrammingError as err:
-            self.__logger.error(err)
-            print("SQL programming error. Check the log!")
-            return False
-        except psycopg2.DatabaseError as err:
-            self.__logger.error(err.pgerror)
-            print(err.pgerror)
-            return False
-        except psycopg2.Error as err:
-            if err.pgcode == '42P01':
-                print('Undefined table in the query.')
-            print(err.pgerror)
-            return False
-        finally:
+        with conn.cursor() as cur:
+            start = perf_counter()
+            try:
+                cur.execute(query)
+                if cur.rowcount > 0:
+                    header = True
+                    mode = 'w'
+                    for chunk in _record_batches():
+                        chunk.to_csv(output_file, index=False, header=header, mode=mode)
+                        if header:
+                            header = False
+                            mode = 'a'
+            except psycopg2.ProgrammingError as err:
+                if cur.rowcount == -1:
+                    self.__logger.info(f"{cur}")
+                    print(cur.statusmessage)
+                else:
+                    self.__logger.error(err)
+                    print("SQL programming error. Check the log!")
+            except psycopg2.errors.ReadOnlySqlTransaction as err:
+                self.__logger.error(err.pgerror)
+                print("ReadOnlySqlTransaction: cannot execute INSERT in a read-only transaction")
+                return False
+            except psycopg2.DatabaseError as err:
+                self.__logger.error(err.pgerror)
+                print(err.pgerror)
+                return False
+            except psycopg2.InterfaceError as err:
+                self.__logger.error(err.pgerror)
+                print(err.pgerror)
+                return False
+            except psycopg2.Error as err:
+                if err.pgcode == '42P01':
+                    print('Undefined table in the query.')
+                print(err.pgerror)
+                return False
             conn.commit()
-            cursor.close()
-            conn.close()
+        end = perf_counter()
+        elapsed_time = end - start
+        if elapsed_time < 1:
+            print(f"Elapsed time: {elapsed_time:4.3f} s")
+        else:
+            print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
+        if cur.rowcount > 0:
+            sep = "\\" if Tools.is_windows else "/"
+            print(f"Query result saved in {os.getcwd()}{sep}{output_file} file!")
 
     @staticmethod
     def drop_userObjects(url, username='', password=''):
@@ -186,3 +252,12 @@ class Queries:
                     SELECT table_name FROM information_schema.tables
                         WHERE table_schema = 'public';
                 """
+    
+    @classmethod
+    def create_postgresql_user_ro(cls, name, password):
+        """ Create postgreSQL user with read only access. """
+        
+        return """
+                  CREATE USER {0} WITH PASSWORD "{1}" IN ROLE pg_read_all_data;
+                    ALTER USER {1} IN ROLE pg_read_all_data;
+                """.format(name, password)

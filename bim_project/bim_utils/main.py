@@ -578,23 +578,23 @@ if __name__ == '__main__':
             if not conn:
                 sys.exit()
             if args.file:
-                pg.exec_query(conn, sql_file=args.file, out=args.out)
+                pg.execute_query_in_batches(conn, sql_file=args.file)
             elif args.list_matviews:
-                pg.exec_query(conn, query=q.get_matviews_list(args.list_matviews))
+                pg.execute_query_in_batches(conn, sql_query=q.get_matviews_list(args.list_matviews))
             elif args.drop_matviews:                
-                pg.exec_query(conn, query=q.drop_materialized_view(args.drop_matviews))
+                pg.execute_query_in_batches(conn, sql_query=q.drop_materialized_view(args.drop_matviews))
             elif args.refresh_matviews:
-                pg.exec_query(conn, query=q.refresh_materialized_view())
+                pg.exec_query(conn, sql_query=q.refresh_materialized_view())
             elif args.mdm:
                 if args.mdm == 'prod':
-                    pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Prod'))
+                    pg.exec_query(conn, sql_query=q.swith_externalKey_for_mdm_connector(value='Prod'))
                 elif args.mdm == 'test':
-                    pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Test'))
+                    pg.exec_query(conn, sql_query=q.swith_externalKey_for_mdm_connector(value='Test'))
                 else: print("mdm option has two values: prod or test.")
             elif args.list_db:
-                pg.exec_query(conn, query=q.get_list_of_all_db())
+                pg.execute_query_in_batches(conn, sql_query=q.get_list_of_all_db())
             elif args.list_tables:
-                pg.exec_query(conn, query=q.get_list_of_db_tables(), out=args.out)
+                pg.execute_query_in_batches(conn, sql_query=q.get_list_of_db_tables())
         elif args.command == 'vsphere':
             subcommand = sys.argv[2]
             v = vsphere.Vsphere()
