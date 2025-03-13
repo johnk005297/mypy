@@ -16,7 +16,7 @@ import vsphere
 import re
 import time
 from git import Git
-from tools import Folder, File, Tools
+from tools import *
 from log import Logs
 # from rich.console import Console
 from rich.live import Live
@@ -57,7 +57,6 @@ def main(local=False):
         print("Warning!!! Incorrect license detected! Please check!".upper())
     while True:
         user_command = AppMenu_main.get_user_command()
-
         match user_command:
             case False: # if nothing to check, loop over
                 continue
@@ -494,7 +493,11 @@ def main(local=False):
                     file = user_command[2:][1]
                 except IndexError as err:
                     print("Incorrect command. No file pointed out.")
-                Tools.apply_bimeister_customUI(url, token, file)
+                Bimeister.apply_bimeister_customUI(url, token, file)
+            
+            #    ''' =============================================================================== Recalculate path ================================================================================= '''
+            case ['recalc-paths', *_]:
+                Bimeister.recalculate_path(url, token)
 
             # wildcard pattern if no cases before where matched
             case _:
@@ -506,7 +509,7 @@ def enable_history_input():
     if Tools.is_windows():
         import pyreadline3
     else:
-        import readline    
+        import readline
 
 
 if __name__ == '__main__':
@@ -719,7 +722,7 @@ if __name__ == '__main__':
                     if value["power_state"] == "POWERED_ON":
                         v.start_vm(headers, value["moId"], value["name"])
         elif args.command == 'bim-version':
-            Tools.print_bim_version(args.url)
+            Bimeister.print_bim_version(args.url)
         elif args.command == 'mdm':
             mdm = import_data.Mdmconnector()
             url = mdm.check_url(args.url)

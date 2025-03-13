@@ -2,7 +2,6 @@ import yaml
 import base64
 import requests
 from log import Logs
-from prettytable import PrettyTable
 from colorama import init, Fore
 init(autoreset=True)
 from rich.console import Console

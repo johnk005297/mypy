@@ -52,7 +52,12 @@ def main_menu():
                             \n        -h                                help message                                    \
                             \n                                                                                          \
                             \n   Custom UI                                                                              \
-                            \n      apply UI -f [filename]       apply custom user interface                            \
+                            \n      apply UI -f [filename]              apply custom user interface                     \
+                            \n                                                                                          \
+                            \n   Recalculate paths                      perform methods that recalculates               \
+                            \n                                          the paths for technical objects                 \
+                            \n                                                                                          \
+                            \n      recalc-paths                                                                        \
                             \n                                                                                          \
                             \n   Main                                                                                   \
                             \n      m                                   print this menu                                 \
