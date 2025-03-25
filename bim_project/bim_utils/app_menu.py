@@ -56,8 +56,10 @@ def main_menu():
                             \n                                                                                          \
                             \n   Recalculate paths                      perform methods that recalculates               \
                             \n                                          the paths for technical objects                 \
-                            \n                                                                                          \
                             \n      recalc-paths                                                                        \
+                            \n                                                                                          \
+                            \n   Templates                                                                              \
+                            \n      ls templates                        get list of tempaltes                           \
                             \n                                                                                          \
                             \n   Main                                                                                   \
                             \n      m                                   print this menu                                 \
@@ -91,7 +93,7 @@ def local_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.78.41'
+    __version__ = '1.78.43'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):

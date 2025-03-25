@@ -241,6 +241,7 @@ class Queries:
 
     @classmethod
     def get_list_of_all_db(cls):
+        """ Get list of all databases. """
 
         return """ select datname from pg_database; """
 
@@ -256,8 +257,28 @@ class Queries:
     @classmethod
     def create_postgresql_user_ro(cls, name, password):
         """ Create postgreSQL user with read only access. """
-        
+
         return """
                   CREATE USER {0} WITH PASSWORD "{1}" IN ROLE pg_read_all_data;
                     GRANT pg_read_all_data TO {0};
                 """.format(name, password)
+    
+    @classmethod
+    def get_list_of_users(cls):
+        """ Get list of all DB users. """
+
+        return """
+                SELECT usename AS role_name,
+                    CASE
+                        WHEN usesuper AND usecreatedb THEN
+                        CAST('superuser, create database' AS pg_catalog.text)
+                        WHEN usesuper THEN
+                            CAST('superuser' AS pg_catalog.text)
+                        WHEN usecreatedb THEN
+                            CAST('create database' AS pg_catalog.text)
+                        ELSE
+                            CAST('' AS pg_catalog.text)
+                    END role_attributes
+                FROM pg_catalog.pg_user
+                ORDER BY role_name desc;
+                """

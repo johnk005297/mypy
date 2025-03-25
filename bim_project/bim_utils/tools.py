@@ -10,6 +10,7 @@ import string
 import pathlib
 import zipfile
 import requests
+import re
 from datetime import datetime
 from log import Logs
 logger = Logs().f_logger(__name__)
@@ -171,6 +172,16 @@ class Tools:
         user_id = os.getuid()
         return True if user_id == 0 else False
 
+    def get_flag_values_from_args_str(args: list, search_arg: str) -> str:
+        """ From a given list of args find needed argument and take it's value(s). """
+
+        find_str: str = '{0}(=|\s)"(.*?)"'.format(search_arg)
+        search = re.search(find_str, ' '.join(args))
+        if search:
+            result: str = search.group(2)
+        else:
+            result = ''
+        return result
 
 class Bimeister:
 
@@ -212,7 +223,7 @@ class Bimeister:
                 response = requests.get(url, verify=False, timeout=1)
                 response.raise_for_status()
                 data = response.json()
-                print(f"name: {data['BRANCH_NAME']}\nversion: {data['BUILD_FULL_VERSION']}")
+                print(f"commit: {data['GIT_COMMIT']}\nversion: {data['BUILD_FULL_VERSION']}")
                 return True
             except requests.exceptions.ConnectionError as err:
                 logger.error(err)
@@ -276,3 +287,55 @@ class Bimeister:
             print(f"Error occurred. Check the log. Response code: {response.status_code}")
             logger.error(err)
             return False
+    
+    def get_list_of_templates(url, token) -> list:
+        """ Get list of templates from reports service. """
+
+        url = url + '/api/Templates'
+        headers = {'Content-Type': 'application/json', 'Authorization': f"Bearer {token}"}
+        try:
+            response = requests.get(url=url, headers=headers, verify=False)
+            response.raise_for_status()
+            if response.status_code == 200:
+                logger.info(f"{url} {response.status_code}")
+                data = response.json()
+                return data
+        except Exception as err:
+            print(err)
+            return False
+    
+    def print_list_of_templates(templates: list):
+        """ Function prints the list of provided templates. """
+
+        if not templates:
+            print("No data was provided.")
+            return False
+        count = Tools.counter()
+        for template in templates:
+            print(f"{count()})Name: {template['name']}  Id: {template['id']}  TypeName: {template['typeName']}")
+
+    def export_templates(url, token, id: list):
+        """ Export templates for a given list of id's. """
+
+        if not id:
+            print("No template id was provided.")
+            return False
+        headers = {'Content-Type': 'text/plain', 'Authorization': f"Bearer {token}"}
+        for i in id:
+            _url = f"{url}/api/Templates/{i}/TemplateContent"
+            try:
+                response = requests.get(url=_url, headers=headers, verify=False)
+                response.raise_for_status()
+                if response.status_code == 200:
+                    data = response.json()
+                    with open(f"{i}.json", mode='w', encoding='utf-8') as file:
+                        file.write(json.dumps(data, indent=2))
+                        print(f"File exported successfully: {i}.json")
+            except requests.exceptions.HTTPError as err:
+                if err.response.status_code == 404:
+                    logger.error(err)
+                    print(f"404 Client Error for id: {i}")
+            except Exception as err:
+                logger.error(err)
+                print("Error occured. Read the log! ")
+                return False

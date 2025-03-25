@@ -287,7 +287,7 @@ class Export_data:
     def print_help(self, ls=False, export=False, remove=False):
         """ Provide help info for the user. """
 
-        ls_workflows: str = """usage: ls workflows [--help] [--startswith=\"TEXT TO FIND\" | --search=\"TEXT TO FIND\"] [--draft] [--active] [--archived] [--all]
+        ls_workflows: str = """usage: ls workflows [--help] [--startswith \"TEXT TO FIND\" | --search \"TEXT TO FIND\"] [--draft] [--active] [--archived] [--all]
 
 options:
   -h, --help    Show this help message
@@ -299,7 +299,7 @@ options:
   --all         All three nodes
   --type        Workflows type
 """
-        export_workflows: str = """usage: export workflows [--help] [--startswith=\"TEXT TO FIND\" | --search=\"TEXT TO FIND\" | --id="WORKFLOW(S) ID"] [--draft] [--active] [--archived] [--all]
+        export_workflows: str = """usage: export workflows [--help] [--startswith \"TEXT TO FIND\" | --search \"TEXT TO FIND\" | --id="WORKFLOW(S) ID"] [--draft] [--active] [--archived] [--all]
 
 options:
   -h, --help    Show this help message

@@ -13,7 +13,6 @@ import featureToggle
 import mdocker
 import mk8s
 import vsphere
-import re
 import time
 from git import Git
 from tools import *
@@ -119,15 +118,12 @@ def main(local=False):
                     continue
                 if Export_data.is_first_launch_export_data:
                     Export_data.create_folders_for_export_files()
-                args = user_command[2:]
 
-                # at the beginning and at the end of the line we cut the quotation marks with slicing
-                startswith = re.search('--startswith=".+"', ' '.join(args)).group().split('=')[1][1:-1] if re.search('--startswith=".+"', ' '.join(args)) else ''
-                search_for = re.search('--search=".+"', ' '.join(args)).group().split('=')[1][1:-1] if re.search('--search=".+"', ' '.join(args)) else ''
-                wf_id_array = re.search('--id=".+"', ' '.join(args)).group().split('=')[1] if re.search('--id=".+"', ' '.join(args)) else ''
-                wf_id_array = re.sub(r"\"", "", wf_id_array).split()
-                wf_type = re.search('--type=".+"', ' '.join(args)).group().split('=')[1].lower() if re.search('--type=".+"', ' '.join(args)) else ''
-                wf_type = re.sub(r"\"", "", wf_type)
+                args = user_command[2:]
+                startswith: str = Tools.get_flag_values_from_args_str(args, '--startswith')
+                search_for: str = Tools.get_flag_values_from_args_str(args, '--search')
+                wf_id_array: list = Tools.get_flag_values_from_args_str(args, '--id').split()
+                wf_type: str = Tools.get_flag_values_from_args_str(args, '--type')
 
                 if wf_id_array and user_command[:2] == ['export', 'workflows']:
                     Export_data.export_server_info(url, token)
@@ -155,33 +151,6 @@ def main(local=False):
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._object_model_folder}")
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._workflows_folder}")
                 File.remove_file(f"{os.getcwd()}/{Export_data._transfer_folder}/export_server.info")
-
-            #    ''' =============================================================================== USER =============================================================================== '''
-
-            case ['ptoken'] if not local:
-                private_token = Auth.get_private_token(url, token)
-                print(f"\n{private_token}")
-
-            case ['token'] if not local:
-                user_access_token = Auth.get_user_access_token(url, username, password, Auth.providerId)
-                print(f"\n{user_access_token}")
-
-            case ['sh']:
-                Tools.run_terminal_command()
-            
-            case ['ls', *_]:
-                if len(user_command) == 1:
-                    Tools.run_terminal_command(Folder.get_content())
-                else:
-                    Tools.run_terminal_command(Folder.get_content(user_command[1]))
-            
-            case ['ssh', 'connect']:
-                connection_data:list = input("Enter 'remote host' and 'username' separated by a space: ").strip().split()
-                try:
-                    Tools.connect_ssh(connection_data[0], connection_data[1])
-                except IndexError:
-                    print("Incorrect data. Can't connect.")
-                    continue
 
             #    ''' =============================================================================== DOCKER =============================================================================== '''
 
@@ -326,7 +295,7 @@ def main(local=False):
                     K8s.get_pod_log(*pods) if not namespace else K8s.get_pod_log(*pods, namespace=namespace)                    
 
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
-            case ['ft', _, *_] if not local:                
+            case ['ft', _, *_] if not local:
                 if ' '.join(user_command).startswith('ft --list'):
                     if user_command == ['ft', '--list']:
                         FT.display_features(url)
@@ -498,6 +467,43 @@ def main(local=False):
             #    ''' =============================================================================== Recalculate path ================================================================================= '''
             case ['recalc-paths', *_]:
                 Bimeister.recalculate_path(url, token)
+            
+            #    ''' =============================================================================== Templates ======================================================================================== '''
+            case ['ls', 'templates']:
+                templates: list = Bimeister.get_list_of_templates(url, token)
+                Bimeister.print_list_of_templates(templates)
+            
+            case ['export', 'template' | 'templates', *_]:
+                args = user_command[2:]
+                id: list = Tools.get_flag_values_from_args_str(args, '--id').split()
+                data = Bimeister.export_templates(url, token, id)
+                
+
+            #    ''' =============================================================================== Tools ============================================================================================ '''
+            case ['ptoken'] if not local:
+                private_token = Auth.get_private_token(url, token)
+                print(f"\n{private_token}")
+
+            case ['token'] if not local:
+                user_access_token = Auth.get_user_access_token(url, username, password, Auth.providerId)
+                print(f"\n{user_access_token}")
+
+            case ['sh']:
+                Tools.run_terminal_command()
+            
+            case ['ls', *_]:
+                if len(user_command) == 1:
+                    Tools.run_terminal_command(Folder.get_content())
+                else:
+                    Tools.run_terminal_command(Folder.get_content(user_command[1]))
+            
+            case ['ssh', 'connect']:
+                connection_data:list = input("Enter 'remote host' and 'username' separated by a space: ").strip().split()
+                try:
+                    Tools.connect_ssh(connection_data[0], connection_data[1])
+                except IndexError:
+                    print("Incorrect data. Can't connect.")
+                    continue
 
             # wildcard pattern if no cases before where matched
             case _:
@@ -598,6 +604,8 @@ if __name__ == '__main__':
                 pg.execute_query_in_batches(conn, sql_query=q.get_list_of_all_db())
             elif args.list_tables:
                 pg.execute_query_in_batches(conn, sql_query=q.get_list_of_db_tables())
+            elif args.create_user_ro: ################
+                pg.execute_query_in_batches(conn, sql_query=q.create_postgresql_user_ro(args.name, args.password))
         elif args.command == 'vsphere':
             subcommand = sys.argv[2]
             v = vsphere.Vsphere()
