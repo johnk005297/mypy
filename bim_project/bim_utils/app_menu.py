@@ -55,11 +55,12 @@ def main_menu():
                             \n      apply UI -f [filename]              apply custom user interface                     \
                             \n                                                                                          \
                             \n   Recalculate paths                      perform methods that recalculates               \
-                            \n                                          the paths for technical objects                 \
+                            \n                                          paths for technical objects                     \
                             \n      recalc-paths                                                                        \
                             \n                                                                                          \
                             \n   Templates                                                                              \
                             \n      ls templates                        get list of tempaltes                           \
+                            \n      export templates --id \"id1 id2 ...\" export template(s) using id                   \
                             \n                                                                                          \
                             \n   Main                                                                                   \
                             \n      m                                   print this menu                                 \
@@ -93,7 +94,7 @@ def local_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.78.43'
+    __version__ = '1.78.45'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):

@@ -116,12 +116,14 @@ class Branch(Git):
                 branch_commit = branch['commit']['short_id']
                 if tags and tags.get(branch['commit']['short_id']):
                     tag_name =  tags[branch['commit']['short_id']]['tag_name']
+                    del tags[branch['commit']['short_id']]
                 elif tags and tags.get(branch['commit']['parent_ids'][0][:8]):
                     branch_commit = branch['commit']['parent_ids'][0][:8]
                     tag_name = tags.get(branch['commit']['parent_ids'][0][:8])['tag_name']
+                    del tags[branch['commit']['parent_ids'][0][:8]]
                 else:
                     tag_name = '-'
-                build_chart_job: dict = self.job().get_job(project_id, branch_commit, branch['name'], self.job._build_job)                    
+                build_chart_job: dict = self.job().get_job(project_id, branch_commit, branch['name'], self.job._build_job)
                 result_data.append([
                     branch['name'],
                     branch_commit,
@@ -129,6 +131,19 @@ class Branch(Git):
                     'Ready' if build_chart_job and build_chart_job['status'] == 'success' else 'Not ready',
                     build_chart_job['pipeline_id'] if build_chart_job and build_chart_job['pipeline_id'] else '-'
                                 ])
+        if tags:
+            for tag in tags:
+                if len(tags[tag]['branch_name']) > 1:
+                    branch_name = tags[tag]['branch_name'][-1]
+                else:
+                    branch_name = tags[tag]['branch_name'][0]
+                build_chart_job: dict = self.job().get_job(project_id, tag, branch_name, self.job._build_job)
+                result_data.append([branch_name,
+                                    tag,
+                                    tags[tag]['tag_name'],
+                                    'Ready' if build_chart_job and build_chart_job['status'] == 'success' else 'Not ready',
+                                    build_chart_job['pipeline_id'] if build_chart_job and build_chart_job['pipeline_id'] else '-'
+                                    ])
         if not result_data:
             print("No branches were found!")
             return False
@@ -137,7 +152,7 @@ class Branch(Git):
     def get_branch_name_using_commit(self, project_id, commit) -> list:
         """ Get branch name(s) using commit from a given repository. """
 
-        url = f"{self._url}/projects/{project_id}/repository/commits/{commit}/refs?type=branch"
+        url = f"{self._url}/projects/{project_id}/repository/commits/{commit}/refs?type=branch&per_page=100"
         try:
             response = requests.get(url=url, headers=self._headers, verify=False)
             response.raise_for_status()

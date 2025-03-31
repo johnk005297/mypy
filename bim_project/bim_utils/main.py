@@ -477,7 +477,6 @@ def main(local=False):
                 args = user_command[2:]
                 id: list = Tools.get_flag_values_from_args_str(args, '--id').split()
                 data = Bimeister.export_templates(url, token, id)
-                
 
             #    ''' =============================================================================== Tools ============================================================================================ '''
             case ['ptoken'] if not local:
@@ -542,7 +541,7 @@ if __name__ == '__main__':
                 if len(branches) == 1:
                     branch_name = branches[0]
                 else:
-                    branch_name = input(f"{args.build_charts} commit appears in several branches: {branches}\nChoose your branch: ")
+                    branch_name = input(f"{args.build_charts} commit appears in several branches: {branches}\nSelect branch: ")
                 charts_jobs = job.get_specific_jobs(project_id, args.build_charts, branch_name)
                 pipeline_id = charts_jobs['pipeline_id']
                 if not pipeline_id:
