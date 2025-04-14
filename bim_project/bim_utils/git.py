@@ -195,7 +195,6 @@ class Job(Git):
                 if pipeline['ref'] == branch_name:
                     pipeline_id = pipeline['id']
                     break
-        
         if not pipeline_id:
             needed_jobs: dict = {'pipeline_id': False}
             return needed_jobs
@@ -282,6 +281,8 @@ class Pipeline(Git):
                 self._logger.error(err)
                 print("Error getting pipelines. Check the log.")
                 return False
+        # sort pipelines by id
+        pipelines = sorted(pipelines, key=lambda x: x['id'], reverse=True)
         return pipelines
 
 

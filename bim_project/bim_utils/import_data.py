@@ -331,6 +331,11 @@ class Abac:
     def __init__(self):
         pass
 
+    def export_abac_and_events(self, url, token):
+        """ Export ABAC files and notifications. """
+
+        pass
+
     def collect_abac_data(self, **kwargs):
         """ Collect data needed for abac import. """
 
@@ -348,7 +353,7 @@ class Abac:
 
 
     def import_abac_and_events(self, token, data: dict, svc_name):
-        """ Import data from collected functions above. """
+        """ Import data from collect_abac_data function. """
 
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         for key,value in data.items():

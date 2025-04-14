@@ -266,6 +266,7 @@ class Bimeister:
             return False
         except ValueError as err:
             print("Invalid input. Has to be a number.")
+            return False
         except Exception as err:
             print("Some error occured. Check the log.")
             logger.error(err)
