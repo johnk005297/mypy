@@ -21,6 +21,7 @@ class Git:
         self.pipeline = Pipeline
         self.tree = Tree
         self.product_collection = Product_collection_file
+        self.chart = Chart
 
     def display_table_with_branches_commits_tags_jobs(self, data) -> Table:
         """ Create table, fill with data(branches, commits, tags, helm chart job status, FT job status) and print it out. """
@@ -32,9 +33,10 @@ class Git:
         table.add_column("Commit", justify="left", style="#875fff")
         table.add_column("Tag", justify="left", style="#875fff")
         table.add_column("Helm charts", justify="left", style="#875fff")
-        table.add_column("Pipeline", justify="left", style="#875fff")
+        # table.add_column("Pipeline", justify="left", style="#875fff")
         for x in data:
-            table.add_row(x[0], x[1], x[2], x[3], str(x[4]))
+            # table.add_row(x[0], x[1], x[2], x[3], str(x[4]))
+            table.add_row(x[0], x[1], x[2], x[3])
         console = Console()
         console.print(table)
 
@@ -60,6 +62,28 @@ class Project(Git):
         project: dict = [x for x in data if x['name'] == project][0]
         return project['id'] if project else False
 
+class Chart(Git):
+
+    def is_chart_available(self, repo_url='https://nexus.bimeister.io/service/rest/repository/browse/bim-helm/bimeister', commit=None):
+        """ Check if helm charts are available for download. """
+
+        result: bool = False
+        for x in range(15, 25):
+            version: str = f"1.{x}.0-sha{commit}"
+            try:
+                response = requests.get(repo_url)
+                response.raise_for_status()
+                index = yaml.safe_load(response.text)
+                search = index.find(version)
+                if search == -1:
+                    continue
+                elif search > -1:
+                    result = True
+                    return True
+            except Exception as err:
+                self._logger.error(err)
+                return False
+        return result
 
 class Tag(Git):
 
@@ -123,13 +147,11 @@ class Branch(Git):
                     del tags[branch['commit']['parent_ids'][0][:8]]
                 else:
                     tag_name = '-'
-                build_chart_job: dict = self.job().get_job(project_id, branch_commit, branch['name'], self.job._build_job)
                 result_data.append([
                     branch['name'],
                     branch_commit,
                     tag_name,
-                    'Ready' if build_chart_job and build_chart_job['status'] == 'success' else 'Not ready',
-                    build_chart_job['pipeline_id'] if build_chart_job and build_chart_job['pipeline_id'] else '-'
+                    'Ready' if self.chart().is_chart_available(commit=branch_commit) else 'Not ready'
                                 ])
         if tags:
             for tag in tags:
@@ -137,12 +159,10 @@ class Branch(Git):
                     branch_name = tags[tag]['branch_name'][-1]
                 else:
                     branch_name = tags[tag]['branch_name'][0]
-                build_chart_job: dict = self.job().get_job(project_id, tag, branch_name, self.job._build_job)
                 result_data.append([branch_name,
                                     tag,
                                     tags[tag]['tag_name'],
-                                    'Ready' if build_chart_job and build_chart_job['status'] == 'success' else 'Not ready',
-                                    build_chart_job['pipeline_id'] if build_chart_job and build_chart_job['pipeline_id'] else '-'
+                                    'Ready' if self.chart().is_chart_available(commit=tag) else 'Not ready'
                                     ])
         if not result_data:
             print("No branches were found!")
@@ -439,3 +459,54 @@ class Product_collection_file(Git):
     #         print(self.__error_msg)
     #         return False
     #     return data
+
+    # def search_branches_commits_tags_jobs(self, project_id, search: list):
+    #     """ Search branches with their commits, tags and jobs. """
+
+    #     tags: dict = self.tag().search_tag(project_id, search)
+    #     result_data: list = []
+    #     for x in search:
+    #         url = f"{self._url}/projects/{project_id}/repository/branches?regex=\D{x}"
+    #         try:
+    #             response = requests.get(url=url, headers=self._headers)
+    #             response.raise_for_status()
+    #         except requests.exceptions.RequestException as err:
+    #             print(self._error_msg)
+    #             self._logger.error(err)
+    #             return False
+    #         for branch in response.json():
+    #             branch_commit = branch['commit']['short_id']
+    #             if tags and tags.get(branch['commit']['short_id']):
+    #                 tag_name =  tags[branch['commit']['short_id']]['tag_name']
+    #                 del tags[branch['commit']['short_id']]
+    #             elif tags and tags.get(branch['commit']['parent_ids'][0][:8]):
+    #                 branch_commit = branch['commit']['parent_ids'][0][:8]
+    #                 tag_name = tags.get(branch['commit']['parent_ids'][0][:8])['tag_name']
+    #                 del tags[branch['commit']['parent_ids'][0][:8]]
+    #             else:
+    #                 tag_name = '-'
+    #             build_chart_job: dict = self.job().get_job(project_id, branch_commit, branch['name'], self.job._build_job)
+    #             result_data.append([
+    #                 branch['name'],
+    #                 branch_commit,
+    #                 tag_name,
+    #                 'Ready' if build_chart_job and build_chart_job['status'] == 'success' else 'Not ready',
+    #                 build_chart_job['pipeline_id'] if build_chart_job and build_chart_job['pipeline_id'] else '-'
+    #                             ])
+    #     if tags:
+    #         for tag in tags:
+    #             if len(tags[tag]['branch_name']) > 1:
+    #                 branch_name = tags[tag]['branch_name'][-1]
+    #             else:
+    #                 branch_name = tags[tag]['branch_name'][0]
+    #             build_chart_job: dict = self.job().get_job(project_id, tag, branch_name, self.job._build_job)
+    #             result_data.append([branch_name,
+    #                                 tag,
+    #                                 tags[tag]['tag_name'],
+    #                                 'Ready' if build_chart_job and build_chart_job['status'] == 'success' else 'Not ready',
+    #                                 build_chart_job['pipeline_id'] if build_chart_job and build_chart_job['pipeline_id'] else '-'
+    #                                 ])
+    #     if not result_data:
+    #         print("No branches were found!")
+    #         return False
+    #     return result_data
