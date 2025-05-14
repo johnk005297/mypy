@@ -62,28 +62,21 @@ class Project(Git):
         project: dict = [x for x in data if x['name'] == project][0]
         return project['id'] if project else False
 
-class Chart(Git):
 
-    def is_chart_available(self, repo_url='https://nexus.bimeister.io/service/rest/repository/browse/bim-helm/bimeister', commit=None):
+class Chart(Git):
+    
+    def is_chart_available(self, project_id, commit) -> bool:
         """ Check if helm charts are available for download. """
 
-        result: bool = False
-        for x in range(15, 25):
-            version: str = f"1.{x}.0-sha{commit}"
-            try:
-                response = requests.get(repo_url)
-                response.raise_for_status()
-                index = yaml.safe_load(response.text)
-                search = index.find(version)
-                if search == -1:
-                    continue
-                elif search > -1:
-                    result = True
+        # get all pipelines
+        pipelines = self.pipeline().get_pipelines(project_id, commit=commit)
+        for pipeline in pipelines:
+            pipeline_jobs = self.job().get_pipeline_jobs(project_id, pipeline['id'])
+            for job in pipeline_jobs:
+                if job['name'].lower() == "build chart" and job['status'] == 'success':
                     return True
-            except Exception as err:
-                self._logger.error(err)
-                return False
-        return result
+        return False
+
 
 class Tag(Git):
 
@@ -137,7 +130,7 @@ class Branch(Git):
                 self._logger.error(err)
                 return False
             for branch in response.json():
-                branch_commit = branch['commit']['short_id']
+                branch_commit = branch['commit']['short_id']                                
                 if tags and tags.get(branch['commit']['short_id']):
                     tag_name =  tags[branch['commit']['short_id']]['tag_name']
                     del tags[branch['commit']['short_id']]
@@ -151,7 +144,7 @@ class Branch(Git):
                     branch['name'],
                     branch_commit,
                     tag_name,
-                    'Ready' if self.chart().is_chart_available(commit=branch_commit) else 'Not ready'
+                    'Ready' if self.chart().is_chart_available(project_id, commit=branch_commit) else 'Not ready'
                                 ])
         if tags:
             for tag in tags:
@@ -162,7 +155,7 @@ class Branch(Git):
                 result_data.append([branch_name,
                                     tag,
                                     tags[tag]['tag_name'],
-                                    'Ready' if self.chart().is_chart_available(commit=tag) else 'Not ready'
+                                    'Ready' if self.chart().is_chart_available(project_id, commit=tag) else 'Not ready'
                                     ])
         if not result_data:
             print("No branches were found!")
@@ -510,3 +503,31 @@ class Product_collection_file(Git):
     #         print("No branches were found!")
     #         return False
     #     return result_data
+
+    # def is_chart_available(self, repo_url='https://nexus.dev.bimeister.io/repository/bim-helm', chart_name='bimeister', commit=None) -> bool:
+    #     """ Check if helm charts are available for download. """
+
+    #     result: bool = False
+    #     for x in range(17, 19):
+    #         version: str = f"1.{x}.0-sha{commit}"
+    #         try:
+    #             # Helm repos typically have an index.yaml file
+    #             response = requests.get(f"{repo_url}/index.yaml")
+    #             response.raise_for_status()
+    #             index = yaml.safe_load(response.text)
+    #             if chart_name in index.get('entries', {}):
+    #                 if commit:
+    #                     result = any(chart['version'] == version for chart in index['entries'][chart_name])
+    #                 else:
+    #                     return False
+    #                 if result:
+    #                     break
+    #                 else:
+    #                     continue
+    #             else:
+    #                 self._logger.error("Incorrect chart name.")
+    #                 return False
+    #         except Exception as err:
+    #             self._logger.error(err)
+    #             return False
+    #     return result    
