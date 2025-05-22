@@ -49,12 +49,10 @@ def read_docker_compose_file(filename, services):
                     if value in l:
                         skip_line = True
                         break
-
                 if not l or skip_line:
                     continue
                 else:
                     d_compose.append(line)
-
         d_compose += ['\n'*2]  # Add two more empty elements to stay in the list range during future checks of the next lines. Precaution measure.
         return d_compose
     except Exception as err:

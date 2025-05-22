@@ -169,7 +169,14 @@ class Branch(Git):
         try:
             response = requests.get(url=url, headers=self._headers, verify=False)
             response.raise_for_status()
-            branches: list = [x['name'] for x in response.json()]
+            branches: list = [branch['name'] for branch in response.json()]
+            next_page = response.headers['X-Next-Page']
+            while next_page:
+                url_next_page = f"https://git.bimeister.io/api/v4/projects/{project_id}/repository/commits/{commit}/refs?id={project_id}&page={next_page}&per_page=100&sha={commit}&type=branch"
+                response = requests.get(url=url_next_page, headers=self._headers, verify=False)
+                for branch in response.json():
+                    branches.append(branch['name'])
+                next_page = response.headers['X-Next-Page']
             return branches if branches else False
         except requests.exceptions.RequestException as err:
             self._logger.error(err)
