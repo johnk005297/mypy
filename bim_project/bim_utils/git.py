@@ -33,9 +33,7 @@ class Git:
         table.add_column("Commit", justify="left", style="#875fff")
         table.add_column("Tag", justify="left", style="#875fff")
         table.add_column("Helm charts", justify="left", style="#875fff")
-        # table.add_column("Pipeline", justify="left", style="#875fff")
         for x in data:
-            # table.add_row(x[0], x[1], x[2], x[3], str(x[4]))
             table.add_row(x[0], x[1], x[2], x[3])
         console = Console()
         console.print(table)
@@ -46,7 +44,7 @@ class Project(Git):
     def get_project_id(self, project='bimeister') -> int:
         """ Get from Gitlab ID of the project bimeister. """
 
-        __url = f"{self._url}/search?scope=projects&search={project}"
+        __url = f"{self._url}/search?scope=projects&search={project}&per_page=100"
         try:
             response = requests.get(url=__url, headers=self._headers, verify=False)
             response.raise_for_status()
@@ -59,8 +57,10 @@ class Project(Git):
             print(self._error_msg)
             self._logger.error(err)
             return False
-        project: dict = [x for x in data if x['name'] == project][0]
-        return project['id'] if project else False
+        for proj in reversed(data):
+            if proj['name'] == project:
+                return proj['id']
+        return False
 
 
 class Chart(Git):

@@ -14,6 +14,7 @@ class Parser():
         # create the top-level parser
         parser = argparse.ArgumentParser(description="Frankenstein's CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, gitlab, vCenter, etc.")
         parser.add_argument('-V', '--version', required=False, action="store_true", help='Get version of the bim_utils')
+        parser.add_argument('-u', '--url', required=False, help='Url to get bimeister version')
         parser.add_argument('--local', required=False, action="store_true", help='Execute script with locally available options on the current host')
 
         # create main subparser
@@ -94,10 +95,6 @@ class Parser():
         product_list_group.add_argument('--commit', required=False, help='Get info from the product-collection.yaml file for a specific commit')
         product_list_group.add_argument('--compare', required=False, nargs=2, help='Compare two commits for difference in product-collection.yaml in DBs list and services list')
         # product_list_group.add_argument('-st', '--search-tag', required=False, nargs='+', help='Search for a tag by it\'s name')
-
-        # create parser for the "bim-version" subcommand
-        bim_version = subparser.add_parser('bim-version', help='Get bimeister version information')
-        bim_version.add_argument('-u', '--url', required=True)
 
         # mdm connector import config
         mdm_connector_parser = subparser.add_parser('mdm', help='Import MDM autosetup config file. Requires for MDM connector integration')

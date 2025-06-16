@@ -316,6 +316,9 @@ def main(local=False):
                         continue
 
             #    ''' =============================================================================== ABAC ============================================================================================= '''
+            case ['abac', 'export', *_]:
+                pass
+
             case ['abac', 'import', *_]:
                 if user_command == ['abac', 'import', '-h'] or user_command == ['abac', 'import', '--help']:
                     Abac.print_help()
@@ -522,7 +525,10 @@ if __name__ == '__main__':
     args = Parser().parse_args()
     try:
         if args.version:
-            print(app_menu.AppMenu.__version__)
+            if args.url:
+                Bimeister.print_bim_version(args.url)
+            else:
+                print(app_menu.AppMenu.__version__)
         elif args.command == 'git':
             g = Git()
             project = g.project()
@@ -728,8 +734,6 @@ if __name__ == '__main__':
                 for value in vm_array.values():
                     if value["power_state"] == "POWERED_ON":
                         v.start_vm(headers, value["moId"], value["name"])
-        elif args.command == 'bim-version':
-            Bimeister.print_bim_version(args.url)
         elif args.command == 'mdm':
             mdm = import_data.Mdmconnector()
             url = mdm.check_url(args.url)
