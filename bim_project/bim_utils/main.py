@@ -30,6 +30,7 @@ def main(local=False):
     License_main = license.License()
     Export_data = export_data.Export_data()
     Import_data_main = import_data.Import_data()
+    Risk_assessment = import_data.RiskAssesment()
     Abac = import_data.Abac()
     Docker = mdocker.Docker()
     K8s = mk8s.K8S(namespace='bimeister')
@@ -325,7 +326,7 @@ def main(local=False):
                     continue
                 args = user_command[2:]
                 # accessible services and keys
-                svc: list = ['data-sync', 'asset', 'maintenance', 'work-permits', 'fmeca', 'rca', 'rbi', 'rcm', 'rm']
+                svc: list = ['data-sync', 'asset', 'maintenance', 'work-permits', 'fmeca', 'rca', 'rbi', 'rcm', 'rm', 'ra']
                 check_svc = [x for x in args if x in svc]
                 if not check_svc:
                     print(f"Incorrect service was provided! Available options: {svc}")
@@ -455,6 +456,10 @@ def main(local=False):
                                                         notification_file=None
                                                         )
                     Abac.import_abac_and_events(token, data, 'recommendation-management')
+            
+            case ['risk-ass', '-f', *_]:
+                path_to_file: str = user_command[2]
+                Risk_assessment.import_risk_assessment_template(url, token, path_to_file)
 
             #    ''' =============================================================================== Custom UI ======================================================================================== '''
             case ['apply', 'UI', *_]:

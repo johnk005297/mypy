@@ -459,4 +459,39 @@ class Mdmconnector:
         except Exception as err:
             logger.error(err)
             print("Error! Check the log.")
-            return False    
+            return False
+
+
+class RiskAssesment:
+
+    __api_templates: str = "/api/risk-assessment/templates/multi-category-template"
+
+    def __init__(self):
+        pass
+
+    def import_risk_assessment_template(self, url, token, filepath):
+        """ Import risk assessment template to bimeister. """
+
+        url: str = url + self.__api_templates
+        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
+        if not os.path.isfile(filepath):
+            print(f"No such file: {filepath}")
+            return False
+        with open(filepath, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+        try:
+            response = requests.post(url=url, headers=headers, data=json.dumps(data))
+            if response.status_code in (200, 204):
+                data = response.json()
+                logger.info(f"{response.text}: {response.status_code}")
+                print("Template uploaded successfully!")
+            else:
+                logger.error(response)
+                print(f"Error: {response.status_code}. Check logs!")
+        except Exception as err:
+            logger.error(err)
+            print("Error! Check the log.")
+            return False
+        
+
+

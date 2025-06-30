@@ -61,8 +61,9 @@ def main_menu():
                             \n   Templates                                                                              \
                             \n      ls templates                        get list of tempaltes                           \
                             \n      export templates --id \"id1 id2 ...\" export template(s) using id                   \
+                            \n      risk-ass -f <file>                  import risk assessment template                 \
                             \n                                                                                          \
-                            \n   Main                                                                                   \
+                            \n                                                                                          \
                             \n      m                                   print this menu                                 \
                             \n      q                                   exit"
 
@@ -94,7 +95,7 @@ def local_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.78.50'
+    __version__ = '1.78.51'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):

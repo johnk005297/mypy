@@ -259,7 +259,7 @@ class Queries:
         """ Create postgreSQL user with read only access. """
 
         return """
-                  CREATE USER {0} WITH PASSWORD "{1}" IN ROLE pg_read_all_data;
+                  CREATE USER {0} WITH PASSWORD '{1}' IN ROLE pg_read_all_data;
                     GRANT pg_read_all_data TO {0};
                 """.format(name, password)
     
