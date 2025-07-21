@@ -1,15 +1,26 @@
 import yaml
 import base64
 import requests
+import sys
+import os
 from log import Logs
 from colorama import init, Fore
 init(autoreset=True)
 from rich.console import Console
 from rich.table import Table
 
+
+# block for correct build with pyinstaller, to add .env file
+from dotenv import load_dotenv
+extDataDir = os.getcwd()
+if getattr(sys, 'frozen', False):
+    extDataDir = sys._MEIPASS
+load_dotenv(dotenv_path=os.path.join(extDataDir, '.env'))
+
 class Git:
-    _headers = {"PRIVATE-TOKEN": "my-token"}
-    _url = "https://git.company.io/api/v4"
+
+    _headers = {"PRIVATE-TOKEN": os.getenv('gitlab_token')}
+    _url = "https://git.bimeister.io/api/v4"
     _logger = Logs().f_logger(__name__)
     _error_msg = "Unexpected error. Check logs!"
 
