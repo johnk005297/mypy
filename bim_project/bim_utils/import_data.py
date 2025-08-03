@@ -38,7 +38,13 @@ class Import_data:
         ''' Function needs to protect export server from import procedure during a single user session. '''
 
         server_info = File.read_file(self._transfer_folder, self.Export_data._export_server_info_file)
-        if server_info and server_info.split()[1] == self.License.get_serverID(url, token):
+        response = self.License.get_serverID(url, token)
+        success: bool = response[0]
+        message: str = response[1] # if True, message is a serverId, otherwise error message
+        if not success:
+            print(message)
+            return False
+        if server_info and server_info.split()[1] == message:
             ask_for_confirmation: bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
             return True if ask_for_confirmation == 'y' else False
         elif not server_info:

@@ -1,8 +1,6 @@
 import sys
-import json
 import requests
-import time
-from urllib.error import HTTPError
+from tools import Tools
 from getpass import getpass
 from log import Logs
 from urllib3.exceptions import InsecureRequestWarning
@@ -35,26 +33,34 @@ class Auth:
     def __getattr__(self, item):
         raise AttributeError("Auth class instance has no such attribute: " + item)
 
-    def establish_connection(self):
-        try:
-            self.url = input("\nEnter URL: ").strip().lower()
-            self.url = self.url[:-1] if self.url.endswith('/') else self.url
-            self.url = self.url[:-5] if self.url.endswith('auth') else self.url
-        except IndexError:
-            message: str = 'Incorrect input.'
-            print(message)
-            return False
-        except KeyboardInterrupt:
-            print('\nKeyboardInterrupt')
-            return False
+    def establish_connection(self, url=None, username=None, password=None) -> bool:
+        """ Function performs URL validation, gets prodivers Id, gets user access token.
+            Returns True if connection with provided credentials were establish, False otherwise.
+        """
+        
+        if not url:
+            try:
+                self.url = input("\nEnter URL: ").strip().lower()
+            except IndexError:
+                message: str = 'Incorrect input.'
+                print(message)
+                return False
+            except KeyboardInterrupt:
+                print('\nKeyboardInterrupt')
+                return False
+        else:
+            self.url = url.strip().lower()
+        self.url = self.url[:-1] if self.url.endswith('/') else self.url
+        self.url = self.url[:-5] if self.url.endswith('auth') else self.url
         if not self.url_validation(self.url):
             return False
         if not self.get_providerId(self.url):
             return False
-        self.get_credentials()
+        self.get_credentials(username=username, password=password)
         return True if self.get_user_access_token(self.url, self.username, self.password, self.providerId) else False
 
     def url_validation(self, url):
+        """ Function checks if provided URL is correct and accessible. """
 
         if not url.startswith('http'):
             url = 'http://' + url
@@ -62,16 +68,15 @@ class Auth:
         for x in range(2):
             self.__logger.info(self.__start_connection(url))
             try:
-                response = requests.get(url=url, verify=False, allow_redirects=False, timeout=2)
+                response = requests.head(url=url, verify=False, allow_redirects=False, timeout=2)
                 self.__logger.debug(self.__check_response(url, response.request.method, response.request.path_url,
                                                           response.status_code))
                 if response.status_code == 200:
                     self.url = url
                     return url
-                # this part needs to fix issues if the redirect is set up
+                # fix issues if the redirect is set up
                 elif response.status_code in (301, 302, 308):
                     url = url[:4] + url[5:] if url[4] == 's' else url[:4] + 's' + url[4:]
-
                 # Can't catch 502 error with except. Temporary need to add this block
                 elif x == 1 and response.status_code == 500:
                     message: str = 'Error 500: Check connection to host.'
@@ -109,105 +114,145 @@ class Auth:
             continue
 
     def get_providerId(self, url):
-        """ Get providers from bimeister. """
-        try:
-            response = requests.get(url=f"{url}/{self.__api_Providers}", verify=False, allow_redirects=False,
-                                    timeout=2)
-            if response.status_code == 200:
-                api_providers: list = response.json()
-            elif response.status_code != 200:
-                print("Couldn't establish connection. Check the logs!")
-                Auth.__logger.error(response.text)
-                return False
-            if len(api_providers) == 1:
-                self.providerId = api_providers[0]['id']
-                return self.providerId
-            else:
-                print('    Choose authorization type:')
-                for num, obj in enumerate(api_providers, 1):
-                    print(f"      {str(num)}. {obj['name']} ({obj['providerTypeOption']})")
-                try:
-                    inp = int(input('    value: '))
-                    if inp > len(api_providers):
-                        print("Incorrect input")
-                        return False
-                    self.providerId = api_providers[inp - 1]['id']
-                    return self.providerId
-                except ValueError:
-                    print('Input should be a number')
-                    return False
-        except requests.exceptions.ReadTimeout as err:
-            message: str = "Check connection to host."
-            Auth.__logger.error(f"{message}\n{err}")
-            print(message)
-        except Exception as err:
-            Auth.__logger.error(f"{message}\n{err}")
-            message: str = "Check connection to host."
-            print(message)
+        """ Function checks if Bimeister has more than one provider. If so, user prompt will appear to choose from the list.
+            A single provider Id will be returned.
+        """
 
-
-
-
-    def get_credentials(self):
-        try:
-            confirm_name = input("Enter login(default, admin): ")
-            confirm_pass = getpass("Enter password(default, Qwerty12345!): ")
-            self.username = confirm_name if confirm_name else 'admin'
-            self.password = confirm_pass if confirm_pass else 'Qwerty12345!'
-        except KeyboardInterrupt:
-            print('\nKeyboardInterrupt')
+        tools = Tools()
+        response = tools.make_request('GET', url=f"{url}/{self.__api_Providers}", module=__name__, verify=False, allow_redirects=False,
+                                timeout=2)
+        if not response:
+            return response
+        if response.status_code == 200:
+            providers: list = response.json()
+        elif response.status_code != 200:
+            print("Couldn't establish connection. Check the logs!")
             return False
-        except Exception:
-            sys.exit()
+        if len(providers) == 1:
+            self.providerId = providers[0]['id']
+            return self.providerId
+        else:
+            print('    Choose authorization type:')
+            for num, obj in enumerate(providers, 1):
+                print(f"      {str(num)}. {obj['name']} ({obj['providerTypeOption']})")
+            try:
+                inp = int(input('    value: '))
+                if inp > len(providers):
+                    print("Incorrect input")
+                    return False
+                self.providerId = providers[inp - 1]['id']
+                return self.providerId
+            except ValueError:
+                print('Input should be a number')
+                return False
 
+    def get_credentials(self, username=None, password=None):
+        """ Prompt login and password from the user. """
+
+        if not username or not password:
+            try:
+                username = input("Enter login(default, admin): ")
+                password = getpass("Enter password(default, Qwerty12345!): ")
+                self.username = username if username else 'admin'
+                self.password = password if password else 'Qwerty12345!'
+            except KeyboardInterrupt:
+                print('\nKeyboardInterrupt')
+                return False
+            except Exception:
+                sys.exit()
+        else:
+            self.username = username
+            self.password = password
+
+    # def get_user_access_token(self, url, username, password, providerId):
+    #     """ Basically this is a login into system, after what we get an access token. """
+
+    #     payload = {
+    #         "username": username,
+    #         "password": password,
+    #         "providerId": providerId
+    #     }
+    #     data = json.dumps(payload)
+    #     try:
+    #         response = requests.post(url=f"{url}/{self.__api_Auth_Login}", data=data, headers=self.headers, verify=False)
+    #         # self.__logger.debug(f"username: {self.username}")
+    #         # self.__logger.debug(
+    #         #     self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
+    #         data = response.json()
+    #     except self.possible_request_errors as err:
+    #         self.__logger.error(err)
+    #         print(f"Login attempt failed. Repsonse code: {response.status_code}. Check services are running!")
+    #     time.sleep(0.07)
+    #     """ Block is for checking authorization request.
+    #     Correct response of /api/Auth/Login method suppose to return a .json with 'access_token' and 'refresh_token'.
+    #     """
+    #     if response.status_code == 401:
+    #         if data.get('type') and data.get('type') == 'TransitPasswordExpiredBimException':
+    #             message: str = f"Password for '{username}' has been expired!"
+    #             self.__logger.error(response.text)
+    #             print(message)
+    #             return False
+    #         elif data.get('type') and data.get('type') == 'IpAddressLoginAttemptsExceededBimException':
+    #             message = "Too many authorization attempts. IP address has been blocked!"
+    #             self.__logger.error(response.text)
+    #             print(message)
+    #             return False
+    #         elif data.get('type') and data.get('type') == 'AuthCommonBimException':
+    #             message = f"Unauthorized access. Check credentials for user: {username}."
+    #             self.__logger.error(response.text)
+    #             print(message)
+    #             return False
+    #         elif data.get('type') and data.get('type') == 'UserPasswordValidationBimException':
+    #             message = "The password does not match the password policy. Need to create a new password."
+    #             self.__logger.error(response.text)
+    #             print(message)
+    #         elif data.get('type') and data.get('type') == 'UserLoginAttemptsExceededBimException':
+    #             message = "Login attempts exceeded. User was blocked."
+    #             self.__logger.error(response.text)
+    #             print(message)
+    #         else:
+    #             self.__logger.error(response.text)
+    #             return False
+    #     elif response.status_code in (200, 201, 204):
+    #         self.token = data['access_token']
+    #         return self.token
+    #     else:
+    #         return False
     def get_user_access_token(self, url, username, password, providerId):
-        """ Basically this is a login into system, after what we get an access token. """
+        """ Function sends login request.
+            Success response returns a .json with 'access_token'.
+        """
 
+        tools = Tools()
         payload = {
             "username": username,
             "password": password,
             "providerId": providerId
         }
-        data = json.dumps(payload)
-        try:
-            response = requests.post(url=f"{url}/{self.__api_Auth_Login}", data=data, headers=self.headers, verify=False)
-            self.__logger.debug(f"username: {self.username}")
-            self.__logger.debug(
-                self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
-            data = response.json()
-        except self.possible_request_errors as err:
-            self.__logger.error(err)
-            print(f"Login attempt failed. Repsonse code: {response.status_code}. Check services are running!")
-        time.sleep(0.07)
-        """ Block is for checking authorization request.
-        Correct response of /api/Auth/Login method suppose to return a .json with 'access_token' and 'refresh_token'.
-        """
+        response = tools.make_request('POST', url=f"{url}/{self.__api_Auth_Login}", module=__name__, return_response=True, json=payload, headers=self.headers, verify=False)
+        data = response.json()
         if response.status_code == 401:
             if data.get('type') and data.get('type') == 'TransitPasswordExpiredBimException':
                 message: str = f"Password for '{username}' has been expired!"
-                self.__logger.error(response.text)
                 print(message)
                 return False
             elif data.get('type') and data.get('type') == 'IpAddressLoginAttemptsExceededBimException':
                 message = "Too many authorization attempts. IP address has been blocked!"
-                self.__logger.error(response.text)
                 print(message)
                 return False
             elif data.get('type') and data.get('type') == 'AuthCommonBimException':
                 message = f"Unauthorized access. Check credentials for user: {username}."
-                self.__logger.error(response.text)
                 print(message)
                 return False
             elif data.get('type') and data.get('type') == 'UserPasswordValidationBimException':
                 message = "The password does not match the password policy. Need to create a new password."
-                self.__logger.error(response.text)
                 print(message)
+                return False
             elif data.get('type') and data.get('type') == 'UserLoginAttemptsExceededBimException':
                 message = "Login attempts exceeded. User was blocked."
-                self.__logger.error(response.text)
                 print(message)
+                return False
             else:
-                self.__logger.error(response.text)
                 return False
         elif response.status_code in (200, 201, 204):
             self.token = data['access_token']

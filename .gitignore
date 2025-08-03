@@ -6,7 +6,6 @@ bim_project/bim_utils/.env
 bim_project/tmp
 bim_project/archived
 bim_project/bim_utils/*.lic
-bim_project/bim_utils/project_services.py
 bim_project/bim_utils/transfer_files
 bim_project/bim_utils/archive
 bim_project/bim_utils/query.sql
@@ -16,5 +15,4 @@ bim_project/bim_utils/log_test.py
 bim_project/bim_utils/.bimUtils_logs
 bim_project/bim_utils/ssh_connect.py
 bim_project/bim_utils/requirements.txt
-mudils/
 pyi_spec_file/

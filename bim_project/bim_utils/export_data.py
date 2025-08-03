@@ -251,7 +251,13 @@ class Export_data:
         return True    
 
     def export_server_info(self, url, token):
-        serverId:str = self.License.get_serverID(url, token)
+        response = self.License.get_serverID(url, token)
+        success: bool = response[0]
+        message: str = response[1]
+        if not success:
+            print(f"Error: {message}")
+        else:
+            serverId: str = message
         with open(f'{self._transfer_folder}/{self._export_server_info_file}', 'w', encoding='utf-8') as file:
             file.write("{0}\n".format(url.split('//')[1]))
             file.write(serverId)

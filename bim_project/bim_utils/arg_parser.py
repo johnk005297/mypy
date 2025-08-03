@@ -13,9 +13,9 @@ class Parser():
 
         # create the top-level parser
         parser = argparse.ArgumentParser(description="Frankenstein's CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, gitlab, vCenter, etc.")
-        parser.add_argument('-V', '--version', required=False, action="store_true", help='Get version of the bim_utils')
+        parser.add_argument('-V', '--version', required=False, action='store_true', help='Get version of the bim_utils')
         parser.add_argument('-u', '--url', required=False, help='Url to get bimeister version')
-        parser.add_argument('--local', required=False, action="store_true", help='Execute script with locally available options on the current host')
+        parser.add_argument('--local', required=False, action='store_true', help='Execute script with locally available options on the current host')
 
         # create main subparser
         subparser = parser.add_subparsers(dest='command', required=False)
@@ -30,7 +30,7 @@ class Parser():
         vcenter_subparser = vcenter_parser.add_subparsers(help='Subcommands for "vsphere" command')
         list_vm_parser = vcenter_subparser.add_parser('list-vm', help='Print VMs in implementation cluster', parents=[vcenter_parent_parser])
         list_vm_parser.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name')
-        list_vm_parser.add_argument('--powered-on', required=False, action="store_true", help='Print only VM with POWERED_ON status')
+        list_vm_parser.add_argument('--powered-on', required=False, action='store_true', help='Print only VM with POWERED_ON status')
         list_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
         list_snap_parser = vcenter_subparser.add_parser('show-snap', help='Print list of snapshots for a given VMs', parents=[vcenter_parent_parser])
         list_snap_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name')
@@ -51,14 +51,14 @@ class Parser():
         start_vm_parser = vcenter_subparser.add_parser('start-vm', help='Start select VMs in vSphere', parents=[vcenter_parent_parser])
         start_vm_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name')
         start_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
-        stop_vm_parser = vcenter_subparser.add_parser('stop-vm', help='Start select VMs in vSphere', parents=[vcenter_parent_parser])
+        stop_vm_parser = vcenter_subparser.add_parser('stop-vm', help='Stop select VMs in vSphere', parents=[vcenter_parent_parser])
         stop_vm_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name')
         stop_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
         restart_vm_parser = vcenter_subparser.add_parser('restart-vm', help='Perform guest OS reboot for VMs in implementation cluster', parents=[vcenter_parent_parser])
         restart_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
         restart_vm_group = restart_vm_parser.add_mutually_exclusive_group(required=False)
         restart_vm_group.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name')
-        restart_vm_group.add_argument('--all', required=False, action="store_true", help='Restart all working VMs in implementation cluster')
+        restart_vm_group.add_argument('--all', required=False, action='store_true', help='Restart all working VMs in implementation cluster')
 
         # create parser for the "drop-UO" subcommand
         user_obj_parser = subparser.add_parser('drop-UO', help='Truncate bimeisterdb.UserObjects table')
@@ -73,9 +73,9 @@ class Parser():
         sql_parser.add_argument('-u', '--user', required=True, help='Username with access to db')
         sql_parser.add_argument('-pw', '--password', required=False, help='DB user password')
         sql_parser.add_argument('-p', '--port', required=True, help='DB port')
-        sql_parser.add_argument('--list-db', required=False, action="store_true", help='Print list of all databases')
-        sql_parser.add_argument('--list-tables', required=False, action="store_true", help='Print list of all tables for a given databases')
-        sql_parser.add_argument('--create-user-ro', required=False, action="store_true", help='Create db user with read-only access')
+        sql_parser.add_argument('--list-db', required=False, action='store_true', help='Print list of all databases')
+        sql_parser.add_argument('--list-tables', required=False, action='store_true', help='Print list of all tables for a given databases')
+        sql_parser.add_argument('--create-user-ro', required=False, action='store_true', help='Create db user with read-only access')
         sql_parser.add_argument('--name', required=False, help='Set name for created user')
         sql_parser.add_argument('--pass', required=False, help='Set password for created user')
         sql_parser.add_argument('--mdm', required=False, help='Switch ExternalKey value to production or test. Requires for MDM connector integration')
@@ -96,12 +96,40 @@ class Parser():
         product_list_group.add_argument('--compare', required=False, nargs=2, help='Compare two commits for difference in product-collection.yaml in DBs list and services list')
         # product_list_group.add_argument('-st', '--search-tag', required=False, nargs='+', help='Search for a tag by it\'s name')
 
+        # create parser for issuing a new license
+        issue_license = subparser.add_parser('issue-lic', help='Issue a new license from the license server')
+        issue_license_group = issue_license.add_mutually_exclusive_group(required=True)
+        issue_license_group.add_argument('-sid', '--serverId', required=False, help='Parameter of the license: serverID. Server which requires a license. Default value: None')
+        issue_license.add_argument('-v', '--version', required=False, default=int(1), help='Parameter of the license: version. Default value: 1')
+        issue_license.add_argument('-pr', '--product', required=False, default='Bimeister', help='Parameter of the license: product. Default value: Bimeister')
+        issue_license.add_argument('-ltype', '--licenceType', required=False, default='Trial', help='Parameter of the license: licenceType. Default value: Trial')
+        issue_license.add_argument('-atype', '--activationType', required=False, default='Offline', help='Parameter of the license: activationType. Default value: Offline')
+        issue_license.add_argument('-c', '--client', required=False, default='', help='Parameter of the license: client. Default value: None')
+        issue_license.add_argument('-email', '--clientEmail', required=False, default='', help='Parameter of the license: clientEmail. Default value: None')
+        issue_license.add_argument('-org', '--organization', required=False, default='', help='Parameter of the license: organization. Default value: None')
+        issue_license.add_argument('-isOrg', '--isOrganization', required=False, default=False, help='Parameter of the license: isOrganization. Default value: False')
+        issue_license.add_argument('-nou', '--numberOfUsers', required=False, default=int(50), help='Parameter of the license: numberOfUsers. Default value: 50')
+        issue_license.add_argument('-uip', '--numberOfIpConnectionsPerUser', required=False, default=int(0), help='Parameter of the license: numberOfIpConnectionsPerUser. Default value: 0')
+        issue_license.add_argument('-p', '--period', required=False, default=int(3), help='Period of the license in months. Default value: 3')
+        issue_license.add_argument('-oId', '--orderId', required=False, default='', help='Parameter of the license: orderId. Default value: None')
+        issue_license.add_argument('-crmId', '--crmOrderId', required=False, default='', help='Parameter of the license: crmOrderId. Default value: None')
+        issue_license.add_argument('-s', '--save', required=False, action='store_true', help='Save license into a file')
+        issue_license.add_argument('--print', required=False, action='store_true', help='Print license on a screen')
+        issue_license_group.add_argument('--url', required=False, help='URL endpoint which needs a license to activate')
+        issue_license.add_argument('-u', '--user', required=False, default='admin', help='Username with access to web interface and privileges to work with licenses')
+        issue_license.add_argument('-pw', '--password', required=False, default='Qwerty12345!', help='Password for the --user')
+        issue_license.add_argument('--apply', required=False, action='store_true', help='Activate license for specified URL')
+
+        # passwork
+        passwork = subparser.add_parser('pk', help='Work with passwork vault')
+        passwork.add_argument('--url', required=False, help='')
+
         # mdm connector import config
         mdm_connector_parser = subparser.add_parser('mdm', help='Import MDM autosetup config file. Requires for MDM connector integration')
         mdm_connector_parser.add_argument('--url', required=True)
         mdm_connector_group = mdm_connector_parser.add_mutually_exclusive_group(required=True)
         mdm_connector_group.add_argument('--import-file', help='Point .json config file for MDM autosetup for import')
-        mdm_connector_group.add_argument('--export-file', action="store_true", help='Export .json config file for MDM autosetup')
+        mdm_connector_group.add_argument('--export-file', action='store_true', help='Export .json config file for MDM autosetup')
 
         args = parser.parse_args()
         return args
@@ -112,7 +140,7 @@ class Parser():
 
         # create the top-level parser
         parser = argparse.ArgumentParser(description='Frankenstein CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
-        parser.add_argument('--quit', required=False, metavar=('q', 'exit', 'quit'), action="store_true")
+        parser.add_argument('--quit', required=False, metavar=('q', 'exit', 'quit'), action='store_true')
 
 
         # create main subparser

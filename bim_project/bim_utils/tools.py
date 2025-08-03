@@ -1,6 +1,9 @@
 #
 # Tool modules to work with folders and files
 import os
+import sys
+import socket
+import base64
 import platform
 import json
 import shutil
@@ -13,11 +16,20 @@ import requests
 import re
 from datetime import datetime
 from log import Logs
-logger = Logs().f_logger(__name__)
+# logger = Logs().f_logger(__name__)
 
+
+# block for correct build with pyinstaller, to add .env file
+from dotenv import load_dotenv
+extDataDir = os.getcwd()
+if getattr(sys, 'frozen', False):
+    extDataDir = sys._MEIPASS
+load_dotenv(dotenv_path=os.path.join(extDataDir, '.env'))
 
 class Folder:
     
+    logger = Logs().f_logger(__name__)
+
     @staticmethod
     def create_folder(path, folder_name):
         try:
@@ -25,7 +37,7 @@ class Folder:
                 os.mkdir(path + '/' + folder_name)
         except OSError as err:
             print("ERROR in create folder function.")
-            logger.error(err)
+            Folder.logger.error(err)
             return False
 
     @staticmethod
@@ -44,7 +56,7 @@ class Folder:
             else:
                 print(f'   - no {filename} folder was found.')
         except OSError as err:
-            logger.error(err)
+            Folder.logger.error(err)
             print("Error occured. Check the logs.")
             return False
         return True
@@ -62,6 +74,8 @@ class Folder:
 
 class File:
 
+    logger = Logs().f_logger(__name__)
+    @staticmethod
     def read_file(path_to_file, filename):
         """ Read from text files. In .json case function returns a dictionary. Need to pass two arguments in str format: a path and a file name. """
         try:
@@ -71,17 +85,17 @@ class File:
                         content = json.load(file)
                     except json.JSONDecodeError as err:
                         print(f"Error with the {filename} file. Check the logs.")
-                        logger.error(f"Error with {filename}.\n{err}")
+                        File.logger.error(f"Error with {filename}.\n{err}")
                         return False
                     return content
                 else:
                     content = file.read()
                     return content
         except OSError as err:
-            logger.error(err)
+            File.logger.error(err)
             return False
 
-
+    @staticmethod
     def replace_str_in_file(filepath_2read, filepath_2write, find, replace):
         """  Function takes 4 arguments: full path for filename to read, full path for filename to write, what to find, what to put instead of what to find.  """
 
@@ -90,7 +104,7 @@ class File:
         with open(filepath_2write, 'w', encoding='utf-8') as file:
             file.write(new_json)
 
-
+    @staticmethod
     def remove_file(path_to_file):
         if os.path.isfile(path_to_file):
             os.remove(path_to_file)
@@ -98,31 +112,32 @@ class File:
         return False
 
 
-
 class Tools:
 
-    # Function closure
+    logger = Logs().f_logger(__name__)
+
+    @staticmethod
     def counter(start=0):
+        """ Function closure for counter. """
         def start_count():
             nonlocal start
             start += 1
-
-            # two ways(both correct) to format counter, filling first nine digits to two symbols with zero as the first one.
-            # return str(start).zfill(2)
-            return int("{0:02d}".format(start))
+            return int("{0:02d}".format(start)) # make two digits minimum to display
         return start_count
 
-
+    @staticmethod
     def is_windows():
         """ Check if OS is windows or not. """
         return True if platform.system() == 'Windows' else False
 
+    @staticmethod
     def create_random_name():
         """ Create random string of 20 characters. """
 
         random_name: str = ''.join(random.choice(string.ascii_letters) for x in range(20))
         return random_name
 
+    @staticmethod
     def run_terminal_command(command=''):
         """ Function for execution OS command in shell. """        
 
@@ -130,6 +145,7 @@ class Tools:
         command = input("{0} shell: ".format(os_name)).strip() if not command else command
         os.system(command)
 
+    @staticmethod
     def connect_ssh(host='', username=''):
         """ Establish remote ssh connection. """
 
@@ -137,9 +153,10 @@ class Tools:
         try:
             os.system(command)
         except OSError as err:
-            logger.error(err)
+            Tools.logger.error(err)
             return False
 
+    @staticmethod
     def zip_files_in_dir(dirName, archName):
         """ Arhive files into zip format. """
 
@@ -153,6 +170,7 @@ class Tools:
                 return False
         return True
 
+    @staticmethod
     def calculate_timedelta(days):
         """ Function gets days as input data, and provides the amount of epoch seconds by subtracting provided days from current time. """
 
@@ -161,17 +179,20 @@ class Tools:
         delta:int = epoch_time - days
         return delta
 
+    @staticmethod
     def is_user_in_group(group):
         """ Check user groups in linux. Function receives an argument which is a group name, and checks if there is such a group in the list. """
         import grp
         lst = [grp.getgrgid(group).gr_name for group in os.getgroups()]
         return True if group in lst else False
 
+    @staticmethod
     def is_user_root():
         """ Get current user id. """
         user_id = os.getuid()
         return True if user_id == 0 else False
 
+    @staticmethod
     def get_flag_values_from_args_str(args: list, search_arg: str) -> str:
         """ From a given list of args find needed argument and take it's value(s). """
 
@@ -183,8 +204,138 @@ class Tools:
             result = ''
         return result
 
+    @staticmethod
+    def is_socket_available(host: str, port: int, timeout: int=1):
+        """
+        Checks if a TCP socket is available (open) on a remote host and port.
+
+        Args:
+            host (str): The hostname or IP address of the target.
+            port (int): The port number to check.
+            timeout (int, optional): The timeout in seconds for the connection attempt.
+                                    Defaults to 1.
+
+        Returns:
+            bool: True if the socket is available, False otherwise.
+        """
+        try:
+            # Create a socket object
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # Set a timeout for the connection attempt
+            s.settimeout(timeout)
+            # Attempt to connect to the host and port
+            s.connect((host, port))
+            # If connection is successful, close the socket and return True
+            s.shutdown(socket.SHUT_RDWR) # Ensures clean shutdown
+            s.close()
+            return True
+        except socket.timeout as err:
+            Tools.logger.error(err)
+            return False
+        except ConnectionRefusedError:
+            # Connection was actively refused by the target
+            Tools.logger.error(err)
+            return False
+        except OSError as err:
+            # Catch other socket-related errors (e.g., host not found)
+            Tools.logger.error(err)
+            return False
+        except Exception as err:
+            # Catch any other unexpected errors
+            Tools.logger.error(err)
+            return False
+
+    @staticmethod
+    def is_url_available(url):
+        """ Check if URL is available. """
+
+        response = Tools.make_request('HEAD', url, module=__name__, allow_redirects=True)
+        if response and response.status_code in range(200, 299):
+            return response.url.rstrip('/')
+        else:
+            return False
+
+    @staticmethod
+    def get_creds_from_env(user_varname='', password_varname='') -> tuple:
+        """ Function returns a tuple of username and password. """
+
+        env_user: str = user_varname
+        env_pass: str = password_varname
+        if os.getenv(env_user) and os.getenv(env_pass):
+            username = os.getenv(env_user)
+            password = os.getenv(env_pass)
+        else:
+            Tools.logger.error("No credentials were found in .env file.")
+            return None, None
+        username_utf_encoded = username.encode("utf-8")
+        username_b64_decoded = base64.b64decode(username_utf_encoded)
+        username = username_b64_decoded.decode("utf-8")
+        password_utf_encoded = password.encode("utf-8")
+        password_b64_decoded = base64.b64decode(password_utf_encoded)
+        password = password_b64_decoded.decode("utf-8")
+        return username, password
+
+    @staticmethod
+    def make_request(method, url, module=__name__, print_err=False, return_response=False, **kwargs):
+        """
+        A wrapper function to make http requests with centralized exception handling.
+        Args:
+            method (str): The HTTP method (e.g., 'GET', 'POST', 'PUT', 'DELETE').
+            url (str): The URL to send the request to.
+            **kwargs: Additional keyword arguments to pass to the requests method
+                    (e.g., params, data, json, headers, timeout, auth).
+
+        Returns:
+            requests.Response: The response object from the HTTP request.
+        
+        Raises:
+            ValueError: If an unsupported HTTP method is provided.
+        """
+        logger = Logs().f_logger(module)
+        if not url.startswith('http'):
+            url = 'https://' + url
+        try:
+            if method == 'GET':
+                response = requests.get(url, **kwargs)
+            elif method == 'POST':
+                response = requests.post(url, **kwargs)
+            elif method == 'PUT':
+                response = requests.put(url, **kwargs)
+            elif method == 'DELETE':
+                response = requests.delete(url, **kwargs)
+            elif method == 'HEAD':
+                response = requests.head(url, **kwargs)
+            elif method == 'OPTIONS':
+                response = requests.options(url, **kwargs)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+            response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+            return response
+        except requests.exceptions.HTTPError as errh:
+            logger.error(errh)
+            if print_err: print(f"HTTP Error: {errh}")
+            return response if return_response else None
+        except requests.exceptions.ConnectionError as errc:
+            logger.error(errc)
+            if print_err: print(f"Connection Error: {errc}")
+            return response if return_response else None
+        except requests.exceptions.Timeout as errt:
+            logger.error(errt)
+            if print_err: print(f"Timeout Error: {errt}")
+            return response if return_response else None
+        except requests.exceptions.MissingSchema as errm:
+            logger.error(errm)
+            if print_err: print(f"MissingSchema Error: {errm}")
+            return response if return_response else None
+        except requests.exceptions.RequestException as err:
+            logger.error(err)
+            if print_err: print(f"An unexpected Requests error occurred: {err}")
+            return response if return_response else None
+
+
 class Bimeister:
 
+    @staticmethod
     def apply_bimeister_customUI(url, token, file):
         """ Function to upload custom user intreface files. """
 
@@ -202,15 +353,16 @@ class Bimeister:
                 elif response.status_code == 204:
                     print("Files uploaded successfully.")
         except FileNotFoundError as err:
-            logger.error(err)
+            Tools.logger.error(err)
             print(err)
         except requests.RequestException as err:
-            logger.error(err)
+            Tools.logger.error(err)
             print("Error! Check the log.")
         except Exception as err:
-            logger.error(err)
+            Tools.logger.error(err)
             print("Error! Check the log.")
 
+    @staticmethod
     def print_bim_version(url):
         """ Get bimeister commit version. """
 
@@ -226,21 +378,21 @@ class Bimeister:
                 print(f"commit: {data['GIT_COMMIT']}\nversion: {data['BUILD_FULL_VERSION']}")
                 return True
             except requests.exceptions.ConnectionError as err:
-                logger.error(err)
+                Tools.logger.error(err)
                 if count > 0: 
                     print("Connection error: Check URL address.")
                     return False
             except json.JSONDecodeError as err:
                 print("JSONDecodeError: Check URL address.")
-                logger.error(err)
+                Tools.logger.error(err)
                 return False
             except requests.exceptions.MissingSchema as err:
                 print(f"Invalid URL. MissingSchema.")
-                logger.error(err)
+                Tools.logger.error(err)
                 return False
             except Exception as err:
                 print("Unexpected error. Check the logs.")
-                logger.error(err)
+                Tools.logger.error(err)
                 return False
             count += 1
             if count == 1:
@@ -249,6 +401,7 @@ class Bimeister:
             elif count > 1:
                 return False
 
+    @staticmethod
     def recalculate_path(url, token):
         """ Function to call recalculate API method for different services. """
 
@@ -269,7 +422,7 @@ class Bimeister:
             return False
         except Exception as err:
             print("Some error occured. Check the log.")
-            logger.error(err)
+            Tools.logger.error(err)
             return False   
 
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
@@ -281,14 +434,15 @@ class Bimeister:
             response = requests.patch(url, headers=headers, verify=False)
             response.raise_for_status()
             if response.status_code in [200, 201, 204]:
-                logger.info(f"{url} {response.status_code}")
+                Tools.logger.info(f"{url} {response.status_code}")
                 print("Paths recalculated successfully!")
             return True
         except Exception as err:
             print(f"Error occurred. Check the log. Response code: {response.status_code}")
-            logger.error(err)
+            Tools.logger.error(err)
             return False
     
+    @staticmethod
     def get_list_of_templates(url, token) -> list:
         """ Get list of templates from reports service. """
 
@@ -298,13 +452,14 @@ class Bimeister:
             response = requests.get(url=url, headers=headers, verify=False)
             response.raise_for_status()
             if response.status_code == 200:
-                logger.info(f"{url} {response.status_code}")
+                Tools.logger.info(f"{url} {response.status_code}")
                 data = response.json()
                 return data
         except Exception as err:
             print(err)
             return False
     
+    @staticmethod
     def print_list_of_templates(templates: list):
         """ Function prints the list of provided templates. """
 
@@ -315,6 +470,7 @@ class Bimeister:
         for template in templates:
             print(f"{count()})Name: {template['name']}  Id: {template['id']}  TypeName: {template['typeName']}")
 
+    @staticmethod
     def export_templates(url, token, id: list):
         """ Export templates for a given list of id's. """
 
@@ -334,9 +490,9 @@ class Bimeister:
                         print(f"File exported successfully: {i}.json")
             except requests.exceptions.HTTPError as err:
                 if err.response.status_code == 404:
-                    logger.error(err)
+                    Tools.logger.error(err)
                     print(f"404 Client Error for id: {i}")
             except Exception as err:
-                logger.error(err)
+                Tools.logger.error(err)
                 print("Error occured. Read the log! ")
                 return False

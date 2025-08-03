@@ -4,16 +4,23 @@ import time
 import json
 import re
 import binascii
-from os import environ
+import os
+import sys
 from log import Logs
 from getpass import getpass
-from dotenv import load_dotenv
-load_dotenv()
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 from rich.tree import Tree
 from rich import print as rprint
+
+# block for correct build with pyinstaller, to add .env file
+# from dotenv import load_dotenv
+# extDataDir = os.getcwd()
+# if getattr(sys, 'frozen', False):
+#     extDataDir = sys._MEIPASS
+# load_dotenv(dotenv_path=os.path.join(extDataDir, '.env'))
+
 
 class Vsphere:
 
@@ -54,12 +61,12 @@ class Vsphere:
         """ Function to get token for execution requests. """
 
         try:
-            if environ.get('VCENTER_USER') and not username:
-                username_utf_encoded = environ.get('VCENTER_USER').encode("utf-8")
+            if (os.environ.get('DOMAIN_USER') or os.getenv("DOMAIN_USER")) and not username:
+                username_utf_encoded = os.environ.get('DOMAIN_USER').encode("utf-8")
                 username_b64_decoded = base64.b64decode(username_utf_encoded)
                 username = username_b64_decoded.decode("utf-8").strip() # username utf decoded
-            if environ.get('VCENTER_PASSWORD') and not password:
-                password_utf_encoded = environ.get('VCENTER_PASSWORD').encode("utf-8")
+            if (os.environ.get('DOMAIN_PASSWORD') or os.getenv("DOMAIN_PASSWORD")) and not password:
+                password_utf_encoded = os.environ.get('DOMAIN_PASSWORD').encode("utf-8")
                 password_b64_decoded = base64.b64decode(password_utf_encoded)
                 password = password_b64_decoded.decode("utf-8").strip() # password utf decoded
         except binascii.Error as err:
