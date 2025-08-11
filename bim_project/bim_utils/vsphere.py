@@ -5,7 +5,6 @@ import json
 import re
 import binascii
 import os
-import sys
 from log import Logs
 from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning
@@ -13,13 +12,6 @@ from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 from rich.tree import Tree
 from rich import print as rprint
-
-# block for correct build with pyinstaller, to add .env file
-# from dotenv import load_dotenv
-# extDataDir = os.getcwd()
-# if getattr(sys, 'frozen', False):
-#     extDataDir = sys._MEIPASS
-# load_dotenv(dotenv_path=os.path.join(extDataDir, '.env'))
 
 
 class Vsphere:

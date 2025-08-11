@@ -9,14 +9,14 @@ from user import User
 from getpass import getpass
 from time import perf_counter
 from datetime import timedelta
-from tools import Tools
+from tools import Tools, File
 
 
 class DB:
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):
-        pass
+        self.output_file = 'query_result.csv'
 
     def connect_to_db(self, **kwargs):
         """ Function for establishing connection to db. """
@@ -40,81 +40,125 @@ class DB:
         else:
             return conn
 
-    ### DEPRECATED FUNCTION
-    # def exec_query(self, conn, query):
-    #     """ Function executes passed query in DB. """
-
-    #     cursor = conn.cursor()
-    #     data = None
-    #     try:
-    #         cursor.execute(query)
-    #         data = cursor.fetchall()
-    #         columns = [x[0] for x in cursor.description]
-    #         df = pd.DataFrame.from_records(data, columns=columns)
-    #         print(df)
-    #     except psycopg2.ProgrammingError as err:
-    #         if not data:
-    #             self.__logger.info(f"Execute query: {cursor.statusmessage}")
-    #             print(cursor.statusmessage)
-    #             return True
-    #         else:
-    #             self.__logger.error(err)
-    #             print("SQL programming error. Check the log!")
-    #             return False
-    #     except psycopg2.DatabaseError as err:
-    #         self.__logger.error(err.pgerror)
-    #         print(err.pgerror)
-    #         return False
-    #     except psycopg2.Error as err:
-    #         if err.pgcode == '42P01':
-    #             print('Undefined table in the query.')
-    #         print(err.pgerror)
-    #         return False
-    #     finally:
-    #         if conn:
-    #             conn.commit()
-    #             cursor.close()
-    #             conn.close()
-    #             print("Database connection closed.")
-
-    def execute_query_in_batches(self, conn, sql_file=None, chunk_size: int = 10_000, sql_query=None):
-        """Execute query in batches to optimize local memory usage"""
-
-        def _record_batches():
-            while True:
-                batch_rows = cur.fetchmany(chunk_size)
-                column_names = [col[0] for col in cur.description]
-                if not batch_rows:
-                    break
-                yield pd.DataFrame(batch_rows, columns=column_names)
+    def execute_query_from_file(self, conn, filepath=None):
+        """ Execute query from the file. """
 
         if not conn:
-            return False
-        if sql_file:
-            output_file = sql_file[:-3] + 'csv' if sql_file.find(' ') == -1 else 'query_result.csv'
-            with open(sql_file, 'r', encoding='utf-8') as file:
-                query = file.read()
-        elif sql_query:
-            output_file = 'query_result.csv'
-            query = sql_query
+            return None
+        if not os.path.isfile(filepath):
+            print(f"No such file: {os.path.basename(filepath)}")
+            return None
         else:
+            file = os.path.basename(filepath).replace(' ', '_')
+            filename_without_ext = os.path.splitext(filepath)[0]
+            output_file = filename_without_ext + '.csv'
+        delimiter = ';'
+        # remove output file if it exists
+        if os.path.isfile(output_file):
+            try:
+                os.remove(output_file)
+            except OSError as err:
+                print(f"Error removing file '{output_file}': {err}")
+                print(f"Remove the file {output_file} and try again!")
+                return None
+        with conn.cursor() as cur:
+            start = perf_counter()
+            with open(file, 'r', encoding='utf-8') as f:
+                sql_buffer: list = []
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith('--') or line.startswith('#'):
+                        continue # skip empty lines and comments
+                    sql_buffer.append(line)
+                    if line.endswith(delimiter):
+                        query: str = ' '.join(sql_buffer).strip()
+                        if query:
+                            try:
+                                cur.execute(query)
+                                conn.commit()
+                                if cur.rowcount > 0:
+                                    if not os.path.isfile(output_file):
+                                        header, mode = True, 'w'
+                                    else:
+                                        header, mode = False, 'a'
+                                    for chunk in self.record_batches(cur):
+                                        chunk.to_csv(output_file, index=False, header=header, mode=mode)
+                                        header, mode = False, 'a'
+                            except psycopg2.ProgrammingError as err:
+                                if cur.rowcount == -1:
+                                    self.__logger.info(f"{cur}")
+                                    print(cur.statusmessage)
+                                    conn.commit()
+                                else:
+                                    self.__logger.error(err)
+                                    print("SQL programming error. Check the log!")
+                            except psycopg2.errors.ReadOnlySqlTransaction as err:
+                                self.__logger.error(err.pgerror)
+                                print("ReadOnlySqlTransaction: cannot execute INSERT in a read-only transaction")
+                                return False
+                            except psycopg2.DatabaseError as err:
+                                self.__logger.error(err.pgerror)
+                                print(err.pgerror)
+                                return False
+                            except psycopg2.InterfaceError as err:
+                                self.__logger.error(err.pgerror)
+                                print(err.pgerror)
+                                return False
+                            except psycopg2.Error as err:
+                                if err.pgcode == '42P01':
+                                    print('Undefined table in the query.')
+                                print(err.pgerror)
+                                return False
+                            finally:
+                                sql_buffer = [] # clear buffer for next query
+        end = perf_counter()
+        elapsed_time = end - start
+        if elapsed_time < 1:
+            print(f"Elapsed time: {elapsed_time:4.3f} s")
+        else:
+            print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
+        if os.path.isfile(output_file):
+            sep = "\\" if Tools.is_windows else "/"
+            print(f"Query result saved in {os.getcwd()}{sep}{output_file} file!")
+
+    def record_batches(self, cursor, chunk_size: int = 10_000):
+        while True:
+            batch_rows = cursor.fetchmany(chunk_size)
+            column_names = [col[0] for col in cursor.description]
+            if not batch_rows:
+                break
+            yield pd.DataFrame(batch_rows, columns=column_names)
+        
+
+    def execute_query(self, conn, query=None, query_name=None):
+        """Execute passed query ."""
+
+        if not conn or not query or not query_name:
             return False
+        output_file: str = query_name + '.csv'
+        # remove output file if it exists
+        if os.path.isfile(output_file) and query_name:
+            try:
+                os.remove(output_file)
+            except OSError as err:
+                print(f"Error removing file '{output_file}': {err}")
+                print(f"Remove the file {output_file} and try again!")
+                return None
         with conn.cursor() as cur:
             start = perf_counter()
             try:
                 cur.execute(query)
+                conn.commit()
                 if cur.rowcount > 0:
-                    header = True
-                    mode = 'w'
-                    for chunk in _record_batches():
+                    header, mode = True, 'w'
+                    for chunk in self.record_batches(cur):
                         chunk.to_csv(output_file, index=False, header=header, mode=mode)
-                        if header:
-                            header = False
-                            mode = 'a'
+                        header, mode = False, 'a'
             except psycopg2.ProgrammingError as err:
                 if cur.rowcount == -1:
                     self.__logger.info(f"{cur}")
                     print(cur.statusmessage)
+                    conn.commit()
                 else:
                     self.__logger.error(err)
                     print("SQL programming error. Check the log!")
@@ -135,16 +179,26 @@ class DB:
                     print('Undefined table in the query.')
                 print(err.pgerror)
                 return False
-            conn.commit()
         end = perf_counter()
         elapsed_time = end - start
         if elapsed_time < 1:
             print(f"Elapsed time: {elapsed_time:4.3f} s")
         else:
             print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
-        if cur.rowcount > 0:
-            sep = "\\" if Tools.is_windows else "/"
+        if os.path.isfile(output_file):
+            sep = "\\" if Tools.is_windows() else "/"
             print(f"Query result saved in {os.getcwd()}{sep}{output_file} file!")
+
+    def print_list_of_users(self, file):
+        """ Function to print users on a screen. """
+
+        if not file:
+            print("No file has been passed. Exit.")
+            sys.exit()
+        data = File.read_file(self.output_file)
+        roles: list = [role for role in data['role_name']]
+        for role in roles:
+            print(role)
 
     @staticmethod
     def drop_userObjects(url, username='', password=''):

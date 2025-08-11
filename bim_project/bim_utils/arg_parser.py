@@ -1,4 +1,5 @@
 import argparse
+import os
 from datetime import datetime
 
 
@@ -73,11 +74,12 @@ class Parser():
         sql_parser.add_argument('-u', '--user', required=True, help='Username with access to db')
         sql_parser.add_argument('-pw', '--password', required=False, help='DB user password')
         sql_parser.add_argument('-p', '--port', required=True, help='DB port')
+        sql_parser.add_argument('--list-users', required=False, action='store_true', help='Print list of all users')
         sql_parser.add_argument('--list-db', required=False, action='store_true', help='Print list of all databases')
         sql_parser.add_argument('--list-tables', required=False, action='store_true', help='Print list of all tables for a given databases')
         sql_parser.add_argument('--create-user-ro', required=False, action='store_true', help='Create db user with read-only access')
-        sql_parser.add_argument('--name', required=False, help='Set name for created user')
-        sql_parser.add_argument('--pass', required=False, help='Set password for created user')
+        sql_parser.add_argument('--name', required=False, default=os.getenv('username_ro'), help='Set name for created user')
+        sql_parser.add_argument('-urp', '--user-ro-pass', required=False, default=os.getenv('username_ro_pass'), help='Set password for created user')
         sql_parser.add_argument('--mdm', required=False, help='Switch ExternalKey value to production or test. Requires for MDM connector integration')
         matviews_exclusive_group = sql_parser.add_mutually_exclusive_group(required=False)
         matviews_exclusive_group.add_argument('-lmv', '--list-matviews', required=False, nargs='?', const='*', help='Get list of materialized views created by implementation department')
@@ -100,7 +102,7 @@ class Parser():
         issue_license = subparser.add_parser('issue-lic', help='Issue a new license from the license server')
         issue_license_group = issue_license.add_mutually_exclusive_group(required=True)
         issue_license_group.add_argument('-sid', '--serverId', required=False, help='Parameter of the license: serverID. Server which requires a license. Default value: None')
-        issue_license.add_argument('-v', '--version', required=False, default=int(1), help='Parameter of the license: version. Default value: 1')
+        issue_license.add_argument('-v', '--version', required=False, default=1, type=int, help='Parameter of the license: version. Default value: 1')
         issue_license.add_argument('-pr', '--product', required=False, default='Bimeister', help='Parameter of the license: product. Default value: Bimeister')
         issue_license.add_argument('-ltype', '--licenceType', required=False, default='Trial', help='Parameter of the license: licenceType. Default value: Trial')
         issue_license.add_argument('-atype', '--activationType', required=False, default='Offline', help='Parameter of the license: activationType. Default value: Offline')
@@ -108,9 +110,9 @@ class Parser():
         issue_license.add_argument('-email', '--clientEmail', required=False, default='', help='Parameter of the license: clientEmail. Default value: None')
         issue_license.add_argument('-org', '--organization', required=False, default='', help='Parameter of the license: organization. Default value: None')
         issue_license.add_argument('-isOrg', '--isOrganization', required=False, default=False, help='Parameter of the license: isOrganization. Default value: False')
-        issue_license.add_argument('-nou', '--numberOfUsers', required=False, default=int(50), help='Parameter of the license: numberOfUsers. Default value: 50')
-        issue_license.add_argument('-uip', '--numberOfIpConnectionsPerUser', required=False, default=int(0), help='Parameter of the license: numberOfIpConnectionsPerUser. Default value: 0')
-        issue_license.add_argument('-p', '--period', required=False, default=int(3), help='Period of the license in months. Default value: 3')
+        issue_license.add_argument('-nou', '--numberOfUsers', required=False, default=50, type=int, help='Parameter of the license: numberOfUsers. Default value: 50')
+        issue_license.add_argument('-uip', '--numberOfIpConnectionsPerUser', required=False, default=0, type=int, help='Parameter of the license: numberOfIpConnectionsPerUser. Default value: 0')
+        issue_license.add_argument('-p', '--period', required=False, default=3, type=int, help='Period of the license in months. Default value: 3')
         issue_license.add_argument('-oId', '--orderId', required=False, default='', help='Parameter of the license: orderId. Default value: None')
         issue_license.add_argument('-crmId', '--crmOrderId', required=False, default='', help='Parameter of the license: crmOrderId. Default value: None')
         issue_license.add_argument('-s', '--save', required=False, action='store_true', help='Save license into a file')

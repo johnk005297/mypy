@@ -597,13 +597,13 @@ if __name__ == '__main__':
             if not conn:
                 sys.exit()
             if args.file:
-                pg.execute_query_in_batches(conn, sql_file=args.file)
+                pg.execute_query_from_file(conn, filepath=args.file)
             elif args.list_matviews:
-                pg.execute_query_in_batches(conn, sql_query=q.get_matviews_list(args.list_matviews))
+                pg.execute_query(conn, query=q.get_matviews_list(args.list_matviews), query_name='matviews_list')
             elif args.drop_matviews:                
-                pg.execute_query_in_batches(conn, sql_query=q.drop_materialized_view(args.drop_matviews))
+                pg.execute_query(conn, query=q.drop_materialized_view(args.drop_matviews))
             elif args.refresh_matviews:
-                pg.exec_query(conn, sql_query=q.refresh_materialized_view())
+                pg.execute_query(conn, query=q.refresh_materialized_view())
             elif args.mdm:
                 if args.mdm == 'prod':
                     pg.exec_query(conn, sql_query=q.swith_externalKey_for_mdm_connector(value='Prod'))
@@ -615,7 +615,10 @@ if __name__ == '__main__':
             elif args.list_tables:
                 pg.execute_query_in_batches(conn, sql_query=q.get_list_of_db_tables())
             elif args.create_user_ro:
-                pg.execute_query_in_batches(conn, sql_query=q.create_postgresql_user_ro(args.name, args.password))
+                pg.execute_query_in_batches(conn, sql_query=q.create_postgresql_user_ro(args.name, args.user_ro_pass))
+            elif args.list_users:
+                pg.execute_query_in_batches(conn, sql_query=q.get_list_of_users())
+                pg.print_list_of_users(pg.output_file)
         elif args.command == 'vsphere':
             subcommand = sys.argv[2]
             v = vsphere.Vsphere()

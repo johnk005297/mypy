@@ -8,7 +8,6 @@ class Logs:
 
     def __init__(self):
         self._log_folder: str = ".bimUtils_logs"
-        self._bimeister_log_folder: str = "bimeister_logs"
         if not os.path.isdir(self._log_folder):
             try:
                 os.mkdir(self._log_folder)

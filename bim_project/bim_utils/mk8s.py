@@ -11,11 +11,11 @@ from tools import Tools, File, Folder
 from colorama import init, Fore
 init(autoreset=True)
 
+logger = Logs().f_logger(__name__)
 
 class K8S:
     __slots__ = ('__namespace', '_ft_token')
-    __logger = Logs().f_logger(__name__)
-    _bimeister_log_folder = Logs()._bimeister_log_folder + '_k8s'
+    k8s_log_folder = 'k8s_logs'
 
     def __init__(self, namespace:str=None):
         self.__namespace = namespace
@@ -27,13 +27,13 @@ class K8S:
             config.load_kube_config()
             return True
         except config.ConfigException as err:
-            cls.__logger.error(err)
+            logger.error(err)
             return False
         except ApiException as err:
-            cls.__logger.error(err)
+            logger.error(err)
             return False
         except Exception as err:
-            cls.__logger.error(err)
+            logger.error(err)
             return False
 
     def get_kube_config(self):
@@ -64,11 +64,11 @@ class K8S:
         try:
             v1 = client.CoreV1Api()
         except ApiException as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Error occured. Check the logs.")
             return False
         except Exception as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Couldn't connect to kubernetes API. Check the log.")
             return False
         return v1
@@ -106,9 +106,9 @@ class K8S:
                         stdout=True, tty=False,
                         _preload_content=True)
             
-            self.__logger.info(resp)
+            logger.info(resp)
         except Exception as err:
-            self.__logger.error(err)
+            logger.error(err)
             return False
         return resp
 
@@ -119,7 +119,7 @@ class K8S:
         try:
             ns:list = [ns.metadata.name for ns in v1.list_namespace().items]
         except Exception as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Couldn't get namespaces. Check the log.")
             return False
         return ns
@@ -146,7 +146,7 @@ class K8S:
         try:
             pods = v1.list_pod_for_all_namespaces(watch=False, field_selector=f"metadata.namespace={namespace}")
         except Exception as err:
-            self.__logger.error(err)
+            logger.error(err)
             return False
 
         # pods:dict = {pod.metadata.name: [pod.status.phase, pod.status.container_statuses[0].ready, pod.status.container_statuses[0].restart_count] for pod in pods.items if pod.metadata.labels['app.kubernetes.io/name'] == pod.status.container_statuses[0].name}
@@ -179,27 +179,27 @@ class K8S:
             print("Error: Non-existing namespace.")
             return False
 
-        Folder.create_folder(os.getcwd(), self._bimeister_log_folder)
+        Folder.create_folder(os.getcwd(), self.k8s_log_folder)
         pods = self.get_pods(namespace=namespace)
         for pod in pods:
             try:
                 pod_log = v1.read_namespaced_pod_log(name=pod, namespace=namespace, pretty=True, tail_lines=tail)
                 filename:str = pod + ".log"
-                with open(self._bimeister_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
+                with open(self.k8s_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
                     file.write(pod_log)
-                    print(self._bimeister_log_folder + '/' + filename)
+                    print(self.k8s_log_folder + '/' + filename)
             except ApiException as err:
-                self.__logger.error(err)
+                logger.error(err)
                 print(f"Error occurred. Check the log.")
                 return False
             except Exception as err:
-                self.__logger.error(err)
+                logger.error(err)
                 print(f"Error occurred. Check the log.")
                 return False
         
         # packing to zip archive and remove original log folder
-        Tools.zip_files_in_dir(self._bimeister_log_folder, self._bimeister_log_folder)
-        Folder.clean_folder(self._bimeister_log_folder, remove=True)
+        Tools.zip_files_in_dir(self.k8s_log_folder, self.k8s_log_folder)
+        Folder.clean_folder(self.k8s_log_folder, remove=True)
         return True
 
     def get_pod_log(self, *args, namespace='bimeister', tail=5000):
@@ -212,19 +212,19 @@ class K8S:
             print("Error: Non-existing namespace.")
             return False
 
-        Folder.create_folder(os.getcwd(), self._bimeister_log_folder)
+        Folder.create_folder(os.getcwd(), self.k8s_log_folder)
         for pod in args:
             try:
                 pod_log = v1.read_namespaced_pod_log(name=pod, namespace=namespace, pretty=True, tail_lines=tail)
                 filename:str = pod + '.log'
-                with open(self._bimeister_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
+                with open(self.k8s_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
                     file.write(pod_log)
-                    print(self._bimeister_log_folder + '/' + filename)
+                    print(self.k8s_log_folder + '/' + filename)
             except ApiException as err:
-                self.__logger.error(err)
+                logger.error(err)
                 print(f"Couldn't fetch logs for pod: {pod}. Check the log.")
             except Exception as err:
-                self.__logger.error(err)
+                logger.error(err)
                 print(f"Couldn't fetch logs for pod: {pod}. Check the log.")
         return True
 
@@ -259,7 +259,7 @@ class K8S:
 #         exec_command: str = f"{cli} -a '{ft_secret_pass}' GET FEATURE_ACCESS_TOKEN"
 #         data = self.exec_cmd_in_pod(ft_pod, ft_secret.split('-')[1], exec_command, self.__namespace, v1)
 #         if not data:
-#             self.__logger.error(f"No FT token was received from {cli}. Check the logs!")
+#             logger.error(f"No FT token was received from {cli}. Check the logs!")
 #             return False
 
 #         # search for token in data's sting, and convert string '{"Token":"<token>}"' into dictionary using eval
@@ -289,7 +289,7 @@ class K8S:
 #             if index != -1:
 #                 ft_token = pod_log[index:].split()[1]
 #         if not ft_token:
-#             self.__logger.error("No FT token was received from webapi logs. Check the logs!")
+#             logger.error("No FT token was received from webapi logs. Check the logs!")
 #             return False
 #         return ft_token
 
@@ -327,11 +327,11 @@ class K8S:
 #                         passwd = decode.split()[string + 1].strip("\"")
 
 #         except ApiException as err:
-#             self.__logger.error(err)
+#             logger.error(err)
 #             return False
         
 #         except Exception as err:
-#             self.__logger.error(err)
+#             logger.error(err)
 #             return False
 
 #         # passwd = base64.b64decode(list(secret.values())[0]).decode('utf-8')

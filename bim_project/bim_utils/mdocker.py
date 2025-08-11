@@ -9,8 +9,8 @@ from log import Logs
 
 class Docker:
     __slots__ = ('_ft_token', '_permissions')
-    __logger = Logs().f_logger(__name__)
-    _bimeister_log_folder = Logs()._bimeister_log_folder + '_docker'
+    # __logger = Logs().f_logger(__name__)
+    _log_folder = 'docker_logs'
     _docker = None
 
     def __init__(self):
@@ -24,10 +24,10 @@ class Docker:
             cls._docker = docker.from_env()
             return True
         except docker.errors.DockerException as err:
-            cls.__logger.error(err)
+            # cls.__logger.error(err)
             return False
         except Exception as err:
-            cls.__logger.error(err)
+            # cls.__logger.error(err)
             return False
 
     def __getattr__(self, item):
@@ -118,7 +118,7 @@ class Docker:
         """ Get log from a single container. """
 
         if in_file:
-            Folder.create_folder(os.getcwd(), self._bimeister_log_folder)
+            Folder.create_folder(os.getcwd(), self._log_folder)
 
         if days:
             delta:int = Tools.calculate_timedelta(days)
@@ -132,18 +132,18 @@ class Docker:
 
                 filename = self._docker.containers.get(id).name + '.log'
                 if in_file:
-                    with open(self._bimeister_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
+                    with open(self._log_folder + '/' + filename, 'w', encoding='utf-8') as file:
                         file.write(log)
-                        print(self._bimeister_log_folder + '/' + filename)
+                        print(self._log_folder + '/' + filename)
                 else:
                     print(log)
 
         except docker.errors.NotFound as err:
-            self.__logger.error(err)
+            # self.__logger.error(err)
             print("No such docker container.")
             pass
         except docker.errors.APIError as err:
-            self.__logger.error(err)
+            # self.__logger.error(err)
             print("Server error. Check the log.")
             pass
         return True
@@ -152,7 +152,7 @@ class Docker:
     def get_all_containers_logs(self, tail=5000, days=None):
         """ Get logs from all containers in files. """
 
-        Folder.create_folder(os.getcwd(), self._bimeister_log_folder)
+        Folder.create_folder(os.getcwd(), self._log_folder)
         containers = self.get_containers(all=True)
         if days:
             delta:int = Tools.calculate_timedelta(days)
@@ -165,18 +165,18 @@ class Docker:
                     log = self._docker.containers.get(value[1]).logs(since=delta, timestamps=False).decode()
                 
                 filename = name + '.log'
-                with open(self._bimeister_log_folder + '/' + filename, 'w', encoding='utf-8') as file:
+                with open(self._log_folder + '/' + filename, 'w', encoding='utf-8') as file:
                     file.write(log)
-                    print(self._bimeister_log_folder + '/' + filename)
+                    print(self._log_folder + '/' + filename)
             except docker.errors.APIError as err:
-                self.__logger.error(err)
-                print("Server error. Check the log.")
+                # self.__logger.error(err)
+                print(f"Error: {err}")
             except:
                 print("Error occured.")
                 return False
                 
-        Tools.zip_files_in_dir(self._bimeister_log_folder, self._bimeister_log_folder)    # pack logs in zip archive
-        Folder.clean_folder(self._bimeister_log_folder, remove=True)                      # delete folder with *.log files
+        Tools.zip_files_in_dir(self._log_folder, self._log_folder)    # pack logs in zip archive
+        Folder.clean_folder(self._log_folder, remove=True)            # delete folder with *.log files
         return True
 
     

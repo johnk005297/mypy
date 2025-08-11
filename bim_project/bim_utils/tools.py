@@ -14,6 +14,7 @@ import pathlib
 import zipfile
 import requests
 import re
+import pandas as pd
 from datetime import datetime
 from log import Logs
 # logger = Logs().f_logger(__name__)
@@ -76,18 +77,24 @@ class File:
 
     logger = Logs().f_logger(__name__)
     @staticmethod
-    def read_file(path_to_file, filename):
-        """ Read from text files. In .json case function returns a dictionary. Need to pass two arguments in str format: a path and a file name. """
+    def read_file(filepath):
+        """ Read from text files. Function recognizes .json, .csv, .yaml file separately. """
+
         try:
-            with open(f"{path_to_file}/{filename}", 'r', encoding='utf-8') as file:
-                if os.path.splitext(f'{path_to_file}/{filename}')[1] == '.json':    # checking extension of the file
+            with open(filepath, 'r', encoding='utf-8') as file:
+                if os.path.splitext(filepath)[1] == '.json':    # checking extension of the file
                     try:
                         content = json.load(file)
                     except json.JSONDecodeError as err:
-                        print(f"Error with the {filename} file. Check the logs.")
-                        File.logger.error(f"Error with {filename}.\n{err}")
+                        print(f"Error with the {filepath} file. Check the logs.")
+                        File.logger.error(f"Error with {filepath}.\n{err}")
                         return False
                     return content
+                elif os.path.splitext(filepath)[1] == '.csv':
+                    df = pd.read_csv(filepath)
+                    return df
+                elif os.path.splitext(filepath)[1] in ['.yaml', '.yml']:
+                    pass #TO-DO
                 else:
                     content = file.read()
                     return content
