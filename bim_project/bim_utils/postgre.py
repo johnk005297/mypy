@@ -118,7 +118,7 @@ class DB:
         else:
             print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
         if os.path.isfile(output_file):
-            sep = "\\" if Tools.is_windows else "/"
+            sep = "\\" if Tools.is_windows() else "/"
             print(f"Query result saved in {os.getcwd()}{sep}{output_file} file!")
 
     def record_batches(self, cursor, chunk_size: int = 10_000):
