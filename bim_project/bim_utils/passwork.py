@@ -8,7 +8,7 @@ logger = Logs().f_logger(__name__)
 
 class Passwork:
 
-    api_key: str = os.getenv("passwork_api_key")
+    api_key: str = os.getenv("PASSWORK_API_KEY")
     url: str = "https://pass.bimeister.io/api/v4"
     url_login: str = "auth/login"
     url_vaults_list: str = "vaults/list"

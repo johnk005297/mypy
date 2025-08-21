@@ -78,8 +78,8 @@ class Parser():
         sql_parser.add_argument('--list-db', required=False, action='store_true', help='Print list of all databases')
         sql_parser.add_argument('--list-tables', required=False, action='store_true', help='Print list of all tables for a given databases')
         sql_parser.add_argument('--create-user-ro', required=False, action='store_true', help='Create db user with read-only access')
-        sql_parser.add_argument('--name', required=False, default=os.getenv('username_ro'), help='Set name for created user')
-        sql_parser.add_argument('-urp', '--user-ro-pass', required=False, default=os.getenv('username_ro_pass'), help='Set password for created user')
+        sql_parser.add_argument('--name', required=False, default=os.getenv('USERNAME_RO'), help='Set name for created user')
+        sql_parser.add_argument('-urp', '--user-ro-pass', required=False, default=os.getenv('USERNAME_RO_PASS'), help='Set password for created user')
         sql_parser.add_argument('--mdm', required=False, help='Switch ExternalKey value to production or test. Requires for MDM connector integration')
         matviews_exclusive_group = sql_parser.add_mutually_exclusive_group(required=False)
         matviews_exclusive_group.add_argument('-lmv', '--list-matviews', required=False, nargs='?', const='*', help='Get list of materialized views created by implementation department')
@@ -121,6 +121,15 @@ class Parser():
         issue_license.add_argument('-u', '--user', required=False, default='admin', help='Username with access to web interface and privileges to work with licenses')
         issue_license.add_argument('-pw', '--password', required=False, default='Qwerty12345!', help='Password for the --user')
         issue_license.add_argument('--apply', required=False, action='store_true', help='Activate license for specified URL')
+
+        # confluence
+        ft = subparser.add_parser('ft', help='Get information about feature toggles from confluence')
+        ft.add_argument('-suid', '--gazprom-suid', required=False, action='store_true', help='FT for the project Gazprom Suid')
+        ft.add_argument('-dtoir', '--gazprom-dtoir', required=False, action='store_true', help='FT for the project Gazprom Dtoir')
+        ft.add_argument('-salavat', '--gazprom-salavat', required=False, action='store_true', help='FT for the project Gazprom Salavat')
+        ft.add_argument('-murmansk', '--novatek-murmansk', required=False, action='store_true', help='FT for the project Novatek Murmansk')
+        ft.add_argument('-yamal', '--novatek-yamal', required=False, action='store_true', help='FT for the project Novatek Yamal')
+        ft.add_argument('-crea', '--crea-cod', required=False, action='store_true', help='FT for the project Rosatom Crea-Cod')
 
         # passwork
         passwork = subparser.add_parser('pk', help='Work with passwork vault')

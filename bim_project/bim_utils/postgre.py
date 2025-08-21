@@ -65,12 +65,14 @@ class DB:
             start = perf_counter()
             with open(file, 'r', encoding='utf-8') as f:
                 sql_buffer: list = []
+                has_delimiter: bool = False
                 for line in f:
                     line = line.strip()
                     if not line or line.startswith('--') or line.startswith('#'):
                         continue # skip empty lines and comments
                     sql_buffer.append(line)
                     if line.endswith(delimiter):
+                        has_delimiter = True
                         query: str = ' '.join(sql_buffer).strip()
                         if query:
                             try:
@@ -79,8 +81,6 @@ class DB:
                                 if cur.rowcount > 0:
                                     if not os.path.isfile(output_file):
                                         header, mode = True, 'w'
-                                    else:
-                                        header, mode = False, 'a'
                                     for chunk in self.record_batches(cur):
                                         chunk.to_csv(output_file, index=False, header=header, mode=mode)
                                         header, mode = False, 'a'
@@ -111,6 +111,10 @@ class DB:
                                 return False
                             finally:
                                 sql_buffer = [] # clear buffer for next query
+                                header = True
+                if not has_delimiter:
+                    print(f"No semicolon(;) symbol was found in {os.path.basename(filepath)}\nCheck query syntax and try again!")
+                    sys.exit()
         end = perf_counter()
         elapsed_time = end - start
         if elapsed_time < 1:
@@ -122,13 +126,14 @@ class DB:
             print(f"Query result saved in {os.getcwd()}{sep}{output_file} file!")
 
     def record_batches(self, cursor, chunk_size: int = 10_000):
+        """ Function returns generator class to return large amount of data in chunks. """
+
         while True:
             batch_rows = cursor.fetchmany(chunk_size)
             column_names = [col[0] for col in cursor.description]
             if not batch_rows:
                 break
             yield pd.DataFrame(batch_rows, columns=column_names)
-        
 
     def execute_query(self, conn, query=None, query_name=None):
         """Execute passed query ."""

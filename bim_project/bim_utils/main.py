@@ -15,6 +15,7 @@ import mdocker
 import mk8s
 import vsphere
 import time
+import confluence
 from passwork import *
 from git import Git
 from tools import *
@@ -825,6 +826,23 @@ if __name__ == '__main__':
                     lic.apply_license(args.url, auth.token, args.user, args.password, license=server_license)
         elif args.command == 'pk':
             pass
+        elif args.command == 'ft':
+            conf = confluence.Conf()
+            page = conf.get_confluence_page()
+            data = conf.get_ft_data_of_all_projects(page)
+            if len(sys.argv) <=2 :
+                project = conf.choose_project()
+                conf.display_ft_for_project(data, project)
+            elif args.gazprom_suid:
+                conf.display_ft_for_project(data, conf.project_name_suid)
+            elif args.gazprom_dtoir:
+                conf.display_ft_for_project(data, conf.project_name_dtoir)
+            elif args.gazprom_salavat:
+                conf.display_ft_for_project(data, conf.project_name_salavat)
+            elif args.novatek_murmansk:
+                conf.display_ft_for_project(data, conf.project_name_murmansk)
+            elif args.novatek_yamal:
+                conf.display_ft_for_project(data, conf.project_name_yamal)
         elif args.local:
             main(local=True)
         elif args.version:

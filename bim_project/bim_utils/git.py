@@ -11,7 +11,7 @@ from rich.table import Table
 
 class Git:
 
-    _headers = {"PRIVATE-TOKEN": os.getenv('gitlab_token')}
+    _headers = {"PRIVATE-TOKEN": os.getenv('GITLAB_TOKEN')}
     _url = "https://git.bimeister.io/api/v4"
     _logger = Logs().f_logger(__name__)
     _error_msg = "Unexpected error. Check logs!"
