@@ -598,7 +598,7 @@ if __name__ == '__main__':
             if not conn:
                 sys.exit()
             if args.file:
-                pg.execute_query_from_file(conn, filepath=args.file)
+                pg.execute_query_from_file(conn, filepath=args.file, chunk_size=args.chunk_size)
             elif args.list_matviews:
                 pg.execute_query(conn, query=q.get_matviews_list(args.list_matviews), query_name='matviews_list')
             elif args.drop_matviews:                
@@ -843,6 +843,8 @@ if __name__ == '__main__':
                 conf.display_ft_for_project(data, conf.project_name_murmansk)
             elif args.novatek_yamal:
                 conf.display_ft_for_project(data, conf.project_name_yamal)
+            elif args.crea_cod:
+                conf.display_ft_for_project(data, conf.project_name_crea_cod)
         elif args.local:
             main(local=True)
         elif args.version:

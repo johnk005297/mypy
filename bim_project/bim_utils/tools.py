@@ -414,7 +414,8 @@ class Bimeister:
 
         services: dict = {
                         "data-synchronizer": {"api_path": "/api/data-synchronizer/technical-objects-registry/recalculate-paths", "id": ""},
-                        "maintenance": {"api_path": "/api/EnterpriseAssetManagementTechnicalObjects/RecalculatePaths", "id": ""}
+                        "maintenance": {"api_path": "/api/EnterpriseAssetManagementTechnicalObjects/RecalculatePaths", "id": ""},
+                        "work-permits-management": {"api_path": "/api/work-permits-management/technical-objects/recalculate-paths", "id": ""}
                         }
         for num, service in enumerate(services, 1):
             print(f"{num}. {service}")

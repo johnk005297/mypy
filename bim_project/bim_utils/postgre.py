@@ -40,7 +40,7 @@ class DB:
         else:
             return conn
 
-    def execute_query_from_file(self, conn, filepath=None):
+    def execute_query_from_file(self, conn, filepath=None, chunk_size=10_000):
         """ Execute query from the file. """
 
         if not conn:
@@ -81,7 +81,7 @@ class DB:
                                 if cur.rowcount > 0:
                                     if not os.path.isfile(output_file):
                                         header, mode = True, 'w'
-                                    for chunk in self.record_batches(cur):
+                                    for chunk in self.record_batches(cur, chunk_size=chunk_size):
                                         chunk.to_csv(output_file, index=False, header=header, mode=mode)
                                         header, mode = False, 'a'
                             except psycopg2.ProgrammingError as err:

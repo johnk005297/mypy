@@ -10,11 +10,10 @@ from rich.table import Table
 
 logger = Logs().f_logger(__name__)
 
-
 class Conf:
 
-    ft_page_id = 1461357571
-    url = os.getenv('CONFLUENCE_URL')
+    ft_page_id = "1461357571"
+    url = "https://confluence.bimeister.io"
     project_name_suid: str = 'gazprom-suid'
     project_name_dtoir: str = 'gazprom-dtoir'
     project_name_salavat: str = 'gazprom-salavat'
@@ -32,7 +31,6 @@ class Conf:
             token = personal_access_token,
             cloud=False  # Critical for Server/Data Center
         )
-
         if not Tools.is_url_available(self.url):
             print(f"No connection to {self.url}")
             sys.exit()
@@ -121,6 +119,10 @@ class Conf:
                 ft_projects_data[self.project_name_crea_cod]['test'].append(ft_name)
             if row.find_all('td')[crea_cod_demo_idx].get_text(strip=True) == on:
                 ft_projects_data[self.project_name_crea_cod]['demo'].append(ft_name)
+        for key in ft_projects_data:
+            ft_projects_data[key]['prod'].sort()
+            ft_projects_data[key]['test'].sort()
+            ft_projects_data[key]['demo'].sort()        
         return ft_projects_data
     
     def choose_project(self) -> str:

@@ -81,6 +81,7 @@ class Parser():
         sql_parser.add_argument('--name', required=False, default=os.getenv('USERNAME_RO'), help='Set name for created user')
         sql_parser.add_argument('-urp', '--user-ro-pass', required=False, default=os.getenv('USERNAME_RO_PASS'), help='Set password for created user')
         sql_parser.add_argument('--mdm', required=False, help='Switch ExternalKey value to production or test. Requires for MDM connector integration')
+        sql_parser.add_argument('--chunk-size', required=False, type=int, help='Adjust chunks of pulled data from database during select large amount of data')
         matviews_exclusive_group = sql_parser.add_mutually_exclusive_group(required=False)
         matviews_exclusive_group.add_argument('-lmv', '--list-matviews', required=False, nargs='?', const='*', help='Get list of materialized views created by implementation department')
         matviews_exclusive_group.add_argument('-dmv', '--drop-matviews', required=False, nargs='?', const='*', help='Delete materialized views by it\'s name pattern')
