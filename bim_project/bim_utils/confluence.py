@@ -37,6 +37,7 @@ class Conf:
         try:
             page = confluence.get_page_by_id(self.ft_page_id, expand="body.view")
         except Exception as err:
+            logger.error(err)
             print(err)
             sys.exit()
         return page
@@ -53,12 +54,12 @@ class Conf:
 
         # create dictionary with all projects and all environments: prod, test, demo
         ft_projects_data = {
-            self.project_name_suid: {'prod': [], 'test': [], 'demo': []},
-            self.project_name_dtoir: {'prod': [], 'test': [], 'demo': []},
-            self.project_name_salavat: {'prod': [], 'test': [], 'demo': []},
-            self.project_name_murmansk: {'prod': [], 'test': [], 'demo': []},
-            self.project_name_yamal: {'prod': [], 'test': [], 'demo': []},
-            self.project_name_crea_cod: {'prod': [], 'test': [], 'demo': []},
+             self.project_name_suid: {'prod': [], 'test': [], 'demo': []}
+            ,self.project_name_dtoir: {'prod': [], 'test': [], 'demo': []}
+            ,self.project_name_salavat: {'prod': [], 'test': [], 'demo': []}
+            ,self.project_name_murmansk: {'prod': [], 'test': [], 'demo': []}
+            ,self.project_name_yamal: {'prod': [], 'test': [], 'demo': []}
+            ,self.project_name_crea_cod: {'prod': [], 'test': [], 'demo': []}
             }
 
         # ft_projects_data = dict({cell.get_text(strip=True): {'prod': [], 'test': [], 'demo': []} for cell in table.find('tbody').find_all('tr')[2]})
@@ -128,16 +129,28 @@ class Conf:
     def choose_project(self) -> str:
         """ Prompt user to project if nothing was provided. """
 
-        projects: list = ['gazprom-suid', self.project_name_dtoir, self.project_name_salavat, self.project_name_murmansk, self.project_name_yamal, self.project_name_crea_cod]
-        for number, project in enumerate(projects, 1):
-            print(f"{number}. {project}")
-        project_number = int(input("Choose number of the project: ")) - 1
-        if (project_number + 1) < 1 or (project_number + 1) > len(projects):
-            print("Incorrect input. Exit!")
+        projects: list = [
+             self.project_name_suid
+            ,self.project_name_dtoir
+            ,self.project_name_salavat
+            ,self.project_name_murmansk
+            ,self.project_name_yamal
+            ,self.project_name_crea_cod
+            ]
+        try:
+            for number, project in enumerate(projects, 1):
+                print(f"{number}. {project}")
+            project_number = int(input("Choose number of the project: ")) - 1
+            if (project_number + 1) < 1 or (project_number + 1) > len(projects):
+                print("Incorrect input. Exit!")
+                sys.exit()
+        except ValueError as err:
+            logger.error(err)
+            print(f"Incorrect input. Should be a number in range between 1 and {len(projects)}")
             sys.exit()
         return projects[project_number]
 
-    def display_ft_for_project(self, all_ft_data, project_name):
+    def display_ft_for_project(self, all_ft_data, project_name, filename=None):
         """ Display FT for specific project. Function requires data of all projects FT."""
 
         if not all_ft_data or not project_name:
@@ -159,6 +172,12 @@ class Conf:
             table.add_row(prod, test, demo)
         console = Console()
         console.print(table)
+        if filename:
+            with open(filename, 'w', encoding='utf-8') as file:
+                for env, ft in project_data.items():
+                    file.write("{0}: {1}\n".format(env, " ".join(map(str, ft))))
+            sep = "\\" if Tools.is_windows() else "/"
+            print(f"Saved in: {os.getcwd()}{sep}{filename}")
 
     def display_projects(self):
         """ Print all the projects which exist. """

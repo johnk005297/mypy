@@ -600,25 +600,25 @@ if __name__ == '__main__':
             if args.file:
                 pg.execute_query_from_file(conn, filepath=args.file, chunk_size=args.chunk_size)
             elif args.list_matviews:
-                pg.execute_query(conn, query=q.get_matviews_list(args.list_matviews), query_name='matviews_list')
+                pg.execute_query(conn, query=q.get_matviews_list(args.list_matviews), query_name='matviews-list')
             elif args.drop_matviews:                
                 pg.execute_query(conn, query=q.drop_materialized_view(args.drop_matviews))
             elif args.refresh_matviews:
                 pg.execute_query(conn, query=q.refresh_materialized_view())
             elif args.mdm:
                 if args.mdm == 'prod':
-                    pg.exec_query(conn, sql_query=q.swith_externalKey_for_mdm_connector(value='Prod'))
+                    pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Prod'))
                 elif args.mdm == 'test':
-                    pg.exec_query(conn, sql_query=q.swith_externalKey_for_mdm_connector(value='Test'))
+                    pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Test'))
                 else: print("mdm option has two values: prod or test.")
             elif args.list_db:
-                pg.execute_query_in_batches(conn, sql_query=q.get_list_of_all_db())
+                db_list = pg.execute_query(conn, query=q.get_list_of_all_db(), query_name='db-list')
             elif args.list_tables:
-                pg.execute_query_in_batches(conn, sql_query=q.get_list_of_db_tables())
+                pg.execute_query(conn, query=q.get_list_of_db_tables(), query_name='tables-list')
             elif args.create_user_ro:
-                pg.execute_query_in_batches(conn, sql_query=q.create_postgresql_user_ro(args.name, args.user_ro_pass))
+                pg.execute_query(conn, query=q.create_postgresql_user_ro(args.name, args.user_ro_pass))
             elif args.list_users:
-                pg.execute_query_in_batches(conn, sql_query=q.get_list_of_users())
+                pg.execute_query(conn, query=q.get_list_of_users(), query_name='users-list')
                 pg.print_list_of_users(pg.output_file)
         elif args.command == 'vsphere':
             subcommand = sys.argv[2]
@@ -830,21 +830,21 @@ if __name__ == '__main__':
             conf = confluence.Conf()
             page = conf.get_confluence_page()
             data = conf.get_ft_data_of_all_projects(page)
-            if len(sys.argv) <=2 :
+            if len(sys.argv) == 2:
                 project = conf.choose_project()
-                conf.display_ft_for_project(data, project)
+                conf.display_ft_for_project(data, project, filename=args.output)
             elif args.gazprom_suid:
-                conf.display_ft_for_project(data, conf.project_name_suid)
+                conf.display_ft_for_project(data, conf.project_name_suid, filename=args.output)
             elif args.gazprom_dtoir:
-                conf.display_ft_for_project(data, conf.project_name_dtoir)
+                conf.display_ft_for_project(data, conf.project_name_dtoir, filename=args.output)
             elif args.gazprom_salavat:
-                conf.display_ft_for_project(data, conf.project_name_salavat)
+                conf.display_ft_for_project(data, conf.project_name_salavat, filename=args.output)
             elif args.novatek_murmansk:
-                conf.display_ft_for_project(data, conf.project_name_murmansk)
+                conf.display_ft_for_project(data, conf.project_name_murmansk, filename=args.output)
             elif args.novatek_yamal:
-                conf.display_ft_for_project(data, conf.project_name_yamal)
+                conf.display_ft_for_project(data, conf.project_name_yamal, filename=args.output)
             elif args.crea_cod:
-                conf.display_ft_for_project(data, conf.project_name_crea_cod)
+                conf.display_ft_for_project(data, conf.project_name_crea_cod, filename=args.output)
         elif args.local:
             main(local=True)
         elif args.version:
