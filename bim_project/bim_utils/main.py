@@ -832,19 +832,19 @@ if __name__ == '__main__':
             data = conf.get_ft_data_of_all_projects(page)
             if len(sys.argv) == 2:
                 project = conf.choose_project()
-                conf.display_ft_for_project(data, project, filename=args.output)
+                conf.display_ft_for_project(data, project, args.save)
             elif args.gazprom_suid:
-                conf.display_ft_for_project(data, conf.project_name_suid, filename=args.output)
+                conf.display_ft_for_project(data, conf.project_name_suid, args.save)
             elif args.gazprom_dtoir:
-                conf.display_ft_for_project(data, conf.project_name_dtoir, filename=args.output)
+                conf.display_ft_for_project(data, conf.project_name_dtoir, args.save)
             elif args.gazprom_salavat:
-                conf.display_ft_for_project(data, conf.project_name_salavat, filename=args.output)
+                conf.display_ft_for_project(data, conf.project_name_salavat, args.save)
             elif args.novatek_murmansk:
-                conf.display_ft_for_project(data, conf.project_name_murmansk, filename=args.output)
+                conf.display_ft_for_project(data, conf.project_name_murmansk, args.save)
             elif args.novatek_yamal:
-                conf.display_ft_for_project(data, conf.project_name_yamal, filename=args.output)
+                conf.display_ft_for_project(data, conf.project_name_yamal, args.save)
             elif args.crea_cod:
-                conf.display_ft_for_project(data, conf.project_name_crea_cod, filename=args.output)
+                conf.display_ft_for_project(data, conf.project_name_crea_cod, args.save)
         elif args.local:
             main(local=True)
         elif args.version:

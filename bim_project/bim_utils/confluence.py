@@ -80,46 +80,46 @@ class Conf:
             ft_name: str = row.find_all('td')[ft_name_idx].get_text(strip=True)
 
             if row.find_all('td')[gazprom_suid_prod_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_suid]['prod'].append(ft_name)
+                ft_projects_data[self.project_name_suid]['prod'].append(ft_name.title())
             if row.find_all('td')[gazprom_suid_test_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_suid]['test'].append(ft_name)
+                ft_projects_data[self.project_name_suid]['test'].append(ft_name.title())
             if row.find_all('td')[gazprom_suid_demo_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_suid]['demo'].append(ft_name)
+                ft_projects_data[self.project_name_suid]['demo'].append(ft_name.title())
 
             if row.find_all('td')[gazprom_dtoir_prod_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_dtoir]['prod'].append(ft_name)
+                ft_projects_data[self.project_name_dtoir]['prod'].append(ft_name.title())
             if row.find_all('td')[gazprom_dtoir_test_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_dtoir]['test'].append(ft_name)
+                ft_projects_data[self.project_name_dtoir]['test'].append(ft_name.title())
             if row.find_all('td')[gazprom_dtoir_demo_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_dtoir]['demo'].append(ft_name)
+                ft_projects_data[self.project_name_dtoir]['demo'].append(ft_name.title())
 
             if row.find_all('td')[gazprom_salavat_prod_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_salavat]['prod'].append(ft_name)
+                ft_projects_data[self.project_name_salavat]['prod'].append(ft_name.title())
             if row.find_all('td')[gazprom_salavat_test_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_salavat]['test'].append(ft_name)
+                ft_projects_data[self.project_name_salavat]['test'].append(ft_name.title())
             if row.find_all('td')[gazprom_salavat_demo_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_salavat]['demo'].append(ft_name)
+                ft_projects_data[self.project_name_salavat]['demo'].append(ft_name.title())
 
             if row.find_all('td')[novatek_murmansk_prod_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_murmansk]['prod'].append(ft_name)
+                ft_projects_data[self.project_name_murmansk]['prod'].append(ft_name.title())
             if row.find_all('td')[novatek_murmansk_test_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_murmansk]['test'].append(ft_name)
+                ft_projects_data[self.project_name_murmansk]['test'].append(ft_name.title())
             if row.find_all('td')[novatek_murmansk_demo_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_murmansk]['demo'].append(ft_name)
+                ft_projects_data[self.project_name_murmansk]['demo'].append(ft_name.title())
 
             if row.find_all('td')[novatek_yamal_prod_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_yamal]['prod'].append(ft_name)
+                ft_projects_data[self.project_name_yamal]['prod'].append(ft_name.title())
             if row.find_all('td')[novatek_yamal_test_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_yamal]['test'].append(ft_name)
+                ft_projects_data[self.project_name_yamal]['test'].append(ft_name.title())
             if row.find_all('td')[novatek_yamal_demo_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_yamal]['demo'].append(ft_name)
+                ft_projects_data[self.project_name_yamal]['demo'].append(ft_name.title())
 
             if row.find_all('td')[crea_cod_prod_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_crea_cod]['prod'].append(ft_name)
+                ft_projects_data[self.project_name_crea_cod]['prod'].append(ft_name.title())
             if row.find_all('td')[crea_cod_test_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_crea_cod]['test'].append(ft_name)
+                ft_projects_data[self.project_name_crea_cod]['test'].append(ft_name.title())
             if row.find_all('td')[crea_cod_demo_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_crea_cod]['demo'].append(ft_name)
+                ft_projects_data[self.project_name_crea_cod]['demo'].append(ft_name.title())
         for key in ft_projects_data:
             ft_projects_data[key]['prod'].sort()
             ft_projects_data[key]['test'].sort()
@@ -150,7 +150,7 @@ class Conf:
             sys.exit()
         return projects[project_number]
 
-    def display_ft_for_project(self, all_ft_data, project_name, filename=None):
+    def display_ft_for_project(self, all_ft_data, project_name, save=False):
         """ Display FT for specific project. Function requires data of all projects FT."""
 
         if not all_ft_data or not project_name:
@@ -172,12 +172,13 @@ class Conf:
             table.add_row(prod, test, demo)
         console = Console()
         console.print(table)
-        if filename:
+        if save:
+            filename: str = f'{project_name}-ft.txt'
             with open(filename, 'w', encoding='utf-8') as file:
                 for env, ft in project_data.items():
                     file.write("{0}: {1}\n".format(env, " ".join(map(str, ft))))
             sep = "\\" if Tools.is_windows() else "/"
-            print(f"Saved in: {os.getcwd()}{sep}{filename}")
+            print(f"File saved: {os.getcwd()}{sep}{filename}")
 
     def display_projects(self):
         """ Print all the projects which exist. """
