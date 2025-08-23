@@ -150,7 +150,7 @@ class Conf:
             sys.exit()
         return projects[project_number]
 
-    def display_ft_for_project(self, all_ft_data, project_name, save=False):
+    def display_ft_for_project(self, all_ft_data, project_name, save=False, save_pretty=False):
         """ Display FT for specific project. Function requires data of all projects FT."""
 
         if not all_ft_data or not project_name:
@@ -160,9 +160,9 @@ class Conf:
         test: list = project_data['test']
         demo: list = project_data['demo']
         table = Table(title=project_name, show_footer=True)
-        table.add_column("Prod", justify="center", no_wrap=True, style="#875fff", footer=f"Total: {len(prod)}", max_width=55)
-        table.add_column("Test", justify="center", no_wrap=True, style="#875fff", footer=f"Total: {len(test)}", max_width=55)
-        table.add_column("Demo", justify="center", no_wrap=True, style="#875fff", footer=f"Total: {len(demo)}", max_width=55)
+        table.add_column("Prod", justify="left", no_wrap=True, style="#875fff", footer=f"Total: {len(prod)}", max_width=55)
+        table.add_column("Test", justify="left", no_wrap=True, style="#875fff", footer=f"Total: {len(test)}", max_width=55)
+        table.add_column("Demo", justify="left", no_wrap=True, style="#875fff", footer=f"Total: {len(demo)}", max_width=55)
 
         max_length: int = max(len(prod), len(test), len(demo))
         prod.extend([''] * (max_length - len(prod)))
@@ -172,11 +172,21 @@ class Conf:
             table.add_row(prod, test, demo)
         console = Console()
         console.print(table)
-        if save:
+        if save or save_pretty:
             filename: str = f'{project_name}-ft.txt'
             with open(filename, 'w', encoding='utf-8') as file:
-                for env, ft in project_data.items():
-                    file.write("{0}: {1}\n".format(env, " ".join(map(str, ft))))
+                if save:
+                    for env, ft in project_data.items():
+                        file.write("{0}: {1}\n".format(env, " ".join(map(str, ft))))
+                elif save_pretty:
+                    for env in project_data:
+                        file.write(env + ':')
+                        if not any(project_data[env]):
+                            file.write(' None\n')
+                            continue
+                        for ft in project_data[env]:
+                            file.write(f"\n {ft}")
+                        file.write('\n\n')
             sep = "\\" if Tools.is_windows() else "/"
             print(f"File saved: {os.getcwd()}{sep}{filename}")
 

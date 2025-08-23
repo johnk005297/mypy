@@ -830,21 +830,21 @@ if __name__ == '__main__':
             conf = confluence.Conf()
             page = conf.get_confluence_page()
             data = conf.get_ft_data_of_all_projects(page)
-            if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].strip() == '--save'):
+            if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].strip() == '--save') or (len(sys.argv) == 3 and sys.argv[2].strip() == '--save-pretty'):
                 project = conf.choose_project()
-                conf.display_ft_for_project(data, project, args.save)
+                conf.display_ft_for_project(data, project, args.save, args.save_pretty)
             elif args.gazprom_suid:
-                conf.display_ft_for_project(data, conf.project_name_suid, args.save)
+                conf.display_ft_for_project(data, conf.project_name_suid, args.save, args.save_pretty)
             elif args.gazprom_dtoir:
-                conf.display_ft_for_project(data, conf.project_name_dtoir, args.save)
+                conf.display_ft_for_project(data, conf.project_name_dtoir, args.save, args.save_pretty)
             elif args.gazprom_salavat:
-                conf.display_ft_for_project(data, conf.project_name_salavat, args.save)
+                conf.display_ft_for_project(data, conf.project_name_salavat, args.save, args.save_pretty)
             elif args.novatek_murmansk:
-                conf.display_ft_for_project(data, conf.project_name_murmansk, args.save)
+                conf.display_ft_for_project(data, conf.project_name_murmansk, args.save, args.save_pretty)
             elif args.novatek_yamal:
-                conf.display_ft_for_project(data, conf.project_name_yamal, args.save)
+                conf.display_ft_for_project(data, conf.project_name_yamal, args.save, args.save_pretty)
             elif args.crea_cod:
-                conf.display_ft_for_project(data, conf.project_name_crea_cod, args.save)
+                conf.display_ft_for_project(data, conf.project_name_crea_cod, args.save, args.save_pretty)
         elif args.local:
             main(local=True)
         elif args.version:

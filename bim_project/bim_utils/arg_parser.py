@@ -131,7 +131,9 @@ class Parser():
         ft.add_argument('-murmansk', '--novatek-murmansk', required=False, action='store_true', help='FT for the project Novatek Murmansk')
         ft.add_argument('-yamal', '--novatek-yamal', required=False, action='store_true', help='FT for the project Novatek Yamal')
         ft.add_argument('-crea', '--crea-cod', required=False, action='store_true', help='FT for the project Rosatom Crea-Cod')
-        ft.add_argument('--save', required=False, action='store_true', help='Save output in file')
+        ft_save_group = ft.add_mutually_exclusive_group(required=False)
+        ft_save_group.add_argument('--save', required=False, action='store_true', help='Save output in file')
+        ft_save_group.add_argument('--save-pretty', required=False, action='store_true', help='Save output in file more human readable')
 
         # passwork
         passwork = subparser.add_parser('pk', help='Work with passwork vault')
