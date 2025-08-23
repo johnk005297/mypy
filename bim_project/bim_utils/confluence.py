@@ -123,7 +123,7 @@ class Conf:
         for key in ft_projects_data:
             ft_projects_data[key]['prod'].sort()
             ft_projects_data[key]['test'].sort()
-            ft_projects_data[key]['demo'].sort()        
+            ft_projects_data[key]['demo'].sort()
         return ft_projects_data
     
     def choose_project(self) -> str:

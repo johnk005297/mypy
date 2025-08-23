@@ -830,7 +830,7 @@ if __name__ == '__main__':
             conf = confluence.Conf()
             page = conf.get_confluence_page()
             data = conf.get_ft_data_of_all_projects(page)
-            if len(sys.argv) == 2:
+            if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].strip() == '--save'):
                 project = conf.choose_project()
                 conf.display_ft_for_project(data, project, args.save)
             elif args.gazprom_suid:
