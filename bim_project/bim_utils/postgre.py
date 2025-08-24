@@ -123,7 +123,7 @@ class DB:
             print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
         if os.path.isfile(output_file):
             sep = "\\" if Tools.is_windows() else "/"
-            print(f"Query result saved in {os.getcwd()}{sep}{output_file} file!")
+            print(f"Query result saved: {os.getcwd()}{sep}{output_file}")
 
     def record_batches(self, cursor, chunk_size: int = 10_000):
         """ Function returns generator class to return large amount of data in chunks. """
@@ -192,7 +192,7 @@ class DB:
             print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
         if os.path.isfile(output_file):
             sep = "\\" if Tools.is_windows() else "/"
-            print(f"Query result saved in {os.getcwd()}{sep}{output_file} file!")
+            print(f"Query result saved: {os.getcwd()}{sep}{output_file}")
 
     def print_list_of_users(self, file):
         """ Function to print users on a screen. """

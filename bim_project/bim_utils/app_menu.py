@@ -70,37 +70,13 @@ def main_menu():
     return _main_menu
 
 
-def local_menu():
-    """ Local menu of options which could be executed without authorization procedure. """
-
-    _local_menu = "\nHelp:                                                                                \
-                            \n                                                                            \
-                            \n   User                                                                     \
-                            \n      sh                          run terminal command(current host)        \
-                            \n      ssh connect                 run terminal command(remote host)         \
-                            \n      ls                          list current folder content               \
-                            \n                                                                            \
-                            \n   Docker                                                                   \
-                            \n      docker -h                   get a list of available commands          \
-                            \n                                                                            \
-                            \n   K8S                                                                      \
-                            \n      kube -h                     get a list of available commands          \
-                            \n                                                                            \
-                            \n   Main                                                                     \
-                            \n      m                           print this menu                           \
-                            \n      q                           exit"
-
-    return _local_menu
-
-
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.78.54'
+    __version__ = '1.78.55'
     __logger = Logs().f_logger(__name__)
 
     def __init__(self):
         self._main_menu = main_menu()
-        self._local_menu = local_menu()
 
     def __getattr__(self, item):
         raise AttributeError("AppMenu class has no such attribute: " + item)

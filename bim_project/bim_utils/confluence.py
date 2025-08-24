@@ -181,10 +181,11 @@ class Conf:
                 elif save_pretty:
                     for env in project_data:
                         file.write(env + ':')
-                        if not any(project_data[env]):
+                        env_ft_list = list(filter(None, project_data[env]))
+                        if not env_ft_list:
                             file.write(' None\n')
                             continue
-                        for ft in project_data[env]:
+                        for ft in env_ft_list:
                             file.write(f"\n {ft}")
                         file.write('\n\n')
             sep = "\\" if Tools.is_windows() else "/"

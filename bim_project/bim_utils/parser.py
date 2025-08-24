@@ -9,53 +9,55 @@ class Parser():
         pass
 
     @classmethod
-    def parse_args(cls):
+    def get_parser(cls):
         """ Function for parsing arguments of the command line. """
 
-        # create the top-level parser
-        parser = argparse.ArgumentParser(description="Frankenstein's CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, gitlab, vCenter, etc.")
+        # create top-level parser with arguments and subparser
+        parser = argparse.ArgumentParser(prog="bim-utils", description="Frankenstein's CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, gitlab, vCenter, etc.")
         parser.add_argument('-V', '--version', required=False, action='store_true', help='Get version of the bim_utils')
-        parser.add_argument('-u', '--url', required=False, help='Url to get bimeister version')
-        parser.add_argument('--local', required=False, action='store_true', help='Execute script with locally available options on the current host')
-
-        # create main subparser
+        parser.add_argument('--url', required=False, help='Url to get bimeister version')
         subparser = parser.add_subparsers(dest='command', required=False)
 
-        # create parent parser for "vsphere" command
-        vcenter_parent_parser = argparse.ArgumentParser(add_help=False)
-        vcenter_parent_parser.add_argument('-u', '--user', required=False, help='Login account for vCenter')
-        vcenter_parent_parser.add_argument('-p', '--password', required=False, help='Password for vCenter')
-        # create parser for the "vsphere" subcommand
-        vcenter_parser = subparser.add_parser('vsphere', help='Perform operations in vSphere')
-        # create subparsers for the "vsphere" subcommand
-        vcenter_subparser = vcenter_parser.add_subparsers(help='Subcommands for "vsphere" command')
-        list_vm_parser = vcenter_subparser.add_parser('list-vm', help='Print VMs in implementation cluster', parents=[vcenter_parent_parser])
+        # create parser and subparser for the "vsphere" command
+        vsphere_parser = subparser.add_parser('vsphere', help='Perform operations in vSphere')
+        vsphere_parser.add_argument('-u', '--user', required=False, help='Login account for vCenter')
+        vsphere_parser.add_argument('-p', '--password', required=False, help='Password for vCenter')
+        vsphere_subparser = vsphere_parser.add_subparsers(dest='vsphere_command')
+
+        list_vm_parser = vsphere_subparser.add_parser('list-vm', help='Print VMs in implementation cluster')
         list_vm_parser.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name')
-        list_vm_parser.add_argument('--powered-on', required=False, action='store_true', help='Print only VM with POWERED_ON status')
         list_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
-        list_snap_parser = vcenter_subparser.add_parser('show-snap', help='Print list of snapshots for a given VMs', parents=[vcenter_parent_parser])
-        list_snap_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name')
-        list_snap_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
-        revert_snap_parser = vcenter_subparser.add_parser('revert-snap', help='Revert to snapshot for a given VMs', parents=[vcenter_parent_parser])
+        list_vm_parser.add_argument('--powered-on', required=False, action='store_true', help='Print only VM with POWERED_ON status')
+
+        show_snap_parser = vsphere_subparser.add_parser('show-snap', help='Print list of snapshots for a given VMs')
+        show_snap_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name')
+        show_snap_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
+
+        revert_snap_parser = vsphere_subparser.add_parser('revert-snap', help='Revert to snapshot for a given VMs')
         revert_snap_parser.add_argument('--name', required=True, help='Snapshot name')
         revert_snap_parser.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name')
         revert_snap_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
-        remove_snap_parser = vcenter_subparser.add_parser('remove-snap', help='Remove snapshot from vCenter', parents=[vcenter_parent_parser])
+
+        remove_snap_parser = vsphere_subparser.add_parser('remove-snap', help='Remove snapshot from vCenter')
         remove_snap_parser.add_argument('--name', required=True, help='Snapshot name')
         remove_snap_parser.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name')
         remove_snap_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
-        take_snap_parser = vcenter_subparser.add_parser('take-snap', help='Take snaphost for a given VMs', parents=[vcenter_parent_parser])
+
+        take_snap_parser = vsphere_subparser.add_parser('take-snap', help='Take snaphost for a given VMs')
         take_snap_parser.add_argument('--name', required=False, default='{}'.format(datetime.today().strftime("%d.%m.%Y_%H:%M:%S")), help='vSphere snapshot name')
         take_snap_parser.add_argument('--desc', required=False, default=' ', help='Description for a snapshot')
         take_snap_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name')
         take_snap_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
-        start_vm_parser = vcenter_subparser.add_parser('start-vm', help='Start select VMs in vSphere', parents=[vcenter_parent_parser])
+
+        start_vm_parser = vsphere_subparser.add_parser('start-vm', help='Start select VMs in vSphere')
         start_vm_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name')
         start_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
-        stop_vm_parser = vcenter_subparser.add_parser('stop-vm', help='Stop select VMs in vSphere', parents=[vcenter_parent_parser])
+
+        stop_vm_parser = vsphere_subparser.add_parser('stop-vm', help='Stop select VMs in vSphere')
         stop_vm_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name')
         stop_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
-        restart_vm_parser = vcenter_subparser.add_parser('restart-vm', help='Perform guest OS reboot for VMs in implementation cluster', parents=[vcenter_parent_parser])
+
+        restart_vm_parser = vsphere_subparser.add_parser('restart-vm', help='Perform guest OS reboot for VMs in implementation cluster')
         restart_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
         restart_vm_group = restart_vm_parser.add_mutually_exclusive_group(required=False)
         restart_vm_group.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name')
@@ -89,17 +91,17 @@ class Parser():
         matviews_exclusive_group.add_argument('-f', '--file', required=False, help='Sql filename containing a query')
 
         # create parser for the "git" subcommand
-        product_list_parser = subparser.add_parser('git', help='Get info from product-collection.yaml. Search branches, tags, commits in git')
-        product_list_parser.add_argument('-lbf', '--ls-branch-folder', required=False, help='Prints a list of files and folders for a given branch')
-        product_list_parser.add_argument('--build-charts', required=False, help='Requires commit to activate "Build Charts" job.')
-        product_list_parser.add_argument('-p', '--project-name', required=False, help='Option allows to provide project name from the product-collection.yaml without prompt')
-        product_list_group = product_list_parser.add_mutually_exclusive_group(required=False)
-        product_list_group.add_argument('-s', '--search', required=False, nargs='+', help='Search for branches and tags by it\'s name')
-        product_list_group.add_argument('--commit', required=False, help='Get info from the product-collection.yaml file for a specific commit')
-        product_list_group.add_argument('--compare', required=False, nargs=2, help='Compare two commits for difference in product-collection.yaml in DBs list and services list')
-        # product_list_group.add_argument('-st', '--search-tag', required=False, nargs='+', help='Search for a tag by it\'s name')
+        git_parser = subparser.add_parser('git', help='Get info from product-collection.yaml. Search branches, tags, commits in git')
+        git_parser.add_argument('-lbf', '--ls-branch-folder', required=False, help='Prints a list of files and folders for a given branch')
+        git_parser.add_argument('--build-charts', required=False, help='Requires commit to activate "Build Charts" job.')
+        git_parser.add_argument('-p', '--project-name', required=False, help='Option allows to provide project name from the product-collection.yaml without prompt')
+        git_group = git_parser.add_mutually_exclusive_group(required=False)
+        git_group.add_argument('-s', '--search', required=False, nargs='+', help='Search for branches and tags by it\'s name')
+        git_group.add_argument('--commit', required=False, help='Get info from the product-collection.yaml file for a specific commit')
+        git_group.add_argument('--compare', required=False, nargs=2, help='Compare two commits for difference in product-collection.yaml in DBs list and services list')
+        git_group.add_argument('-st', '--search-tag', required=False, nargs='+', help='Search for a tag by it\'s name')
 
-        # create parser for issuing a new license
+        # create parser for issuing new licenses
         issue_license = subparser.add_parser('issue-lic', help='Issue a new license from the license server')
         issue_license_group = issue_license.add_mutually_exclusive_group(required=True)
         issue_license_group.add_argument('-sid', '--serverId', required=False, help='Parameter of the license: serverID. Server which requires a license. Default value: None')
@@ -123,7 +125,7 @@ class Parser():
         issue_license.add_argument('-pw', '--password', required=False, default='Qwerty12345!', help='Password for the --user')
         issue_license.add_argument('--apply', required=False, action='store_true', help='Activate license for specified URL')
 
-        # confluence
+        # create parser for confluence
         ft = subparser.add_parser('ft', help='Get information about feature toggles from confluence')
         ft.add_argument('-suid', '--gazprom-suid', required=False, action='store_true', help='FT for the project Gazprom Suid')
         ft.add_argument('-dtoir', '--gazprom-dtoir', required=False, action='store_true', help='FT for the project Gazprom Dtoir')
@@ -135,20 +137,20 @@ class Parser():
         ft_save_group.add_argument('--save', required=False, action='store_true', help='Save output in file')
         ft_save_group.add_argument('--save-pretty', required=False, action='store_true', help='Save output in file more human readable')
 
-        # passwork
-        passwork = subparser.add_parser('pk', help='Work with passwork vault')
-        passwork.add_argument('--url', required=False, help='')
+        # create parser for passwork
+        # passwork = subparser.add_parser('pk', help='Work with passwork vault')
+        # passwork.add_argument('--url', required=False, help='')
 
         # mdm connector import config
-        mdm_connector_parser = subparser.add_parser('mdm', help='Import MDM autosetup config file. Requires for MDM connector integration')
-        mdm_connector_parser.add_argument('--url', required=True)
-        mdm_connector_group = mdm_connector_parser.add_mutually_exclusive_group(required=True)
-        mdm_connector_group.add_argument('--import-file', help='Point .json config file for MDM autosetup for import')
-        mdm_connector_group.add_argument('--export-file', action='store_true', help='Export .json config file for MDM autosetup')
+        # mdm_connector_parser = subparser.add_parser('mdm', help='Import MDM autosetup config file. Requires for MDM connector integration')
+        # mdm_connector_parser.add_argument('--url', required=True)
+        # mdm_connector_group = mdm_connector_parser.add_mutually_exclusive_group(required=True)
+        # mdm_connector_group.add_argument('--import-file', help='Point .json config file for MDM autosetup for import')
+        # mdm_connector_group.add_argument('--export-file', action='store_true', help='Export .json config file for MDM autosetup')
 
-        args = parser.parse_args()
-        return args
+        return parser
     
+    ## NOT READY ##
     @classmethod
     def parse_args_main(cls, user_command):
         """ Parse user command in main block """

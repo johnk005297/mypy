@@ -1,12 +1,13 @@
-#
-# pylint: disable-all
+# PYTHON_ARGCOMPLETE_OK
+
+import argcomplete
 import os
 import sys
 import app_menu
 import auth
 import user
 import license
-from arg_parser import Parser
+from parser import Parser
 import export_data
 import import_data
 import postgre
@@ -25,8 +26,7 @@ from rich.live import Live
 from rich.table import Table
 from getpass import getpass
 
-
-def main(local=False):
+def main():
 
     AppMenu_main = app_menu.AppMenu()
     Auth = auth.Auth()
@@ -53,7 +53,7 @@ def main(local=False):
 # ---------------------------------------------------------
 
     AppMenu_main.welcome_info_note()
-    if not local and not Auth.establish_connection():  # if connection was not established, do not continue
+    if not Auth.establish_connection():  # if connection was not established, do not continue
         return False
 
     url, token, username, password = Auth.url, Auth.token, Auth.username, Auth.password
@@ -65,55 +65,52 @@ def main(local=False):
             case False: # if nothing to check, loop over
                 continue
 
-            case ['m'] if not local:
+            case ['m']:
                 print(AppMenu_main._main_menu)
-            
-            case ['m'] if local:
-                print(AppMenu_main._local_menu)
 
             case ['exit'|'q'|'quit']:  # close the menu and exit from the script
                 break
 
             #    ''' =============================================================================== LICENSE BLOCK ==================================================================================== '''
 
-            case ['check', 'lic'] if not local:
+            case ['check', 'lic']:
                 License_main.display_licenses(url, token, username, password)
 
-            case ['get', 'sid'] if not local:
+            case ['get', 'sid']:
                 response = License_main.get_serverID(url, token)
                 success: bool = response[0]
                 message: str = response[1]
                 print(f"Error: {message}" if not success else f"\n   - serverId: {message}")
 
-            case ['apply', 'lic'] if not local:
+            case ['apply', 'lic']:
                 License_main.apply_license(url, token, username, password)
 
-            case  ['delete', 'lic'] if not local:
+            case  ['delete', 'lic']:
                 License_main.delete_license(url, token, username, password)
 
-            case ['activate', 'lic'] if not local:
+            case ['activate', 'lic']:
                 license_id:str = input("Enter license id: ").strip()
                 License_main.activate_license(url, token, username, password, license_id) # type: ignore
 
             #    ''' =============================================================================== User objects BLOCK =============================================================================== '''
 
-            case ['drop', 'uo'] if not local:
+            case ['drop', 'uo']:
                 User_main.delete_user_objects(url, token)
 
-            case ['drop', 'uo', '-h'] if not local:
+            case ['drop', 'uo', '-h']:
                 print(User_main.delete_user_objects.__doc__)
 
             #    ''' =============================================================================== TRANSFER DATA BLOCK ============================================================================== '''
 
             # Export data
-            case ['export', 'om'] if not local:
+            case ['export', 'om']:
                 if Export_data.is_first_launch_export_data:
                     Export_data.create_folders_for_export_files()
                 if user_command == ['export', 'om']:
                     Export_data.export_server_info(url, token)
                     Export_data.get_object_model(Export_data._object_model_file, Auth.url, Auth.token)                
 
-            case ['ls', 'workflows', *_] | ['export', 'workflows', *_] | ['rm', 'workflows', *_] if not local:
+            case ['ls', 'workflows', *_] | ['export', 'workflows', *_] | ['rm', 'workflows', *_]:
                 if user_command == ['ls', 'workflows', '--help'] or user_command == ['ls', 'workflows', '-h']:
                     Export_data.print_help(ls=True)
                     continue
@@ -148,13 +145,13 @@ def main(local=False):
                     Export_data.delete_workflows(url, token, workflows)
 
             # Import data
-            case ['import', 'workflows'] if not local:
+            case ['import', 'workflows']:
                 Import_data_main.import_workflows(url, token)
 
-            case ['import', 'om'] if not local:
+            case ['import', 'om']:
                 Import_data_main.import_object_model(url, token)
 
-            case ['rm', 'files'] if not local:
+            case ['rm', 'files']:
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._object_model_folder}")
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._workflows_folder}")
                 File.remove_file(f"{os.getcwd()}/{Export_data._transfer_folder}/export_server.info")
@@ -302,7 +299,7 @@ def main(local=False):
                     K8s.get_pod_log(*pods) if not namespace else K8s.get_pod_log(*pods, namespace=namespace)                    
 
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
-            case ['ft', _, *_] if not local:
+            case ['ft', _, *_]:
                 if ' '.join(user_command).startswith('ft --list'):
                     if user_command == ['ft', '--list']:
                         FT.display_features(url)
@@ -493,11 +490,11 @@ def main(local=False):
                 data = Bimeister.export_templates(url, token, id)
 
             #    ''' =============================================================================== Tools ============================================================================================ '''
-            case ['ptoken'] if not local:
+            case ['ptoken']:
                 private_token = Auth.get_private_token(url, token)
                 print(f"\n{private_token}")
 
-            case ['token'] if not local:
+            case ['token']:
                 user_access_token = Auth.get_user_access_token(url, username, password, Auth.providerId)
                 print(f"\n{user_access_token}")
 
@@ -533,7 +530,10 @@ def enable_history_input():
 
 if __name__ == '__main__':
     enable_history_input()
-    args = Parser().parse_args()
+    parser = Parser().get_parser()
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args()
+
     try:
         if args.command == 'git':
             g = Git()
@@ -589,8 +589,10 @@ if __name__ == '__main__':
                 product_collection.compare_two_commits(first_commit_services, first_commit_db, second_commit_services, second_commit_db)
             elif args.ls_branch_folder:
                 tree.print_list_of_branch_files(project_id, args.ls_branch_folder)
+
         elif args.command == 'drop-UO':
             postgre.DB.drop_userObjects(args.url, username=args.user, password=args.password)
+
         elif args.command == 'sql':
             pg = postgre.DB()
             q = postgre.Queries()
@@ -620,17 +622,18 @@ if __name__ == '__main__':
             elif args.list_users:
                 pg.execute_query(conn, query=q.get_list_of_users(), query_name='users-list')
                 pg.print_list_of_users(pg.output_file)
+
         elif args.command == 'vsphere':
-            subcommand = sys.argv[2]
             v = vsphere.Vsphere()
             headers = v.get_headers(args.user, args.password)
             if not headers:
                 sys.exit()
-            elif subcommand == 'list-vm':
+            elif args.vsphere_command == 'list-vm':
                 exclude_vm: list = args.exclude.split() if args.exclude else []
                 vm_array = v.get_array_of_vm(headers, exclude_vm, args.filter, args.powered_on)
                 v.print_list_of_vm(vm_array)
-            elif subcommand == 'restart-vm':
+
+            elif args.vsphere_command == 'restart-vm':
                 if args.all:
                     confirm: bool = True if input("YOU ARE ABOUT TO RESTART ALL VM's IN THE CLUSTER!!! ARE YOU SURE?(YES|NO) ").lower() == 'yes' else False
                     if not confirm:
@@ -643,24 +646,24 @@ if __name__ == '__main__':
                     exclude_vm: list = args.exclude.split() if args.exclude else []
                     vm_array = v.get_array_of_vm(headers, exclude_vm, args.filter, powered_on=True)
                     v.restart_os(headers, vm_array)
-            elif subcommand == 'start-vm':
+            elif args.vsphere_command == 'start-vm':
                 exclude_vm: list = args.exclude.split() if args.exclude else []
                 vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
                 for value in vm_array.values():
                     v.start_vm(headers, value["moId"], value["name"])
-            elif subcommand == 'stop-vm':
+            elif args.vsphere_command == 'stop-vm':
                 exclude_vm: list = args.exclude.split() if args.exclude else []
                 vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
                 for value in vm_array.values():
                     v.stop_vm(headers, value["moId"], value["name"])
-            elif subcommand == 'show-snap':
+            elif args.vsphere_command == 'show-snap':
                 exclude_vm: list = args.exclude.split() if args.exclude else []
                 vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
                 for value in vm_array.values():
                     snapshots: dict = v.get_vm_snapshots(headers, value["moId"], value["name"])
                     v.print_vm_snapshots(value["name"], snapshots)
                     print()
-            elif subcommand in ('take-snap', 'revert-snap', 'remove-snap'):
+            elif args.vsphere_command in ('take-snap', 'revert-snap', 'remove-snap'):
                 # Logic of taking/revering snaps procedure:
                 # get needed VMs -> power OFF -> take/revert snaps -> restore power state
                 exclude_vm: list = args.exclude.split() if args.exclude else []
@@ -845,8 +848,8 @@ if __name__ == '__main__':
                 conf.display_ft_for_project(data, conf.project_name_yamal, args.save, args.save_pretty)
             elif args.crea_cod:
                 conf.display_ft_for_project(data, conf.project_name_crea_cod, args.save, args.save_pretty)
-        elif args.local:
-            main(local=True)
+        # elif args.local:
+        #     main(local=True)
         elif args.version:
             if args.url:
                 Bimeister.print_bim_version(args.url)
