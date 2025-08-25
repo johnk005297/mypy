@@ -1,1 +1,2 @@
-# Tiny scripts from work
+# Some usefull scripts from work
+
