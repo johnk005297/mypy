@@ -1,11 +1,9 @@
-#
-#
+
 import time
 import requests
 import json
 import auth
 import license
-from log import Logs
 from tools import Tools
 
 
@@ -21,7 +19,6 @@ class User:
     License = license.License()
     possible_request_errors = auth.Auth.possible_request_errors
     _License_server_exception: bool = False
-    __logger = Logs().f_logger(__name__)
 
 
     def __init__(self):

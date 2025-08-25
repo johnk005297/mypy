@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 import requests
 import base64
 import time
@@ -5,7 +7,6 @@ import json
 import re
 import binascii
 import os
-from log import Logs
 from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
@@ -16,7 +17,6 @@ from rich import print as rprint
 
 class Vsphere:
 
-    __logger = Logs().f_logger(__name__)
     url: str = "https://vcenter.bimeister.io"
     connection_err_msg: str = "Connection error. Check the log."
     vsphere_release_schema: str = "8.0.3.0"
@@ -33,7 +33,7 @@ class Vsphere:
         if username and password:
             creds: str = username[0] + '@bimeister.com' + ':' + password
         else:
-            self.__logger.error("No correct credentials were provided.")
+            logger.error("No correct credentials were provided.")
             return False
         creds_bytes = creds.encode("utf-8")
         creds_encoded = base64.b64encode(creds_bytes)
@@ -62,7 +62,7 @@ class Vsphere:
                 password_b64_decoded = base64.b64decode(password_utf_encoded)
                 password = password_b64_decoded.decode("utf-8").strip() # password utf decoded
         except binascii.Error as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Invalid base64-encoded string. Check the logs. Exit!")
             return False
 
@@ -74,19 +74,19 @@ class Vsphere:
         try:
             response = requests.post(url=f"{self.url}/rest/com/vmware/cis/session", headers=headers, data=payload, verify=False)
             if response.status_code == 200:
-                self.__logger.info(f"{response.status_code}")
+                logger.info(f"{response.status_code}")
                 data: dict = response.json()
                 return data['value']
             else:
-                self.__logger.error(response.text)
+                logger.error(response.text)
                 print(f"Error: {response.json()['value']['error_type']}\nCheck the logs!")
                 return False
         except requests.exceptions.RequestException as err:
-            self.__logger.error(err)
+            logger.error(err)
             print(self.connection_err_msg)
             return False
         except:
-            self.__logger.error(response.text)
+            logger.error(response.text)
             print(self.connection_err_msg)
             return False
 
@@ -105,7 +105,7 @@ class Vsphere:
         try:
             response = requests.get(url=f"{self.url}/api/vcenter/folder", headers=headers, verify=False)
         except requests.exceptions.ConnectionError as err:
-            self.__logger.error(err)
+            logger.error(err)
             print(self.connection_err_msg)
             return False
         data = response.json()
@@ -121,7 +121,7 @@ class Vsphere:
             data = response.json()
             return data['value']['state']
         except Exception as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Couldn't get VM power state status. Check the log!")
             return False
 
@@ -131,11 +131,11 @@ class Vsphere:
         try:
             response = requests.get(url=f"{self.url}/api/vcenter/vm", headers=headers, verify=False)
         except ConnectionError as err:
-            self.__logger.error(err)
+            logger.error(err)
             print(self.connection_err_msg)
             return False
         if response.status_code == 200:
-            self.__logger.info(response.status_code)
+            logger.info(response.status_code)
             data = response.json()
             if not search_for:
                 if powered_on:
@@ -148,7 +148,7 @@ class Vsphere:
                 else:
                     vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude }
         else:
-            self.__logger.error(response.text)
+            logger.error(response.text)
             print("Error of getting list of VMs. Check the logs!")
             return False
         return vm_array
@@ -164,11 +164,11 @@ class Vsphere:
             if self.get_vm_power_state(headers=headers, vm=value['moId']) == 'POWERED_ON':
                 response = requests.post(url=url, headers=headers, verify=False)
                 if response.status_code in (200, 204):
-                    self.__logger.info(f"{value['name']} {response.status_code}")
+                    logger.info(f"{value['name']} {response.status_code}")
                     print(f"Initiate guest OS reboot: {value['name']}")
                     time.sleep(0.15)
                 else:
-                    self.__logger.error(response)
+                    logger.error(response)
                     print(f"Error: {value['name']}")
             else:
                 continue
@@ -183,15 +183,15 @@ class Vsphere:
         try:
             response = requests.post(url=url, headers=headers, verify=False)
             if response.status_code != 200:
-                self.__logger.error(f"{name}: {response.text}")
+                logger.error(f"{name}: {response.text}")
                 return False            
             print(f"Power On virtual machine: {name}")
         except requests.exceptions.RequestException as err:
-            self.__logger.error(err)
+            logger.error(err)
             print(f"{name}: Error. Status code: {response.status_code}")
             return False
         except Exception as err:
-            self.__logger.error(err)
+            logger.error(err)
             print(f"{name}: Error. Status code: {response.status_code}")
             return False
         return True
@@ -215,10 +215,10 @@ class Vsphere:
                     return True
             print(f"Initiate guest OS shutdown: {name}")
         except requests.exceptions.RequestException as err:
-            self.__logger.error(err)
+            logger.error(err)
             print(f"{name}: Error. Status code: {response.status_code}")
         except Exception as err:
-            self.__logger.error(err)
+            logger.error(err)
             print(f"{name}: Error. Status code: {response.status_code}")
         return True
 
@@ -236,17 +236,17 @@ class Vsphere:
             response = requests.post(url=url, data=data, headers=headers, verify=False)
             if response.status_code == 200:
                 data = response.json()
-                self.__logger.info(f"Created snapshot for VM: {vm_name}")
-                self.__logger.debug(data)
+                logger.info(f"Created snapshot for VM: {vm_name}")
+                logger.debug(data)
                 return True
             elif str(response.status_code).startswith('5'):
-                self.__logger.debug(response.text)
+                logger.debug(response.text)
                 return False
         except requests.exceptions.HTTPError:
-            self.__logger.error(err)
+            logger.error(err)
             return False
         except Exception as err:
-            self.__logger.error(err)
+            logger.error(err)
             return False
     
     def get_vm_snapshots(self, headers, moId, vm_name):
@@ -257,13 +257,13 @@ class Vsphere:
             response = requests.get(url=url, headers=headers, verify=False)
             if response.status_code == 200:
                 data = response.json() if bool(response.text) else False
-                self.__logger.info(f"Get list of snapshots VM: {vm_name}")                
+                logger.info(f"Get list of snapshots VM: {vm_name}")                
         except requests.exceptions.HTTPError as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Error. Check the log!")
             return False
         except Exception as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Error. Check the log!")
             return False
         snapshots: dict = {}
@@ -307,18 +307,18 @@ class Vsphere:
             response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
             if response.status_code == 200:
                 msg: str = f"Revert to snapshot VM: {vm_name}"
-                self.__logger.info(msg)
+                logger.info(msg)
                 return True
             elif response.status_code == 500:
                 data = response.json() if bool(response.text) else False
-                self.__logger.error(data)
+                logger.error(data)
                 return False
         except requests.exceptions.HTTPError as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Error. Check the log!")
             return False
         except Exception as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Error. Check the log!")
             return False            
 
@@ -332,14 +332,14 @@ class Vsphere:
                         }
             response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
             if response.status_code in (200, 204):
-                self.__logger.info(f"Remove snapshot: {moId}")
+                logger.info(f"Remove snapshot: {moId}")
                 return True
         except requests.exceptions.HTTPError as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Error. Check the log!")
             return False
         except Exception as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Error. Check the log!")
             return False
 

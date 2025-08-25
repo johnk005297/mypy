@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 import os
 import json
 import requests
@@ -7,9 +9,9 @@ import auth
 import license
 from urllib3.exceptions import InsecureRequestWarning
 from tools import File, Tools, Folder
-from log import Logs
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
+
 
 class Export_data:
 
@@ -34,7 +36,6 @@ class Export_data:
     AppMenu = app_menu.AppMenu()
     possible_request_errors = auth.Auth().possible_request_errors
     License = license.License()
-    __logger = Logs().f_logger(__name__)
 
     def __init__(self):
         self.is_first_launch_export_data: bool = True

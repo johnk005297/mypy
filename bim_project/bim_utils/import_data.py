@@ -1,19 +1,18 @@
+import logging
+logger = logging.getLogger(__name__)
 import os
 import json
 import requests
 import time
-import shutil
 import export_data
 import auth
 import license
 from tools import File
 from tools import Tools
-from log import Logs
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 
-logger = Logs().f_logger(__name__)
 
 class Import_data:
 

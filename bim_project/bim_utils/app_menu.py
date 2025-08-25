@@ -1,5 +1,5 @@
-#
-from log import Logs
+import logging
+logger = logging.getLogger(__name__)
 
 
 def main_menu():
@@ -72,8 +72,7 @@ def main_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu', '_local_menu')
-    __version__ = '1.78.55'
-    __logger = Logs().f_logger(__name__)
+    __version__ = '1.78.56'
 
     def __init__(self):
         self._main_menu = main_menu()
@@ -95,7 +94,7 @@ class AppMenu:
             print('\nKeyboardInterrupt')
             return exit_command
         except Exception as err:
-            self.__logger.error(err)
+            logger.error(err)
             return exit_command
         else:
             return False if not user_command else user_command

@@ -1,10 +1,10 @@
-#
+import logging
+logger = logging.getLogger(__name__)
 import psycopg2
 import auth
 import sys
 import os
 import pandas as pd
-from log import Logs
 from user import User
 from getpass import getpass
 from time import perf_counter
@@ -13,7 +13,6 @@ from tools import Tools, File
 
 
 class DB:
-    __logger = Logs().f_logger(__name__)
 
     def __init__(self):
         self.output_file = 'query_result.csv'
@@ -31,10 +30,10 @@ class DB:
                                     port=kwargs['port']
                                     )
         except psycopg2.OperationalError as err:
-            self.__logger.error(err)
+            logger.error(err)
             print(f"Database connection error.\n{err}")
         except psycopg2.Error as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Error occured. Check the log!")
             return False
         else:
@@ -86,22 +85,22 @@ class DB:
                                         header, mode = False, 'a'
                             except psycopg2.ProgrammingError as err:
                                 if cur.rowcount == -1:
-                                    self.__logger.info(f"{cur}")
+                                    logger.info(f"{cur}")
                                     print(cur.statusmessage)
                                     conn.commit()
                                 else:
-                                    self.__logger.error(err)
+                                    logger.error(err)
                                     print("SQL programming error. Check the log!")
                             except psycopg2.errors.ReadOnlySqlTransaction as err:
-                                self.__logger.error(err.pgerror)
+                                logger.error(err.pgerror)
                                 print("ReadOnlySqlTransaction: cannot execute INSERT in a read-only transaction")
                                 return False
                             except psycopg2.DatabaseError as err:
-                                self.__logger.error(err.pgerror)
+                                logger.error(err.pgerror)
                                 print(err.pgerror)
                                 return False
                             except psycopg2.InterfaceError as err:
-                                self.__logger.error(err.pgerror)
+                                logger.error(err.pgerror)
                                 print(err.pgerror)
                                 return False
                             except psycopg2.Error as err:
@@ -161,22 +160,22 @@ class DB:
                         header, mode = False, 'a'
             except psycopg2.ProgrammingError as err:
                 if cur.rowcount == -1:
-                    self.__logger.info(f"{cur}")
+                    logger.info(f"{cur}")
                     print(cur.statusmessage)
                     conn.commit()
                 else:
-                    self.__logger.error(err)
+                    logger.error(err)
                     print("SQL programming error. Check the log!")
             except psycopg2.errors.ReadOnlySqlTransaction as err:
-                self.__logger.error(err.pgerror)
+                logger.error(err.pgerror)
                 print("ReadOnlySqlTransaction: cannot execute INSERT in a read-only transaction")
                 return False
             except psycopg2.DatabaseError as err:
-                self.__logger.error(err.pgerror)
+                logger.error(err.pgerror)
                 print(err.pgerror)
                 return False
             except psycopg2.InterfaceError as err:
-                self.__logger.error(err.pgerror)
+                logger.error(err.pgerror)
                 print(err.pgerror)
                 return False
             except psycopg2.Error as err:

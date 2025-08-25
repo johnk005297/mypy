@@ -1,6 +1,7 @@
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
-from log import Logs
 from tools import *
 from atlassian import Confluence
 from bs4 import BeautifulSoup
@@ -8,7 +9,6 @@ from rich.console import Console
 from rich.table import Table
 
 
-logger = Logs().f_logger(__name__)
 
 class Conf:
 
@@ -20,6 +20,7 @@ class Conf:
     project_name_murmansk: str = 'novatek-murmansk'
     project_name_yamal: str = 'novatek-yamal'
     project_name_crea_cod: str = 'crea-cod'
+
 
     def get_confluence_page(self) -> dict:
         """ Get confluence page with needed table information. """
@@ -172,6 +173,7 @@ class Conf:
             table.add_row(prod, test, demo)
         console = Console()
         console.print(table)
+
         if save or save_pretty:
             filename: str = f'{project_name}-ft.txt'
             with open(filename, 'w', encoding='utf-8') as file:

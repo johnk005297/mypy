@@ -1,5 +1,6 @@
-#
 # Tool modules to work with folders and files
+import logging
+logger = logging.getLogger(__name__)
 import os
 import sys
 import socket
@@ -16,8 +17,6 @@ import requests
 import re
 import pandas as pd
 from datetime import datetime
-from log import Logs
-# logger = Logs().f_logger(__name__)
 
 
 # block for correct build with pyinstaller, to add .env file
@@ -28,9 +27,6 @@ if getattr(sys, 'frozen', False):
 load_dotenv(dotenv_path=os.path.join(extDataDir, '.env'))
 
 class Folder:
-    
-    logger = Logs().f_logger(__name__)
-
     @staticmethod
     def create_folder(path, folder_name):
         try:
@@ -38,7 +34,7 @@ class Folder:
                 os.mkdir(path + '/' + folder_name)
         except OSError as err:
             print("ERROR in create folder function.")
-            Folder.logger.error(err)
+            logger.error(err)
             return False
 
     @staticmethod
@@ -57,7 +53,7 @@ class Folder:
             else:
                 print(f'   - no {filename} folder was found.')
         except OSError as err:
-            Folder.logger.error(err)
+            logger.error(err)
             print("Error occured. Check the logs.")
             return False
         return True
@@ -75,7 +71,6 @@ class Folder:
 
 class File:
 
-    logger = Logs().f_logger(__name__)
     @staticmethod
     def read_file(filepath):
         """ Read from text files. Function recognizes .json, .csv, .yaml file separately. """
@@ -87,7 +82,7 @@ class File:
                         content = json.load(file)
                     except json.JSONDecodeError as err:
                         print(f"Error with the {filepath} file. Check the logs.")
-                        File.logger.error(f"Error with {filepath}.\n{err}")
+                        logger.error(f"Error with {filepath}.\n{err}")
                         return False
                     return content
                 elif os.path.splitext(filepath)[1] == '.csv':
@@ -99,7 +94,7 @@ class File:
                     content = file.read()
                     return content
         except OSError as err:
-            File.logger.error(err)
+            logger.error(err)
             return False
 
     @staticmethod
@@ -120,8 +115,6 @@ class File:
 
 
 class Tools:
-
-    logger = Logs().f_logger(__name__)
 
     @staticmethod
     def counter(start=0):
@@ -160,7 +153,7 @@ class Tools:
         try:
             os.system(command)
         except OSError as err:
-            Tools.logger.error(err)
+            logger.error(err)
             return False
 
     @staticmethod
@@ -237,19 +230,19 @@ class Tools:
             s.close()
             return True
         except socket.timeout as err:
-            Tools.logger.error(err)
+            logger.error(err)
             return False
         except ConnectionRefusedError:
             # Connection was actively refused by the target
-            Tools.logger.error(err)
+            logger.error(err)
             return False
         except OSError as err:
             # Catch other socket-related errors (e.g., host not found)
-            Tools.logger.error(err)
+            logger.error(err)
             return False
         except Exception as err:
             # Catch any other unexpected errors
-            Tools.logger.error(err)
+            logger.error(err)
             return False
 
     @staticmethod
@@ -272,7 +265,7 @@ class Tools:
             username = os.getenv(env_user)
             password = os.getenv(env_pass)
         else:
-            Tools.logger.error("No credentials were found in .env file.")
+            logger.error("No credentials were found in .env file.")
             return None, None
         username_utf_encoded = username.encode("utf-8")
         username_b64_decoded = base64.b64decode(username_utf_encoded)
@@ -298,7 +291,6 @@ class Tools:
         Raises:
             ValueError: If an unsupported HTTP method is provided.
         """
-        logger = Logs().f_logger(module)
         if not url.startswith('http'):
             url = 'https://' + url
         try:
@@ -360,13 +352,13 @@ class Bimeister:
                 elif response.status_code == 204:
                     print("Files uploaded successfully.")
         except FileNotFoundError as err:
-            Tools.logger.error(err)
+            logger.error(err)
             print(err)
         except requests.RequestException as err:
-            Tools.logger.error(err)
+            logger.error(err)
             print("Error! Check the log.")
         except Exception as err:
-            Tools.logger.error(err)
+            logger.error(err)
             print("Error! Check the log.")
 
     @staticmethod
@@ -385,21 +377,21 @@ class Bimeister:
                 print(f"commit: {data['GIT_COMMIT']}\nversion: {data['BUILD_FULL_VERSION']}")
                 return True
             except requests.exceptions.ConnectionError as err:
-                Tools.logger.error(err)
+                logger.error(err)
                 if count > 0: 
                     print("Connection error: Check URL address.")
                     return False
             except json.JSONDecodeError as err:
                 print("JSONDecodeError: Check URL address.")
-                Tools.logger.error(err)
+                logger.error(err)
                 return False
             except requests.exceptions.MissingSchema as err:
                 print(f"Invalid URL. MissingSchema.")
-                Tools.logger.error(err)
+                logger.error(err)
                 return False
             except Exception as err:
                 print("Unexpected error. Check the logs.")
-                Tools.logger.error(err)
+                logger.error(err)
                 return False
             count += 1
             if count == 1:
@@ -430,7 +422,7 @@ class Bimeister:
             return False
         except Exception as err:
             print("Some error occured. Check the log.")
-            Tools.logger.error(err)
+            logger.error(err)
             return False   
 
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
@@ -442,12 +434,12 @@ class Bimeister:
             response = requests.patch(url, headers=headers, verify=False)
             response.raise_for_status()
             if response.status_code in [200, 201, 204]:
-                Tools.logger.info(f"{url} {response.status_code}")
+                logger.info(f"{url} {response.status_code}")
                 print("Paths recalculated successfully!")
             return True
         except Exception as err:
             print(f"Error occurred. Check the log. Response code: {response.status_code}")
-            Tools.logger.error(err)
+            logger.error(err)
             return False
     
     @staticmethod
@@ -460,7 +452,7 @@ class Bimeister:
             response = requests.get(url=url, headers=headers, verify=False)
             response.raise_for_status()
             if response.status_code == 200:
-                Tools.logger.info(f"{url} {response.status_code}")
+                logger.info(f"{url} {response.status_code}")
                 data = response.json()
                 return data
         except Exception as err:
@@ -498,9 +490,9 @@ class Bimeister:
                         print(f"File exported successfully: {i}.json")
             except requests.exceptions.HTTPError as err:
                 if err.response.status_code == 404:
-                    Tools.logger.error(err)
+                    logger.error(err)
                     print(f"404 Client Error for id: {i}")
             except Exception as err:
-                Tools.logger.error(err)
+                logger.error(err)
                 print("Error occured. Read the log! ")
                 return False

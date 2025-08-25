@@ -1,22 +1,19 @@
+import logging
+logger = logging.getLogger(__name__)
 import sys
 import requests
 from tools import Tools
 from getpass import getpass
-from log import Logs
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 
-logger = Logs().f_logger(__name__)
 
 class Auth:
     __slots__ = ('url', 'username', 'password', 'token', 'providerId', 'privateToken')
     __api_Providers: str = 'api/Providers'
     __api_Auth_Login: str = 'api/Auth/Login'
     __api_PrivateToken: str = 'api/PrivateToken'
-    # __logger = Logs().f_logger(__name__)
-    __start_connection = Logs().http_connect()
-    __check_response = Logs().http_response()
     headers = {'accept': '*/*', 'Content-type': 'application/json; charset=utf-8'}
     possible_request_errors: tuple = (
         requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout,
@@ -67,12 +64,10 @@ class Auth:
             url = 'http://' + url
         # Check both ports: 80 and 443
         for x in range(2):
-            logger.info(self.__start_connection(url))
             try:
                 response = requests.head(url=url, verify=False, allow_redirects=False, timeout=2)
-                logger.debug(self.__check_response(url, response.request.method, response.request.path_url,
-                                                          response.status_code))
                 if response.status_code == 200:
+                    logger.info(f"{url}: {response.status_code}")
                     self.url = url
                     return url
                 # fix issues if the redirect is set up
@@ -164,60 +159,6 @@ class Auth:
             self.username = username
             self.password = password
 
-    # def get_user_access_token(self, url, username, password, providerId):
-    #     """ Basically this is a login into system, after what we get an access token. """
-
-    #     payload = {
-    #         "username": username,
-    #         "password": password,
-    #         "providerId": providerId
-    #     }
-    #     data = json.dumps(payload)
-    #     try:
-    #         response = requests.post(url=f"{url}/{self.__api_Auth_Login}", data=data, headers=self.headers, verify=False)
-    #         # logger.debug(f"username: {self.username}")
-    #         # logger.debug(
-    #         #     self.__check_response(url, response.request.method, response.request.path_url, response.status_code))
-    #         data = response.json()
-    #     except self.possible_request_errors as err:
-    #         logger.error(err)
-    #         print(f"Login attempt failed. Repsonse code: {response.status_code}. Check services are running!")
-    #     time.sleep(0.07)
-    #     """ Block is for checking authorization request.
-    #     Correct response of /api/Auth/Login method suppose to return a .json with 'access_token' and 'refresh_token'.
-    #     """
-    #     if response.status_code == 401:
-    #         if data.get('type') and data.get('type') == 'TransitPasswordExpiredBimException':
-    #             message: str = f"Password for '{username}' has been expired!"
-    #             logger.error(response.text)
-    #             print(message)
-    #             return False
-    #         elif data.get('type') and data.get('type') == 'IpAddressLoginAttemptsExceededBimException':
-    #             message = "Too many authorization attempts. IP address has been blocked!"
-    #             logger.error(response.text)
-    #             print(message)
-    #             return False
-    #         elif data.get('type') and data.get('type') == 'AuthCommonBimException':
-    #             message = f"Unauthorized access. Check credentials for user: {username}."
-    #             logger.error(response.text)
-    #             print(message)
-    #             return False
-    #         elif data.get('type') and data.get('type') == 'UserPasswordValidationBimException':
-    #             message = "The password does not match the password policy. Need to create a new password."
-    #             logger.error(response.text)
-    #             print(message)
-    #         elif data.get('type') and data.get('type') == 'UserLoginAttemptsExceededBimException':
-    #             message = "Login attempts exceeded. User was blocked."
-    #             logger.error(response.text)
-    #             print(message)
-    #         else:
-    #             logger.error(response.text)
-    #             return False
-    #     elif response.status_code in (200, 201, 204):
-    #         self.token = data['access_token']
-    #         return self.token
-    #     else:
-    #         return False
     def get_user_access_token(self, url, username, password, providerId):
         """ Function sends login request.
             Success response returns a .json with 'access_token'.
@@ -268,10 +209,8 @@ class Auth:
         try:
             response = requests.get(url=url, headers=headers, verify=False)
             logger.info("Getting private token:")
-            logger.debug(self.__check_response(self.url, response.request.method, response.request.path_url,
-                                                      response.status_code))
             if response.status_code == 204:
-                logger.info(self.__start_connection(url))
+                logger.info(f"{url}: {response.status_code}")
                 response = requests.post(url=url, headers=headers, verify=False)
             data = response.json()
             self.privateToken: str = data['privateToken']

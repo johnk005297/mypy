@@ -1,8 +1,9 @@
+import logging
+logger = logging.getLogger(__name__)
 import yaml
 import base64
 import requests
 import os
-from log import Logs
 from colorama import init, Fore
 init(autoreset=True)
 from rich.console import Console
@@ -13,7 +14,6 @@ class Git:
 
     _headers = {"PRIVATE-TOKEN": os.getenv('GITLAB_TOKEN')}
     _url = "https://git.bimeister.io/api/v4"
-    _logger = Logs().f_logger(__name__)
     _error_msg = "Unexpected error. Check logs!"
 
     def __init__(self):
@@ -53,12 +53,12 @@ class Project(Git):
             response.raise_for_status()
             data = response.json()
         except requests.exceptions.ConnectionError as err:
-            self._logger.error(err)
+            logger.error(err)
             print("No connection to gitlab. Check the logs. Exit!")
             return False
         except requests.exceptions.RequestException as err:
             print(self._error_msg)
-            self._logger.error(err)
+            logger.error(err)
             return False
         for proj in reversed(data):
             if proj['name'] == project:
@@ -95,7 +95,7 @@ class Tag(Git):
                 response.raise_for_status()
                 data = response.json()
             except requests.exceptions.RequestException as err:
-                self._logger.error(err)
+                logger.error(err)
                 print(self._error_msg)
                 return False
             for tag in data:
@@ -130,7 +130,7 @@ class Branch(Git):
                 response.raise_for_status()
             except requests.exceptions.RequestException as err:
                 print(self._error_msg)
-                self._logger.error(err)
+                logger.error(err)
                 return False
             for branch in response.json():
                 branch_commit = branch['commit']['short_id']                                
@@ -182,7 +182,7 @@ class Branch(Git):
                 next_page = response.headers['X-Next-Page']
             return branches if branches else False
         except requests.exceptions.RequestException as err:
-            self._logger.error(err)
+            logger.error(err)
             return False
 
 
@@ -204,7 +204,7 @@ class Job(Git):
             response.raise_for_status()
             jobs = response.json()
         except requests.exceptions.RequestException as err:
-            self._logger.error(err)
+            logger.error(err)
             return False
         return jobs
 
@@ -257,7 +257,7 @@ class Job(Git):
         """ Execute job run for a given job id list. """
 
         if not project_id or not job_id or not isinstance(job_id, list):
-            self._logger.error(f"{self.job.__qualname__} Incorrect data transferred.")
+            logger.error(f"{self.job.__qualname__} Incorrect data transferred.")
             raise TypeError("Run job function accepts project_id and job_id as a list.")
         for id in job_id:
             url = f"{self._url}/projects/{project_id}/jobs/{id}/play"
@@ -273,10 +273,10 @@ class Job(Git):
                           \nurl: {data['pipeline']['web_url']}      ")
             except requests.exceptions.RequestException as err:
                 print(self._error_msg)
-                self._logger.error(err)
+                logger.error(err)
                 return False                
             except Exception as err:
-                self._logger.error(err)
+                logger.error(err)
                 return False                
 
 
@@ -301,7 +301,7 @@ class Pipeline(Git):
                 for pipeline in response.json():
                     pipelines.append(pipeline)
             except requests.exceptions.RequestException as err:
-                self._logger.error(err)
+                logger.error(err)
                 print("Error getting pipelines. Check the log.")
                 return False
         # sort pipelines by id
@@ -320,11 +320,11 @@ class Tree(Git):
             response.raise_for_status()
             data = response.json()
         except requests.exceptions.RequestException as err:
-            self._logger.error(err)
+            logger.error(err)
             print(self._error_msg)
             return False
         except Exception as err:
-            self._logger.error(err)
+            logger.error(err)
             print(self._error_msg)
             return False
         for x in data:
@@ -342,11 +342,11 @@ class Product_collection_file(Git):
             response.raise_for_status()
         except requests.exceptions.HTTPError as err:
             print(self._error_msg)
-            self._logger.error(err)
+            logger.error(err)
             return False
         except requests.exceptions.RequestException as err:
             print(self._error_msg)
-            self._logger.error(err)
+            logger.error(err)
             return False
         data_base64 = response.json()['content']
         data_bytes = data_base64.encode('utf-8')
@@ -475,7 +475,7 @@ class Product_collection_file(Git):
     #             response.raise_for_status()
     #         except requests.exceptions.RequestException as err:
     #             print(self._error_msg)
-    #             self._logger.error(err)
+    #             logger.error(err)
     #             return False
     #         for branch in response.json():
     #             branch_commit = branch['commit']['short_id']
@@ -535,9 +535,9 @@ class Product_collection_file(Git):
     #                 else:
     #                     continue
     #             else:
-    #                 self._logger.error("Incorrect chart name.")
+    #                 logger.error("Incorrect chart name.")
     #                 return False
     #         except Exception as err:
-    #             self._logger.error(err)
+    #             logger.error(err)
     #             return False
     #     return result    

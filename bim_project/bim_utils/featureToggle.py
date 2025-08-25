@@ -1,13 +1,12 @@
-#
+import logging
+logger = logging.getLogger(__name__)
 import requests
 import mdocker
 import mk8s
 from rich.console import Console
 from rich.table import Table
 from tools import Tools
-from log import Logs
 
-logger = Logs().f_logger(__name__)
 
 class FeatureToggle:
 

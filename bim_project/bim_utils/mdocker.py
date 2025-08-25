@@ -3,8 +3,6 @@ import docker
 from prettytable import PrettyTable
 from tools import Folder, Tools
 import os
-import json
-from log import Logs
 
 
 class Docker:

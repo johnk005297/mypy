@@ -1,10 +1,10 @@
+import logging
+logger = logging.getLogger(__name__)
 import os
 import base64
 from tools import Tools
-from log import Logs
 
 tools = Tools()
-logger = Logs().f_logger(__name__)
 
 class Passwork:
 
