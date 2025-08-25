@@ -153,6 +153,7 @@ class DB:
             start = perf_counter()
             try:
                 cur.execute(query)
+                logger.info(query)
                 conn.commit()
                 if cur.rowcount > 0:
                     header, mode = True, 'w'

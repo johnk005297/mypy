@@ -113,21 +113,21 @@ if __name__ == '__main__':
             elif args.list_matviews:
                 pg.execute_query(conn, query=q.get_matviews_list(args.list_matviews), query_name='matviews-list')
             elif args.drop_matviews:                
-                pg.execute_query(conn, query=q.drop_materialized_view(args.drop_matviews))
+                pg.execute_query(conn, query=q.drop_materialized_view(args.drop_matviews), query_name='drop-matviews')
             elif args.refresh_matviews:
-                pg.execute_query(conn, query=q.refresh_materialized_view())
+                pg.execute_query(conn, query=q.refresh_materialized_view(), query_name='refresh-matviews')
             elif args.mdm:
                 if args.mdm == 'prod':
-                    pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Prod'))
+                    pg.execute_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Prod'), query_name='swith-extkey-mdm-connector')
                 elif args.mdm == 'test':
-                    pg.exec_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Test'))
+                    pg.execute_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Test'), query_name='swith-extkey-mdm-connector')
                 else: print("mdm option has two values: prod or test.")
             elif args.list_db:
                 db_list = pg.execute_query(conn, query=q.get_list_of_all_db(), query_name='db-list')
             elif args.list_tables:
                 pg.execute_query(conn, query=q.get_list_of_db_tables(), query_name='tables-list')
             elif args.create_user_ro:
-                pg.execute_query(conn, query=q.create_postgresql_user_ro(args.name, args.user_ro_pass))
+                pg.execute_query(conn, query=q.create_postgresql_user_ro(args.name, args.user_ro_pass), query_name='create-user-ready-only')
             elif args.list_users:
                 pg.execute_query(conn, query=q.get_list_of_users(), query_name='users-list')
                 pg.print_list_of_users(pg.output_file)
