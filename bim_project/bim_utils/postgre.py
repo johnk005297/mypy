@@ -4,12 +4,13 @@ import psycopg2
 import auth
 import sys
 import os
+import platform
 import pandas as pd
 from user import User
 from getpass import getpass
 from time import perf_counter
 from datetime import timedelta
-from tools import Tools, File
+from tools import File
 
 
 class DB:
@@ -121,7 +122,7 @@ class DB:
         else:
             print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
         if os.path.isfile(output_file):
-            sep = "\\" if Tools.is_windows() else "/"
+            sep = "\\" if platform.system == "Windows" else "/"
             print(f"Query result saved: {os.getcwd()}{sep}{output_file}")
 
     def record_batches(self, cursor, chunk_size: int = 10_000):
@@ -190,7 +191,7 @@ class DB:
         else:
             print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
         if os.path.isfile(output_file):
-            sep = "\\" if Tools.is_windows() else "/"
+            sep = "\\" if platform.system == "Windows" else "/"
             print(f"Query result saved: {os.getcwd()}{sep}{output_file}")
 
     def print_list_of_users(self, file):

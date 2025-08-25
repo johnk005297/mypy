@@ -63,9 +63,9 @@ class Folder:
         """ Function provides current directory content. """
 
         if not folder:
-            command = "dir" if Tools.is_windows() else "ls -lha"
+            command = "dir" if platform.system == "Windows" else "ls -lha"
         else:
-            command = f"dir {folder}" if Tools.is_windows() else f"ls -lha {folder}"
+            command = f"dir {folder}" if platform.system == "Windows" else f"ls -lha {folder}"
         return command
 
 
@@ -126,11 +126,6 @@ class Tools:
         return start_count
 
     @staticmethod
-    def is_windows():
-        """ Check if OS is windows or not. """
-        return True if platform.system() == 'Windows' else False
-
-    @staticmethod
     def create_random_name():
         """ Create random string of 20 characters. """
 
@@ -141,7 +136,7 @@ class Tools:
     def run_terminal_command(command=''):
         """ Function for execution OS command in shell. """        
 
-        os_name = 'Windows' if Tools.is_windows() else 'Linux'
+        os_name = 'Windows' if platform.system == "Windows" else 'Linux'
         command = input("{0} shell: ".format(os_name)).strip() if not command else command
         os.system(command)
 

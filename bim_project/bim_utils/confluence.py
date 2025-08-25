@@ -190,7 +190,7 @@ class Conf:
                         for ft in env_ft_list:
                             file.write(f"\n {ft}")
                         file.write('\n\n')
-            sep = "\\" if Tools.is_windows() else "/"
+            sep = "\\" if platform.system == "Windows" else "/"
             print(f"File saved: {os.getcwd()}{sep}{filename}")
 
     def display_projects(self):
