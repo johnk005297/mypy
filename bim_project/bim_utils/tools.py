@@ -1,8 +1,6 @@
 # Tool modules to work with folders and files
 import logging
-logger = logging.getLogger(__name__)
 import os
-import sys
 import socket
 import base64
 import platform
@@ -18,13 +16,8 @@ import re
 import pandas as pd
 from datetime import datetime
 
+logger = logging.getLogger(__name__)
 
-# block for correct build with pyinstaller, to add .env file
-from dotenv import load_dotenv
-extDataDir = os.getcwd()
-if getattr(sys, 'frozen', False):
-    extDataDir = sys._MEIPASS
-load_dotenv(dotenv_path=os.path.join(extDataDir, '.env'))
 
 class Folder:
     @staticmethod

@@ -1,5 +1,4 @@
 import logging
-logger = logging.getLogger(__name__)
 import os
 import json
 import requests
@@ -13,6 +12,7 @@ from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 
+logger = logging.getLogger(__name__)
 
 class Import_data:
 
@@ -37,7 +37,6 @@ class Import_data:
         ''' Function needs to protect export server from import procedure during a single user session. '''
 
         filepath: str = self._transfer_folder + '/' + self.Export_data._export_server_info_file
-        # server_info = File.read_file(self._transfer_folder, self.Export_data._export_server_info_file)
         server_info = File.read_file(filepath)
         response = self.License.get_serverID(url, token)
         success: bool = response[0]

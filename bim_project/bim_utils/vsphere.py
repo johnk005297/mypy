@@ -1,5 +1,4 @@
 import logging
-logger = logging.getLogger(__name__)
 import requests
 import base64
 import time
@@ -14,6 +13,8 @@ disable_warnings(InsecureRequestWarning)
 from rich.tree import Tree
 from rich import print as rprint
 
+
+logger = logging.getLogger(__name__)
 
 class Vsphere:
 

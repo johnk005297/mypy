@@ -22,6 +22,12 @@ from rich.table import Table
 from getpass import getpass
 from tools import Bimeister
 
+# block for correct build with pyinstaller, to add .env file
+from dotenv import load_dotenv
+extDataDir = os.getcwd()
+if getattr(sys, 'frozen', False):
+    extDataDir = sys._MEIPASS
+load_dotenv(dotenv_path=os.path.join(extDataDir, '.env'))
 
 # opportunity to have access of input history
 if platform.system() == 'Windows':
@@ -284,6 +290,7 @@ if __name__ == '__main__':
                             ,numberOfIpConnectionsPerUser=args.numberOfIpConnectionsPerUser
                             ,serverId=args.serverId
                             ,period=args.period
+                            ,until=args.until
                             ,orderId=args.orderId
                             ,crmOrderId=args.crmOrderId
                             ,save=args.save
@@ -322,6 +329,7 @@ if __name__ == '__main__':
                             ,numberOfIpConnectionsPerUser=args.numberOfIpConnectionsPerUser
                             ,serverId=server_id
                             ,period=args.period
+                            ,until=args.until
                             ,orderId=args.orderId
                             ,crmOrderId=args.crmOrderId
                             ,save=args.save

@@ -1,4 +1,5 @@
-#
+import logging
+logger = logging.getLogger(__name__)
 import docker
 from prettytable import PrettyTable
 from tools import Folder, Tools
@@ -7,7 +8,7 @@ import os
 
 class Docker:
     __slots__ = ('_ft_token', '_permissions')
-    # __logger = Logs().f_logger(__name__)
+
     _log_folder = 'docker_logs'
     _docker = None
 
@@ -22,10 +23,10 @@ class Docker:
             cls._docker = docker.from_env()
             return True
         except docker.errors.DockerException as err:
-            # cls.__logger.error(err)
+            logger.error(err)
             return False
         except Exception as err:
-            # cls.__logger.error(err)
+            logger.error(err)
             return False
 
     def __getattr__(self, item):
@@ -100,7 +101,7 @@ class Docker:
             print("No such docker container: ", id)
             return False
         except docker.errors.APIError as err:
-            self.__logger.error(err)
+            logger.error(err)
             print("Server error. Check the log.")
             return False
 
@@ -137,11 +138,11 @@ class Docker:
                     print(log)
 
         except docker.errors.NotFound as err:
-            # self.__logger.error(err)
+            logger.error(err)
             print("No such docker container.")
             pass
         except docker.errors.APIError as err:
-            # self.__logger.error(err)
+            logger.error(err)
             print("Server error. Check the log.")
             pass
         return True
@@ -167,7 +168,7 @@ class Docker:
                     file.write(log)
                     print(self._log_folder + '/' + filename)
             except docker.errors.APIError as err:
-                # self.__logger.error(err)
+                logger.error(err)
                 print(f"Error: {err}")
             except:
                 print("Error occured.")

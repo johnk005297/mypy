@@ -458,7 +458,6 @@ class Product_collection_file(Git):
     #         response.raise_for_status()
     #         data = response.json()
     #     except requests.exceptions.RequestException as err:
-    #         self.__logger.error(err)
     #         print(self.__error_msg)
     #         return False
     #     return data

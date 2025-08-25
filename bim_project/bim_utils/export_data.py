@@ -1,5 +1,4 @@
 import logging
-logger = logging.getLogger(__name__)
 import os
 import json
 import requests
@@ -12,6 +11,7 @@ from tools import File, Tools, Folder
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 
+logger = logging.getLogger(__name__)
 
 class Export_data:
 
@@ -56,21 +56,21 @@ class Export_data:
         try:
             response = requests.get(url_get_object_model, headers=headers, verify=False)
             if response.status_code != 200:
-                self.__logger.error(f"{self.get_object_model.__name__}\n{response.text}")
+                logger.error(f"{self.get_object_model.__name__}\n{response.text}")
             data = response.json()
         except self.possible_request_errors as err:
-            self.__logger.error(f"{err}")
+            logger.error(f"{err}")
             print("Error: Couldn't export object model. Check the logs.")
             return False
 
         try:
             with open(f"{self._transfer_folder}/{self._object_model_folder}/{filename}", "w", encoding="utf-8") as json_file:
                 json.dump(data, json_file, ensure_ascii=False, indent=4)
-                self.__logger.info(f"Object model has been exported. '{filename}' file is ready.")
+                logger.info(f"Object model has been exported. '{filename}' file is ready.")
                 if filename != 'object_model_import_server.json':
                     print(f"\n   - object model exported in '{filename}' file.")
         except (FileNotFoundError, OSError) as err:
-            self.__logger.error(err)
+            logger.error(err)
             print('Error occurred. Check the logs.')
             return False
         return True
@@ -84,7 +84,7 @@ class Export_data:
             response = requests.get(url=url_get_all_workflow_nodes, headers=headers, verify=False)
             data = response.json()
         except self.possible_request_errors as err:
-            self.__logger.error(f"{err}\n{response.text}") 
+            logger.error(f"{err}\n{response.text}") 
             print(f"Error: Couldn't export workFlow nodes. Check the logs.")
             return False
 
@@ -123,7 +123,7 @@ class Export_data:
                         url_export = f"{url}/api/Integration/WorkFlow/{id}/Export"
                         response = requests.get(url=url_export, headers=headers, verify=False)
                     except self.possible_request_errors as err:
-                        self.__logger.error(f"{err}\n{response.text}")
+                        logger.error(f"{err}\n{response.text}")
                     print(f"   {count()}){node}: {name}")   # display the name of the process in the output
                     time.sleep(0.1)
                     try:
@@ -131,7 +131,7 @@ class Export_data:
                             zip_file.write(response.content)
                         file.write("{0}  {1}  {2}\n".format(node, id, name))
                     except OSError as err:
-                        self.__logger.error(err)
+                        logger.error(err)
                         continue
         return True
 
@@ -151,11 +151,11 @@ class Export_data:
                     data = response.json()
                     workflow_name, node_id = data['name'], data['workFlowNodeId']
                 except self.possible_request_errors as err:
-                    self.__logger.error(f"{err} {response.status_code}\n{response.text}")
+                    logger.error(f"{err} {response.status_code}\n{response.text}")
                     issue_message(id)
                     continue
                 except Exception as err:
-                    self.__logger.error(f"{err} {response.status_code}\n{data}")
+                    logger.error(f"{err} {response.status_code}\n{data}")
                     if response.status_code == 400 and data['type']:
                         print("InvalidInfoModelException. WorkFlow ID is incorrect. Check the logs.")
                     elif response.status_code == 404:
@@ -172,15 +172,15 @@ class Export_data:
                         time.sleep(0.1)
                         print("   {0}){1}: {2}".format(count(), *node_name, workflow_name))
                     except self.possible_request_errors as err:
-                        self.__logger.error(f"{err} {response.status_code}\n{response.text}")
+                        logger.error(f"{err} {response.status_code}\n{response.text}")
                         issue_message(workflow_name)
                         continue
                     except OSError as err:
-                        self.__logger.error(err)
+                        logger.error(err)
                         issue_message(workflow_name)
                         continue
                     except Exception as err:
-                        self.__logger.error(err)
+                        logger.error(err)
                         issue_message(workflow_name)
                         continue
         return True
@@ -210,7 +210,7 @@ class Export_data:
                     response = requests.get(url_get_workflows, headers=headers, verify=False)
                     data = response.json()
                 except self.possible_request_errors as err:
-                    self.__logger.error(f"{err}\n{response.text}")
+                    logger.error(f"{err}\n{response.text}")
                 for workflow in data['workFlows']:
                     if kwargs['type'] and kwargs['type'] != self.get_workflow_type(url, token, workflow['id']):
                         continue
@@ -245,10 +245,10 @@ class Export_data:
                     response = requests.delete(url_delete_workflow, headers=headers, verify=False)
                     if response.status_code != 204:
                         print(f"Error: {name} wasn't removed. Status code: {response.status_code}. Check the log.")
-                        self.__logger.error(f"{id}: {response.status_code}\n{response.text}")
+                        logger.error(f"{id}: {response.status_code}\n{response.text}")
                     print(f'   {count()}){node}: {name}')
                 except self.possible_request_errors as err:
-                    self.__logger.error(f"{err}\n{response.text}")
+                    logger.error(f"{err}\n{response.text}")
         return True    
 
     def export_server_info(self, url, token):
@@ -282,12 +282,12 @@ class Export_data:
         try:
             response = requests.get(url=url, headers=headers, verify=False)
             if response.status_code != 200:
-                self.__logger.error(f"{id}: {response.status_code}\n{response.text}")
+                logger.error(f"{id}: {response.status_code}\n{response.text}")
                 print(f"Error: check the log!")
             data = response.json()
             return data['type'].lower()
         except self.possible_request_errors as err:
-            self.__logger.error(f"{err}\n{response.text}")
+            logger.error(f"{err}\n{response.text}")
             return False
 
 

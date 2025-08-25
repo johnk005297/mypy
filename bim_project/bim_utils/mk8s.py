@@ -1,6 +1,4 @@
-#
 import logging
-logger = logging.getLogger(__name__)
 import os
 from prettytable import PrettyTable
 from kubernetes.client.rest import ApiException
@@ -10,6 +8,7 @@ from tools import Tools, File, Folder
 from colorama import init, Fore
 init(autoreset=True)
 
+logger = logging.getLogger(__name__)
 
 class K8S:
     __slots__ = ('__namespace', '_ft_token')

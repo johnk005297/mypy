@@ -1,5 +1,4 @@
 import logging
-logger = logging.getLogger(__name__)
 import sys
 import requests
 from tools import Tools
@@ -7,6 +6,8 @@ from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
+
+logger = logging.getLogger(__name__)
 
 
 class Auth:

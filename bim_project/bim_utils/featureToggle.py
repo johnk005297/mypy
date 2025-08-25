@@ -1,5 +1,4 @@
 import logging
-logger = logging.getLogger(__name__)
 import requests
 import mdocker
 import mk8s
@@ -7,6 +6,7 @@ from rich.console import Console
 from rich.table import Table
 from tools import Tools
 
+logger = logging.getLogger(__name__)
 
 class FeatureToggle:
 

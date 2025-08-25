@@ -1,5 +1,4 @@
 import logging
-logger = logging.getLogger(__name__)
 import psycopg2
 import auth
 import sys
@@ -12,6 +11,7 @@ from time import perf_counter
 from datetime import timedelta
 from tools import File
 
+logger = logging.getLogger(__name__)
 
 class DB:
 

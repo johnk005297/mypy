@@ -1,5 +1,4 @@
 import logging
-logger = logging.getLogger(__name__)
 import os
 import sys
 import json
@@ -20,7 +19,7 @@ from colorama import init, Fore
 init(autoreset=True)
 from tools import Tools
 
-
+logger = logging.getLogger(__name__)
 tools = Tools()
 
 class License:
@@ -385,11 +384,27 @@ class Issue:
         url = f'http://{self._license_server}:{self._license_server_port}/{self.__api_license_sign}'
         headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': f"Bearer {token}"}
 
-        period = 3 if not kwagrs['period'] else int(kwagrs['period']) # license period in months
         iso_yesterday: str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S%z")
-        dt_object: datetime = datetime.fromisoformat(iso_yesterday)
-        new_dt_object: datetime = dt_object + relativedelta(months=period)
-        iso_new_date: str = new_dt_object.strftime("%Y-%m-%dT%H:%M:%S%z")
+        try:
+            if not kwagrs['until']:
+                period = 3 if not kwagrs['period'] else int(kwagrs['period']) # license period in months
+                dt_object: datetime = datetime.fromisoformat(iso_yesterday)
+                new_dt_object: datetime = dt_object + relativedelta(months=period)
+                expiration_date: str = new_dt_object.strftime("%Y-%m-%dT%H:%M:%S%z")
+            else:
+                until_date = datetime.strptime(kwagrs['until'], "%Y-%m-%d")
+                end_of_lic_time = timedelta(hours=23, minutes=59, seconds=00)
+                until_date += end_of_lic_time
+                expiration_date = until_date.strftime("%Y-%m-%dT%H:%M:%S%z")
+        except ValueError as err:
+            logger.error(err)
+            print("Error: check date format")
+            sys.exit()
+        except Exception as err:
+            logger.error(err)
+            print("Error. Check the log.")
+            sys.exit()
+
         params = {
             "version": kwagrs['version'],
             "product": kwagrs['product'],
@@ -403,7 +418,7 @@ class Issue:
             "numberOfIpConnectionsPerUser": kwagrs['numberOfIpConnectionsPerUser'],
             "serverID": kwagrs['serverId'],
             "from": iso_yesterday,
-            "until": iso_new_date,
+            "until": expiration_date,
             "orderId": "",
             "crmOrderId": ""
         }

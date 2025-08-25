@@ -93,7 +93,7 @@ def launch_menu():
                     Export_data.create_folders_for_export_files()
                 if user_command == ['export', 'om']:
                     Export_data.export_server_info(url, token)
-                    Export_data.get_object_model(Export_data._object_model_file, Auth.url, Auth.token)                
+                    Export_data.get_object_model(Export_data._object_model_file, Auth.url, Auth.token)
 
             case ['ls', 'workflows', *_] | ['export', 'workflows', *_] | ['rm', 'workflows', *_]:
                 if user_command == ['ls', 'workflows', '--help'] or user_command == ['ls', 'workflows', '-h']:

@@ -4,17 +4,6 @@ import logging
 import sys
 
 
-
-# logging.basicConfig(
-#      filename=".bimctl.log",
-#      encoding="utf-8",
-#      filemode="a",
-#      format="{asctime} - {levelname} - {message}",
-#      style="{",
-#      datefmt="%Y-%m-%d %H:%M",
-#  )
-
-
 def file_logger(log_file, logLevel=logging.DEBUG):
     """ Create a custom logger with file output. """
     
@@ -35,7 +24,7 @@ def file_logger(log_file, logLevel=logging.DEBUG):
 class Logs:
 
     def __init__(self):
-        self.filepath: str = "/tmp/.bimctl.log"
+        self.filepath: str = "/tmp/bimctl.log"
         self.set_full_access_to_log_file(self.filepath, 0o777)
 
     def set_full_access_to_log_file(self, filepath, mode):
@@ -56,42 +45,3 @@ class Logs:
         except Exception as err:
             print(f"An error occurred: {err}")
             sys.exit()
-
-
-    # Temporary not in use. Require to finish setup
-    # def set_full_access_to_logs(self, path, mode):
-    #     """
-    #     Creates a folder if it doesn't exist and sets its permissions and the
-    #     permissions of its contents to 777.
-    #     Need to make log folder accessible for all users to escape errors at launch.
-
-    #     Args:
-    #         folder_path (str): The path to the folder.
-    #     """
-    #     try:
-    #         os.mkdir(path)
-    #     except FileExistsError:
-    #         pass
-    #     except PermissionError:
-    #         print(f"Permission denied: Unable to create '{path}'.")
-    #         sys.exit()
-    #     except Exception as e:
-    #         print(f"An error occurred: {err}")
-    #         sys.exit()
-    #     if platform.system() == 'Windows':
-    #         return
-    #     try:
-    #         # Traverse the directory tree starting from 'path' to top
-    #         for root, dirs, files in os.walk(path, topdown=False):
-
-    #             # Iterate over the directories in the 'root' directory
-    #             for dir in [os.path.join(root, d) for d in dirs]:
-    #                 os.chmod(dir, mode)
-
-    #             # Iterate over the files in the 'root' directory
-    #             for file in [os.path.join(root, f) for f in files]:
-    #                 os.chmod(file, mode)
-    #     except OSError as err:
-    #         print(f"Error: {err}")
-    #         sys.exit()  
-
