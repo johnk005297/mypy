@@ -11,7 +11,7 @@ import vsphere
 import time
 import confluence
 import platform
-import rlcompleter
+# import rlcompleter
 import interactive_menu
 import readline
 from parser import Parser
@@ -34,8 +34,8 @@ if platform.system() == 'Windows':
     import pyreadline3
 else:
     import readline
-    readline.set_completer(rlcompleter.Completer().complete)
-    readline.parse_and_bind('tab: complete')
+    # readline.set_completer(rlcompleter.Completer().complete)
+    # readline.parse_and_bind('tab: complete')
 
 
 if __name__ == '__main__':

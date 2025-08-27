@@ -1,20 +1,21 @@
 import logging
-logger = logging.getLogger(__name__)
 import yaml
 import base64
 import requests
+import platform
 import os
 from colorama import init, Fore
 init(autoreset=True)
 from rich.console import Console
 from rich.table import Table
 
+logger = logging.getLogger(__name__)
 
 class Git:
 
-    _headers = {"PRIVATE-TOKEN": os.getenv('GITLAB_TOKEN')}
     _url = "https://git.bimeister.io/api/v4"
-    _error_msg = "Unexpected error. Check logs!"
+    log_file: str = "/tmp/bimutils.log" if platform.system() == "Linux" else ".bimutils.log"
+    _error_msg = f"Unexpected error. Check logs: {log_file}"
 
     def __init__(self):
         self.tag = Tag
@@ -25,6 +26,14 @@ class Git:
         self.tree = Tree
         self.product_collection = Product_collection_file
         self.chart = Chart
+        self.headers = self.get_headers()
+
+    @classmethod
+    def get_headers(cls) -> dict:
+        """ Function returns header in structure Gitlab expects. """
+        headers = {"PRIVATE-TOKEN": os.getenv("GITLAB_TOKEN")}
+        return headers
+
 
     def display_table_with_branches_commits_tags_jobs(self, data) -> Table:
         """ Create table, fill with data(branches, commits, tags, helm chart job status, FT job status) and print it out. """
@@ -49,7 +58,7 @@ class Project(Git):
 
         __url = f"{self._url}/search?scope=projects&search={project}&per_page=100"
         try:
-            response = requests.get(url=__url, headers=self._headers, verify=False)
+            response = requests.get(url=__url, headers=self.headers, verify=False)
             response.raise_for_status()
             data = response.json()
         except requests.exceptions.ConnectionError as err:
@@ -91,7 +100,7 @@ class Tag(Git):
         for x in search:
             try:
                 payload = {'search': x}
-                response = requests.get(url=__url, headers=self._headers, params=payload, verify=False)
+                response = requests.get(url=__url, headers=self.headers, params=payload, verify=False)
                 response.raise_for_status()
                 data = response.json()
             except requests.exceptions.RequestException as err:
@@ -126,7 +135,7 @@ class Branch(Git):
         for x in search:
             url = f"{self._url}/projects/{project_id}/repository/branches?regex=\D{x}"
             try:
-                response = requests.get(url=url, headers=self._headers)
+                response = requests.get(url=url, headers=self.headers)
                 response.raise_for_status()
             except requests.exceptions.RequestException as err:
                 print(self._error_msg)
@@ -170,13 +179,13 @@ class Branch(Git):
 
         url = f"{self._url}/projects/{project_id}/repository/commits/{commit}/refs?type=branch&per_page=100"
         try:
-            response = requests.get(url=url, headers=self._headers, verify=False)
+            response = requests.get(url=url, headers=self.headers, verify=False)
             response.raise_for_status()
             branches: list = [branch['name'] for branch in response.json()]
             next_page = response.headers['X-Next-Page']
             while next_page:
                 url_next_page = f"https://git.bimeister.io/api/v4/projects/{project_id}/repository/commits/{commit}/refs?id={project_id}&page={next_page}&per_page=100&sha={commit}&type=branch"
-                response = requests.get(url=url_next_page, headers=self._headers, verify=False)
+                response = requests.get(url=url_next_page, headers=self.headers, verify=False)
                 for branch in response.json():
                     branches.append(branch['name'])
                 next_page = response.headers['X-Next-Page']
@@ -200,7 +209,7 @@ class Job(Git):
             return []
         url = f"{self._url}/projects/{project_id}/pipelines/{pipeline_id}/jobs"
         try:
-            response = requests.get(url=url, headers=self._headers, verify=False)
+            response = requests.get(url=url, headers=self.headers, verify=False)
             response.raise_for_status()
             jobs = response.json()
         except requests.exceptions.RequestException as err:
@@ -262,7 +271,7 @@ class Job(Git):
         for id in job_id:
             url = f"{self._url}/projects/{project_id}/jobs/{id}/play"
             try:
-                response = requests.post(url=url, headers=self._headers, verify=False)
+                response = requests.post(url=url, headers=self.headers, verify=False)
                 response.raise_for_status()
                 data = response.json()
                 if response.status_code == 200:
@@ -296,7 +305,7 @@ class Pipeline(Git):
                     "order_by": "updated_at",
                     "status": "success"
                         }
-                response = requests.get(url=url, headers=self._headers, params=payload, verify=False)
+                response = requests.get(url=url, headers=self.headers, params=payload, verify=False)
                 response.raise_for_status()
                 for pipeline in response.json():
                     pipelines.append(pipeline)
@@ -316,15 +325,16 @@ class Tree(Git):
 
         url = f"{self._url}/projects/{project_id}/repository/tree?ref={branch_name}"
         try:
-            response = requests.get(url=url, headers=self._headers)
+            response = requests.get(url=url, headers=self.headers)
             response.raise_for_status()
             data = response.json()
         except requests.exceptions.RequestException as err:
             logger.error(err)
-            print(self._error_msg)
+            
             return False
         except Exception as err:
             logger.error(err)
+            print(err)
             print(self._error_msg)
             return False
         for x in data:
@@ -338,7 +348,7 @@ class Product_collection_file(Git):
 
         url = f"{self._url}/projects/{project_id}/repository/files/product-collections%2Eyaml?ref={commit}"
         try:
-            response = requests.get(url=url, headers=self._headers)
+            response = requests.get(url=url, headers=self.headers)
             response.raise_for_status()
         except requests.exceptions.HTTPError as err:
             print(self._error_msg)
@@ -470,7 +480,7 @@ class Product_collection_file(Git):
     #     for x in search:
     #         url = f"{self._url}/projects/{project_id}/repository/branches?regex=\D{x}"
     #         try:
-    #             response = requests.get(url=url, headers=self._headers)
+    #             response = requests.get(url=url, headers=self.headers)
     #             response.raise_for_status()
     #         except requests.exceptions.RequestException as err:
     #             print(self._error_msg)

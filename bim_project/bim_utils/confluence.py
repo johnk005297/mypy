@@ -21,7 +21,6 @@ class Conf:
     project_name_yamal: str = 'novatek-yamal'
     project_name_crea_cod: str = 'crea-cod'
 
-
     def get_confluence_page(self) -> dict:
         """ Get confluence page with needed table information. """
 
@@ -182,13 +181,13 @@ class Conf:
                         file.write("{0}: {1}\n".format(env, " ".join(map(str, ft))))
                 elif save_pretty:
                     for env in project_data:
-                        file.write(env + ':')
+                        file.write(f"[{env}]")
                         env_ft_list = list(filter(None, project_data[env]))
                         if not env_ft_list:
                             file.write(' None\n')
                             continue
                         for ft in env_ft_list:
-                            file.write(f"\n {ft}")
+                            file.write(f"\n - {ft}")
                         file.write('\n\n')
             sep = "\\" if platform.system == "Windows" else "/"
             print(f"File saved: {os.getcwd()}{sep}{filename}")
