@@ -134,12 +134,7 @@ class License:
                     "username": username,
                     "password": password
                   }
-        try:
-            response = requests.get(url=url_get_licenses, data=payload, headers=headers, verify=False)
-            response.raise_for_status()
-        except self.possible_request_errors as err:
-            logger.error(f"{err}\n{response.text}")
-
+        response = tools.make_request('GET', url_get_licenses, data=payload, headers=headers, return_err_response=True)
         return response.json()
 
     def get_license_status(self, url, token, username, password):
@@ -171,7 +166,7 @@ class License:
             'Authorization': f"Bearer {token}"
         }
         url: str = url + '/' + self.__api_License_serverId
-        response = tools.make_request('GET', url=url, module=__name__, return_response=True, headers=headers, verify=False)
+        response = tools.make_request('GET', url=url, return_err_response=True, headers=headers, verify=False)
         message: str = "Current user does not have sufficient privileges."
         return (True, response.text) if response and response.status_code == 200 else (False, message)
 

@@ -116,6 +116,7 @@ class DB:
                     print(f"No semicolon(;) symbol was found in {os.path.basename(filepath)}\nCheck query syntax and try again!")
                     sys.exit()
         end = perf_counter()
+        logger.info(filepath)
         elapsed_time = end - start
         if elapsed_time < 1:
             print(f"Elapsed time: {elapsed_time:4.3f} s")

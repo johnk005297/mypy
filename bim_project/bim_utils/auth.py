@@ -1,6 +1,7 @@
 import logging
 import sys
 import requests
+from mlogger import Logs
 from tools import Tools
 from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning
@@ -8,6 +9,7 @@ from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
+logs = Logs()
 
 
 class Auth:
@@ -68,7 +70,7 @@ class Auth:
             try:
                 response = requests.head(url=url, verify=False, allow_redirects=False, timeout=2)
                 if response.status_code == 200:
-                    logger.info(f"{url}: {response.status_code}")
+                    logger.info(f"{url} {response.status_code}")
                     self.url = url
                     return url
                 # fix issues if the redirect is set up
@@ -109,24 +111,32 @@ class Auth:
                 continue
             continue
 
-    def get_providerId(self, url):
+    def get_providerId(self, url, interactive=True):
         """ Function checks if Bimeister has more than one provider. If so, user prompt will appear to choose from the list.
             A single provider Id will be returned.
         """
 
         tools = Tools()
-        response = tools.make_request('GET', url=f"{url}/{self.__api_Providers}", module=__name__, verify=False, allow_redirects=False,
-                                timeout=2)
+        response = tools.make_request(
+                                'GET'
+                                ,url=f"{url}/{self.__api_Providers}"
+                                ,verify=False, allow_redirects=False
+                                ,timeout=2
+                                )
         if not response:
             return response
+        logger.info(f"GET {url} {response.status_code}")
         if response.status_code == 200:
             providers: list = response.json()
         elif response.status_code != 200:
-            print("Couldn't establish connection. Check the logs!")
+            print(f"Error. Check logs: {logs.filepath}")
             return False
         if len(providers) == 1:
             self.providerId = providers[0]['id']
             return self.providerId
+        elif len(providers) > 1 and not interactive:
+            providers: list = [{dct['name']: dct['id']} for dct in providers]
+            return providers
         else:
             print('    Choose authorization type:')
             for num, obj in enumerate(providers, 1):
@@ -160,7 +170,7 @@ class Auth:
             self.username = username
             self.password = password
 
-    def get_user_access_token(self, url, username, password, providerId):
+    def get_user_access_token(self, url, username, password, providerId) -> str:
         """ Function sends login request.
             Success response returns a .json with 'access_token'.
         """
@@ -171,7 +181,12 @@ class Auth:
             "password": password,
             "providerId": providerId
         }
-        response = tools.make_request('POST', url=f"{url}/{self.__api_Auth_Login}", module=__name__, return_response=True, json=payload, headers=self.headers, verify=False)
+        response = tools.make_request(
+                                      'POST'
+                                      ,url=f"{url}/{self.__api_Auth_Login}"
+                                      ,return_err_response=True, json=payload
+                                      ,headers=self.headers, verify=False
+                                      )
         data = response.json()
         if response.status_code == 401:
             if data.get('type') and data.get('type') == 'TransitPasswordExpiredBimException':

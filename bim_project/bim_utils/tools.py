@@ -1,5 +1,6 @@
 # Tool modules to work with folders and files
 import logging
+import inspect
 import os
 import socket
 import base64
@@ -237,7 +238,7 @@ class Tools:
     def is_url_available(url):
         """ Check if URL is available. """
 
-        response = Tools.make_request('HEAD', url, module=__name__, allow_redirects=True)
+        response = Tools.make_request('HEAD', url, allow_redirects=True)
         if response and response.status_code in range(200, 299):
             return response.url.rstrip('/')
         else:
@@ -264,7 +265,7 @@ class Tools:
         return username, password
 
     @staticmethod
-    def make_request(method, url, module=__name__, print_err=False, return_response=False, **kwargs):
+    def make_request(method, url, print_err=False, return_err_response=False, **kwargs):
         """
         A wrapper function to make http requests with centralized exception handling.
         Args:
@@ -275,12 +276,13 @@ class Tools:
 
         Returns:
             requests.Response: The response object from the HTTP request.
-        
+
         Raises:
             ValueError: If an unsupported HTTP method is provided.
         """
         if not url.startswith('http'):
             url = 'https://' + url
+        caller_func = inspect.currentframe().f_back.f_code.co_name
         try:
             if method == 'GET':
                 response = requests.get(url, **kwargs)
@@ -297,27 +299,28 @@ class Tools:
             else:
                 raise ValueError(f"Unsupported HTTP method: {method}")
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+            logger.info(f"{caller_func} {response.status_code} {method} {url}")
             return response
-        except requests.exceptions.HTTPError as errh:
-            logger.error(errh)
-            if print_err: print(f"HTTP Error: {errh}")
-            return response if return_response else None
-        except requests.exceptions.ConnectionError as errc:
-            logger.error(errc)
-            if print_err: print(f"Connection Error: {errc}")
-            return response if return_response else None
-        except requests.exceptions.Timeout as errt:
-            logger.error(errt)
-            if print_err: print(f"Timeout Error: {errt}")
-            return response if return_response else None
-        except requests.exceptions.MissingSchema as errm:
-            logger.error(errm)
-            if print_err: print(f"MissingSchema Error: {errm}")
-            return response if return_response else None
+        except requests.exceptions.HTTPError as err:
+            logger.error(f"{caller_func} {err}")
+            if print_err: print(f"HTTP Error: {err}")
+            return response if return_err_response else None
+        except requests.exceptions.ConnectionError as err:
+            logger.error(f"{caller_func} {err}")
+            if print_err: print(f"Connection Error: {err}")
+            return response if return_err_response else None
+        except requests.exceptions.Timeout as err:
+            logger.error(f"{caller_func} {err}")
+            if print_err: print(f"Timeout Error: {err}")
+            return response if return_err_response else None
+        except requests.exceptions.MissingSchema as err:
+            logger.error(f"{caller_func} {err}")
+            if print_err: print(f"MissingSchema Error: {err}")
+            return response if return_err_response else None
         except requests.exceptions.RequestException as err:
-            logger.error(err)
+            logger.error(f"{caller_func} {err}")
             if print_err: print(f"An unexpected Requests error occurred: {err}")
-            return response if return_response else None
+            return response if return_err_response else None
 
 
 class Bimeister:

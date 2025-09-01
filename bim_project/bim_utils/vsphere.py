@@ -12,6 +12,7 @@ from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 from rich.tree import Tree
 from rich import print as rprint
+from tools import Tools
 
 
 logger = logging.getLogger(__name__)
@@ -174,7 +175,7 @@ class Vsphere:
             else:
                 continue
     
-    def start_vm(self, headers, moId, name):
+    def start_vm(self, headers, moId, name, print_msg=True):
         """ Start provided VM in vSphere. """
 
         url: str = f"{self.url}/rest/vcenter/vm/{moId}/power/start"
@@ -185,8 +186,9 @@ class Vsphere:
             response = requests.post(url=url, headers=headers, verify=False)
             if response.status_code != 200:
                 logger.error(f"{name}: {response.text}")
-                return False            
-            print(f"Power On virtual machine: {name}")
+                return False
+            if print_msg:
+                print(f"[bold magenta]Power On VM: {name}")
         except requests.exceptions.RequestException as err:
             logger.error(err)
             print(f"{name}: Error. Status code: {response.status_code}")
@@ -197,7 +199,7 @@ class Vsphere:
             return False
         return True
 
-    def stop_vm(self, headers, moId, name):
+    def stop_vm(self, headers, moId, name, print_msg=True):
         """ Stop provided VM in vSphere. """
 
         url_shutdown: str = f"{self.url}/rest/vcenter/vm/{moId}/guest/power?action=shutdown"
@@ -212,9 +214,11 @@ class Vsphere:
                 if response.status_code not in (200, 204):
                     return False
                 else:
-                    print(f"Power Off virtual machine: {name}")
+                    if print_msg:
+                        print(f"[bold magenta]Power Off virtual machine: {name}")
                     return True
-            print(f"Initiate guest OS shutdown: {name}")
+            if print_msg:
+                print(f"[bold magenta]Initiate guest OS shutdown: {name}")
         except requests.exceptions.RequestException as err:
             logger.error(err)
             print(f"{name}: Error. Status code: {response.status_code}")
@@ -297,7 +301,7 @@ class Vsphere:
                 tree.add(snap['snapName'])
         rprint(tree)
 
-    def revert_to_snapshot(self, headers, moId, vm_name):
+    def revert_to_snapshot(self, headers, moId, vm_name, print_msg=True):
         """ Revert chosen VM(s) to a given snapshot. """
 
         url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachineSnapshot/{moId}/RevertToSnapshot_Task"
@@ -308,6 +312,8 @@ class Vsphere:
             response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
             if response.status_code == 200:
                 msg: str = f"Revert to snapshot VM: {vm_name}"
+                if print_msg:
+                    print(msg)
                 logger.info(msg)
                 return True
             elif response.status_code == 500:
@@ -323,7 +329,7 @@ class Vsphere:
             print("Error. Check the log!")
             return False            
 
-    def remove_vm_snapshot(self, headers, moId):
+    def remove_vm_snapshot(self, headers, moId, print_msg=True):
         """ Remove snapshots for a given VM. """
 
         url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachineSnapshot/{moId}/RemoveSnapshot_Task"
@@ -333,6 +339,8 @@ class Vsphere:
                         }
             response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
             if response.status_code in (200, 204):
+                if print_msg:
+                    print(f"Remove snapshot: {moId}")
                 logger.info(f"Remove snapshot: {moId}")
                 return True
         except requests.exceptions.HTTPError as err:
@@ -343,4 +351,23 @@ class Vsphere:
             logger.error(err)
             print("Error. Check the log!")
             return False
+    
+    def get_tasks(self, headers):
+        """ Function not in use, because of that piece of shit vSphere API documentation.
+
+        """
+        import json
+        tools = Tools()
+        # url: str = f"{self.url}/api/cis/tasks?action=list"
+        url: str = f"{self.url}/rest/cis/tasks"
+        headers.update({'Content-type': 'application/json'})
+        payload = {
+            "filter_spec": {
+                "tasks": ['task-1360811'],
+                "services": ["com.vmware.vcenter.VM"]
+            }
+        }
+        response = tools.make_request('GET', url, return_err_response=True, data=json.dumps(payload), verify=False, headers=headers)
+        print(response.status_code)
+        print(response.json())
 

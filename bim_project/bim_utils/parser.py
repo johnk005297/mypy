@@ -138,6 +138,13 @@ class Parser():
         ft_save_group.add_argument('--save', required=False, action='store_true', help='Save output in file')
         ft_save_group.add_argument('--save-pretty', required=False, action='store_true', help='Save output in file more human readable')
 
+        # create parser for user access token
+        token = subparser.add_parser('token', help='Get user access token for a given URL')
+        token.add_argument('--url', required=True, help='URL of the stand whom access token is required')
+        token.add_argument('-u', '--user', required=True, help='Username with access to Bimeister')
+        token.add_argument('-p', '--password', required=True, help='User\'s password with access to Bimeister')
+        token.add_argument('-pid', '--providerId', required=False, help='Pass providerId in cases where more the one providers had been set up')
+
         # create parser for passwork
         # passwork = subparser.add_parser('pk', help='Work with passwork vault')
         # passwork.add_argument('--url', required=False, help='')
@@ -148,7 +155,6 @@ class Parser():
         # mdm_connector_group = mdm_connector_parser.add_mutually_exclusive_group(required=True)
         # mdm_connector_group.add_argument('--import-file', help='Point .json config file for MDM autosetup for import')
         # mdm_connector_group.add_argument('--export-file', action='store_true', help='Export .json config file for MDM autosetup')
-
         return parser
     
     ## NOT READY ##
