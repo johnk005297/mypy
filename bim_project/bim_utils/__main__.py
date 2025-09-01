@@ -185,26 +185,10 @@ if __name__ == '__main__':
                 if confirm not in ('y', 'yes'):
                     sys.exit("Abort procedure!")
                 for value in vm_array.values():
-                    v.stop_vm(headers, value["moId"], value["name"], print_msg=False)
-
+                    v.stop_vm(headers, value["moId"], value["name"])
                 console = Console()
                 snap_name = args.name.strip()
-                with console.status("[bold blue]Shutting down guest OS", spinner="earth") as status:
-                    for value in vm_array.values():
-                        count = 0
-                        while count < 350:
-                            count += 1
-                            power_status = v.get_vm_power_state(headers, value["moId"])
-                            status.update(f"[bold blue]Shutting down guest OS: {value['name']}")
-                            time.sleep(1)
-                            if power_status != "POWERED_OFF":
-                                continue
-                            elif power_status == "POWERED_OFF":
-                                console.print(f"[bold magenta]Shutdown guest OS: {value['name']}[/bold magenta]  [green]✅[/green]", overflow="ellipsis")
-                                break
-                        else:
-                            print(f"Couldn't stop {value['name']} within 5 minutes. Check VM status in vCenter. Exit!")
-                            break
+                sys.exit()
                 if args.vsphere_command == 'take-snap':
                     with console.status("[bold magenta]Create snapshot", spinner="dots") as status:
                         for value in vm_array.values():
@@ -214,7 +198,6 @@ if __name__ == '__main__':
                                 console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
                             else:
                                 console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
-
                 elif args.vsphere_command == 'revert-snap':
                     with console.status("[bold magenta]Revert snapshot", spinner="dots") as status:
                         for value in vm_array.values():
@@ -223,7 +206,7 @@ if __name__ == '__main__':
                             for snap in snapshots.values():
                                 if snap['snapName'].strip() == snap_name:
                                     is_snap_exists = True
-                                    revert_snap_status = v.revert_to_snapshot(headers, snap['snapId'], value['name'], print_msg=False)
+                                    revert_snap_status = v.revert_to_snapshot(headers, snap['snapId'], value['name'])
                                     time.sleep(1)
                                     if revert_snap_status:
                                         console.print(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
@@ -232,7 +215,6 @@ if __name__ == '__main__':
                                     break
                             if not is_snap_exists:
                                 console.print(f"[red]Incorrect snapshot name for VM: {value['name']}[/red]")
-
                 elif args.vsphere_command == 'remove-snap':
                     with console.status("[bold magenta]Remove snapshot", spinner="dots") as status:
                         for value in vm_array.values():
@@ -241,7 +223,7 @@ if __name__ == '__main__':
                             for snap in snapshots.values():
                                 if snap['snapName'].strip() == snap_name:
                                     is_snap_exists = True
-                                    remove_snap_status = v.remove_vm_snapshot(headers, snap['snapId'], print_msg=False)
+                                    remove_snap_status = v.remove_vm_snapshot(headers, snap['snapId'])
                                     time.sleep(1)
                                     if remove_snap_status:
                                         console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
@@ -250,12 +232,11 @@ if __name__ == '__main__':
                                     break
                             if not is_snap_exists:
                                 console.print(f"[red]Incorrect snapshot name for VM: {value['name']}[/red]")
-
                 # Restoring power state
                 for value in vm_array.values():
                     with console.status(f"[bold blue]Starting VM: {value['name']}", spinner="dots") as status:
                         if value["power_state"] == "POWERED_ON":
-                            v.start_vm(headers, value["moId"], value["name"], print_msg=False)
+                            v.start_vm(headers, value["moId"], value["name"])
                         else: 
                             continue
                         count = 0
@@ -272,6 +253,7 @@ if __name__ == '__main__':
                         else:
                             print(f"Couldn't start {value['name']} within 5 minutes. Check VM status in vCenter!")
                             break
+                print()
 
         elif args.command == 'mdm':
             mdm = import_data.Mdmconnector()
