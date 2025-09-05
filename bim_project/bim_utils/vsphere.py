@@ -16,9 +16,8 @@ from rich import print as rprint
 from tools import Tools
 from mlogger import Logs
 
-
-logger = logging.getLogger(__name__)
 console = Console()
+logger = logging.getLogger(__name__)
 tools = Tools()
 logs = Logs()
 
@@ -188,11 +187,11 @@ class Vsphere:
         """ Start provided VM in vSphere. """
 
         url: str = f"{self.url}/rest/vcenter/vm/{moId}/power/start"
-        power_on_msg: str = f"[bold magenta]Power On VM: {name}[/bold magenta]  [green]✅[/green]"
+        power_on_msg: str = f"[bold magenta]Power On VM: {name}[/bold magenta]"
 
         with console.status(power_on_msg, spinner="earth") as status:
             if self.get_vm_power_state(headers, moId) == "POWERED_ON":
-                console.print(power_on_msg, overflow="ellipsis")
+                console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
                 return True
             response = tools.make_request('POST', url, headers=headers, verify=False, return_err_response=True)
             if response.status_code not in (200, 204):
@@ -202,10 +201,10 @@ class Vsphere:
             while count < 350:
                 count += 1
                 power_status = self.get_vm_power_state(headers, moId)
-                status.update(power_on_msg)
+                status.update(power_on_msg + "  [green]✅[/green]")
                 time.sleep(1)
                 if power_status == "POWERED_ON":
-                    console.print(power_on_msg, overflow="ellipsis")
+                    console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
                     return True
                 elif power_status != "POWERED_ON":
                     continue
@@ -235,7 +234,7 @@ class Vsphere:
                 elif response.status_code in (200, 204):
                     power_off = True
             count = 0
-            while count < 350:
+            while count < 650:
                 count += 1
                 power_status = self.get_vm_power_state(headers, moId)
                 status.update(shutting_down_msg)
@@ -261,22 +260,14 @@ class Vsphere:
                     "memory": False,
                     "name": snap_name
                     }
-        data = json.dumps(payload)
-        try:        
-            response = requests.post(url=url, data=data, headers=headers, verify=False)
-            if response.status_code == 200:
-                data = response.json()
-                logger.info(f"Created snapshot for VM: {vm_name}")
-                logger.debug(data)
-                return True
-            elif str(response.status_code).startswith('5'):
-                logger.debug(response.text)
-                return False
-        except requests.exceptions.HTTPError:
-            logger.error(err)
+        response = tools.make_request('POST', url, headers=headers, data=json.dumps(payload), verify=False, return_err_response=True)
+        if not response:
             return False
-        except Exception as err:
-            logger.error(err)
+        if response.status_code == 200:
+            logger.info(f"Created snapshot for VM: {vm_name}")
+            return True
+        else:
+            print(f"Error with {vm_name}. Check logs: {logs.filepath}")
             return False
     
     def get_vm_snapshots(self, headers, moId, vm_name):
