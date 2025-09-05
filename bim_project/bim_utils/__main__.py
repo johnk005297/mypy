@@ -188,12 +188,12 @@ if __name__ == '__main__':
                 if confirm not in ('y', 'yes'):
                     sys.exit("Abort procedure!")
 
-                console.rule(title="Shutdown guest OS virtual machine")
+                console.rule(title="Shutdown guest OS")
                 for value in vm_array.values():
                     v.stop_vm(headers, value["moId"], value["name"])
                 snap_name = args.name.strip()
                 if args.vsphere_command == 'take-snap':
-                    console.rule(title="Create virtual machine snaphost")
+                    console.rule(title="Create snaphost")
                     for value in vm_array.values():
                         with console.status(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]", spinner="earth") as status:
                             take_snap_status: bool = v.take_snapshot(headers, value['moId'], value['name'], snap_name=snap_name, description=args.desc)

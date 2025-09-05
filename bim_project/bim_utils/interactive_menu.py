@@ -2,6 +2,7 @@ import os
 import app_menu
 import auth
 import user
+import argparse
 import license
 import export_data
 import import_data
@@ -313,13 +314,18 @@ def launch_menu():
                     Abac.print_help('main-msg')
                     continue
                 parser = Abac.get_parser()
-                args = parser.parse_args(user_command[2:])
+                try:
+                    args = parser.parse_args(user_command[2:])
+                except argparse.ArgumentError:
+                    continue
+                except SystemExit:
+                    continue
                 if args.command == 'data-sync':
                     if args.help:
                         Abac.print_help('data-sync-msg')
                         continue
                     data: dict = Abac.collect_abac_data(
-                                                         url_permission=f"{url}/api/data-synchronizer/AbacConfiguration/UploadPermissionObjectsConfiguration"
+                                                        url_permission=f"{url}/api/data-synchronizer/AbacConfiguration/UploadPermissionObjectsConfiguration"
                                                         ,url_roles=f"{url}/api/data-synchronizer/AbacConfiguration/UploadRolesConfiguration"
                                                         ,url_roles_mapping=f"{url}/api/data-synchronizer/AbacConfiguration/UploadRolesMappingConfiguration"
                                                         ,url_common=f"{url}/api/data-synchronizer/AbacConfiguration/UploadCommonConfiguration"
@@ -334,7 +340,7 @@ def launch_menu():
                         Abac.print_help('maintenance-msg')
                         continue
                     data: dict = Abac.collect_abac_data(
-                                                         url_permission=f"{url}/api/maintenance-planning/AbacConfiguration/UploadPermissionObjectsConfiguration"
+                                                        url_permission=f"{url}/api/maintenance-planning/AbacConfiguration/UploadPermissionObjectsConfiguration"
                                                         ,url_roles=f"{url}/api/maintenance-planning/AbacConfiguration/UploadRolesConfiguration"
                                                         ,url_roles_mapping=f"{url}/api/maintenance-planning/AbacConfiguration/UploadRolesMappingConfiguration"
                                                         ,url_events=f"{url}/api/EnterpriseAssetManagementNotificationHub/upload-event-rules"
@@ -348,21 +354,23 @@ def launch_menu():
                     if args.help:
                         Abac.print_help('asset-msg')
                     data: dict = Abac.collect_abac_data(
-                                                         url_permission=f"{url}/api/asset-performance-management/AbacConfiguration/UploadPermissionObjectsConfiguration"
+                                                        url_permission=f"{url}/api/asset-performance-management/AbacConfiguration/UploadPermissionObjectsConfiguration"
                                                         ,url_roles=f"{url}/api/asset-performance-management/AbacConfiguration/UploadRolesConfiguration"
                                                         ,url_roles_mapping=f"{url}/api/asset-performance-management/AbacConfiguration/UploadRolesMappingConfiguration"
                                                         ,url_events=f"{url}/api/asset-performance-management/NotificationHub/upload-event-rules"
+                                                        ,url_common=f"{url}/api/asset-performance-management/AbacConfiguration/UploadCommonConfiguration"
                                                         ,permissionObjects_file=args.permission_objects
                                                         ,roles_file=args.roles
                                                         ,rolesMapping_file=args.roles_mapping
                                                         ,notification_file=args.events
+                                                        ,common_file=args.common
                                                         )
                     Abac.import_abac_and_events(token, data, 'asset-performance-management')
                 if args.command == 'wpm':
                     if args.help:
                         Abac.print_help('work-permits-msg')
                     data: dict = Abac.collect_abac_data(
-                                                         url_permission=f"{url}/api/work-permits-management/AbacConfiguration/UploadPermissionObjectsConfiguration"
+                                                        url_permission=f"{url}/api/work-permits-management/AbacConfiguration/UploadPermissionObjectsConfiguration"
                                                         ,url_roles=f"{url}/api/work-permits-management/AbacConfiguration/UploadRolesConfiguration"
                                                         ,url_roles_mapping=f"{url}/api/work-permits-management/AbacConfiguration/UploadRolesMappingConfiguration"
                                                         ,permissionObjects_file=args.permission_objects
@@ -374,7 +382,7 @@ def launch_menu():
                     if args.help:
                         Abac.print_help('fmeca-msg')
                     data: dict = Abac.collect_abac_data(
-                                                         url_permission=f"{url}/api/fmeca/AbacConfiguration/UploadPermissionObjectsConfiguration"
+                                                        url_permission=f"{url}/api/fmeca/AbacConfiguration/UploadPermissionObjectsConfiguration"
                                                         ,url_roles=f"{url}/api/fmeca/AbacConfiguration/UploadRolesConfiguration"
                                                         ,url_roles_mapping=f"{url}/api/fmeca/AbacConfiguration/UploadRolesMappingConfiguration"
                                                         ,permissionObjects_file=args.permission_objects
@@ -386,7 +394,7 @@ def launch_menu():
                     if args.help:
                         Abac.print_help('rca-msg')
                     data: dict = Abac.collect_abac_data(
-                                                         url_permission=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadPermissionObjectsConfiguration"
+                                                        url_permission=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadPermissionObjectsConfiguration"
                                                         ,url_roles=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadRolesConfiguration"
                                                         ,url_roles_mapping=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadRolesMappingConfiguration"
                                                         ,permissionObjects_file=args.permission_objects
@@ -398,7 +406,7 @@ def launch_menu():
                     if args.help:
                         Abac.print_help('rbi-msg')
                     data: dict = Abac.collect_abac_data(
-                                                         url_permission=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadPermissionObjectsConfiguration"
+                                                        url_permission=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadPermissionObjectsConfiguration"
                                                         ,url_roles=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadRolesConfiguration"
                                                         ,url_roles_mapping=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadRolesMappingConfiguration"
                                                         ,permissionObjects_file=args.permission_objects
@@ -410,7 +418,7 @@ def launch_menu():
                     if args.help:
                         Abac.print_help('rcm-msg')
                     data: dict = Abac.collect_abac_data(
-                                                         url_permission=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadPermissionObjectsConfiguration"
+                                                        url_permission=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadPermissionObjectsConfiguration"
                                                         ,url_roles=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadRolesConfiguration"
                                                         ,url_roles_mapping=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadRolesMappingConfiguration"
                                                         ,permissionObjects_file=args.permission_objects
@@ -422,7 +430,7 @@ def launch_menu():
                     if args.help:
                         Abac.print_help('rm-msg')
                     data: dict = Abac.collect_abac_data(
-                                                         url_permission=f"{url}/api/recommendation-management/AbacConfiguration/UploadPermissionObjectsConfiguration"
+                                                        url_permission=f"{url}/api/recommendation-management/AbacConfiguration/UploadPermissionObjectsConfiguration"
                                                         ,url_roles=f"{url}/api/recommendation-management/AbacConfiguration/UploadRolesConfiguration"
                                                         ,url_roles_mapping=f"{url}/api/recommendation-management/AbacConfiguration/UploadRolesMappingConfiguration"
                                                         ,permissionObjects_file=args.permission_objects
@@ -434,8 +442,8 @@ def launch_menu():
                     if args.help:
                         Abac.print_help('auth-msg')
                     data: dict = Abac.collect_abac_data(
-                                                          url_rules=f"{url}/api/abac/rules/import"
-                                                         ,auth_file=args.rules
+                                                        url_rules=f"{url}/api/abac/rules/import"
+                                                        ,auth_file=args.rules
                                                         )
                     Abac.import_abac_and_events(token, data, 'auth')
 
@@ -497,23 +505,3 @@ def launch_menu():
             # wildcard pattern if no cases before where matched
             case _:
                 print("Unknown command")
-
-
-# check username and password in Passwork vaults
-# p = Passwork()
-# t = p.token()
-# pw = p.passwords()
-# is_passwork_available = p.is_passwork_available()
-# if is_passwork_available:
-#     token = t.get_token()
-#     passwords: list = pw.search_passwords_by_url(args.url, token)
-# else:
-#     passwords = None
-# if not is_passwork_available or not passwords:
-#     username = input("Enter login(default, admin): ")
-#     password = getpass("Enter password(default, Qwerty12345!): ")
-#     username = username if username else args.user
-#     password = password if password else args.password
-# else:
-#     passwords_id: list = [x['id'] for x in passwords]
-#     creds = pw.get_credentials(passwords_id, token)

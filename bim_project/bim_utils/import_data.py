@@ -12,8 +12,11 @@ from tools import Tools
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
+from mlogger import Logs
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
+_logs = Logs()
+_tools = Tools()
 
 class Import_data:
 
@@ -49,7 +52,7 @@ class Import_data:
             ask_for_confirmation: bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
             return True if ask_for_confirmation == 'y' else False
         elif not server_info:
-            logger.error("Can't local server info ID in server_info file.")
+            _logger.error("Can't local server info ID in server_info file.")
             return False
         else:
             self.export_serverId = server_info.split()[1]
@@ -86,17 +89,17 @@ class Import_data:
                     time.sleep(0.1)
                     if response.status_code != 200:
                         print(f"  {count()}) ERROR {response.status_code} >>> {name}, id: {id}.")
-                        logger.error(response.text)
+                        _logger.error(response.text)
                         continue
 
-                    logger.debug(f'{response.request.method} "{name}: {id}" {response.status_code}')
+                    _logger.debug(f'{response.request.method} "{name}: {id}" {response.status_code}')
                     print(f"   {count()}) {name}.")   # display the name of the process in the output
 
             except FileNotFoundError:
                 print(f"Process not found: {name}")
                 continue
             except:
-                logger.error()
+                _logger.error()
                 continue
 
         return
@@ -111,12 +114,12 @@ class Import_data:
         try:
             post_request = requests.post(url=url_post_object_model, data=data.encode("utf-8"),  headers=headers_import, verify=False)
         except self.possible_request_errors as err:
-            logger.error(err)
+            _logger.error(err)
             print("Error with POST object model. Check the logs.")
             return False
 
         if post_request.status_code not in (200, 201, 204):
-            logger.error(f"\n{post_request.text}")
+            _logger.error(f"\n{post_request.text}")
             print("   - post object model:                  error ", post_request.status_code)
             return False
         else:
@@ -192,19 +195,19 @@ class Abac:
         for key,value in data.items():
             try:
                 with open(value['file'], mode='rb') as file:
-                    response = requests.post(url=value['url'], files={'file': file}, headers=headers, verify=False)
-                    if response.status_code == 200:
-                        logger.debug(f"{value['url']}: {response.status_code}")
+                    response = _tools.make_request('POST', value['url'], files={'file': file}, return_err_response=True, headers=headers, verify=False)
+                    if response.status_code in range(200, 205):
                         print(f"{svc_name}: {key} configuration uploaded successfully")
                     else:
-                        print(f"Error: {response.status_code} - {svc_name}. Check logs.")
-                        logger.error(response.text)
+                        print(f"Error: {response.status_code} - {svc_name}. Check logs: {_logs.filepath}")
             except FileNotFoundError as err:
-                logger.error(err)
+                _logger.error(err)
                 print(err)
+                return None
             except Exception as err:
-                logger.error(err)
-                print("Error! Check the log.")
+                _logger.error(err)
+                print(f"Error! Check logs: {_logs.filepath}")
+                return None
 
     def get_parser(self):
         """ Parse user's input arguments. """
@@ -212,64 +215,65 @@ class Abac:
         parser = argparse.ArgumentParser(description="Service with method for ABAC files upload to", exit_on_error=False, add_help=False)
         subparser = parser.add_subparsers(dest='command', required=False)
 
-        data_sync_parser = subparser.add_parser('data-sync',  help="Data-synchronizer-api service", add_help=False)
+        data_sync_parser = subparser.add_parser('data-sync',  help="Data-synchronizer-api service", add_help=False, exit_on_error=False)
         data_sync_parser.add_argument('-h', '--help', required=False, action="store_true")
-        data_sync_parser.add_argument('--permission-objects', required=False)
+        data_sync_parser.add_argument('-po', '--permission-objects', required=False)
         data_sync_parser.add_argument('--roles', required=False)
-        data_sync_parser.add_argument('--roles-mapping', required=False)
+        data_sync_parser.add_argument('-rmap', '--roles-mapping', required=False)
         data_sync_parser.add_argument('--common', required=False)
 
-        maintenance_parser = subparser.add_parser('maint', add_help=False)
+        maintenance_parser = subparser.add_parser('maint', add_help=False, exit_on_error=False)
         maintenance_parser.add_argument('-h', '--help', required=False, action="store_true")
-        maintenance_parser.add_argument('--permission-objects', required=False)
+        maintenance_parser.add_argument('-po', '--permission-objects', required=False)
         maintenance_parser.add_argument('--roles', required=False)
-        maintenance_parser.add_argument('--roles-mapping', required=False)
+        maintenance_parser.add_argument('-rmap', '--roles-mapping', required=False)
         maintenance_parser.add_argument('--events', required=False)
 
-        asset_parser = subparser.add_parser('asset', add_help=False)
+        asset_parser = subparser.add_parser('asset', add_help=False, exit_on_error=False)
         asset_parser.add_argument('-h', '--help', required=False, action="store_true")
-        asset_parser.add_argument('--permission-objects', required=False)
+        asset_parser.add_argument('-po', '--permission-objects', required=False)
         asset_parser.add_argument('--roles', required=False)
-        asset_parser.add_argument('--roles-mapping', required=False)
+        asset_parser.add_argument('-rmap', '--roles-mapping', required=False)
         asset_parser.add_argument('--events', required=False)
+        asset_parser.add_argument('--common', required=False)
 
-        work_permits_parser = subparser.add_parser('wpm', add_help=False)
+        work_permits_parser = subparser.add_parser('wpm', add_help=False, exit_on_error=False)
         work_permits_parser.add_argument('-h', '--help', required=False, action="store_true")
-        work_permits_parser.add_argument('--permission-objects', required=False)
+        work_permits_parser.add_argument('-po', '--permission-objects', required=False)
         work_permits_parser.add_argument('--roles', required=False)
-        work_permits_parser.add_argument('--roles-mapping', required=False)
+        work_permits_parser.add_argument('-rmap', '--roles-mapping', required=False)
 
-        fmeca_parser = subparser.add_parser('fmeca', add_help=False)
+        fmeca_parser = subparser.add_parser('fmeca', add_help=False, exit_on_error=False)
         fmeca_parser.add_argument('-h', '--help', required=False, action="store_true")
-        fmeca_parser.add_argument('--permission-objects', required=False)
+        fmeca_parser.add_argument('-po', '--permission-objects', required=False)
         fmeca_parser.add_argument('--roles', required=False)
-        fmeca_parser.add_argument('--roles-mapping', required=False)
+        fmeca_parser.add_argument('-rmap', '--roles-mapping', required=False)
 
-        rca_parser = subparser.add_parser('rca', add_help=False)
+        rca_parser = subparser.add_parser('rca', add_help=False, exit_on_error=False)
         rca_parser.add_argument('-h', '--help', required=False, action="store_true")
-        rca_parser.add_argument('--permission-objects', required=False)
+        rca_parser.add_argument('-po', '--permission-objects', required=False)
         rca_parser.add_argument('--roles', required=False)
-        rca_parser.add_argument('--roles-mapping', required=False)
+        rca_parser.add_argument('-rmap', '--roles-mapping', required=False)
 
-        rbi_parser = subparser.add_parser('rbi', add_help=False)
+        rbi_parser = subparser.add_parser('rbi', add_help=False, exit_on_error=False)
         rbi_parser.add_argument('-h', '--help', required=False, action="store_true")
-        rbi_parser.add_argument('--permission-objects', required=False)
+        rbi_parser.add_argument('-po', '--permission-objects', required=False)
         rbi_parser.add_argument('--roles', required=False)
-        rbi_parser.add_argument('--roles-mapping', required=False)
+        rbi_parser.add_argument('-rmap', '--roles-mapping', required=False)
 
-        rcm_parser = subparser.add_parser('rcm', add_help=False)
+        rcm_parser = subparser.add_parser('rcm', add_help=False, exit_on_error=False)
         rcm_parser.add_argument('-h', '--help', required=False, action="store_true")
-        rcm_parser.add_argument('--permission-objects', required=False)
+        rcm_parser.add_argument('-po', '--permission-objects', required=False)
         rcm_parser.add_argument('--roles', required=False)
-        rcm_parser.add_argument('--roles-mapping', required=False)
+        rcm_parser.add_argument('-rmap', '--roles-mapping', required=False)
 
-        rm_parser = subparser.add_parser('rm', add_help=False)
+        rm_parser = subparser.add_parser('rm', add_help=False, exit_on_error=False)
         rm_parser.add_argument('-h', '--help', required=False, action="store_true")
-        rm_parser.add_argument('--permission-objects', required=False)
+        rm_parser.add_argument('-po', '--permission-objects', required=False)
         rm_parser.add_argument('--roles', required=False)
-        rm_parser.add_argument('--roles-mapping', required=False)
+        rm_parser.add_argument('-rmap', '--roles-mapping', required=False)
 
-        auth_parser = subparser.add_parser('auth', add_help=False)
+        auth_parser = subparser.add_parser('auth', add_help=False, exit_on_error=False)
         auth_parser.add_argument('-h', '--help', required=False, action="store_true")
         auth_parser.add_argument('--rules', required=False)
 
@@ -296,23 +300,26 @@ options:
 """
         standart_options: str = """
 options:
-  --permission-objects  file with permission objects configuration
-  --roles-mapping       file with roles mapping configuration
-  --roles               file with roles configuration
+  -po FILE, --permission-objects FILE
+                        file with permission objects configuration
+  -rmap FILE, --roles-mapping FILE
+                        file with roles mapping configuration
+  --roles FILE          file with roles configuration
 """
 
         data_sync_msg: str = standart_options.rstrip() + """
-  --common              file with common configuration
+  --common FILE         file with common configuration
 """
         maintenance_msg: str = standart_options.rstrip() + """
-  --events              file with notifications configuration
+  --events FILE         file with notifications configuration
 """
         asset_msg: str = standart_options.rstrip() + """
-  --events              file with notifications configuration
+  --events FILE         file with notifications configuration
+  --common FILE         file with common configuration
 """
         auth_msg: str = """
 opions:
-  --rules               access rules file
+  --rules FILE          access rules file
 """
         work_permits_msg: str = standart_options
         fmeca_msg: str = standart_options
@@ -374,17 +381,17 @@ class Mdmconnector:
             with open(file, mode='rb') as f:
                 response = requests.patch(url=url, files={'file': f}, headers=headers, verify=False)
                 if response.status_code in (200, 204):
-                    logger.debug(f"{url}: {response.status_code}")
+                    _logger.debug(f"{url}: {response.status_code}")
                     print(f"{file} file uploaded successfully")
                 else:
-                    logger.error(response.text)
+                    _logger.error(response.text)
                     print(f"Error: {response.status_code}. Check logs!")
         except FileNotFoundError as err:
-            logger.error(err)
+            _logger.error(err)
             print(f"File not found: {file}")
             return False
         except Exception as err:
-            logger.error(err)
+            _logger.error(err)
             print("Error! Check the log.")
             return False
 
@@ -399,13 +406,13 @@ class Mdmconnector:
                 data = response.json()
                 with open("mdm-connector-setup.json", mode='w') as file:
                     file.write(json.dumps(data, indent=2))
-                logger.info(f"{url}: {response.status_code}")
+                _logger.info(f"{url}: {response.status_code}")
                 print(f"Config file 'mdm-connector-setup.json' uploaded successfully")
             else:
-                logger.error(response.text)
+                _logger.error(response.text)
                 print(f"Error: {response.status_code}. Check logs!")
         except Exception as err:
-            logger.error(err)
+            _logger.error(err)
             print("Error! Check the log.")
             return False
 
@@ -431,12 +438,12 @@ class RiskAssesment:
             response = requests.post(url=url, headers=headers, data=json.dumps(data))
             if response.status_code in (200, 204):
                 data = response.json()
-                logger.info(f"{response.text}: {response.status_code}")
+                _logger.info(f"{response.text}: {response.status_code}")
                 print("Template uploaded successfully!")
             else:
-                logger.error(response)
+                _logger.error(response)
                 print(f"Error: {response.status_code}. Check logs!")
         except Exception as err:
-            logger.error(err)
+            _logger.error(err)
             print("Error! Check the log.")
             return False
