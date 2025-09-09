@@ -29,6 +29,7 @@ class Git:
         self.product_collection = Product_collection_file
         self.chart = Chart
         self.headers = self.get_headers()
+        self.console = Console()
 
     @classmethod
     def get_headers(cls) -> dict:
@@ -49,8 +50,7 @@ class Git:
         table.add_column("Helm charts", justify="left", style="#875fff")
         for x in data:
             table.add_row(x[0], x[1], x[2], x[3])
-        console = Console()
-        console.print(table)
+        self.console.print(table)
 
 
 class Project(Git):
@@ -127,48 +127,50 @@ class Branch(Git):
     def search_branches_commits_tags_jobs(self, project_id, search: list):
         """ Search branches with their commits, tags and jobs. """
 
-        tags: dict = self.tag().search_tag(project_id, search)
         result_data: list = []
-        for x in search:
-            url = f"{self._url}/projects/{project_id}/repository/branches?regex=\D{x}"
-            try:
-                response = requests.get(url=url, headers=self.headers)
-                response.raise_for_status()
-            except requests.exceptions.RequestException as err:
-                print(f"Request exception. Check logs: {logs.filepath}")
-                logger.error(err)
-                return False
-            for branch in response.json():
-                branch_commit = branch['commit']['short_id']                                
-                if tags and tags.get(branch['commit']['short_id']):
-                    tag_name =  tags[branch['commit']['short_id']]['tag_name']
-                    del tags[branch['commit']['short_id']]
-                elif tags and tags.get(branch['commit']['parent_ids'][0][:8]):
-                    branch_commit = branch['commit']['parent_ids'][0][:8]
-                    tag_name = tags.get(branch['commit']['parent_ids'][0][:8])['tag_name']
-                    del tags[branch['commit']['parent_ids'][0][:8]]
-                else:
-                    tag_name = '-'
-                result_data.append([
-                    branch['name'],
-                    branch_commit,
-                    tag_name,
-                    'Ready' if self.chart().is_chart_available(project_id, commit=branch_commit) else 'Not ready'
-                                ])
-        if tags:
-            for tag in tags:
-                if len(tags[tag]['branch_name']) > 1:
-                    branch_name = tags[tag]['branch_name'][-1]
-                else:
-                    branch_name = tags[tag]['branch_name'][0]
-                result_data.append([branch_name,
-                                    tag,
-                                    tags[tag]['tag_name'],
-                                    'Ready' if self.chart().is_chart_available(project_id, commit=tag) else 'Not ready'
+        with self.console.status("[magenta]Searching tags...[/magenta]", spinner="earth") as status:
+            tags: dict = self.tag().search_tag(project_id, search)
+            status.update("[magenta]Searching branches...[/magenta]")
+            for x in search:
+                url = f"{self._url}/projects/{project_id}/repository/branches?regex=\D{x}"
+                try:
+                    response = requests.get(url=url, headers=self.headers)
+                    response.raise_for_status()
+                except requests.exceptions.RequestException as err:
+                    print(f"Request exception. Check logs: {logs.filepath}")
+                    logger.error(err)
+                    return False
+                for branch in response.json():
+                    branch_commit = branch['commit']['short_id']                                
+                    if tags and tags.get(branch_commit):
+                        tag_name =  tags[branch_commit]['tag_name']
+                        del tags[branch_commit]
+                    elif tags and tags.get(branch['commit']['parent_ids'][0][:8]):
+                        branch_commit = branch['commit']['parent_ids'][0][:8]
+                        tag_name = tags.get(branch['commit']['parent_ids'][0][:8])['tag_name']
+                        del tags[branch['commit']['parent_ids'][0][:8]]
+                    else:
+                        tag_name = '-'
+                    result_data.append([
+                        branch['name'],
+                        branch_commit,
+                        tag_name,
+                        'Ready' if self.chart().is_chart_available(project_id, commit=branch_commit) else 'Not ready'
                                     ])
+            if tags:
+                for tag in tags:
+                    if len(tags[tag]['branch_name']) > 1:
+                        branch_name = tags[tag]['branch_name'][-1]
+                    else:
+                        branch_name = tags[tag]['branch_name'][0]
+                    result_data.append([branch_name,
+                                        tag,
+                                        tags[tag]['tag_name'],
+                                        'Ready' if self.chart().is_chart_available(project_id, commit=tag) else 'Not ready'
+                                        ])
         if not result_data:
-            print("No branches were found!")
-            return False
+            self.console.print("No branches were found!")
+            return None
         return result_data
 
     def get_branch_name_using_commit(self, project_id, commit) -> list:
@@ -378,7 +380,14 @@ class Product_collection_file(Git):
                 project = list(data['collections'])[inp - 1]
             except ValueError:
                 print("Incorrect input.")
-                return False
+                return None
+            except IndexError:
+                print(f"Incorrect input. Should be between 1 and {len(list(data['collections']))}")
+                return None
+            except Exception as err:
+                logger.error(err)
+                print(f"Error: check logs: {logs.filepath}")
+                return None
         else:
             project = project_name
         modules_and_services: dict = data['modules']
@@ -454,8 +463,7 @@ class Product_collection_file(Git):
         db.extend([''] * (max_length - len(db)))
         for service, database in zip(svc, db):
             table.add_row(service, database)
-        console = Console()
-        console.print(table)
+        self.console.print(table)
 
 
     ### NOT IN USE ###

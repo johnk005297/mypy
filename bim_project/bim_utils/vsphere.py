@@ -218,7 +218,7 @@ class Vsphere:
         url_shutdown: str = f"{self.url}/rest/vcenter/vm/{moId}/guest/power?action=shutdown"
         url_stop: str = f"{self.url}/api/vcenter/vm/{moId}/power?action=stop"
         shutdown_msg: str = f"[bold magenta]Shutdown guest OS: {name}[bold magenta]  [green]✅[/green]"
-        shutting_down_msg: str = f"[bold magenta]Shutting down guest OS: {name}[/bold magenta]"
+        shutting_down_msg: str = f"[bold magenta]Shutdown guest OS: {name}[/bold magenta]"
 
         with console.status(shutting_down_msg, spinner="earth") as status:
             if self.get_vm_power_state(headers, moId) == "POWERED_OFF":

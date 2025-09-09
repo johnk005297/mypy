@@ -16,3 +16,4 @@ bim_project/bim_utils/.bimUtils_logs
 bim_project/bim_utils/ssh_connect.py
 bim_project/bim_utils/requirements.txt
 pyi_spec_file/
+bim_project/bim_utils/textual_menu.py

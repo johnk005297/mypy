@@ -18,9 +18,10 @@ disable_warnings(InsecureRequestWarning)
 from colorama import init, Fore
 init(autoreset=True)
 from tools import Tools
+from mlogger import Logs
 
-logger = logging.getLogger(__name__)
-tools = Tools()
+
+_logger = logging.getLogger(__name__)
 
 class License:
 
@@ -33,6 +34,8 @@ class License:
     possible_request_errors: tuple = auth.Auth().possible_request_errors
     privileges_granted: bool = False
     privileges_checked: bool = False
+    logs = Logs()
+    tools = Tools()
 
     def __init__(self):
         pass
@@ -72,7 +75,7 @@ class License:
         is_file_exists: bool = False if not is_file else os.path.isfile(f"{os.getcwd()}/{data}")
         if is_file and not is_file_exists:
             no_file_message: str = f"Error: No such file '{data}' in the current folder. Check for it."
-            logger.error(no_file_message)
+            _logger.error(no_file_message)
             print(no_file_message)
             return False
         elif is_file and is_file_exists:
@@ -83,10 +86,10 @@ class License:
                 try:
                     data = self.decode_base64(line)
                 except (binascii.Error, ValueError) as err:
-                    logger.error(err)
+                    _logger.error(err)
                     continue
                 except Exception as err:
-                    logger.error(err)
+                    _logger.error(err)
                     continue
                 for license in list_of_licenses:
                     if license.get('LicenseID') == data['LicenseID']:
@@ -100,11 +103,11 @@ class License:
                 list_of_licenses.append(self.decode_base64(data))
                 list_of_licenses[0]['base64_encoded_license'] = data
             except binascii.Error:
-                logger.error(f"Binascii error with decoding the string: {binascii.Error}")
+                _logger.error(f"Binascii error with decoding the string: {binascii.Error}")
                 print(err_message)
                 return False
             except ValueError:
-                logger.error(f"Value error with decoding the string: {ValueError}")
+                _logger.error(f"Value error with decoding the string: {ValueError}")
                 print(err_message)
                 return False
 
@@ -134,17 +137,24 @@ class License:
                     "username": username,
                     "password": password
                   }
-        response = tools.make_request('GET', url_get_licenses, data=payload, headers=headers, return_err_response=True)
-        return response.json()
+        response = self.tools.make_request('GET', url_get_licenses, data=payload, headers=headers, return_err_response=True)
+        if response.status_code in range(200, 205):
+            return response.json()
+        else:
+            _logger.error(response.text)
+            print(f"License error. Check logs: {self.logs.filepath}")
+            return False
 
     def get_license_status(self, url, token, username, password):
         """ Check if there is an active license. Return True/False. """
 
         licenses = self.get_licenses(url, token, username, password)
+        if not licenses:
+            return False
         current_date: str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
         for license in licenses:
             if license['activeUsers'] > license['activeUsersLimit'] and license['isActive'] and license['until'] > current_date:
-                logger.error(f"Users limit was exceeded! Active users: {license['activeUsers']}. Users limit: {license['activeUsersLimit']}")
+                _logger.error(f"Users limit was exceeded! Active users: {license['activeUsers']}. Users limit: {license['activeUsersLimit']}")
                 cprint(colored("Users limit is exceeded!".upper(), "red", attrs=["reverse", "blink"]))
                 return False
             elif license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000' and license['until'] > current_date:
@@ -166,7 +176,7 @@ class License:
             'Authorization': f"Bearer {token}"
         }
         url: str = url + '/' + self.__api_License_serverId
-        response = tools.make_request('GET', url=url, return_err_response=True, headers=headers, verify=False)
+        response = self.tools.make_request('GET', url=url, return_err_response=True, headers=headers, verify=False)
         message: str = "Current user does not have sufficient privileges."
         return (True, response.text) if response and response.status_code == 200 else (False, message)
 
@@ -174,6 +184,8 @@ class License:
         """ Display the list of licenses. """
 
         licenses: list = self.get_licenses(url, token, username, password)
+        if not licenses:
+            return None
         if len(licenses) > 10:
             licenses = licenses[:10]
         table = Table(show_lines=True)
@@ -201,7 +213,7 @@ class License:
         """   Delete active license, if there is one.   """    
 
         headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
-        logger.info("Delete license:")
+        _logger.info("Delete license:")
         licenses = self.get_licenses(url, token, username, password)
         active_licenses = dict()
         """ 
@@ -221,7 +233,7 @@ class License:
                     if response.status_code in (200, 201, 204):
                         print(Fore.GREEN + f"   - license '{lic}': {active_licenses.pop(lic)} has been deactivated!")
                     else:
-                        logger.error('%s', response.text)
+                        _logger.error('%s', response.text)
                         print(Fore.RED + f"   - license '{lic}' has not been deactivated! Check the logs.")
 
             if not active_licenses:
@@ -237,14 +249,14 @@ class License:
                     if response_data and response_data['type'] and response_data['type'] == 'ForbiddenException':
                         print(f"User '{username}' does not have sufficient privileges to do that!")
                     else:
-                        logger.error('%s', response.text)
+                        _logger.error('%s', response.text)
                         print(Fore.RED + f"   - license '{name}': {id} has not been deactivated! Check the logs.")
 
     def apply_license(self, url, token, username, password, license=None):
         """ Upload and activate license into Bimeister platform. """
 
         headers = {'accept': 'text/plain', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
-        logger.info("Posting a license:")
+        _logger.info("Posting a license:")
         # create a tuple to check if license is already presents in Bimeister
         licenses_id = tuple(dict.get('licenseID', False) for dict in self.get_licenses(url, token, username, password))
         new_license_data: list = self.read_license_token(data=license)
@@ -266,7 +278,7 @@ class License:
                     print(f"User '{username}' does not have sufficient privileges!")
                     return False
                 else:
-                    logger.error('%s', response.text)
+                    _logger.error('%s', response.text)
                     print(Fore.RED + f"\n   - new license has not been posted!")
                     return False
         return True
@@ -283,7 +295,7 @@ class License:
         #         self.delete_license(url, token, username, password)
         #         pass
         check_id: bool = False
-        logger.info("Activating a license:")
+        _logger.info("Activating a license:")
         for license in self.get_licenses(url, token, username, password):
             if license['licenseID'] == license_id:
                 check_id = True
@@ -302,14 +314,14 @@ class License:
             return True
         else:
             if response_data and response_data['type'] and response_data['type'] == 'ForbiddenException':
-                logger.error('%s', response.text)
+                _logger.error('%s', response.text)
                 print(f"\nUser '{username}' does not have sufficient privileges to do that!")
             elif response_data and response_data['type'] and response_data['type'] == 'BadRequestException' and response_data['message'] == 'ServerIdDoesntMatch':
-                logger.error('%s', response.text)
+                _logger.error('%s', response.text)
                 print("\n   ServerID doesn't match!")
                 print(err_message)
             else:
-                logger.error('%s', response.text)
+                _logger.error('%s', response.text)
                 print(err_message)
         return False
 
@@ -348,7 +360,7 @@ class Issue:
                 return access_token
             elif response.status_code == 400:
                 if isinstance(data, dict) and 'errors' in data.keys() and 'providerId' in data['errors'].keys() and data['errors']['providerId'][0].startswith('Error converting value'):
-                    logger.error(response.text)
+                    _logger.error(response.text)
                     print(f"Error: providerId {self._providerId} isn't correct!")
                     sys.exit()
                 else:
@@ -356,19 +368,19 @@ class Issue:
                     sys.exit()
             elif response.status_code == 500:
                 if isinstance(data, dict) and 'type' in data.keys() and data['type'] == 'UnauthorizedAccessClientException':
-                    logger.error(response.text)
+                    _logger.error(response.text)
                     print("Error: Authorization error. Check username or password for a license token!")
                     sys.exit()
                 else:
                     print(err_message)
                     sys.exit()
             else:
-                logger.error(response.text)
+                _logger.error(response.text)
                 print(err_message)
                 sys.exit()
         except requests.ConnectTimeout as err:
             print("Error: Check connection to host.")
-            logger.error(err)
+            _logger.error(err)
             sys.exit()
         except requests.exceptions.RequestException as err:
             print(err)
@@ -392,11 +404,11 @@ class Issue:
                 until_date += end_of_lic_time
                 expiration_date = until_date.strftime("%Y-%m-%dT%H:%M:%S%z")
         except ValueError as err:
-            logger.error(err)
+            _logger.error(err)
             print("Error: check date format")
             sys.exit()
         except Exception as err:
-            logger.error(err)
+            _logger.error(err)
             print("Error. Check the log.")
             sys.exit()
 
@@ -430,6 +442,6 @@ class Issue:
                 print(license)
             return license
         except Exception as err:
-            logger.error(err)
+            _logger.error(err)
             print("Error. Check the log!")
             sys.exit()

@@ -17,7 +17,6 @@ import readline
 from parser import Parser
 from passwork import *
 from git import Git
-from rich.panel import Panel
 from rich.console import Console
 from getpass import getpass
 from tools import Bimeister
@@ -203,7 +202,7 @@ if __name__ == '__main__':
                             else:
                                 console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
                 elif args.vsphere_command == 'revert-snap':
-                    console.rule(title="Revert virtual machine snaphost")
+                    console.rule(title="Revert virtual machine snapshot")
                     for value in vm_array.values():
                         with console.status(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]", spinner="earth") as status:
                             snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])

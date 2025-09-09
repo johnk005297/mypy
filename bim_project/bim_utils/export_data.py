@@ -114,7 +114,7 @@ class Export_data:
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         nodes_to_remove = [node for node in workflows if not workflows[node]]
         {workflows.__delitem__(node) for node in nodes_to_remove}
-        workflows_id = [id for node in workflows.values() for id in node]
+        workflows_id: list = [id for node in workflows.values() for id in node]
         self.remove_duplicate_workflows_id(workflows_id)
         with open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as file:
             for node in workflows:
