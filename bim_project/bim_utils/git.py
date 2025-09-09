@@ -3,8 +3,6 @@ import yaml
 import base64
 import requests
 import os
-from colorama import init, Fore
-init(autoreset=True)
 from rich.console import Console
 from rich.table import Table
 from tools import Tools
@@ -433,9 +431,9 @@ class Product_collection_file(Git):
             db_added = second_commit_db.difference(first_commit_db)
             print("\nDatabases:", end=" ")
             if db_removed:
-                print(Fore.RED + "\n  Removed: {0}".format(db_removed))
+                self.console.print(f"\n  [bold red]Removed: [bold]{db_removed}[/bold red]")
             if db_added:
-                print(Fore.GREEN + "{0}  Added: {1}".format("" if db_removed else "\n", db_added))
+                self.console.print("[bold green]{0}  Added: {1}[/bold green]".format("" if db_removed else "\n", db_added))
         else:
             print("\nDatabases: Total match!")
         if not first_commit_services == second_commit_services:
@@ -443,9 +441,9 @@ class Product_collection_file(Git):
             svc_added = second_commit_services.difference(first_commit_services)
             print("Services:", end=" ")
             if svc_removed:
-                print(Fore.RED + "\n  Removed: {0}".format(svc_removed))
+                self.console.print("\n  [bold red]Removed: {0}[/bold red]".format(svc_removed))
             if svc_added:
-                print(Fore.GREEN + "{0}  Added: {1}".format("" if svc_removed else "\n", svc_added))
+                self.console.print("[bold green]{0}  Added: {1}[/bold green]".format("" if svc_removed else "\n", svc_added))
         else:
             print("Services: Total match!")
 

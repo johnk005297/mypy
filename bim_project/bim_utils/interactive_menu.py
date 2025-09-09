@@ -7,8 +7,6 @@ import license
 import export_data
 import import_data
 import featureToggle
-import mdocker
-import mk8s
 from passwork import *
 from tools import *
 
@@ -22,8 +20,6 @@ def launch_menu():
     Import_data_main = import_data.Import_data()
     Risk_assessment = import_data.RiskAssesment()
     Abac = import_data.Abac()
-    Docker = mdocker.Docker()
-    K8s = mk8s.K8S(namespace='bimeister')
     FT = featureToggle.FeatureToggle()
 
 
@@ -140,149 +136,7 @@ def launch_menu():
             case ['rm', 'files']:
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._object_model_folder}")
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._workflows_folder}")
-                File.remove_file(f"{os.getcwd()}/{Export_data._transfer_folder}/export_server.info")
-
-            #    ''' =============================================================================== DOCKER =============================================================================== '''
-
-            case ['docker', *_] if not Docker.check_docker():
-                print("Error: No docker found in the system, or current user doesn't have accesss to it.")
-                continue
-
-            case ['docker', '-h'|'--help']:
-                print(Docker.docker_menu())
-
-            case ['docker', 'ls']:
-                Docker.display_containers(all=False)
-
-            case ['docker', 'ls', '--all']:
-                Docker.display_containers(all=True)
-
-            case ['docker', 'logs', '-i', container_id]:
-                Docker.get_container_interactive_logs(container_id)
-
-            case ['docker', 'logs', '-f', '--all', *_] if '--tail' in user_command:
-                tail_idx = user_command.index('--tail') + 1
-                try:
-                    number = int(user_command[tail_idx])
-                except ValueError:
-                    print("--tail must be integer!")
-                    continue
-                Docker.get_all_containers_logs(tail=number)
-
-            case ['docker', 'logs', '-f', '--all', *_] if '--days' in user_command:
-                days_idx = user_command.index('--days') + 1
-                try:
-                    days = int(user_command[days_idx])
-                except ValueError:
-                    print("--days value must be integer!")
-                    continue
-                Docker.get_all_containers_logs(days=days)
-
-            case ['docker', 'logs', '-f', '--all', *_]:
-                Docker.get_all_containers_logs()
-
-            case ['docker', 'logs', '-f', _, *_] if '--all' not in user_command and '--tail' in user_command:
-                # very important to pass arguments as integer value(which comes as str). Otherwise, won't work.
-                tail_idx = user_command.index('--tail') + 1
-                try:
-                    number = int(user_command[tail_idx])
-                except ValueError:
-                    print("--tail must be integer!")
-                    continue
-                # remove tail value so it won't be added to containers_id list.
-                user_command.remove(user_command[tail_idx])
-                # getting a list of container id to pass in Docker.get_container_log function.                        
-                containers_id = [x for x in user_command[3:] if not x.startswith('-') and len(x) >= 2]
-                Docker.get_container_log(*containers_id, in_file=True, tail=number)
-
-            case ['docker', 'logs', '-f', _, *_] if '--all' not in user_command and '--days' in user_command:
-                days_idx = user_command.index('--days') + 1
-                try:
-                    days = int(user_command[days_idx])
-                except ValueError:
-                    print("--days value must be integer!")
-                    continue
-                user_command.remove(user_command[days_idx])
-                containers_id = [x for x in user_command[3:] if not x.startswith('-') and len(x) >= 2]
-                Docker.get_container_log(*containers_id, in_file=True, days=days)
-
-            case ['docker', 'logs', '-f', _, *_] if '--all' not in user_command:
-                    containers_id = [x for x in user_command[3:] if not x.startswith('-')]
-                    Docker.get_container_log(*containers_id, in_file=True)
-
-            case ['docker', 'logs', *_] if '--tail' in user_command:
-                tail_idx = user_command.index('--tail') + 1
-                try:
-                    number = int(user_command[tail_idx])
-                except ValueError:
-                    print("--tail must be integer!")
-                    continue
-                user_command.remove(user_command[tail_idx])
-                containers_id = [x for x in user_command[2:] if not x.startswith('-') and len(x) >= 2]
-                Docker.get_container_log(*containers_id, tail=number)
-
-            case ['docker', 'logs', *_] if '--days' in user_command:
-                days_idx = user_command.index('--days') + 1
-                try:
-                    days = int(user_command[days_idx])
-                except ValueError:
-                    print("--days value must be integer!")
-                    continue
-                user_command.remove(user_command[days_idx])
-                containers_id = [x for x in user_command[2:] if not x.startswith('-') and len(x) >= 2]                        
-                Docker.get_container_log(*containers_id, days=days)
-
-            case ['docker', 'logs', *_]:
-                containers_id = [x for x in user_command[2:]]
-                Docker.get_container_log(*containers_id)
-
-            #    ''' =============================================================================== K8S ============================================================================================== '''
-
-            case ['kube', *_] if not K8s.get_kube_config():
-                print("Couldn't locate K8S config file. No access to kube API. Check the log.")
-                continue
-
-            case ['kube', '-h'|'--help']:
-                print(K8s.k8s_menu())
-            
-            case ['kube', 'ns']:
-                K8s.display_namespaces()
-            
-            case ['kube', 'pods'|'po'|'pod']:
-                K8s.display_pods()
-            
-            case ['kube', 'logs', '-f', '--all', *_] if '--tail' in user_command:
-                namespace = K8s.check_args_for_namespace(user_command[3:])
-                tail_idx = user_command.index('--tail') + 1
-                try:
-                    number = int(user_command[tail_idx])
-                except ValueError:
-                    print("--tail must be integer!")
-                    continue
-                K8s.get_all_pods_log(tail=number) if not namespace else K8s.get_all_pods_log(namespace=namespace, tail=number)
-
-            case ['kube', 'logs', '-f', '--all', *_]:
-                namespace = K8s.check_args_for_namespace(user_command[3:])
-                K8s.get_all_pods_log() if not namespace else K8s.get_all_pods_log(namespace=namespace)
-            
-            case ['kube', 'logs', '-f', *_] if '--all' not in user_command and '--pods' in user_command:
-                namespace = K8s.check_args_for_namespace(user_command[3:])
-                if namespace:
-                    ns_idx = user_command.index('-n') + 1
-                    user_command.remove(user_command[ns_idx])
-                if '--tail' in user_command:
-                    tail_idx = user_command.index('--tail') + 1
-                    try:
-                        number = int(user_command[tail_idx])
-                        user_command.remove(user_command[tail_idx])
-                    except ValueError:
-                        print("--tail must be integer!")
-                        continue
-                    pods = tuple(pod for pod in user_command[3:] if not pod.startswith('-'))
-                    K8s.get_pod_log(*pods, tail=number) if not namespace else K8s.get_pod_log(*pods, namespace=namespace, tail=number)
-                else:
-                    pods = tuple(pod for pod in user_command[3:] if not pod.startswith('-'))
-                    K8s.get_pod_log(*pods) if not namespace else K8s.get_pod_log(*pods, namespace=namespace)                    
+                File.remove_file(f"{os.getcwd()}/{Export_data._transfer_folder}/export_server.info")                    
 
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
             case ['ft', _, *_]:
@@ -302,7 +156,6 @@ def launch_menu():
                         continue
                     except Exception as err:
                         print(err)
-                        print("Unpredictable behaviour in k8s set feature.")
                         continue
 
             #    ''' =============================================================================== ABAC ============================================================================================= '''

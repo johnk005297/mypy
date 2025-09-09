@@ -11,12 +11,9 @@ from dateutil.relativedelta import relativedelta
 from rich.console import Console
 from rich.table import Table
 from datetime import date, datetime, timedelta
-from termcolor import colored, cprint
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
 disable_warnings(InsecureRequestWarning)
-from colorama import init, Fore
-init(autoreset=True)
 from tools import Tools
 from mlogger import Logs
 
@@ -36,6 +33,7 @@ class License:
     privileges_checked: bool = False
     logs = Logs()
     tools = Tools()
+    console = Console()
 
     def __init__(self):
         pass
@@ -155,7 +153,7 @@ class License:
         for license in licenses:
             if license['activeUsers'] > license['activeUsersLimit'] and license['isActive'] and license['until'] > current_date:
                 _logger.error(f"Users limit was exceeded! Active users: {license['activeUsers']}. Users limit: {license['activeUsersLimit']}")
-                cprint(colored("Users limit is exceeded!".upper(), "red", attrs=["reverse", "blink"]))
+                self.console.print("Users limit is exceeded!".upper(), style="bold red")
                 return False
             elif license['isActive'] and license['licenseID'] != '00000000-0000-0000-0000-000000000000' and license['until'] > current_date:
                 return True
@@ -186,8 +184,8 @@ class License:
         licenses: list = self.get_licenses(url, token, username, password)
         if not licenses:
             return None
-        if len(licenses) > 10:
-            licenses = licenses[:10]
+        if len(licenses) > 5:
+            licenses = licenses[:5]
         table = Table(show_lines=True)
         table.add_column("Name", justify="left", no_wrap=True)
         table.add_column("Server Id", justify="left")
@@ -206,8 +204,7 @@ class License:
                           f"[red]{expiration_date}[/red]" if license["until"] < current_date and license["isActive"] else expiration_date,
                         "[green]Active[/green]" if license["isActive"] else "[red]Inactive[/red]", style="cyan" if license["isActive"] else "dim cyan"
                           )
-        console = Console()
-        console.print(table)
+        self.console.print(table)
 
     def delete_license(self, url, token, username, password):
         """   Delete active license, if there is one.   """    
@@ -231,10 +228,10 @@ class License:
                 if active_licenses.get(lic):
                     response = requests.delete(url=f"{url}/{self.__api_License}/{active_licenses[lic]}", headers=headers, verify=False)
                     if response.status_code in (200, 201, 204):
-                        print(Fore.GREEN + f"   - license '{lic}': {active_licenses.pop(lic)} has been deactivated!")
+                        self.console.print(f"   - license '{lic}': {active_licenses.pop(lic)} has been deactivated!", style="green")
                     else:
                         _logger.error('%s', response.text)
-                        print(Fore.RED + f"   - license '{lic}' has not been deactivated! Check the logs.")
+                        self.console.print(f"   - license '{lic}' has not been deactivated! Check logs: {self.logs.filepath}", style="red")
 
             if not active_licenses:
                 return
@@ -244,13 +241,13 @@ class License:
                 response_data = bool(response.text) if not response.text else response.json()
 
                 if response.status_code in (200, 201, 204):
-                    print(Fore.GREEN + f"   - license '{name}': {id} has been deactivated!")
+                    self.console.print(f"   - license '{name}': {id} has been deactivated!", style="green")
                 else:
                     if response_data and response_data['type'] and response_data['type'] == 'ForbiddenException':
                         print(f"User '{username}' does not have sufficient privileges to do that!")
                     else:
                         _logger.error('%s', response.text)
-                        print(Fore.RED + f"   - license '{name}': {id} has not been deactivated! Check the logs.")
+                        self.console.print(f"   - license '{lic}' has not been deactivated! Check logs: {self.logs.filepath}", style="red")
 
     def apply_license(self, url, token, username, password, license=None):
         """ Upload and activate license into Bimeister platform. """
@@ -271,7 +268,7 @@ class License:
                 response_data = response.json()
                 time.sleep(0.15)
                 if response.status_code in (200, 201, 204,):
-                    print(Fore.GREEN + f"\n   - new license '{response_data['product']}' has been posted successfully!")
+                    self.console.print(f"\n   - new license '{response_data['product']}' has been posted successfully!", style="green")
                     self.activate_license(url, token, username, password, license['LicenseID'])
                     time.sleep(0.15)
                 elif response_data['type'] and response_data['type'] == 'ForbiddenException':
@@ -279,7 +276,7 @@ class License:
                     return False
                 else:
                     _logger.error('%s', response.text)
-                    print(Fore.RED + f"\n   - new license has not been posted!")
+                    self.console.print(f"\n   - new license has not been posted!", style="red")
                     return False
         return True
 
@@ -307,10 +304,10 @@ class License:
         payload = {}
         response = requests.put(url=url_activate_license, headers=headers, data=payload, verify=False)
         response_data = bool(response.text) if not response.text else response.json()
-        err_message: str = Fore.RED + f"   - error: license '{license_id}' has not been activated!"
+        err_message: str = f"   - error: license '{license_id}' has not been activated! Check logs: {self.logs.filepath}"
 
         if response.status_code in (200, 201, 204):
-            print(Fore.GREEN + f"   - license '{license_id}' has been activated successfully!")
+            self.console.print(f"   - license '{license_id}' has been activated successfully!", style="green")
             return True
         else:
             if response_data and response_data['type'] and response_data['type'] == 'ForbiddenException':
@@ -319,10 +316,10 @@ class License:
             elif response_data and response_data['type'] and response_data['type'] == 'BadRequestException' and response_data['message'] == 'ServerIdDoesntMatch':
                 _logger.error('%s', response.text)
                 print("\n   ServerID doesn't match!")
-                print(err_message)
+                self.console.print(err_message, style="red")
             else:
                 _logger.error('%s', response.text)
-                print(err_message)
+                self.console.print(err_message, style="red")
         return False
 
 

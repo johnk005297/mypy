@@ -34,12 +34,6 @@ def main_menu():
                             \n      ssh connect                         run terminal command(remote host)               \
                             \n      ls                                  list current folder content                     \
                             \n                                                                                          \
-                            \n   Docker                                                                                 \
-                            \n      docker -h                           get a list of available commands                \
-                            \n                                                                                          \
-                            \n   K8S                                                                                    \
-                            \n      kube -h                             get a list of available commands                \
-                            \n                                                                                          \
                             \n   Feature Toggle                                                                         \
                             \n      ft --list                           display list of features                        \
                             \n        optional: [--enabled/--disabled]  display only enabled/disabled FT                \

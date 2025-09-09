@@ -13,7 +13,7 @@ class Parser():
         """ Function for parsing arguments of the command line. """
 
         # create top-level parser with arguments and subparser
-        parser = argparse.ArgumentParser(prog="bim-utils", description="Frankenstein's CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, gitlab, vCenter, etc.")
+        parser = argparse.ArgumentParser(prog="bim-utils", description="Frankenstein's CLI for work with Bimeister(licenses/workflows/featureToggles/roleModes), gitlab, vCenter, etc.")
         parser.add_argument('-V', '--version', required=False, action='store_true', help='Get version of the bim_utils')
         parser.add_argument('--url', required=False, help='Url to get bimeister version')
         subparser = parser.add_subparsers(dest='command', required=False)
@@ -163,7 +163,7 @@ class Parser():
         """ Parse user command in main block """
 
         # create the top-level parser
-        parser = argparse.ArgumentParser(description='Frankenstein CLI for work with licenses, workflows, featureToggles, K8S/Docker logs, etc.')
+        parser = argparse.ArgumentParser(description='Frankenstein CLI for work with licenses, workflows, featureToggles, etc.')
         parser.add_argument('--quit', required=False, metavar=('q', 'exit', 'quit'), action='store_true')
 
 

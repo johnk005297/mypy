@@ -12,8 +12,8 @@ bim_project/bim_utils/archive
 bim_project/bim_utils/query.sql
 bim_project/bim_utils/check.sql
 bim_project/bim_utils/log_test.py
-bim_project/bim_utils/.bimUtils_logs
 bim_project/bim_utils/ssh_connect.py
 bim_project/bim_utils/requirements.txt
 pyi_spec_file/
 bim_project/bim_utils/textual_menu.py
+bim_project/bim_utils/deprecated_modules
