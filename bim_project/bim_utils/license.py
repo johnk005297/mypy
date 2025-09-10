@@ -135,7 +135,7 @@ class License:
                     "username": username,
                     "password": password
                   }
-        response = self.tools.make_request('GET', url_get_licenses, data=payload, headers=headers, return_err_response=True)
+        response = self.tools.make_request('GET', url_get_licenses, data=payload, headers=headers, return_err_response=True, verify=False)
         if response.status_code in range(200, 205):
             return response.json()
         else:
