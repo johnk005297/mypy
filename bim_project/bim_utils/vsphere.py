@@ -16,9 +16,8 @@ from rich import print as rprint
 from tools import Tools
 from mlogger import Logs
 
-console = Console()
+
 logger = logging.getLogger(__name__)
-tools = Tools()
 logs = Logs()
 
 class Vsphere:
@@ -28,7 +27,8 @@ class Vsphere:
     vsphere_release_schema: str = "8.0.3.0"
 
     def __init__(self):
-        pass
+        self.tools = Tools()
+        self.console = Console()
 
     def get_credentials(self, username=None, password=None):
         """ Function prompts user's credentials and encode it into base64 proper format. """
@@ -122,7 +122,7 @@ class Vsphere:
         """ Check for power state for provided VMs. """
 
         url: str = f"{self.url}/rest/vcenter/vm/{vm}/power"
-        response = tools.make_request('GET', url, headers=headers, verify=False, print_err=True)
+        response = self.tools.make_request('GET', url, headers=headers, verify=False, print_err=True)
         if not response:
             return None
         try:
@@ -136,7 +136,7 @@ class Vsphere:
         """ Function returns an array of VM in vSphere's cluster in format {'vm-moId': 'vm-name'}. """
 
         url = f"{self.url}/api/vcenter/vm"
-        response = tools.make_request('GET', url, headers=headers, verify=False, print_err=True)
+        response = self.tools.make_request('GET', url, headers=headers, verify=False, print_err=True)
         if not response:
             return None
         try:
@@ -153,13 +153,13 @@ class Vsphere:
         else:
             if powered_on:
                 vm_array: dict = {
-                                    vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} 
+                                    vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']}
                                     for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude
                                     }
             else:
-                vm_array: dict = { 
-                                    vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} 
-                                    for vm in data if vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude 
+                vm_array: dict = {
+                                    vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']}
+                                    for vm in data if vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude
                                     }
         return vm_array
 
@@ -169,19 +169,21 @@ class Vsphere:
         if not isinstance(vm_array, dict):
             print("Provided array should be a dictionary.")
             return False
-
         for value in vm_array.values():
             reboot_vm_msg: str = f"[bold magenta]Reboot guest OS: {value['name']}[/bold magenta]  [green]✅[/green]"
-            url: str = f"{self.url}/api/vcenter/vm/{value['moId']}/guest/power?action=reboot"
-            with console.status(reboot_vm_msg, spinner="earth") as status:
-                if self.get_vm_power_state(headers=headers, vm=value['moId']) == 'POWERED_ON':
-                    response = tools.make_request('POST', url, headers=headers, verify=False)
-                    time.sleep(0.15)
+            url_reboot: str = f"{self.url}/api/vcenter/vm/{value['moId']}/guest/power?action=reboot"
+            url_reset: str = f"{self.url}/api/vcenter/vm/{value['moId']}/power?action=reset"
+            if self.get_vm_power_state(headers=headers, vm=value['moId']) == 'POWERED_ON':
+                response = self.tools.make_request('POST', url_reboot, headers=headers, verify=False)
+                time.sleep(0.15)
+                if not response:
+                    response = self.tools.make_request('POST', url_reset, headers=headers, return_err_response=True, verify=False)
                     if not response:
-                        console.log(f"[red]Error on reboot {value['name']}. Check log: {logs.filepath}[/red]")
-                    else:
-                        console.print(reboot_vm_msg, overflow="ellipsis")
-                else: continue
+                        self.console.log(f"[red]No connection to {value['name']}. Check VM in vCenter![/red]")
+                        continue
+                if response and response.status_code in range(200, 205):
+                    self.console.print(reboot_vm_msg, overflow="ellipsis")
+            else: continue
 
     def start_vm(self, headers, moId, name):
         """ Start provided VM in vSphere. """
@@ -189,13 +191,13 @@ class Vsphere:
         url: str = f"{self.url}/rest/vcenter/vm/{moId}/power/start"
         power_on_msg: str = f"[bold magenta]Power On VM: {name}[/bold magenta]"
 
-        with console.status(power_on_msg, spinner="earth") as status:
+        with self.console.status(power_on_msg, spinner="earth") as status:
             if self.get_vm_power_state(headers, moId) == "POWERED_ON":
-                console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
+                self.console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
                 return True
-            response = tools.make_request('POST', url, headers=headers, verify=False, return_err_response=True)
+            response = self.tools.make_request('POST', url, headers=headers, verify=False, return_err_response=True)
             if response.status_code not in (200, 204):
-                console.log(f"[red]No connection to {name}. Check VM in vCenter![/red]")
+                self.console.log(f"[red]No connection to {name}. Check VM in vCenter![/red]")
                 return False
             count = 0
             while count < 350:
@@ -204,12 +206,12 @@ class Vsphere:
                 status.update(power_on_msg + "  [green]✅[/green]")
                 time.sleep(1)
                 if power_status == "POWERED_ON":
-                    console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
+                    self.console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
                     return True
                 elif power_status != "POWERED_ON":
                     continue
             else:
-                console.log(f"[red]Error on start {name} within 5 minutes. Check VM status in vCenter![/red]")
+                self.console.log(f"[red]Error on start {name} within 5 minutes. Check VM status in vCenter![/red]")
                 return False
 
     def stop_vm(self, headers, moId, name):
@@ -220,16 +222,16 @@ class Vsphere:
         shutdown_msg: str = f"[bold magenta]Shutdown guest OS: {name}[bold magenta]  [green]✅[/green]"
         shutting_down_msg: str = f"[bold magenta]Shutdown guest OS: {name}[/bold magenta]"
 
-        with console.status(shutting_down_msg, spinner="earth") as status:
+        with self.console.status(shutting_down_msg, spinner="earth") as status:
             if self.get_vm_power_state(headers, moId) == "POWERED_OFF":
-                console.print(shutdown_msg, overflow="ellipsis")
+                self.console.print(shutdown_msg, overflow="ellipsis")
                 return True
             power_off: bool = False
-            response = tools.make_request('POST', url_shutdown, headers=headers, return_err_response=True, verify=False)
+            response = self.tools.make_request('POST', url_shutdown, headers=headers, return_err_response=True, verify=False)
             if response.status_code not in (200, 204):
-                response = tools.make_request('POST', url_stop, headers=headers, return_err_response=True, verify=False)
+                response = self.tools.make_request('POST', url_stop, headers=headers, return_err_response=True, verify=False)
                 if response.status_code not in (200, 204):
-                    console.log(f"[red]No connection to {name}. Check VM in vCenter![/red]")
+                    self.console.log(f"[red]No connection to {name}. Check VM in vCenter![/red]")
                     return False
                 elif response.status_code in (200, 204):
                     power_off = True
@@ -243,12 +245,12 @@ class Vsphere:
                     continue
                 elif power_status == "POWERED_OFF":
                     if power_off:
-                        console.print(f"[bold magenta]Power Off VM: {name}[/bold magenta]  [green]✅[/green]", overflow="ellipsis")
+                        self.console.print(f"[bold magenta]Power Off VM: {name}[/bold magenta]  [green]✅[/green]", overflow="ellipsis")
                     else:
-                        console.print(shutdown_msg, overflow="ellipsis")
+                        self.console.print(shutdown_msg, overflow="ellipsis")
                     return True
             else:
-                console.log(f"[red]Error on stop {name} within 5 minutes. Check VM status in vCenter![/red]")
+                self.console.log(f"[red]Error on stop {name} within 5 minutes. Check VM status in vCenter![/red]")
                 return False
 
     def take_snapshot(self, headers, moId, vm_name, snap_name='', description=''):
@@ -260,7 +262,7 @@ class Vsphere:
                     "memory": False,
                     "name": snap_name
                     }
-        response = tools.make_request('POST', url, headers=headers, data=json.dumps(payload), verify=False, return_err_response=True)
+        response = self.tools.make_request('POST', url, headers=headers, data=json.dumps(payload), verify=False, return_err_response=True)
         if not response:
             return False
         if response.status_code == 200:
@@ -383,7 +385,7 @@ class Vsphere:
                 "services": ["com.vmware.vcenter.VM"]
             }
         }
-        response = tools.make_request('GET', url, return_err_response=True, data=json.dumps(payload), verify=False, headers=headers)
+        response = self.tools.make_request('GET', url, return_err_response=True, data=json.dumps(payload), verify=False, headers=headers)
         # print(response.status_code)
         # print(response.json())
 
