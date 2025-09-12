@@ -140,7 +140,7 @@ class License:
             return response.json()
         else:
             _logger.error(response.text)
-            print(f"License error. Check logs: {self.logs.filepath}")
+            print(self.logs.err_message)
             return False
 
     def get_license_status(self, url, token, username, password):

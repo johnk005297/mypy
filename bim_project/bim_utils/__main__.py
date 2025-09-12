@@ -19,7 +19,7 @@ from passwork import *
 from git import Git
 from rich.console import Console
 from getpass import getpass
-from tools import Bimeister
+from tools import Bimeister, File
 
 # block for correct build with pyinstaller, to add .env file
 from dotenv import load_dotenv
@@ -104,31 +104,37 @@ if __name__ == '__main__':
         elif args.command == 'sql':
             pg = postgre.DB()
             q = postgre.Queries()
-            conn = pg.connect_to_db(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port)
-            if not conn:
-                sys.exit()
+            conn_string: str = f"dbname={args.db} host={args.host} user={args.user} password={args.password} port={args.port}"
             if args.file:
-                pg.execute_query_from_file(conn, filepath=args.file, chunk_size=args.chunk_size)
+                connection_check: bool = pg.check_db_connection(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port)
+                if not connection_check:
+                    sys.exit()
+                pg.execute_query_from_file(conn_string, filepath=args.file, chunk_size=args.chunk_size)
             elif args.list_matviews:
-                pg.execute_query(conn, query=q.get_matviews_list(args.list_matviews), query_name='matviews-list')
+                matviews = pg.execute_query(conn_string, query=q.get_matviews_list(args.list_matviews), query_name='matviews-list')
+                if args.print:
+                    file: str = "matviews-list.csv"
+                    df = File.read_file(file)
+                    print(df)
+                    File.remove_file(file)
             elif args.drop_matviews:                
-                pg.execute_query(conn, query=q.drop_materialized_view(args.drop_matviews), query_name='drop-matviews')
+                pg.execute_query(conn_string, query=q.drop_materialized_view(args.drop_matviews), query_name='drop-matviews')
             elif args.refresh_matviews:
-                pg.execute_query(conn, query=q.refresh_materialized_view(), query_name='refresh-matviews')
+                pg.execute_query(conn_string, query=q.refresh_materialized_view(), query_name='refresh-matviews')
             elif args.mdm:
                 if args.mdm == 'prod':
-                    pg.execute_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Prod'), query_name='swith-extkey-mdm-connector')
+                    pg.execute_query(conn_string, query=q.swith_externalKey_for_mdm_connector(value='Prod'), query_name='swith-extkey-mdm-connector')
                 elif args.mdm == 'test':
-                    pg.execute_query(conn, query=q.swith_externalKey_for_mdm_connector(value='Test'), query_name='swith-extkey-mdm-connector')
+                    pg.execute_query(conn_string, query=q.swith_externalKey_for_mdm_connector(value='Test'), query_name='swith-extkey-mdm-connector')
                 else: print("mdm option has two values: prod or test.")
             elif args.list_db:
-                db_list = pg.execute_query(conn, query=q.get_list_of_all_db(), query_name='db-list')
+                db_list = pg.execute_query(conn_string, query=q.get_list_of_all_db(), query_name='db-list')
             elif args.list_tables:
-                pg.execute_query(conn, query=q.get_list_of_db_tables(), query_name='tables-list')
+                pg.execute_query(conn_string, query=q.get_list_of_db_tables(), query_name='tables-list')
             elif args.create_user_ro:
-                pg.execute_query(conn, query=q.create_postgresql_user_ro(args.name, args.user_ro_pass), query_name='create-user-ready-only')
+                pg.execute_query(conn_string, query=q.create_postgresql_user_ro(args.name, args.user_ro_pass), query_name='create-user-ready-only')
             elif args.list_users:
-                pg.execute_query(conn, query=q.get_list_of_users(), query_name='users-list')
+                pg.execute_query(conn_string, query=q.get_list_of_users(), query_name='users-list')
                 pg.print_list_of_users(pg.output_file)
 
         elif args.command == 'vsphere':

@@ -16,8 +16,11 @@ import requests
 import re
 import pandas as pd
 from datetime import datetime
+from mlogger import Logs
 
-logger = logging.getLogger(__name__)
+
+_logger = logging.getLogger(__name__)
+_logs = Logs()
 
 
 class Folder:
@@ -27,8 +30,8 @@ class Folder:
             if not os.path.isdir(path + '/' + folder_name):
                 os.mkdir(path + '/' + folder_name)
         except OSError as err:
-            print("ERROR in create folder function.")
-            logger.error(err)
+            _logger.error(err)
+            print(_logs.err_message)
             return False
 
     @staticmethod
@@ -47,8 +50,8 @@ class Folder:
             else:
                 print(f'   - no {filename} folder was found.')
         except OSError as err:
-            logger.error(err)
-            print("Error occured. Check the logs.")
+            _logger.error(err)
+            print(_logs.err_message)
             return False
         return True
 
@@ -75,8 +78,8 @@ class File:
                     try:
                         content = json.load(file)
                     except json.JSONDecodeError as err:
-                        print(f"Error with the {filepath} file. Check the logs.")
-                        logger.error(f"Error with {filepath}.\n{err}")
+                        _logger.error(err)
+                        print(_logs.err_message)
                         return False
                     return content
                 elif os.path.splitext(filepath)[1] == '.csv':
@@ -88,7 +91,7 @@ class File:
                     content = file.read()
                     return content
         except OSError as err:
-            logger.error(err)
+            _logger.error(err)
             return False
 
     @staticmethod
@@ -142,7 +145,7 @@ class Tools:
         try:
             os.system(command)
         except OSError as err:
-            logger.error(err)
+            _logger.error(err)
             return False
 
     @staticmethod
@@ -154,8 +157,9 @@ class Tools:
             try:
                 for file_path in directory.iterdir():
                     archive.write(file_path, arcname=file_path.name)
-            except Exception:
-                print("Error occured while zipping logs.")
+            except Exception as err:
+                _logger.error(err)
+                print(_logs.err_message)
                 return False
         return True
 
@@ -219,19 +223,19 @@ class Tools:
             s.close()
             return True
         except socket.timeout as err:
-            logger.error(err)
+            _logger.error(err)
             return False
         except ConnectionRefusedError:
             # Connection was actively refused by the target
-            logger.error(err)
+            _logger.error(err)
             return False
         except OSError as err:
             # Catch other socket-related errors (e.g., host not found)
-            logger.error(err)
+            _logger.error(err)
             return False
         except Exception as err:
             # Catch any other unexpected errors
-            logger.error(err)
+            _logger.error(err)
             return False
 
     @staticmethod
@@ -253,7 +257,7 @@ class Tools:
             username = os.getenv(env_user)
             password = os.getenv(env_pass)
         else:
-            logger.error("No credentials were found in .env file.")
+            _logger.error("No credentials were found in .env file.")
             return None, None
         username_utf_encoded = username.encode("utf-8")
         username_b64_decoded = base64.b64decode(username_utf_encoded)
@@ -298,26 +302,26 @@ class Tools:
             else:
                 raise ValueError(f"Unsupported HTTP method: {method}")
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
-            logger.info(f"{caller_func} {response.status_code} {method} {url}")
+            _logger.info(f"{caller_func} {response.status_code} {method} {url}")
             return response
         except requests.exceptions.HTTPError as err:
-            logger.error(f"{caller_func} {err}")
+            _logger.error(f"{caller_func} {err}")
             if print_err: print(f"HTTP Error: {err}")
             return response if return_err_response else None
         except requests.exceptions.ConnectionError as err:
-            logger.error(f"{caller_func} {err}")
+            _logger.error(f"{caller_func} {err}")
             if print_err: print(f"Connection Error: {err}")
             return response if return_err_response else None
         except requests.exceptions.Timeout as err:
-            logger.error(f"{caller_func} {err}")
+            _logger.error(f"{caller_func} {err}")
             if print_err: print(f"Timeout Error: {err}")
             return response if return_err_response else None
         except requests.exceptions.MissingSchema as err:
-            logger.error(f"{caller_func} {err}")
+            _logger.error(f"{caller_func} {err}")
             if print_err: print(f"MissingSchema Error: {err}")
             return response if return_err_response else None
         except requests.exceptions.RequestException as err:
-            logger.error(f"{caller_func} {err}")
+            _logger.error(f"{caller_func} {err}")
             if print_err: print(f"An unexpected Requests error occurred: {err}")
             return response if return_err_response else None
 
@@ -342,14 +346,14 @@ class Bimeister:
                 elif response.status_code == 204:
                     print("Files uploaded successfully.")
         except FileNotFoundError as err:
-            logger.error(err)
+            _logger.error(err)
             print(err)
         except requests.RequestException as err:
-            logger.error(err)
-            print("Error! Check the log.")
+            _logger.error(err)
+            print(_logs.err_message)
         except Exception as err:
-            logger.error(err)
-            print("Error! Check the log.")
+            _logger.error(err)
+            print(_logs.err_message)
 
     @staticmethod
     def print_bim_version(url):
@@ -367,21 +371,21 @@ class Bimeister:
                 print(f"commit: {data['GIT_COMMIT']}\nversion: {data['BUILD_FULL_VERSION']}")
                 return True
             except requests.exceptions.ConnectionError as err:
-                logger.error(err)
+                _logger.error(err)
                 if count > 0: 
                     print("Connection error: Check URL address.")
                     return False
             except json.JSONDecodeError as err:
                 print("JSONDecodeError: Check URL address.")
-                logger.error(err)
+                _logger.error(err)
                 return False
             except requests.exceptions.MissingSchema as err:
                 print(f"Invalid URL. MissingSchema.")
-                logger.error(err)
+                _logger.error(err)
                 return False
             except Exception as err:
-                print("Unexpected error. Check the logs.")
-                logger.error(err)
+                _logger.error(err)
+                print(_logs.err_message)
                 return False
             count += 1
             if count == 1:
@@ -412,7 +416,7 @@ class Bimeister:
             return False
         except Exception as err:
             print("Some error occured. Check the log.")
-            logger.error(err)
+            _logger.error(err)
             return False   
 
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
@@ -424,12 +428,12 @@ class Bimeister:
             response = requests.patch(url, headers=headers, verify=False)
             response.raise_for_status()
             if response.status_code in [200, 201, 204]:
-                logger.info(f"{url} {response.status_code}")
+                _logger.info(f"{url} {response.status_code}")
                 print("Paths recalculated successfully!")
             return True
         except Exception as err:
-            print(f"Error occurred. Check the log. Response code: {response.status_code}")
-            logger.error(err)
+            _logger.error(err)
+            print(_logs.err_message)
             return False
     
     @staticmethod
@@ -442,7 +446,7 @@ class Bimeister:
             response = requests.get(url=url, headers=headers, verify=False)
             response.raise_for_status()
             if response.status_code == 200:
-                logger.info(f"{url} {response.status_code}")
+                _logger.info(f"{url} {response.status_code}")
                 data = response.json()
                 return data
         except Exception as err:
@@ -480,9 +484,9 @@ class Bimeister:
                         print(f"File exported successfully: {i}.json")
             except requests.exceptions.HTTPError as err:
                 if err.response.status_code == 404:
-                    logger.error(err)
+                    _logger.error(err)
                     print(f"404 Client Error for id: {i}")
             except Exception as err:
-                logger.error(err)
-                print("Error occured. Read the log! ")
+                _logger.error(err)
+                print(_logs.err_message)
                 return False

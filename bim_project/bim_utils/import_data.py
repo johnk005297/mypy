@@ -206,7 +206,7 @@ class Abac:
                 return None
             except Exception as err:
                 _logger.error(err)
-                print(f"Error! Check logs: {_logs.filepath}")
+                print(_logs.err_message)
                 return None
 
     def get_parser(self):

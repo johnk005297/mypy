@@ -8,16 +8,15 @@ from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 
-logger = logging.getLogger(__name__)
-logs = Logs()
-
+_logger = logging.getLogger(__name__)
+_logs = Logs()
+_tools = Tools()
 
 class Auth:
     __slots__ = ('url', 'username', 'password', 'token', 'providerId', 'privateToken')
     __api_Providers: str = 'api/Providers'
     __api_Auth_Login: str = 'api/Auth/Login'
     __api_PrivateToken: str = 'api/PrivateToken'
-    headers = {'accept': '*/*', 'Content-type': 'application/json; charset=utf-8'}
     possible_request_errors: tuple = (
         requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout,
         requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL,
@@ -70,7 +69,7 @@ class Auth:
             try:
                 response = requests.head(url=url, verify=False, allow_redirects=False, timeout=2)
                 if response.status_code == 200:
-                    logger.info(f"{url} {response.status_code}")
+                    _logger.info(f"{url} {response.status_code}")
                     self.url = url
                     return url
                 # fix issues if the redirect is set up
@@ -78,31 +77,29 @@ class Auth:
                     url = url[:4] + url[5:] if url[4] == 's' else url[:4] + 's' + url[4:]
                 # Can't catch 502 error with except. Temporary need to add this block
                 elif x == 1 and response.status_code == 500:
-                    message: str = 'Error 500: Check connection to host.'
-                    logger.error(f"{response.text}")
-                    print(message)
+                    _logger.error(f"{response.text}")
+                    print(_logs.err_message)
                     return False
                 elif x == 1 and response.status_code == 502:
-                    message = f"Error {response.status_code}. Check web interface."
-                    logger.error(f"{response.text}\n{message}")
-                    print(message)
+                    _logger.error(f"{response.text}\n{message}")
+                    print(_logs.err_message)
                     return False
                 else:
-                    logger.error(response.text)
+                    _logger.error(response.text)
+                    print(_logs.err_message)
                     return False
             except requests.exceptions.MissingSchema as err:
-                logger.error(err)
+                _logger.error(err)
                 if x == 1:
                     print('Invalid URL')
                 return False
             except requests.exceptions.ReadTimeout as err:
-                message: str = "Check connection to host."
                 if x == 1:
-                    print(message)
-                logger.error(f"{err}")
+                    _logger.error(f"{err}")
+                    print(_logs.err_message)
                 return False
             except self.possible_request_errors as err:
-                logger.error(f"Connection error via '{url[:url.index(':')]}':\n{err}.")
+                _logger.error(f"Connection error via '{url[:url.index(':')]}':\n{err}.")
                 url = url[:4] + url[5:] if url[4] == 's' else url[:4] + 's' + url[4:]
                 if x == 1:
                     message: str = "Check connection to host."
@@ -116,8 +113,7 @@ class Auth:
             A single provider Id will be returned.
         """
 
-        tools = Tools()
-        response = tools.make_request(
+        response = _tools.make_request(
                                 'GET'
                                 ,url=f"{url}/{self.__api_Providers}"
                                 ,verify=False, allow_redirects=False
@@ -125,11 +121,11 @@ class Auth:
                                 )
         if not response:
             return response
-        logger.info(f"GET {url} {response.status_code}")
+        _logger.info(f"GET {url} {response.status_code}")
         if response.status_code == 200:
             providers: list = response.json()
         elif response.status_code != 200:
-            print(f"Error. Check logs: {logs.filepath}")
+            print(_logs.err_message)
             return False
         if len(providers) == 1:
             self.providerId = providers[0]['id']
@@ -175,17 +171,17 @@ class Auth:
             Success response returns a .json with 'access_token'.
         """
 
-        tools = Tools()
+        headers = {'accept': '*/*', 'Content-type': 'application/json; charset=utf-8'}
         payload = {
             "username": username,
             "password": password,
             "providerId": providerId
         }
-        response = tools.make_request(
+        response = _tools.make_request(
                                       'POST'
                                       ,url=f"{url}/{self.__api_Auth_Login}"
                                       ,return_err_response=True, json=payload
-                                      ,headers=self.headers, verify=False
+                                      ,headers=headers, verify=False
                                       )
         data = response.json()
         if response.status_code == 401:
@@ -224,14 +220,13 @@ class Auth:
         url = f"{url}/{self.__api_PrivateToken}"
         try:
             response = requests.get(url=url, headers=headers, verify=False)
-            logger.info("Getting private token:")
             if response.status_code == 204:
-                logger.info(f"{url}: {response.status_code}")
+                _logger.info(f"{url}: {response.status_code}")
                 response = requests.post(url=url, headers=headers, verify=False)
             data = response.json()
             self.privateToken: str = data['privateToken']
 
         except self.possible_request_errors as err:
-            logger.error(err)
+            _logger.error(err)
             return False
         return self.privateToken

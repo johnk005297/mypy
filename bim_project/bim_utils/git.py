@@ -16,7 +16,6 @@ logs = Logs()
 class Git:
 
     _url = "https://git.bimeister.io/api/v4"
-    check_log_msg: str = f"Error. Check logs: {logs.filepath}"
     def __init__(self):
         self.tag = Tag
         self.project = Project
@@ -99,8 +98,7 @@ class Tag(Git):
                 data = response.json()
             except requests.exceptions.RequestException as err:
                 logger.error(err)
-                print(f"Request exception. Check logs: {logs.filepath}")
-                print(self.check_log_msg)
+                print(logs.err_message)
                 return False
             for tag in data:
                 branch: list = self.branch().get_branch_name_using_commit(project_id, tag['commit']['short_id'])
@@ -135,8 +133,8 @@ class Branch(Git):
                     response = requests.get(url=url, headers=self.headers)
                     response.raise_for_status()
                 except requests.exceptions.RequestException as err:
-                    print(f"Request exception. Check logs: {logs.filepath}")
                     logger.error(err)
+                    print(logs.err_message)
                     return False
                 for branch in response.json():
                     branch_commit = branch['commit']['short_id']                                
@@ -188,8 +186,8 @@ class Branch(Git):
                 next_page = response.headers['X-Next-Page']
             return branches if branches else False
         except requests.exceptions.RequestException as err:
-            print(f"Request exception. Check logs: {logs.filepath}")
             logger.error(err)
+            print(logs.err_message)
             return False
 
 
@@ -211,8 +209,8 @@ class Job(Git):
             response.raise_for_status()
             jobs = response.json()
         except requests.exceptions.RequestException as err:
-            print(f"Request exception. Check logs: {logs.filepath}")
             logger.error(err)
+            print(logs.err_message)
             return False
         return jobs
 
@@ -280,12 +278,12 @@ class Job(Git):
                           \nref: {data['pipeline']['ref']}          \
                           \nurl: {data['pipeline']['web_url']}      ")
             except requests.exceptions.RequestException as err:
-                print(f"Request exception. Check logs: {logs.filepath}")
                 logger.error(err)
+                print(logs.err_message)
                 return False                
             except Exception as err:
-                print(self.check_log_msg)
                 logger.error(err)
+                print(logs.err_message)
                 return False                
 
 
@@ -310,8 +308,8 @@ class Pipeline(Git):
                 for pipeline in response.json():
                     pipelines.append(pipeline)
             except requests.exceptions.RequestException as err:
-                print(f"Request exception. Check logs: {logs.filepath}")
                 logger.error(err)
+                print(logs.err_message)
                 return False
         # sort pipelines by id
         pipelines = sorted(pipelines, key=lambda x: x['id'], reverse=True)
@@ -329,13 +327,12 @@ class Tree(Git):
             response.raise_for_status()
             data = response.json()
         except requests.exceptions.RequestException as err:
-            print(f"Request exception. Check logs: {logs.filepath}")
             logger.error(err)
+            print(logs.err_message)
             return False
         except Exception as err:
             logger.error(err)
-            print(err)
-            print(self.check_log_msg)
+            print(logs.err_message)
             return False
         for x in data:
             print(x['name'])
@@ -351,12 +348,12 @@ class Product_collection_file(Git):
             response = requests.get(url=url, headers=self.headers)
             response.raise_for_status()
         except requests.exceptions.HTTPError as err:
-            print(self.check_log_msg)
+            print(logs.err_message)
             logger.error(err)
             return False
         except requests.exceptions.RequestException as err:
-            print(f"Request exception. Check logs: {logs.filepath}")
             logger.error(err)
+            print(logs.err_message)
             return False
         data_base64 = response.json()['content']
         data_bytes = data_base64.encode('utf-8')
@@ -384,7 +381,7 @@ class Product_collection_file(Git):
                 return None
             except Exception as err:
                 logger.error(err)
-                print(f"Error: check logs: {logs.filepath}")
+                print(logs.err_message)
                 return None
         else:
             project = project_name

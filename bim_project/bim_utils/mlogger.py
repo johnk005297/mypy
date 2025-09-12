@@ -24,8 +24,16 @@ def file_logger(log_file, logLevel=logging.DEBUG):
 class Logs:
 
     def __init__(self):
-        self.filepath: str = "/tmp/bimutils.log" if platform.system() == "Linux" else ".bimutils.log"
+        self._filepath: str = "/tmp/bimutils.log" if platform.system() == "Linux" else ".bimutils.log"
         self.set_full_access_to_log_file(self.filepath, 0o777)
+
+    @property
+    def filepath(self):
+        return self._filepath
+    
+    @property
+    def err_message(self):
+        return f"Error. Check the log: {self._filepath}"
 
     def set_full_access_to_log_file(self, filepath, mode):
         """ Provide full access(777) to log file. """

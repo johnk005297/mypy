@@ -1,49 +1,61 @@
 import logging
-import psycopg2
 import auth
 import sys
 import os
 import platform
 import pandas as pd
+import psycopg
+import psycopg_infdate
 from user import User
 from getpass import getpass
 from time import perf_counter
 from datetime import timedelta
 from tools import File
+from mlogger import Logs
 
-logger = logging.getLogger(__name__)
+
+_logger = logging.getLogger(__name__)
+
 
 class DB:
 
     def __init__(self):
+        psycopg_infdate.register_inf_date_handler(psycopg)
         self.output_file = 'query_result.csv'
+        self.log = Logs()
+        os.environ["PGCLIENTENCODING"] = "utf-8"
 
-    def connect_to_db(self, **kwargs):
-        """ Function for establishing connection to db. """
+    def check_db_connection(self, **kwargs) -> bool:
+        """ Function to check connection to db. """
 
         if not kwargs['password']:
             kwargs['password'] = getpass("Enter db password: ")
         try:
-            conn = psycopg2.connect(database=kwargs['db'],
-                                    host=kwargs['host'],
-                                    user=kwargs['user'],
-                                    password=kwargs['password'],
-                                    port=kwargs['port']
+            conn = psycopg.connect(
+                dbname=kwargs['db'],
+                host=kwargs['host'],
+                user=kwargs['user'],
+                password=kwargs['password'],
+                port=kwargs['port']
                                     )
-        except psycopg2.OperationalError as err:
-            logger.error(err)
+        except psycopg.OperationalError as err:
+            _logger.error(err)
             print(f"Database connection error.\n{err}")
-        except psycopg2.Error as err:
-            logger.error(err)
-            print("Error occured. Check the log!")
+            return False
+        except psycopg.Error as err:
+            _logger.error(err)
+            # print(f"Error. Check the log: {self.log._filepath}")
+            print(self.log.err_message)
             return False
         else:
-            return conn
+            _logger.info(conn)
+            conn.close()
+            return True
 
-    def execute_query_from_file(self, conn, filepath=None, chunk_size=10_000):
+    def execute_query_from_file(self, conn_string, filepath=None, chunk_size=10_000):
         """ Execute query from the file. """
 
-        if not conn:
+        if not conn_string:
             return None
         if not os.path.isfile(filepath):
             print(f"No such file: {os.path.basename(filepath)}")
@@ -61,7 +73,7 @@ class DB:
                 print(f"Error removing file '{output_file}': {err}")
                 print(f"Remove the file {output_file} and try again!")
                 return None
-        with conn.cursor() as cur:
+        with psycopg.connect(conn_string) as conn, conn.cursor() as cur:
             start = perf_counter()
             with open(file, 'r', encoding='utf-8') as f:
                 sql_buffer: list = []
@@ -77,46 +89,48 @@ class DB:
                         if query:
                             try:
                                 cur.execute(query)
-                                conn.commit()
                                 if cur.rowcount > 0:
                                     if not os.path.isfile(output_file):
                                         header, mode = True, 'w'
                                     for chunk in self.record_batches(cur, chunk_size=chunk_size):
                                         chunk.to_csv(output_file, index=False, header=header, mode=mode)
                                         header, mode = False, 'a'
-                            except psycopg2.ProgrammingError as err:
+                            except psycopg.errors.UndefinedTable as err:
+                                _logger.error(err)
+                                print(f'Error: {err}')
+                                return False
+                            except psycopg.errors.ProgrammingError as err:
                                 if cur.rowcount == -1:
-                                    logger.info(f"{cur}")
+                                    _logger.info(f"{cur}")
                                     print(cur.statusmessage)
-                                    conn.commit()
+                                elif cur.rowcount > 0:
+                                    print(cur.statusmessage)
                                 else:
-                                    logger.error(err)
-                                    print("SQL programming error. Check the log!")
-                            except psycopg2.errors.ReadOnlySqlTransaction as err:
-                                logger.error(err.pgerror)
-                                print("ReadOnlySqlTransaction: cannot execute INSERT in a read-only transaction")
+                                    _logger.error(err)
+                                    print(self.log.err_message)
+                            except psycopg.errors.ReadOnlySqlTransaction as err:
+                                _logger.error(err)
+                                print(f"Error: {err}")
                                 return False
-                            except psycopg2.DatabaseError as err:
-                                logger.error(err.pgerror)
-                                print(err.pgerror)
+                            except psycopg.errors.DatabaseError as err:
+                                _logger.error(err)
+                                print(err)
                                 return False
-                            except psycopg2.InterfaceError as err:
-                                logger.error(err.pgerror)
-                                print(err.pgerror)
+                            except psycopg.errors.InterfaceError as err:
+                                _logger.error(err)
+                                print(err)
                                 return False
-                            except psycopg2.Error as err:
-                                if err.pgcode == '42P01':
-                                    print('Undefined table in the query.')
-                                print(err.pgerror)
-                                return False
+                            except Exception as err:
+                                _logger.error(err)
+                                print(self.log.err_message)
                             finally:
-                                sql_buffer = [] # clear buffer for next query
+                                sql_buffer = [] # clear buffer for the next query
                                 header = True
                 if not has_delimiter:
                     print(f"No semicolon(;) symbol was found in {os.path.basename(filepath)}\nCheck query syntax and try again!")
                     sys.exit()
         end = perf_counter()
-        logger.info(filepath)
+        _logger.info(filepath)
         elapsed_time = end - start
         if elapsed_time < 1:
             print(f"Elapsed time: {elapsed_time:4.3f} s")
@@ -136,10 +150,10 @@ class DB:
                 break
             yield pd.DataFrame(batch_rows, columns=column_names)
 
-    def execute_query(self, conn, query=None, query_name=None):
+    def execute_query(self, conn_string, query=None, query_name=None):
         """Execute passed query ."""
 
-        if not conn or not query or not query_name:
+        if not conn_string or not query or not query_name:
             return False
         output_file: str = query_name + '.csv'
         # remove output file if it exists
@@ -148,45 +162,48 @@ class DB:
                 os.remove(output_file)
             except OSError as err:
                 print(f"Error removing file '{output_file}': {err}")
-                print(f"Remove the file {output_file} and try again!")
+                print(f"Remove {output_file} file and try again!")
                 return None
-        with conn.cursor() as cur:
+        with psycopg.connect(conn_string) as conn, conn.cursor() as cur:
             start = perf_counter()
             try:
                 cur.execute(query)
-                logger.info(query)
-                conn.commit()
+                _logger.info(query)
                 if cur.rowcount > 0:
                     header, mode = True, 'w'
                     for chunk in self.record_batches(cur):
                         chunk.to_csv(output_file, index=False, header=header, mode=mode)
                         header, mode = False, 'a'
-            except psycopg2.ProgrammingError as err:
+            except psycopg.errors.UndefinedTable as err:
+                _logger.error(err)
+                print(f'Error: {err}')
+                return False
+            except psycopg.errors.ProgrammingError as err:
                 if cur.rowcount == -1:
-                    logger.info(f"{cur}")
-                    print(cur.statusmessage)
                     conn.commit()
+                    _logger.info(f"{cur}")
+                    print(cur.statusmessage)
+                elif cur.rowcount > 0:
+                    print(cur.statusmessage)
                 else:
-                    logger.error(err)
-                    print("SQL programming error. Check the log!")
-            except psycopg2.errors.ReadOnlySqlTransaction as err:
-                logger.error(err.pgerror)
-                print("ReadOnlySqlTransaction: cannot execute INSERT in a read-only transaction")
+                    _logger.error(err)
+                    print(self.log.err_message)
+            except psycopg.errors.ReadOnlySqlTransaction as err:
+                _logger.error(err)
+                print(f"Error: {err}")
                 return False
-            except psycopg2.DatabaseError as err:
-                logger.error(err.pgerror)
-                print(err.pgerror)
+            except psycopg.errors.DatabaseError as err:
+                _logger.error(err)
+                print(err)
                 return False
-            except psycopg2.InterfaceError as err:
-                logger.error(err.pgerror)
-                print(err.pgerror)
+            except psycopg.errors.InterfaceError as err:
+                _logger.error(err)
+                print(err)
                 return False
-            except psycopg2.Error as err:
-                if err.pgcode == '42P01':
-                    print('Undefined table in the query.')
-                print(err.pgerror)
-                return False
-        end = perf_counter()
+            except Exception as err:
+                _logger.error(err)
+                print(self.log.err_message)
+            end = perf_counter()
         elapsed_time = end - start
         if elapsed_time < 1:
             print(f"Elapsed time: {elapsed_time:4.3f} s")
@@ -230,14 +247,12 @@ class Queries:
 
     @classmethod
     def get_matviews_list(cls, name='%'):
-
         return """ select schemaname, matviewname, matviewowner from pg_catalog.pg_matviews
                    where matviewname  like '{0}';
                 """.format(name.replace('*', '%'))
 
     @classmethod
     def drop_materialized_view(cls, name='%'):
-
         return """ 
                     DO $$
                     DECLARE
@@ -260,7 +275,6 @@ class Queries:
 
     @classmethod
     def refresh_materialized_view(cls, name='%'):
-
         return """
                     DO $$
                     DECLARE
