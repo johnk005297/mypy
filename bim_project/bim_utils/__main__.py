@@ -19,14 +19,9 @@ from passwork import *
 from git import Git
 from rich.console import Console
 from getpass import getpass
-from tools import Bimeister, File
-
-# block for correct build with pyinstaller, to add .env file
+from tools import Bimeister, Tools
 from dotenv import load_dotenv
-extDataDir = os.getcwd()
-if getattr(sys, 'frozen', False):
-    extDataDir = sys._MEIPASS
-load_dotenv(dotenv_path=os.path.join(extDataDir, '.env'))
+load_dotenv(dotenv_path=Tools.get_resourse_path(".env"))
 
 # opportunity to have access of input history
 if platform.system() == 'Windows':
@@ -102,40 +97,35 @@ if __name__ == '__main__':
             postgre.DB.drop_userObjects(args.url, username=args.user, password=args.password)
 
         elif args.command == 'sql':
+            sql_queries_folder: str = Tools.get_resourse_path('sql_queries')
             pg = postgre.DB()
-            q = postgre.Queries()
             conn_string: str = f"dbname={args.db} host={args.host} user={args.user} password={args.password} port={args.port}"
             if args.file:
                 connection_check: bool = pg.check_db_connection(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port)
                 if not connection_check:
                     sys.exit()
                 pg.execute_query_from_file(conn_string, filepath=args.file, chunk_size=args.chunk_size)
-            elif args.list_matviews:
-                matviews = pg.execute_query(conn_string, query=q.get_matviews_list(args.list_matviews), query_name='matviews-list')
-                if args.print:
-                    file: str = "matviews-list.csv"
-                    df = File.read_file(file)
-                    print(df)
-                    File.remove_file(file)
-            elif args.drop_matviews:                
-                pg.execute_query(conn_string, query=q.drop_materialized_view(args.drop_matviews), query_name='drop-matviews')
+            elif args.get_matviews:
+                pg.execute_query_from_file(conn_string, filepath=os.path.join(sql_queries_folder, 'get_list_of_matviews.sql'), print_output=args.print, name=args.get_matviews.replace('*', '%'))
+            elif args.drop_matviews:
+                pg.execute_query_from_file(conn_string, filepath=os.path.join(sql_queries_folder, 'drop_matviews.sql'), name=args.drop_matviews.replace('*', '%'), print_output=args.print, task='drop-matviews')
             elif args.refresh_matviews:
-                pg.execute_query(conn_string, query=q.refresh_materialized_view(), query_name='refresh-matviews')
-            elif args.mdm:
-                if args.mdm == 'prod':
-                    pg.execute_query(conn_string, query=q.swith_externalKey_for_mdm_connector(value='Prod'), query_name='swith-extkey-mdm-connector')
-                elif args.mdm == 'test':
-                    pg.execute_query(conn_string, query=q.swith_externalKey_for_mdm_connector(value='Test'), query_name='swith-extkey-mdm-connector')
-                else: print("mdm option has two values: prod or test.")
-            elif args.list_db:
-                db_list = pg.execute_query(conn_string, query=q.get_list_of_all_db(), query_name='db-list')
-            elif args.list_tables:
-                pg.execute_query(conn_string, query=q.get_list_of_db_tables(), query_name='tables-list')
-            elif args.create_user_ro:
-                pg.execute_query(conn_string, query=q.create_postgresql_user_ro(args.name, args.user_ro_pass), query_name='create-user-ready-only')
-            elif args.list_users:
-                pg.execute_query(conn_string, query=q.get_list_of_users(), query_name='users-list')
-                pg.print_list_of_users(pg.output_file)
+                pg.execute_query_from_file(conn_string, filepath=os.path.join(sql_queries_folder, 'refresh_matviews.sql'), name=args.refresh_matviews.replace('*', '%'))
+            elif args.get_db:
+                pg.execute_query_from_file(conn_string, filepath=os.path.join(sql_queries_folder, 'get_list_of_db.sql'), print_output=args.print, name=args.get_db.replace('*', '%'))
+            elif args.get_tables:
+                pg.execute_query_from_file(conn_string, filepath=os.path.join(sql_queries_folder, 'get_list_of_db_tables.sql'), print_output=args.print, name=args.get_tables.replace('*', '%'))
+            # elif args.create_user_ro:
+            #     pg.execute_query(conn_string, query=q.create_postgresql_user_ro(args.name, args.user_ro_pass), query_name='create-user-ready-only')
+            # elif args.list_users:
+            #     pg.execute_query(conn_string, query=q.get_list_of_users(), query_name='users-list')
+            #     pg.print_list_of_users(pg.output_file)
+            # elif args.mdm:
+            #     if args.mdm == 'prod':
+            #         pg.execute_query(conn_string, query=q.swith_externalKey_for_mdm_connector(value='Prod'), query_name='swith-extkey-mdm-connector')
+            #     elif args.mdm == 'test':
+            #         pg.execute_query(conn_string, query=q.swith_externalKey_for_mdm_connector(value='Test'), query_name='swith-extkey-mdm-connector')
+            #     else: print("mdm option has two values: prod or test.")
 
         elif args.command == 'vsphere':
             v = vsphere.Vsphere()

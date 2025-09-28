@@ -2,6 +2,7 @@
 import logging
 import inspect
 import os
+import sys
 import socket
 import base64
 import platform
@@ -325,6 +326,17 @@ class Tools:
             if print_err: print(f"An unexpected Requests error occurred: {err}")
             return response if return_err_response else None
 
+    @staticmethod
+    def get_resourse_path(relative_path):
+        """Get the absolute path to folder with sql files.
+        Currently used to bundle the application into one file
+        with access to sql_queries folder, .env file, etc.
+        """
+        try:
+            base_path = sys._MEIPASS
+        except AttributeError:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)
 
 class Bimeister:
 
