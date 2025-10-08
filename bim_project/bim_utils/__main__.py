@@ -13,7 +13,6 @@ import confluence
 import platform
 # import rlcompleter
 import interactive_menu
-import readline
 from parser import Parser
 from passwork import *
 from git import Git
@@ -23,10 +22,9 @@ from tools import Bimeister, Tools
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=Tools.get_resourse_path(".env"))
 
+
 # opportunity to have access of input history
-if platform.system() == 'Windows':
-    import pyreadline3
-else:
+if platform.system() == 'Linux':
     import readline
     # readline.set_completer(rlcompleter.Completer().complete)
     # readline.parse_and_bind('tab: complete')
@@ -93,33 +91,34 @@ if __name__ == '__main__':
             elif args.ls_branch_folder:
                 tree.print_list_of_branch_files(project_id, args.ls_branch_folder)
 
-        elif args.command == 'drop-UO':
-            postgre.DB.drop_userObjects(args.url, username=args.user, password=args.password)
+        # elif args.command == 'drop-UO':
+        #     postgre.DB.drop_userObjects(args.url, username=args.user, password=args.password)
 
         elif args.command == 'sql':
             sql_queries_folder: str = Tools.get_resourse_path('sql_queries')
             pg = postgre.DB()
-            conn_string: str = f"dbname={args.db} host={args.host} user={args.user} password={args.password} port={args.port}"
-            if args.file:
-                connection_check: bool = pg.check_db_connection(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port)
-                if not connection_check:
-                    sys.exit()
-                pg.execute_query_from_file(conn_string, filepath=args.file, chunk_size=args.chunk_size)
-            elif args.get_matviews:
-                pg.execute_query_from_file(conn_string, filepath=os.path.join(sql_queries_folder, 'get_list_of_matviews.sql'), print_output=args.print, name=args.get_matviews.replace('*', '%'))
+            conn = pg.connect_to_db(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port) # psycopg2
+            if not conn:
+                sys.exit()
+            pg.execute_query_from_file(conn, filepath=args.file, chunk_size=args.chunk_size, read_all=args.read_all, print=args.print, print_max=args.print_max) # psycopg2
+            if args.get_matviews:
+                query = pg.get_list_matviews_query(filepath=os.path.join(sql_queries_folder, 'get_list_of_matviews.sql'))
+                params: dict = {"name": args.get_matviews.replace('*', '%')}
+                pg.exec_query(conn, query, "matviews-list.csv", remove_output_file=True, params=params, print=args.print)
             elif args.drop_matviews:
-                pg.execute_query_from_file(conn_string, filepath=os.path.join(sql_queries_folder, 'drop_matviews.sql'), name=args.drop_matviews.replace('*', '%'), print_output=args.print, task='drop-matviews')
-            elif args.refresh_matviews:
-                pg.execute_query_from_file(conn_string, filepath=os.path.join(sql_queries_folder, 'refresh_matviews.sql'), name=args.refresh_matviews.replace('*', '%'))
-            elif args.get_db:
-                pg.execute_query_from_file(conn_string, filepath=os.path.join(sql_queries_folder, 'get_list_of_db.sql'), print_output=args.print, name=args.get_db.replace('*', '%'))
-            elif args.get_tables:
-                pg.execute_query_from_file(conn_string, filepath=os.path.join(sql_queries_folder, 'get_list_of_db_tables.sql'), print_output=args.print, name=args.get_tables.replace('*', '%'))
+                query = pg.get_drop_matviews_query(filepath=os.path.join(sql_queries_folder, 'drop_matviews.sql'), name=args.drop_matviews.replace('*', '%'))
+                pg.exec_query(conn, query, "")
+            # elif args.refresh_matviews:
+            #     pg.execute_query_from_file(conn, filepath=os.path.join(sql_queries_folder, 'refresh_matviews.sql'), name=args.refresh_matviews.replace('*', '%'))
+            # elif args.get_db:
+            #     pg.execute_query_from_file(conn, filepath=os.path.join(sql_queries_folder, 'get_list_of_db.sql'), print_output=args.print, name=args.get_db.replace('*', '%'))
+            # elif args.get_tables:
+            #     pg.execute_query_from_file(conn, filepath=os.path.join(sql_queries_folder, 'get_list_of_db_tables.sql'), print_output=args.print, name=args.get_tables.replace('*', '%'))
+            # elif args.get_users:
+            #     pg.execute_query_from_file(conn, filepath=os.path.join(sql_queries_folder, 'get_list_of_all_db_users.sql'), print_output=args.print, name=args.get_users.replace('*', '%'))
             # elif args.create_user_ro:
-            #     pg.execute_query(conn_string, query=q.create_postgresql_user_ro(args.name, args.user_ro_pass), query_name='create-user-ready-only')
-            # elif args.list_users:
-            #     pg.execute_query(conn_string, query=q.get_list_of_users(), query_name='users-list')
-            #     pg.print_list_of_users(pg.output_file)
+            #     password: str = getpass("Create user password: ")
+            #     pg.execute_query_from_file(conn, filepath=os.path.join(sql_queries_folder, 'create_user_ro.sql'), split_by_delimiter=True, print_output=args.print, name=args.create_user_ro, password=password)
             # elif args.mdm:
             #     if args.mdm == 'prod':
             #         pg.execute_query(conn_string, query=q.swith_externalKey_for_mdm_connector(value='Prod'), query_name='swith-extkey-mdm-connector')

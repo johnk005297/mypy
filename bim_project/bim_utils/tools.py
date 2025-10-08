@@ -464,7 +464,7 @@ class Bimeister:
         except Exception as err:
             print(err)
             return False
-    
+
     @staticmethod
     def print_list_of_templates(templates: list):
         """ Function prints the list of provided templates. """

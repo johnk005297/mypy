@@ -17,3 +17,5 @@ bim_project/bim_utils/requirements.txt
 pyi_spec_file/
 bim_project/bim_utils/textual_menu.py
 bim_project/bim_utils/deprecated_modules
+mypy.code-workspace
+bimutils.spec

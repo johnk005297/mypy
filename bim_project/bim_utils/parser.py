@@ -76,15 +76,19 @@ class Parser():
         sql_parser.add_argument('-u', '--user', required=True, help='Username with access to db')
         sql_parser.add_argument('-pw', '--password', required=False, help='DB user password')
         sql_parser.add_argument('-p', '--port', required=True, help='DB port')
-        # sql_parser.add_argument('--list-users', required=False, action='store_true', help='Print list of all users')
+        sql_parser.add_argument('--get-users', required=False, nargs='?', const='*', help='Get list of users')
         sql_parser.add_argument('--get-db', required=False, nargs='?', const='*', help="Get list of databases by it's name pattern. Default all")
         sql_parser.add_argument('--get-tables', required=False, nargs='?', const='*', help="Get list of the DB tables by it's name pattern. Default all")
-        # sql_parser.add_argument('--create-user-ro', required=False, action='store_true', help='Create db user with read-only access')
+        sql_parser.add_argument('--create-user-ro', required=False, nargs='?', const='bimeister_user_ro', help='Create db user with read-only access')
+        sql_parser.add_argument('--read-all', required=False, action='store_true', help='By default .sql file will be read by split with semicolon. \
+                                This flag forces to read all the data from .sql file')
         # sql_parser.add_argument('--name', required=False, default=os.getenv('USERNAME_RO'), help='Set name for created user')
         # sql_parser.add_argument('-urp', '--user-ro-pass', required=False, default=os.getenv('USERNAME_RO_PASS'), help='Set password for created user')
         # sql_parser.add_argument('--mdm', required=False, help='Switch ExternalKey value to production or test. Requires for MDM connector integration')
-        sql_parser.add_argument('--chunk-size', required=False, type=int, help='Adjust chunks of pulled data from database during select large amount of data')
-        sql_parser.add_argument('--print', required=False, action='store_true', help='Print result on a screen')
+        sql_parser.add_argument('--chunk-size', required=False, type=int, default=10_000, help='Adjust chunks of pulled data from database during select large amount of data')
+        print_exclusive_group = sql_parser.add_mutually_exclusive_group(required=False)
+        print_exclusive_group.add_argument('--print', required=False, action='store_true', help='Print content of dataframe on a screen')
+        print_exclusive_group.add_argument('--print-max', required=False, action='store_true', help='Print full content of dataframe on a screen')
         matviews_exclusive_group = sql_parser.add_mutually_exclusive_group(required=False)
         matviews_exclusive_group.add_argument('-gmv', '--get-matviews', required=False, nargs='?', const='*', help="Get list of materialized views by it's name pattern. Default all")
         matviews_exclusive_group.add_argument('-dmv', '--drop-matviews', required=False, nargs='?', const='*', help="Delete materialized views by it's name pattern. Default all")
@@ -151,11 +155,11 @@ class Parser():
         # passwork.add_argument('--url', required=False, help='')
 
         # mdm connector import config
-        # mdm_connector_parser = subparser.add_parser('mdm', help='Import MDM autosetup config file. Requires for MDM connector integration')
-        # mdm_connector_parser.add_argument('--url', required=True)
-        # mdm_connector_group = mdm_connector_parser.add_mutually_exclusive_group(required=True)
-        # mdm_connector_group.add_argument('--import-file', help='Point .json config file for MDM autosetup for import')
-        # mdm_connector_group.add_argument('--export-file', action='store_true', help='Export .json config file for MDM autosetup')
+        mdm_connector_parser = subparser.add_parser('mdm', help='Import MDM autosetup config file. Requires for MDM connector integration')
+        mdm_connector_parser.add_argument('--url', required=True)
+        mdm_connector_group = mdm_connector_parser.add_mutually_exclusive_group(required=True)
+        mdm_connector_group.add_argument('--import-file', help='Point .json config file for MDM autosetup for import')
+        mdm_connector_group.add_argument('--export-file', action='store_true', help='Export .json config file for MDM autosetup')
         return parser
     
     ## NOT READY ##

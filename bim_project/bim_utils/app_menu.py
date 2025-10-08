@@ -66,7 +66,7 @@ def main_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu',)
-    __version__ = '1.78.65'
+    __version__ = '1.78.67'
 
     def __init__(self):
         self._main_menu = main_menu()

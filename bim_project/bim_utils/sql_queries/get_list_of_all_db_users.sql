@@ -10,4 +10,5 @@ SELECT usename AS role_name,
             CAST('' AS pg_catalog.text)
     END role_attributes
 FROM pg_catalog.pg_user
+where usename ilike %(name)s
 ORDER BY role_name desc;
