@@ -13,4 +13,3 @@ BEGIN
     END LOOP;
 END;
 $$;
--- select matviewname from pg_catalog.pg_matviews where matviewname LIKE '%(name)s';

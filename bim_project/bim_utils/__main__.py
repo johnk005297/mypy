@@ -97,17 +97,23 @@ if __name__ == '__main__':
         elif args.command == 'sql':
             sql_queries_folder: str = Tools.get_resourse_path('sql_queries')
             pg = postgre.DB()
-            conn = pg.connect_to_db(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port) # psycopg2
+            queries = postgre.Queries()
+            conn = pg.connect_to_db(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port)
             if not conn:
                 sys.exit()
-            pg.execute_query_from_file(conn, filepath=args.file, chunk_size=args.chunk_size, read_all=args.read_all, print=args.print, print_max=args.print_max) # psycopg2
+            pg.execute_query_from_file(conn, filepath=args.file, chunk_size=args.chunk_size, read_all=args.read_all, print=args.print, print_max=args.print_max)
             if args.get_matviews:
                 query = pg.get_list_matviews_query(filepath=os.path.join(sql_queries_folder, 'get_list_of_matviews.sql'))
                 params: dict = {"name": args.get_matviews.replace('*', '%')}
-                pg.exec_query(conn, query, "matviews-list.csv", remove_output_file=True, params=params, print=args.print)
+                pg.exec_query(conn, query, output_file="matviews-list.csv", remove_output_file=True, params=params, print=args.print)
             elif args.drop_matviews:
-                query = pg.get_drop_matviews_query(filepath=os.path.join(sql_queries_folder, 'drop_matviews.sql'), name=args.drop_matviews.replace('*', '%'))
-                pg.exec_query(conn, query, "")
+                pattern = args.drop_matviews.replace('*', '%')
+                matviews_before: int = queries.count_matviews(pattern, conn)
+                drop_matviews_query = pg.get_drop_matviews_query(filepath=os.path.join(sql_queries_folder, 'drop_matviews.sql'), name=pattern)
+                pg.exec_query(conn, drop_matviews_query, keep_conn=True)
+                matviews_after: int = queries.count_matviews(pattern, conn)
+                print(f"Deleted: {matviews_before - matviews_after}")
+                conn.close()
             # elif args.refresh_matviews:
             #     pg.execute_query_from_file(conn, filepath=os.path.join(sql_queries_folder, 'refresh_matviews.sql'), name=args.refresh_matviews.replace('*', '%'))
             # elif args.get_db:

@@ -73,13 +73,15 @@ class DB:
             self,
             conn,
             query,
-            output_file,
+            output_file=None,
             remove_output_file=False,
             cursor=None,
             chunk_size=10_000,
             params=None,
             header=True,
-            print=False):
+            print=False,
+            fetch=False,
+            keep_conn=False):
         if not query:
             return None
         is_closed_connection: bool = True
@@ -96,6 +98,9 @@ class DB:
                 cursor.execute(query, params)
             else:
                 cursor.execute(query)
+            if fetch:
+                result = cursor.fetchone()
+                return result
             if cursor.rowcount > 0:
                 mode = 'w' if not os.path.isfile(output_file) else 'a'
                 for chunk in self.record_batches(cursor, chunk_size=chunk_size):
@@ -141,12 +146,11 @@ class DB:
             self._successful_query = True
             conn.commit()
         finally:
-            if not is_closed_connection:
+            if not is_closed_connection and not keep_conn:
                 cursor.close()
                 conn.close()
         if print:
             self.print_pd_dataframe_csv_file(output_file)
-
 
     def execute_query_from_file(self, conn, **kwargs):
         """ Execute query from the file. """
@@ -267,6 +271,12 @@ class DB:
         return query
 
 
+class Queries:
+    @staticmethod
+    def count_matviews(name, conn) -> str:
+        query: str = "select count(*) from pg_catalog.pg_matviews where matviewname ilike '{0}';".format(name)
+        result = DB.exec_query(DB, conn, query, fetch=True, keep_conn=True)
+        return result[0]
 
     # DEPRECATED MODULE
     # @staticmethod
