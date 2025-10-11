@@ -5,7 +5,7 @@ BEGIN
     FOR view_record IN
         SELECT schemaname, matviewname
         FROM pg_matviews
-        WHERE matviewname ILIKE %(name)s
+        WHERE matviewname ILIKE '{0}'
     LOOP
         EXECUTE 'REFRESH MATERIALIZED VIEW '
                 || quote_ident(view_record.schemaname) || '.'

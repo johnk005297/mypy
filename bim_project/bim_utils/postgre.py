@@ -73,19 +73,20 @@ class DB:
             self,
             conn,
             query,
-            output_file=None,
+            output_file=False,
             remove_output_file=False,
             cursor=None,
             chunk_size=10_000,
             params=None,
             header=True,
-            print=False,
+            print_=False,
             fetch=False,
-            keep_conn=False):
+            keep_conn=False,
+            print_elapsed_time=False):
         if not query:
             return None
         is_closed_connection: bool = True
-        if remove_output_file and os.path.isfile(output_file):
+        if remove_output_file and isinstance(output_file, str) and os.path.isfile(output_file):
             try:
                 os.remove(output_file)
             except OSError as err:
@@ -93,6 +94,7 @@ class DB:
         if not cursor:
             is_closed_connection = False
             cursor = conn.cursor()
+        start = perf_counter()
         try:
             if params:
                 cursor.execute(query, params)
@@ -143,13 +145,20 @@ class DB:
             print(err)
             return False
         else:
+            end = perf_counter()
             self._successful_query = True
             conn.commit()
         finally:
             if not is_closed_connection and not keep_conn:
                 cursor.close()
                 conn.close()
-        if print:
+            if self._successful_query and print_elapsed_time:
+                elapsed_time: float = end - start
+                if elapsed_time < 1:
+                    print(f"Elapsed time: {elapsed_time:4.3f} s")
+                else:
+                    print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
+        if print_:
             self.print_pd_dataframe_csv_file(output_file)
 
     def execute_query_from_file(self, conn, **kwargs):
@@ -168,7 +177,7 @@ class DB:
         with conn.cursor() as cursor:
             start = perf_counter()
             with open(filepath, 'r', encoding='utf-8') as f:
-                if kwargs['read_all']:
+                if kwargs.get('read_all') and kwargs['read_all']:
                     file_data = f.read()
                     query = '\n'.join([x for x in file_data.split('\n') if not x.startswith('--') and not x.startswith('#')])
                     self.exec_query(conn, query, output_file=output_file, cursor=cursor, chunk_size=kwargs['chunk_size'])
@@ -192,17 +201,17 @@ class DB:
         conn.close()
         end = perf_counter()
         _logger.info(filepath)
-        elapsed_time = end - start
+        elapsed_time: float = end - start
         if os.path.isfile(output_file):
             sep = "\\" if platform.system == "Windows" else "/"
-            if kwargs['print'] or kwargs['print_max']:
+            if kwargs['print_'] or kwargs['print_max']:
                 if kwargs['print_max']:
                     self.print_pd_dataframe_csv_file(output_file, print_max=True)
                 else:
                     self.print_pd_dataframe_csv_file(output_file)
             else:
                 print(f"Query result saved: {os.getcwd()}{sep}{output_file}")
-        new_line = "\n" if kwargs['print'] or kwargs['print_max'] else ""
+        new_line = "\n" if kwargs['print_'] or kwargs['print_max'] else ""
         if self._successful_query:
             if elapsed_time < 1:
                 print(f"{new_line}Elapsed time: {elapsed_time:4.3f} s")
@@ -248,17 +257,19 @@ class DB:
         for role in roles:
             print(role)
 
-    def get_drop_matviews_query(self, filepath, **kwargs) -> str:
-        """ Prepare query from drop matview sql file. """
+    def get_query(self, filepath, **kwargs) -> str:
+        """ Prepare query from provided sql file.
+            Needs for certain .sql queries using multilines and more than one semicolons.
+        """
         if not filepath or not self.is_query_file_exists(filepath):
             return None
-        if kwargs and kwargs.get('name'):
-            matview_name = kwargs['name']
+        if kwargs and kwargs.get('search_pattern'):
+            pattern = kwargs['search_pattern']
         else: 
             return None
         with open(filepath, 'r', encoding='utf-8') as f:
             file_data = f.read()
-            query = '\n'.join([x for x in file_data.split('\n') if not x.startswith('--') and not x.startswith('#')]).format(matview_name)
+            query = '\n'.join([x for x in file_data.split('\n') if not x.startswith('--') and not x.startswith('#')]).format(pattern)
             return query
 
     def get_list_matviews_query(self, filepath) -> str:

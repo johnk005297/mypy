@@ -14,10 +14,6 @@ def main_menu():
                             \n      delete lic                          delete active license                           \
                             \n      activate lic                        activate already uploaded license               \
                             \n                                                                                          \
-                            \n   Databases                                                                              \
-                            \n      drop uo                             clean bimeisterdb.UserObjects table             \
-                            \n      drop uo -h                          info about UserObjects table                    \
-                            \n                                                                                          \
                             \n   Transfer data                                                                          \
                             \n      export om                           export object model                             \
                             \n      import om                           import object model                             \
@@ -66,7 +62,7 @@ def main_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu',)
-    __version__ = '1.78.67'
+    __version__ = '1.78.68'
 
     def __init__(self):
         self._main_menu = main_menu()
