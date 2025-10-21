@@ -139,11 +139,37 @@ if __name__ == '__main__':
             v = vsphere.Vsphere()
             console = Console()
             headers = v.get_headers(args.user, args.password)
+            exclude_vm: list = args.exclude.split() if args.exclude else []
+            def take_snap(snap_name):
+                for value in vm_array.values():
+                    with console.status(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]", spinner="earth"):
+                        take_snap_status: bool = v.take_snapshot(headers, value['moId'], value['name'], snap_name=snap_name, description=args.desc)
+                        time.sleep(1)
+                        if take_snap_status:
+                            console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
+                        else:
+                            console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
+            def remove_snap(snap_name):
+                for value in vm_array.values():
+                    with console.status(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]", spinner="earth"):
+                        snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
+                        is_snap_exists: bool = False
+                        for snap in snapshots.values():
+                            if snap['snapName'].strip() == snap_name:
+                                is_snap_exists = True
+                                remove_snap_status = v.remove_vm_snapshot(headers, snap['snapId'], print_msg=False)
+                                time.sleep(1)
+                                if remove_snap_status:
+                                    console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
+                                else:
+                                    console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
+                                break
+                        if not is_snap_exists:
+                            console.print(f"[red]Incorrect snapshot name for VM: {value['name']}[/red]")
             if not headers:
                 sys.exit()
             elif args.vsphere_command == 'list-vm':
-                exclude_vm: list = args.exclude.split() if args.exclude else []
-                vm_array = v.get_array_of_vm(headers, exclude_vm, args.filter, args.powered_on)
+                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter, args.powered_on)
                 v.print_list_of_vm(vm_array)
             elif args.vsphere_command == 'restart-vm':
                 console.rule(title="Reboot guest OS")
@@ -152,36 +178,30 @@ if __name__ == '__main__':
                     if not confirm:
                         print("Restart procedure aborted!")
                         sys.exit()
-                    exclude_vm: list = args.exclude.split() if args.exclude else []
-                    vm_array = v.get_array_of_vm(headers, exclude_vm, powered_on=True)
+                    vm_array: dict = v.get_array_of_vm(headers, exclude_vm, powered_on=True)
                     v.restart_os(headers, vm_array)
                 else:
-                    exclude_vm: list = args.exclude.split() if args.exclude else []
-                    vm_array = v.get_array_of_vm(headers, exclude_vm, args.filter, powered_on=True)
+                    vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter, powered_on=True)
                     v.restart_os(headers, vm_array)
             elif args.vsphere_command == 'start-vm':
                 console.rule(title="Power On virtual machine")
-                exclude_vm: list = args.exclude.split() if args.exclude else []
                 vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
                 for value in vm_array.values():
                     v.start_vm(headers, value["moId"], value["name"])
             elif args.vsphere_command == 'stop-vm':
                 console.rule(title="Shutdown guest OS")
-                exclude_vm: list = args.exclude.split() if args.exclude else []
                 vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
                 for value in vm_array.values():
                     v.stop_vm(headers, value["moId"], value["name"])
             elif args.vsphere_command == 'show-snap':
-                exclude_vm: list = args.exclude.split() if args.exclude else []
                 vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
                 for value in vm_array.values():
                     snapshots: dict = v.get_vm_snapshots(headers, value["moId"], value["name"])
                     v.print_vm_snapshots(value["name"], snapshots)
                     print()
-            elif args.vsphere_command in ('take-snap', 'revert-snap', 'remove-snap'):
+            elif args.vsphere_command in ('take-snap', 'revert-snap', 'remove-snap', 'replace-snap'):
                 # Logic of snaps procedures:
                 # get needed VMs -> power OFF -> take/revert/remove snaps -> restore power state
-                exclude_vm: list = args.exclude.split() if args.exclude else []
                 vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
                 if not vm_array:
                     sys.exit("No VM were matched. Exit!")
@@ -194,21 +214,15 @@ if __name__ == '__main__':
                 console.rule(title="Shutdown guest OS")
                 for value in vm_array.values():
                     v.stop_vm(headers, value["moId"], value["name"])
-                snap_name = args.name.strip()
                 if args.vsphere_command == 'take-snap':
+                    snap_name: str = args.name.strip()
                     console.rule(title="Create snaphost")
-                    for value in vm_array.values():
-                        with console.status(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]", spinner="earth") as status:
-                            take_snap_status: bool = v.take_snapshot(headers, value['moId'], value['name'], snap_name=snap_name, description=args.desc)
-                            time.sleep(1)
-                            if take_snap_status:
-                                console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
-                            else:
-                                console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
+                    take_snap(snap_name)
                 elif args.vsphere_command == 'revert-snap':
+                    snap_name: str = args.name.strip()
                     console.rule(title="Revert virtual machine snapshot")
                     for value in vm_array.values():
-                        with console.status(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]", spinner="earth") as status:
+                        with console.status(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]", spinner="earth"):
                             snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
                             is_snap_exists: bool = False
                             for snap in snapshots.values():
@@ -224,23 +238,15 @@ if __name__ == '__main__':
                             if not is_snap_exists:
                                 console.print(f"[red]Incorrect snapshot name for VM: {value['name']}[/red]")
                 elif args.vsphere_command == 'remove-snap':
+                    snap_name: str = args.name.strip()
                     console.rule(title="Remove virtual machine snaphost")
-                    for value in vm_array.values():
-                        with console.status(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]", spinner="earth") as status:
-                            snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
-                            is_snap_exists: bool = False
-                            for snap in snapshots.values():
-                                if snap['snapName'].strip() == snap_name:
-                                    is_snap_exists = True
-                                    remove_snap_status = v.remove_vm_snapshot(headers, snap['snapId'], print_msg=False)
-                                    time.sleep(1)
-                                    if remove_snap_status:
-                                        console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
-                                    else:
-                                        console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
-                                    break
-                            if not is_snap_exists:
-                                console.print(f"[red]Incorrect snapshot name for VM: {value['name']}[/red]")
+                    remove_snap(snap_name)
+                elif args.vsphere_command == 'replace-snap':
+                    old_snap_name: str = args.old
+                    new_snap_name: str = args.new
+                    remove_snap(old_snap_name)
+                    take_snap(new_snap_name)
+
                 # Restoring power state
                 console.rule(title="Power state restore")
                 for value in vm_array.values():
