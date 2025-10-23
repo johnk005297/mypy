@@ -101,7 +101,7 @@ if __name__ == '__main__':
             conn = pg.connect_to_db(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port)
             if not conn:
                 sys.exit()
-            pg.execute_query_from_file(conn, filepath=args.file, chunk_size=args.chunk_size, read_all=args.read_all, print_=args.print, print_max=args.print_max)
+            pg.execute_query_from_file(conn, filepath=args.file, chunk_size=args.chunk_size, read_by_line=args.read_by_line, print_=args.print, print_max=args.print_max)
             if args.get_matviews:
                 query = pg.get_list_matviews_query(filepath=os.path.join(sql_queries_folder, 'get_list_of_matviews.sql'))
                 params: dict = {"name": args.get_matviews.replace('*', '%')}

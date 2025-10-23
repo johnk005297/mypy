@@ -173,30 +173,30 @@ class DB:
         output_file: str = self.get_output_filename(filepath)
         if not conn or not output_file:
             return None
-        has_delimiter: bool = False
+
         with conn.cursor() as cursor:
             start = perf_counter()
+            has_delimiter: bool = False
             with open(filepath, 'r', encoding='utf-8') as f:
-                if kwargs.get('read_all') and kwargs['read_all']:
-                    file_data = f.read()
-                    query = '\n'.join([x for x in file_data.split('\n') if not x.startswith('--') and not x.startswith('#')])
-                    self.exec_query(conn, query, output_file=output_file, cursor=cursor, chunk_size=kwargs['chunk_size'])
-                else:
+                if kwargs['read_by_line']:
                     sql_buffer: list = []
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith('--') or line.startswith('#'):
-                        continue # skip empty lines and comments
-                    sql_buffer.append(line)
-                    if line.endswith(';'):
-                        has_delimiter = True
-                        query: str = ' '.join(sql_buffer).strip()
-                        if query:
-                            self.exec_query(conn, query, output_file=output_file, cursor=cursor, chunk_size=kwargs['chunk_size'])
-                            sql_buffer = [] # clear buffer for next query
-                if not has_delimiter:
-                    print(f"No semicolon(;) symbol was found in {os.path.basename(filepath)}\nCheck query syntax or use '--read-all' flag, and try again!")
-                    sys.exit()
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('--') or line.startswith('#'):
+                            continue # skip empty lines and comments
+                        sql_buffer.append(line)
+                        if line.endswith(';'):
+                            has_delimiter = True
+                            query: str = ' '.join(sql_buffer).strip()
+                            if query:
+                                self.exec_query(conn, query, output_file=output_file, cursor=cursor, chunk_size=kwargs['chunk_size'])
+                                sql_buffer = [] # clear buffer for next query
+                    if not has_delimiter:
+                        print(f"No semicolon(;) symbol was found in {os.path.basename(filepath)}\nCheck query syntax or use '--read-all' flag, and try again!")
+                        sys.exit()
+                else:
+                    query = f.read()
+                    self.exec_query(conn, query, output_file=output_file, cursor=cursor, chunk_size=kwargs['chunk_size'])
         cursor.close()
         conn.close()
         end = perf_counter()

@@ -87,7 +87,7 @@ class Parser():
         sql_parser.add_argument('--get-db', required=False, nargs='?', const='*', help="Get list of databases by it's name pattern. Default all")
         sql_parser.add_argument('--get-tables', required=False, nargs='?', const='*', help="Get list of the DB tables by it's name pattern. Default all")
         sql_parser.add_argument('--create-user-ro', required=False, nargs='?', const='bimeister_user_ro', help='Create db user with read-only access')
-        sql_parser.add_argument('--read-all', required=False, action='store_true', help='By default .sql file will be read by split with semicolon. \
+        sql_parser.add_argument('--read-by-line', required=False, action='store_true', help='Read .sql file line by line delimited by semicolons. \
                                 This flag forces to read all the data from .sql file')
         # sql_parser.add_argument('--name', required=False, default=os.getenv('USERNAME_RO'), help='Set name for created user')
         # sql_parser.add_argument('-urp', '--user-ro-pass', required=False, default=os.getenv('USERNAME_RO_PASS'), help='Set password for created user')

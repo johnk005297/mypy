@@ -24,7 +24,7 @@ class Vsphere:
 
     url: str = "https://vcenter.bimeister.io"
     connection_err_msg: str = "Connection error. Check the log."
-    vsphere_release_schema: str = "8.0.3.0"
+    _vsphere_release_schema: str = "8.0.3.0"
 
     def __init__(self):
         self.tools = Tools()
@@ -121,13 +121,13 @@ class Vsphere:
     def get_vm_power_state(self, headers, vm):
         """ Check for power state for provided VMs. """
 
-        url: str = f"{self.url}/rest/vcenter/vm/{vm}/power"
+        url: str = f"{self.url}/api/vcenter/vm/{vm}/power"
         response = self.tools.make_request('GET', url, headers=headers, verify=False, print_err=True)
         if not response:
             return None
         try:
             data = response.json()
-            return data['value']['state']
+            return data['state']
         except Exception as err:
             logger.error(err)
             return None
@@ -217,7 +217,7 @@ class Vsphere:
     def stop_vm(self, headers, moId, name):
         """ Stop provided VM in vSphere. """
 
-        url_shutdown: str = f"{self.url}/rest/vcenter/vm/{moId}/guest/power?action=shutdown"
+        url_shutdown: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachine/{moId}/ShutdownGuest"
         url_stop: str = f"{self.url}/api/vcenter/vm/{moId}/power?action=stop"
         shutdown_msg: str = f"[bold magenta]Shutdown guest OS: {name}[bold magenta]  [green]✅[/green]"
         shutting_down_msg: str = f"[bold magenta]Shutdown guest OS: {name}[/bold magenta]"
@@ -256,7 +256,7 @@ class Vsphere:
     def take_snapshot(self, headers, moId, vm_name, snap_name='', description=''):
         """ Function takes snapshot of a given VM. Requires moId of the VM."""
 
-        url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachine/{moId}/CreateSnapshotEx_Task"
+        url: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachine/{moId}/CreateSnapshotEx_Task"
         payload = {
                     "description": description,
                     "memory": False,
@@ -275,7 +275,7 @@ class Vsphere:
     def get_vm_snapshots(self, headers, moId, vm_name):
         """ Get snapshot Id, virtual machine Id, snapshot name for a given VM. """
 
-        url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachine/{moId}/snapshot"
+        url: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachine/{moId}/snapshot"
         try:
             response = requests.get(url=url, headers=headers, verify=False)
             if response.status_code == 200:
@@ -322,7 +322,7 @@ class Vsphere:
     def revert_to_snapshot(self, headers, moId, vm_name, print_msg=True):
         """ Revert chosen VM(s) to a given snapshot. """
 
-        url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachineSnapshot/{moId}/RevertToSnapshot_Task"
+        url: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachineSnapshot/{moId}/RevertToSnapshot_Task"
         try:
             payload = {
                         "suppressPowerOn": True
@@ -350,7 +350,7 @@ class Vsphere:
     def remove_vm_snapshot(self, headers, moId, print_msg=True):
         """ Remove snapshots for a given VM. """
 
-        url: str = f"{self.url}/sdk/vim25/{self.vsphere_release_schema}/VirtualMachineSnapshot/{moId}/RemoveSnapshot_Task"
+        url: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachineSnapshot/{moId}/RemoveSnapshot_Task"
         try:
             payload = {
                         "removeChildren": False
@@ -377,15 +377,17 @@ class Vsphere:
         import json
         tools = Tools()
         # url: str = f"{self.url}/api/cis/tasks?action=list"
-        url: str = f"{self.url}/rest/cis/tasks"
+        # url: str = f"{self.url}/rest/cis/tasks"
+        url: str = f"{self.url}/api/vcenter/tasks"
         headers.update({'Content-type': 'application/json'})
-        payload = {
-            "filter_spec": {
-                "tasks": ['task-1360811'],
-                "services": ["com.vmware.vcenter.VM"]
-            }
-        }
-        response = self.tools.make_request('GET', url, return_err_response=True, data=json.dumps(payload), verify=False, headers=headers)
+        # payload = {
+        #     "filter_spec": {
+        #         "tasks": ['task-1360811'],
+        #         "services": ["com.vmware.vcenter.VM"]
+        #     }
+        # }
+        # response = self.tools.make_request('GET', url, return_err_response=True, data=json.dumps(payload), verify=False, headers=headers)
+        response = self.tools.make_request('GET', url, return_err_response=True, verify=False, headers=headers)
         # print(response.status_code)
         # print(response.json())
 
