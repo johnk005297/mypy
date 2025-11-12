@@ -4,7 +4,7 @@ import logging
 import sys
 
 
-def file_logger(log_file, logLevel=logging.DEBUG):
+def file_logger(filepath, logLevel=logging.DEBUG):
     """ Create a custom logger with file output. """
 
     # Create a custom logger
@@ -12,12 +12,18 @@ def file_logger(log_file, logLevel=logging.DEBUG):
     root_logger.setLevel(logLevel)
 
     # Prevent adding multiple handlers if the logger is already configured
-    if not root_logger.handlers:
-        f_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
-        f_format = logging.Formatter(fmt="%(asctime)s %(levelname)s %(module)s:%(funcName)s(line:%(lineno)d) | %(message)s",
-                                     datefmt="'%Y-%m-%d %H:%M:%S'")
-        f_handler.setFormatter(f_format)
-        root_logger.addHandler(f_handler)
+    try:
+        if not root_logger.handlers:
+            f_handler = logging.FileHandler(filepath, mode='a', encoding='utf-8')
+            f_format = logging.Formatter(fmt="%(asctime)s %(levelname)s %(module)s:%(funcName)s(line:%(lineno)d) | %(message)s",
+                                        datefmt="'%Y-%m-%d %H:%M:%S'")
+            f_handler.setFormatter(f_format)
+            root_logger.addHandler(f_handler)
+    except FileNotFoundError:
+            sys.exit("Error: log file not found!")
+    except PermissionError:
+            print(f"Write access is not granted for '{filepath}' file.\nRemove the file and try again!")
+            sys.exit()
     return root_logger
 
 
@@ -25,31 +31,28 @@ class Logs:
 
     def __init__(self):
         self._filepath: str = "/tmp/bimutils.log" if platform.system() == "Linux" else ".bimutils.log"
-        self.set_full_access_to_log_file(self.filepath, 0o666)
 
     @property
     def filepath(self):
         return self._filepath
-    
+
     @property
     def err_message(self):
         return f"Error. Check the log: {self._filepath}"
 
     def set_full_access_to_log_file(self, filepath, mode):
-        """ Grant read and write permissions to all users(666) to log file. """
+        """ Perform check if file exists, and if user has access to it.
+        Grant read and write permissions to all users(666) to log file.
+        """
 
         if platform.system() == 'Windows':
             return
         try:
-            os.chmod(filepath, mode)
-        except FileExistsError:
-            pass
-        except PermissionError:
-            print(f"Permission denied: Unable to create '{filepath}'.")
-            sys.exit()
-        except FileNotFoundError as err:
-            with open(filepath, 'x', encoding='utf-8'):
-                pass
-        except Exception as err:
-            print(f"An error occurred: {err}")
-            sys.exit()
+            if not os.access(filepath, os.F_OK): # check if file exists
+                with open(filepath, 'w', encoding='utf-8'):
+                    pass
+                os.chmod(filepath, mode)
+            if not os.access(filepath, os.W_OK):
+                sys.exit(f"Write access is not granted for '{filepath}'.\nRemove the file, and try again!")
+        except OSError as err:
+            print(f"Error: {err}")

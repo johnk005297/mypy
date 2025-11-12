@@ -32,6 +32,7 @@ if platform.system() == 'Linux':
 
 if __name__ == '__main__':
     logs = mlogger.Logs()
+    logs.set_full_access_to_log_file(logs.filepath, 0o666)
     logger = mlogger.file_logger(logs.filepath, logLevel=logging.INFO)
     parser = Parser().get_parser()
     args = parser.parse_args()
