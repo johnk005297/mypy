@@ -132,7 +132,7 @@ class Vsphere:
             logger.error(err)
             return None
 
-    def get_array_of_vm(self, headers, exclude: list, search_for='', powered_on=False):
+    def get_array_of_vm(self, headers, exclude: list, search_for='', powered_on=False) -> dict:
         """ Function returns an array of VM in vSphere's cluster in format {'vm-moId': 'vm-name'}. """
 
         url = f"{self.url}/api/vcenter/vm"
@@ -272,7 +272,7 @@ class Vsphere:
             print(f"Error with {vm_name}. Check logs: {logs.filepath}")
             return False
     
-    def get_vm_snapshots(self, headers, moId, vm_name):
+    def get_vm_snapshots(self, headers, moId, vm_name) -> dict:
         """ Get snapshot Id, virtual machine Id, snapshot name for a given VM. """
 
         url: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachine/{moId}/snapshot"
@@ -280,7 +280,7 @@ class Vsphere:
             response = requests.get(url=url, headers=headers, verify=False)
             if response.status_code == 200:
                 data = response.json() if bool(response.text) else False
-                logger.info(f"Get list of snapshots VM: {vm_name}")                
+                logger.info(f"Get list of snapshots VM: {vm_name}")
         except requests.exceptions.HTTPError as err:
             logger.error(err)
             print("Error. Check the log!")
@@ -369,7 +369,21 @@ class Vsphere:
             logger.error(err)
             print("Error. Check the log!")
             return False
-    
+
+    def is_has_snap(self, headers, vm_name, snap_name) -> bool:
+        """ Function tries to find a snapshot in vSphere for a given VM.
+            Returns True if object was found, false otherwise.
+            Basically, it's a workaround to get task status.
+        """
+
+        # getting first key from the dictionary
+        vm_moId = next(iter(self.get_array_of_vm(headers, [], vm_name)))
+        snapshots = [snap['snapName'].strip() for snap in self.get_vm_snapshots(headers, vm_moId, vm_name).values()]
+        if snap_name in snapshots:
+            return True
+        else:
+            return False
+
     def get_tasks(self, headers):
         """ Function not in use, because of that piece of shit vSphere API documentation.
 

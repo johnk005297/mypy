@@ -144,8 +144,18 @@ if __name__ == '__main__':
                 for value in vm_array.values():
                     with console.status(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]", spinner="earth"):
                         take_snap_status: bool = v.take_snapshot(headers, value['moId'], value['name'], snap_name=snap_name, description=args.desc)
-                        time.sleep(1)
+                        time.sleep(2)
                         if take_snap_status:
+                            count = Tools.counter()
+                            while True:
+                                time.sleep(5)
+                                if v.is_has_snap(headers, value['name'], snap_name):
+                                    break
+                                elif count() == 1200:
+                                    sys.exit("Error: Couldn't take snapshot in 20 minutes. Abort procedure!")
+                                    break
+                                else:
+                                    continue
                             console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
                         else:
                             console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
@@ -158,14 +168,24 @@ if __name__ == '__main__':
                             if snap['snapName'].strip() == snap_name:
                                 is_snap_exists = True
                                 remove_snap_status = v.remove_vm_snapshot(headers, snap['snapId'], print_msg=False)
-                                time.sleep(1)
+                                time.sleep(2)
                                 if remove_snap_status:
+                                    count = Tools.counter()
+                                    while True:
+                                        time.sleep(5)
+                                        if not v.is_has_snap(headers, value['name'], snap['snapName'].strip()):
+                                            break
+                                        elif count() == 1200:
+                                            sys.exit("Error: Couldn't remove snapshot in 20 minutes. Abort procedure!")
+                                            break
+                                        else:
+                                            continue
                                     console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
                                 else:
                                     console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
                                 break
                         if not is_snap_exists:
-                            console.print(f"[red]Incorrect snapshot name for VM: {value['name']}[/red]")
+                            console.print(f"[red]No snapshot name '{snap_name}' for VM: {value['name']}[/red]")
             if not headers:
                 sys.exit()
             elif args.vsphere_command == 'list-vm':
@@ -236,7 +256,7 @@ if __name__ == '__main__':
                                         console.print(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
                                     break
                             if not is_snap_exists:
-                                console.print(f"[red]Incorrect snapshot name for VM: {value['name']}[/red]")
+                                console.print(f"[red]No snapshot name '{snap_name}' for VM: {value['name']}[/red]")
                 elif args.vsphere_command == 'remove-snap':
                     snap_name: str = args.name.strip()
                     console.rule(title="Remove virtual machine snaphost")

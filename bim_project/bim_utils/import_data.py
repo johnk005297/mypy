@@ -156,6 +156,28 @@ class Import_data:
             print("No workflows for import." if not os.listdir(f'{self._transfer_folder}/{self._workflows_folder}') else "")
             return False
 
+class Users_attributes:
+
+    def __init__(self):
+        pass
+
+    def set_user_attributes_code(self, url, token, codes: list):
+        """ Set users attributes codes """
+        
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        if not codes or not isinstance(codes, list):
+            return None
+        for code in codes:
+            try:
+                response = _tools.make_request('PUT', f'{url}/api/public/user-attributes/{code}', return_err_response=True, headers=headers, verify=False)
+                if response.status_code in range(200, 205):
+                    print(f"{code}: attribute applied successfully")
+                else:
+                    print(f"Error: {response.status_code} - {code}. Check logs: {_logs.filepath}")
+            except Exception as err:
+                _logger.error(err)
+                print(_logs.err_message)
+                return None
 
 class Abac:
 

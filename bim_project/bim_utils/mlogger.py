@@ -6,7 +6,7 @@ import sys
 
 def file_logger(log_file, logLevel=logging.DEBUG):
     """ Create a custom logger with file output. """
-    
+
     # Create a custom logger
     root_logger = logging.getLogger()
     root_logger.setLevel(logLevel)
@@ -25,7 +25,7 @@ class Logs:
 
     def __init__(self):
         self._filepath: str = "/tmp/bimutils.log" if platform.system() == "Linux" else ".bimutils.log"
-        self.set_full_access_to_log_file(self.filepath, 0o777)
+        self.set_full_access_to_log_file(self.filepath, 0o666)
 
     @property
     def filepath(self):
@@ -36,7 +36,7 @@ class Logs:
         return f"Error. Check the log: {self._filepath}"
 
     def set_full_access_to_log_file(self, filepath, mode):
-        """ Provide full access(777) to log file. """
+        """ Grant read and write permissions to all users(666) to log file. """
 
         if platform.system() == 'Windows':
             return

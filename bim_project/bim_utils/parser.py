@@ -1,5 +1,4 @@
 import argparse
-import os
 from datetime import datetime
 
 
@@ -53,7 +52,7 @@ class Parser():
         replace_snap_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name using regular expressions')
         replace_snap_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
         replace_snap_parser.add_argument('--old', required=True, help='Old snapshot to delete')
-        replace_snap_parser.add_argument('--new', required=True, help='New snapshot to create')
+        replace_snap_parser.add_argument('--new', required=False, default='{}'.format(datetime.today().strftime("%d.%m.%Y_%H:%M:%S")), help='New snapshot to create')
         replace_snap_parser.add_argument('--desc', required=False, default=' ', help='Description for a snapshot')
 
         start_vm_parser = vsphere_subparser.add_parser('start-vm', help='Start select VMs in vSphere')
