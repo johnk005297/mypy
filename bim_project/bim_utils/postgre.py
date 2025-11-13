@@ -107,12 +107,21 @@ class DB:
                 mode = 'w' if not os.path.isfile(output_file) else 'a'
                 for chunk in self.record_batches(cursor, chunk_size=chunk_size):
                     chunk.to_csv(output_file, index=False, header=header, mode=mode)
-                    header, mode = False, 'a'
+                    header, mode = False, 'a'                
         except errors.UndefinedTable as err:
             _logger.error(err)
             print(err)
             return False
+        except errors.InsufficientPrivilege as err:
+            _logger.error(err.pgerror)
+            print(f"Error: Insufficient Privilege (SQLSTATE 42501). Details: {err}")
+            conn.rollback()
+            return False
         except errors.ProgrammingError as err:
+            if errors.lookup("42501"):
+                print(f"Error: Insufficient Privilege (SQLSTATE 42501). Details: {err}")
+                conn.rollback()
+                return False
             if cursor.rowcount in (0, -1):
                 _logger.info(f"{cursor}")
                 print(cursor.statusmessage)
