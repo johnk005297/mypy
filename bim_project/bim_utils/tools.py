@@ -509,8 +509,13 @@ class Bimeister:
 
         if not url or not token or not username or not password:
             return None
-        headers = {'Content-Type': 'application/json', 'Authorization': f"Bearer {token}"}
-        payload: dict = {
+        headers = {
+            'accept': 'application/json',
+            'Content-Type': 'application/json-patch+json',
+            'Authorization': f'Bearer {token}',
+            'X-Swagger-Cluster-Id': 'auth'
+            }
+        data: dict = {
             "name": username,
             "password": password 
         }
@@ -519,7 +524,7 @@ class Bimeister:
         else:
             url: str = f"{url}/api/Users/check-user-basic-auth"
         try:
-            response = Tools.make_request('POST', url, data=json.dumps(payload), return_err_response=True, headers=headers, verify=False)
+            response = Tools.make_request('POST', url, json=data, return_err_response=True, headers=headers, verify=False)
             if response.status_code in range(200, 205):
                 print(f"Username: {username}\nStatus: True")
             else:
