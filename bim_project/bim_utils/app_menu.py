@@ -26,9 +26,8 @@ def main_menu():
                             \n   User                                                                                   \
                             \n      ptoken                              get private token                               \
                             \n      token                               get user access token(Bearer)                   \
-                            \n      sh                                  run terminal command(current host)              \
-                            \n      ssh connect                         run terminal command(remote host)               \
                             \n      ls                                  list current folder content                     \
+                            \n      basic-auth --set                    set basic authentication                        \
                             \n                                                                                          \
                             \n   Feature Toggle                                                                         \
                             \n      ft --list                           display list of features                        \
@@ -62,7 +61,7 @@ def main_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu',)
-    __version__ = '1.78.73'
+    __version__ = '1.78.74'
 
     def __init__(self):
         self._main_menu = main_menu()

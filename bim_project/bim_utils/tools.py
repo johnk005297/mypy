@@ -502,3 +502,29 @@ class Bimeister:
                 _logger.error(err)
                 print(_logs.err_message)
                 return False
+    
+    @staticmethod
+    def basic_auth(url, token, username, password, set=False):
+        """ Check basic auth for a given user. """
+
+        if not url or not token or not username or not password:
+            return None
+        headers = {'Content-Type': 'application/json', 'Authorization': f"Bearer {token}"}
+        payload: dict = {
+            "name": username,
+            "password": password 
+        }
+        if set:
+            url: str = f"{url}/api/Users/set-user-basic-auth"
+        else:
+            url: str = f"{url}/api/Users/check-user-basic-auth"
+        try:
+            response = Tools.make_request('POST', url, data=json.dumps(payload), return_err_response=True, headers=headers, verify=False)
+            if response.status_code in range(200, 205):
+                print(f"Username: {username}\nStatus: True")
+            else:
+                print(f"Username: {username}\nStatus: False")
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None

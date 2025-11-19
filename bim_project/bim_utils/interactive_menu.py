@@ -20,7 +20,6 @@ def launch_menu():
     Import_data_main = import_data.Import_data()
     Risk_assessment = import_data.RiskAssesment()
     Abac = import_data.Abac()
-    Users_attr = import_data.Users_attributes()
     FT = featureToggle.FeatureToggle()
 
 
@@ -158,12 +157,6 @@ def launch_menu():
                     except Exception as err:
                         print(err)
                         continue
-
-            #    ''' =============================================================================== Users attributes ================================================================================= '''
-            case ['users-attr', *_]:
-                if user_command[:3] == ['users-attr', 'set', 'code']:
-                    codes: list = [code.lstrip('--') for code in user_command[3:]]
-                    Users_attr.set_user_attributes_code(url, token, codes)
 
             #    ''' =============================================================================== ABAC ============================================================================================= '''
             case ['abac', 'export', *_]:
@@ -361,6 +354,14 @@ def launch_menu():
                 except IndexError:
                     print("Incorrect data. Can't connect.")
                     continue
+
+            case ['basic-auth', *_]:
+                if user_command == ['basic-auth']:
+                    Bimeister.basic_auth(url, token, username, password)
+                elif user_command == ['basic-auth', '--set']:
+                    Bimeister.basic_auth(url, token, username, password, set=True)
+                else:
+                    print("Unknown command")
 
             # wildcard pattern if no cases before where matched
             case _:
