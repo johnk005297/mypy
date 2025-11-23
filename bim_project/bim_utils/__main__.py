@@ -111,7 +111,10 @@ if __name__ == '__main__':
                 pattern = args.drop_matviews.replace('*', '%')
                 matviews_before: int = queries.count_matviews(pattern, conn)
                 drop_matviews_query = pg.get_query(filepath=os.path.join(sql_queries_folder, 'drop_matviews.sql'), search_pattern=pattern)
-                pg.exec_query(conn, drop_matviews_query, keep_conn=True)
+                result = pg.exec_query(conn, drop_matviews_query, keep_conn=True)
+                if not result:
+                    conn.close()
+                    sys.exit()
                 matviews_after: int = queries.count_matviews(pattern, conn)
                 print(f"Deleted: {matviews_before - matviews_after}")
                 conn.close()

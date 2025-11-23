@@ -131,6 +131,7 @@ class DB:
             else:
                 _logger.error(err)
                 print(self._log.err_message)
+                return None
         except errors.ReadOnlySqlTransaction as err:
             _logger.error(err.pgerror)
             print(f"Error: {err}")
@@ -297,6 +298,8 @@ class Queries:
     def count_matviews(name, conn) -> str:
         query: str = "select count(*) from pg_catalog.pg_matviews where matviewname ilike '{0}';".format(name)
         result = DB.exec_query(DB, conn, query, fetch=True, keep_conn=True)
+        if not result and not result[0]:
+            return None
         return result[0]
 
     # DEPRECATED MODULE
