@@ -356,6 +356,7 @@ class Bimeister:
                     print(response.status_code)
                     print("No API route was found!")
                 elif response.status_code == 204:
+                    _logger.info(f"{url} | {response.status_code}")
                     print("Files uploaded successfully.")
         except FileNotFoundError as err:
             _logger.error(err)

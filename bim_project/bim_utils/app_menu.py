@@ -61,7 +61,7 @@ def main_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu',)
-    __version__ = '1.78.75'
+    __version__ = '1.78.76'
 
     def __init__(self):
         self._main_menu = main_menu()
@@ -78,7 +78,7 @@ class AppMenu:
 
         exit_command = ['q']
         try:
-            user_command = input("\nCommand (m for help): ").strip().split()
+            user_command = input("\nCommand (m for help): ").strip().rstrip(';').strip().split()
         except KeyboardInterrupt:
             print('\nKeyboardInterrupt')
             return exit_command
