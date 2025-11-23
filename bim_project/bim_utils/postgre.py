@@ -119,6 +119,7 @@ class DB:
             return False
         except errors.ProgrammingError as err:
             if errors.lookup("42501"):
+                _logger.error(err.pgerror)
                 print(f"Error: Insufficient Privilege (SQLSTATE 42501). Details: {err}")
                 conn.rollback()
                 return False
