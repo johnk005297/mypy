@@ -325,6 +325,9 @@ class Tools:
             _logger.error(f"{caller_func} {err}")
             if print_err: print(f"An unexpected Requests error occurred: {err}")
             return response if return_err_response else None
+        except Exception as err:
+            _logger.error(err)
+            return response if return_err_response else None
 
     @staticmethod
     def get_resourse_path(relative_path):

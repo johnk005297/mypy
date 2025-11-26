@@ -7,8 +7,7 @@ import time
 import export_data
 import auth
 import license
-from tools import File
-from tools import Tools
+from tools import File, Tools
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
@@ -222,6 +221,9 @@ class Abac:
                         print(f"{svc_name}: {key} configuration uploaded successfully")
                     else:
                         print(f"Error: {response.status_code} - {svc_name}. Check logs: {_logs.filepath}")
+                        _logger.error(f"HEADERS RECEIVED:\n{response.headers}")
+                        _logger.error(f"TEXT:\n{response.text}")
+                        _logger.error(f"HEADERS SENT:\n{response.request.headers}")
             except FileNotFoundError as err:
                 _logger.error(err)
                 print(err)
