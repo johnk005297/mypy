@@ -2,6 +2,7 @@ import platform
 import os
 import logging
 import sys
+from pathlib import Path
 
 
 def file_logger(filepath, logLevel=logging.DEBUG):
@@ -30,7 +31,7 @@ def file_logger(filepath, logLevel=logging.DEBUG):
 class Logs:
 
     def __init__(self):
-        self._filepath: str = "/tmp/bimutils.log" if platform.system() == "Linux" else ".bimutils.log"
+        self._filepath: str = f"{Path.home()}/.bimutils.log" if platform.system() == "Linux" else ".bimutils.log"
 
     @property
     def filepath(self):

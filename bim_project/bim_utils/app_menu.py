@@ -38,7 +38,6 @@ def main_menu():
                             \n                                                                                          \
                             \n   ABAC                                                                                   \
                             \n      abac import                         import attribute-based access control file(s)   \
-                            \n        -h                                help message                                    \
                             \n                                                                                          \
                             \n   Custom UI                                                                              \
                             \n      apply UI -f [filename]              apply custom user interface                     \
@@ -61,7 +60,7 @@ def main_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu',)
-    __version__ = '1.78.77'
+    __version__ = '1.78.78'
 
     def __init__(self):
         self._main_menu = main_menu()
