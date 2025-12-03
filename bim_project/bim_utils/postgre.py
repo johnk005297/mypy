@@ -16,10 +16,22 @@ _logger = logging.getLogger(__name__)
 
 class DB:
 
-    _successful_query: bool = False
+    __is_query_successful: bool = False
 
     def __init__(self):
         self._log = Logs()
+
+    @classmethod
+    def get_query_status(cls):
+        return cls.__is_query_successful
+    
+    @classmethod
+    def set_query_status(cls, value):
+        if isinstance(value, bool):
+            cls.__is_query_successful = value
+            return cls.__is_query_successful
+        else:
+            raise ValueError("Query status suppose to be boolean!")
 
     def connect_to_db(self, **kwargs):
         """ Function for establishing connection to db. """
@@ -118,16 +130,11 @@ class DB:
             conn.rollback()
             return False
         except errors.ProgrammingError as err:
-            if errors.lookup("42501"):
-                _logger.error(err.pgerror)
-                print(f"Error: Insufficient Privilege (SQLSTATE 42501). Details: {err}")
-                conn.rollback()
-                return False
             if cursor.rowcount in (0, -1):
                 _logger.info(f"{cursor}")
                 print(cursor.statusmessage)
                 conn.commit()
-                self._successful_query = True
+                self.set_query_status(True)
             else:
                 _logger.error(err)
                 print(self._log.err_message)
@@ -157,13 +164,13 @@ class DB:
             return False
         else:
             end = perf_counter()
-            self._successful_query = True
+            self.set_query_status(True)
             conn.commit()
         finally:
             if not is_closed_connection and not keep_conn:
                 cursor.close()
                 conn.close()
-            if self._successful_query and print_elapsed_time:
+            if self.get_query_status() and print_elapsed_time:
                 elapsed_time: float = end - start
                 if elapsed_time < 1:
                     print(f"Elapsed time: {elapsed_time:4.3f} s")
@@ -223,7 +230,7 @@ class DB:
             else:
                 print(f"Query result saved: {os.getcwd()}{sep}{output_file}")
         new_line = "\n" if kwargs['print_'] or kwargs['print_max'] else ""
-        if self._successful_query:
+        if self.get_query_status():
             if elapsed_time < 1:
                 print(f"{new_line}Elapsed time: {elapsed_time:4.3f} s")
             else:

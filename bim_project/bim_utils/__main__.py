@@ -111,8 +111,8 @@ if __name__ == '__main__':
                 pattern = args.drop_matviews.replace('*', '%')
                 matviews_before: int = queries.count_matviews(pattern, conn)
                 drop_matviews_query = pg.get_query(filepath=os.path.join(sql_queries_folder, 'drop_matviews.sql'), search_pattern=pattern)
-                result = pg.exec_query(conn, drop_matviews_query, keep_conn=True)
-                if not result:
+                pg.exec_query(conn, drop_matviews_query, keep_conn=True)
+                if not pg.get_query_status():
                     conn.close()
                     sys.exit()
                 matviews_after: int = queries.count_matviews(pattern, conn)
