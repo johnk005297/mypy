@@ -51,7 +51,8 @@ class Auth:
         else:
             self.url = url.strip().lower()
         self.url = self.url[:-1] if self.url.endswith('/') else self.url
-        self.url = self.url[:-5] if self.url.endswith('auth') else self.url
+        self.url = self.url[:-len("/auth")] if self.url.endswith('/auth') else self.url
+        self.url = self.url[:-len("/products")] if self.url.endswith('/products') else self.url
         if not self.url_validation(self.url):
             return False
         if not self.get_providerId(self.url):

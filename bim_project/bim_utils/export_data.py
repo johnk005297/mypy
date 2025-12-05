@@ -228,7 +228,7 @@ class Export_data:
         count = Tools.counter()
         for node in workflows:
             for id, name in workflows[node].items():
-                time.sleep(0.03)
+                time.sleep(0.01)
                 print(f'   {count()}){node}: {id}  {name}')
 
     def delete_workflows(self, url, token, workflows: dict):

@@ -57,21 +57,10 @@ class Import_data:
             self.export_serverId = server_info.split()[1]
             return True
 
-
-    def get_BimClassId_of_current_process(self, workflowId, url, token):
-        ''' Function returns BimClass_id of provided workFlow proccess. '''
-
-        headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-        url_get_BimClassID_of_current_process = f"{url}/{self.__api_WorkFlows}/{workflowId}/BimClasses"
-        request = requests.get(url=url_get_BimClassID_of_current_process, headers=headers_import, verify=False)
-        response = request.json()
-        for object in range(len(response)):
-            return response[object]['id']
-
-
-    # Difference between post_wofkflow below is that it uses another api method.
-    def post_workflows_short_way(self, url, token):
-        ''' Function to post workflows using .zip archives data from the export procedure. Workflows id's are taking from exported_workflows.list file.'''
+    def post_workflows(self, url, token):
+        ''' Function to post workflows using .zip archives data from the export procedure.
+            Workflows IDs' are taken from exported_workflows.list file.
+        '''
 
         url_import = f'{url}/{self.__api_Integration_WorkFlow_Import}'
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
@@ -80,8 +69,9 @@ class Import_data:
         workflows = [x for x in File.read_file(f'{self._transfer_folder}/{self._workflows_folder}/{self.Export_data._exported_workflows_list}',).split('\n') if x.split()]
         count = Tools.counter()
         for workflow in workflows:
-            id = workflow.split(' '*2, 2)[1].strip()
-            name = workflow.split(' '*2, 2)[2].strip()
+            # workflow format: <status>  <id>  <name>
+            id = workflow.split(' '*2, maxsplit=2)[1].strip()
+            name = workflow.split(' '*2, maxsplit=2)[2].strip()
             try:
                 with open(f'{self._transfer_folder}/{self._workflows_folder}/{id}.zip', mode='rb') as file:
                     response = requests.post(url=url_import, headers=headers, files={'file': file}, verify=False)
@@ -93,14 +83,12 @@ class Import_data:
 
                     _logger.debug(f'{response.request.method} "{name}: {id}" {response.status_code}')
                     print(f"   {count()}) {name}.")   # display the name of the process in the output
-
             except FileNotFoundError:
                 print(f"Process not found: {name}")
                 continue
             except:
                 _logger.error()
                 continue
-
         return
 
     def post_object_model(self, url, token):
@@ -146,7 +134,7 @@ class Import_data:
         server_validation: bool = self.validate_import_server(url, token)
         workflows_folder_exists: bool = os.path.isdir(self._transfer_folder + '/' + self._workflows_folder)
         if workflows_folder_exists and server_validation:
-            self.post_workflows_short_way(url, token)
+            self.post_workflows(url, token)
 
             ### Need to disable this block to test another API method for transferring process ###
             # self.post_workflows_full_way(url, token)
