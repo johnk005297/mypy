@@ -17,6 +17,7 @@ def launch_menu():
     User_main = user.User()
     License_main = license.License()
     Export_data = export_data.Export_data()
+    Workflows = export_data.Workflows()
     Import_data_main = import_data.Import_data()
     Risk_assessment = import_data.RiskAssesment()
     Abac = import_data.Abac()
@@ -94,37 +95,37 @@ def launch_menu():
 
             case ['ls', 'workflows', *_] | ['export', 'workflows', *_] | ['rm', 'workflows', *_]:
                 if user_command == ['ls', 'workflows', '--help'] or user_command == ['ls', 'workflows', '-h']:
-                    Export_data.print_help(ls=True)
+                    Workflows.print_help(ls=True)
                     continue
                 if user_command == ['export', 'workflows', '--help'] or user_command == ['export', 'workflows', '-h']:
-                    Export_data.print_help(export=True)
+                    Workflows.print_help(export=True)
                     continue
                 if user_command == ['rm', 'workflows', '--help'] or user_command == ['rm', 'workflows', '-h']:
-                    Export_data.print_help(remove=True)
+                    Workflows.print_help(remove=True)
                     continue
-                if Export_data.is_first_launch_export_data:
-                    Export_data.create_folders_for_export_files()
+                if Workflows.is_first_launch_export_workflows:
+                    Workflows.create_folders_to_export_wf()
 
                 args = user_command[2:]
                 startswith: str = Tools.get_flag_values_from_args_str(args, '--startswith')
                 search_for: str = Tools.get_flag_values_from_args_str(args, '--search')
                 wf_id_array: list = Tools.get_flag_values_from_args_str(args, '--id').split()
-                wf_type: str = Tools.get_flag_values_from_args_str(args, '--type')
+                wf_type: str = Tools.get_flag_values_from_args_str(args, '--type').lower()
 
                 if wf_id_array and user_command[:2] == ['export', 'workflows']:
-                    Export_data.export_server_info(url, token)
-                    Export_data.export_workflows_by_choice(url, token, wf_id_array)
+                    Workflows.export_wf_server_info(url, token)
+                    Workflows.export_workflows_by_choice(url, token, wf_id_array)
                     continue
-                workflows = Export_data.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for, type=wf_type)
+                workflows = Workflows.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for, type=wf_type)
                 if not workflows:
                     continue
                 if user_command[:2] == ['export', 'workflows']:
-                    Export_data.export_server_info(url, token)
-                    Export_data.export_workflows_at_once(url, token, workflows)
+                    Workflows.export_wf_server_info(url, token)
+                    Workflows.export_workflows_at_once(url, token, workflows)
                 elif user_command[:2] == ['ls', 'workflows']:
-                    Export_data.display_list_of_workflowsName_and_workflowsId(workflows)
+                    Workflows.display_list_of_workflowsName_and_workflowsId(workflows)
                 elif user_command[:2] == ['rm', 'workflows']:
-                    Export_data.delete_workflows(url, token, workflows)
+                    Workflows.delete_workflows(url, token, workflows)
 
             # Import data
             case ['import', 'workflows']:
@@ -136,7 +137,7 @@ def launch_menu():
             case ['rm', 'files']:
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._object_model_folder}")
                 Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._workflows_folder}")
-                File.remove_file(f"{os.getcwd()}/{Export_data._transfer_folder}/export_server.info")                    
+                File.remove_file(f"{os.getcwd()}/{Export_data._transfer_folder}/export_server.info")
 
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
             case ['ft', _, *_]:

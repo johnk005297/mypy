@@ -18,6 +18,10 @@ import re
 import pandas as pd
 from datetime import datetime
 from mlogger import Logs
+from rich.live import Live
+from rich.panel import Panel
+from rich.text import Text
+from rich.console import Console
 
 
 _logger = logging.getLogger(__name__)
@@ -132,7 +136,7 @@ class Tools:
 
     @staticmethod
     def run_terminal_command(command=''):
-        """ Function for execution OS command in shell. """        
+        """ Function for execution OS command in shell. """
 
         os_name = 'Windows' if platform.system == "Windows" else 'Linux'
         command = input("{0} shell: ".format(os_name)).strip() if not command else command
@@ -188,7 +192,7 @@ class Tools:
 
     @staticmethod
     def get_flag_values_from_args_str(args: list, search_arg: str) -> str:
-        """ From a given list of args find needed argument and take it's value(s). """
+        """ From a given list of args find needed argument and take its value(s). """
 
         find_str: str = '{0}(=|\s)"(.*?)"'.format(search_arg)
         search = re.search(find_str, ' '.join(args))
@@ -269,7 +273,7 @@ class Tools:
         return username, password
 
     @staticmethod
-    def make_request(method, url, print_err=False, return_err_response=False, **kwargs):
+    def make_request(method: str, url: str, print_err=False, return_err_response=False, **kwargs):
         """
         A wrapper function to make http requests with centralized exception handling.
         Args:
@@ -326,7 +330,7 @@ class Tools:
             if print_err: print(f"An unexpected Requests error occurred: {err}")
             return response if return_err_response else None
         except Exception as err:
-            _logger.error(err)
+            _logger.error(f"{caller_func} {err}")
             return response if return_err_response else None
 
     @staticmethod
@@ -388,7 +392,7 @@ class Bimeister:
                 return True
             except requests.exceptions.ConnectionError as err:
                 _logger.error(err)
-                if count > 0: 
+                if count > 0:
                     print("Connection error: Check URL address.")
                     return False
             except json.JSONDecodeError as err:
@@ -433,7 +437,7 @@ class Bimeister:
         except Exception as err:
             print("Some error occured. Check the log.")
             _logger.error(err)
-            return False   
+            return False
 
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         for service in services:
@@ -451,7 +455,7 @@ class Bimeister:
             _logger.error(err)
             print(_logs.err_message)
             return False
-    
+
     @staticmethod
     def get_list_of_templates(url, token) -> list:
         """ Get list of templates from reports service. """
@@ -506,7 +510,7 @@ class Bimeister:
                 _logger.error(err)
                 print(_logs.err_message)
                 return False
-    
+
     @staticmethod
     def basic_auth(url, token, username, password, set=False):
         """ Check basic auth for a given user. """
@@ -521,7 +525,7 @@ class Bimeister:
             }
         data: dict = {
             "name": username,
-            "password": password 
+            "password": password
         }
         if set:
             url: str = f"{url}/api/Users/set-user-basic-auth"
@@ -537,3 +541,68 @@ class Bimeister:
             _logger.error(err)
             print(_logs.err_message)
             return None
+
+
+class ScrollablePanel:
+    def __init__(self, data, title="Scrollable List", subtitle="", subtitle_align="center", height=8, width=90):
+        self.data = data
+        self.title = title
+        self.height = height
+        self.width = width
+        self.subtitle = subtitle
+        self.subtitle_align = subtitle_align
+        self.scroll_position = 0
+        self.console = Console()
+
+    def get_visible_data(self):
+        """Get the currently visible portion of data"""
+        end_pos = min(self.scroll_position + self.height, len(self.data))
+        return self.data[self.scroll_position:end_pos]
+
+    def get_panel(self):
+        """Generate the panel with current scroll position"""
+        visible_data = self.get_visible_data()
+
+        display_text = Text(overflow="ellipsis")
+        for i, item in enumerate(visible_data, self.scroll_position + 1):
+            display_text.append(f"{i:3d}. {str(item)}\n")
+
+        # Add scroll indicators
+        # if self.scroll_position > 0:
+        #     display_text = Text("↑↑↑ (more above) \n") + display_text
+        # if self.scroll_position + self.height < len(self.data):
+        #     display_text.append("\n↓↓↓ (more below)")
+
+        return Panel(
+            display_text,
+            title=f"{self.title} [{self.scroll_position + 1}-{self.scroll_position + len(visible_data)}/{len(self.data)}]",
+            border_style="blue",
+            subtitle=self.subtitle,
+            subtitle_align = self.subtitle_align,
+            width=self.width
+        )
+
+    def auto_scroll(self, delay=0.5):
+        """Automatically scroll through the list"""
+        with Live(self.get_panel(), refresh_per_second=4) as live:
+            for i in range(len(self.data) - self.height + 1):
+                self.scroll_position = i
+                live.update(self.get_panel())
+                time.sleep(delay)
+
+
+    # # Example usage
+    # if __name__ == "__main__":
+    #     # Sample data (replace with your list)
+    #     sample_data = [
+    #         f"Item {i}: This is line number {i} with some sample text"
+    #         for i in range(1, 26)
+    #     ]
+
+    #     # Create scrollable panel
+    #     panel = ScrollablePanel(sample_data, title="Scrollable Data", height=8, width=65)
+
+    #     # Option 1: Auto-scroll (like automatic scrolling)
+    #     print("Auto-scrolling demo:")
+    #     panel.auto_scroll(delay=0.3)
+
