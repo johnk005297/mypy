@@ -4,9 +4,9 @@ import argparse
 import json
 import requests
 import time
-import export_data
+# import export_data
 import auth
-import license
+from license import License
 from tools import File, Tools
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
@@ -16,6 +16,77 @@ from mlogger import Logs
 _logger = logging.getLogger(__name__)
 _logs = Logs()
 _tools = Tools()
+
+
+
+def validate_import_server(url: str, token: str, filepath: str):
+    ''' Function needs to protect export server from import procedure during a single user session. '''
+
+    server_info = File.read_file(filepath)
+    is_serverId_received, server_id = License.get_serverID(License, url, token)
+    if not is_serverId_received:
+        return None
+    if server_info and server_info.split()[1] == server_id:
+        ask_for_confirmation: bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
+        return True if ask_for_confirmation in ('y', 'yes') else False
+    elif not server_info:
+        _logger.error(f"Can't detect server info ID in {filepath} file.")
+        return False
+    else:
+        return True
+
+
+class Object_model:
+
+    _transfer_folder: str = 'transfer_files'
+    _object_model_folder: str = 'object_model'
+    _object_model_file: str = 'object_model_import_server.json'
+
+    def post_object_model(self, url, token, filepath):
+
+        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
+        url += '/api/Integration/ObjectModel/Import'
+
+        if not os.path.isfile(filepath) or not url or not token:
+            return None
+        with open(filepath, "r", encoding="utf-8") as file:
+            data = file.read()
+        # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file
+
+        # If the import server object model file is already exists, need to delete it. Case, when user already made attempts to perform import.
+        obj_model_file_path: str = f"{self._transfer_folder}/{self._object_model_folder}/{self._object_model_file}"
+        if os.path.isfile(obj_model_file_path):
+            os.remove(obj_model_file_path)
+        response = _tools.make_request('POST', url, data=data.encode("utf-8"),  headers=headers, verify=False, return_err_response=True)
+        if response.status_code not in range(200, 205):
+            _logger.error(response.text)
+            print(f"Status: {response.status_code}. {_logs.err_message}.")
+            return False
+        else:
+            print(f"Status: {response.status_code}. Object model successfully imported.")
+            return True
+
+    def import_object_model(self, url, token):
+        pass
+        # server_validation: bool = self.validate_import_server(url, token)
+        object_model_file_exists: bool = os.path.isfile(f'{self._transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}')
+        # if object_model_file_exists and server_validation:
+            # Check if the import server object model file is already exists. Need to delete it. Case, when user already made attempts to make import.
+            # In order to avoid message about the file is already there from Export_data.get_object_model function, need to remove it first.
+            # if os.path.isfile(f'{self._transfer_folder}/{self._object_model_folder}/{self._object_model_file}'):
+                # os.remove(f'{self._transfer_folder}/{self._object_model_folder}/{self._object_model_file}')
+            # self.Export_data.get_object_model(self._object_model_file, url, token)
+            # self.prepare_object_model_file_for_import()
+            # self.fix_defaulValues_in_object_model()
+        #     self.post_object_model(url, token)
+        #     return True
+        # else:
+        #     print("No object_model for import." if not os.path.isfile(f'{self._transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}') else "")
+        #     return False
+
+
+class Workflows:
+    pass
 
 class Import_data:
 
@@ -28,34 +99,12 @@ class Import_data:
     _object_model_folder: str = 'object_model'
     _object_model_file: str = 'object_model_import_server.json'
     _modified_object_model_file: str = 'modified_object_model.json'
-    Export_data = export_data.Export_data()
-    License = license.License()
+    # Export_data = export_data.Export_data()
+    # License = license.License()
     possible_request_errors = auth.Auth().possible_request_errors
 
     def __init__(self):
         self.export_serverId = None
-
-
-    def validate_import_server(self, url, token):
-        ''' Function needs to protect export server from import procedure during a single user session. '''
-
-        filepath: str = self._transfer_folder + '/' + self.Export_data._export_server_info_file
-        server_info = File.read_file(filepath)
-        response = self.License.get_serverID(url, token)
-        success: bool = response[0]
-        message: str = response[1] # if True, message is a serverId, otherwise error message
-        if not success:
-            print(message)
-            return False
-        if server_info and server_info.split()[1] == message:
-            ask_for_confirmation: bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
-            return True if ask_for_confirmation == 'y' else False
-        elif not server_info:
-            _logger.error("Can't local server info ID in server_info file.")
-            return False
-        else:
-            self.export_serverId = server_info.split()[1]
-            return True
 
     def post_workflows(self, url, token):
         ''' Function to post workflows using .zip archives data from the export procedure.
@@ -91,57 +140,6 @@ class Import_data:
                 continue
         return
 
-    def post_object_model(self, url, token):
-
-        headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-        url_post_object_model: str = f'{url}/{self.__api_Integration_ObjectModel_Import}'
-        with open(f"{self._transfer_folder}/{self._object_model_folder}/{self.Export_data._object_model_file}", "r", encoding="utf-8") as file:
-            data = file.read()
-        # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file   
-        try:
-            post_request = requests.post(url=url_post_object_model, data=data.encode("utf-8"),  headers=headers_import, verify=False)
-        except self.possible_request_errors as err:
-            _logger.error(err)
-            print("Error with POST object model. Check the logs.")
-            return False
-
-        if post_request.status_code not in (200, 201, 204):
-            _logger.error(f"\n{post_request.text}")
-            print("   - post object model:                  error ", post_request.status_code)
-            return False
-        else:
-            print("   - post object model:                  done")
-            return True
-
-    def import_object_model(self, url, token):
-        server_validation: bool = self.validate_import_server(url, token)
-        object_model_file_exists: bool = os.path.isfile(f'{self._transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}')
-        if object_model_file_exists and server_validation:
-            # Check if the import server object model file is already exists. Need to delete it. Case, when user already made attempts to make import.
-            # In order to avoid message about the file is already there from Export_data.get_object_model function, need to remove it first.
-            if os.path.isfile(f'{self._transfer_folder}/{self._object_model_folder}/{self._object_model_file}'):
-                os.remove(f'{self._transfer_folder}/{self._object_model_folder}/{self._object_model_file}')
-            # self.Export_data.get_object_model(self._object_model_file, url, token)
-            # self.prepare_object_model_file_for_import()
-            # self.fix_defaulValues_in_object_model()
-            self.post_object_model(url, token)
-            return True
-        else:
-            print("No object_model for import." if not os.path.isfile(f'{self._transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}') else "")
-            return False
-
-    def import_workflows(self, url, token):
-        server_validation: bool = self.validate_import_server(url, token)
-        workflows_folder_exists: bool = os.path.isdir(self._transfer_folder + '/' + self._workflows_folder)
-        if workflows_folder_exists and server_validation:
-            self.post_workflows(url, token)
-
-            ### Need to disable this block to test another API method for transferring process ###
-            # self.post_workflows_full_way(url, token)
-            return True
-        else:
-            print("No workflows for import." if not os.listdir(f'{self._transfer_folder}/{self._workflows_folder}') else "")
-            return False
 
 class Users_attributes:
 

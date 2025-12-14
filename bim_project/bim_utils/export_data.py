@@ -1,12 +1,10 @@
 import logging
 import os
 import json
-import requests
 import time
-import license
+from license import License
 import textwrap
 from rich.console import Console
-from rich.text import Text
 from urllib3.exceptions import InsecureRequestWarning
 from tools import Tools, Folder, ScrollablePanel
 from mlogger import Logs
@@ -16,19 +14,49 @@ disable_warnings(InsecureRequestWarning)
 _logger = logging.getLogger(__name__)
 _logs = Logs()
 
+
+
+def export_server_info(url: str, token: str, filepath: str) -> str:
+    """
+    Processes data(received server ID) and writes it to a file on disk.
+    Returns the absolute path to the generated text file.
+    """
+    response = License.get_serverID(License, url, token)
+    success: bool = response[0]
+    message: str = response[1]
+    if not success:
+        print(f"Error: {message}")
+        return None
+    else:
+        serverId: str = message
+    try:
+        with open(filepath, 'w', encoding='utf-8') as file:
+            file.write("{0}\n".format(url.split('//')[1]))
+            file.write(serverId)
+    except FileNotFoundError as err:
+        print(err)
+        return None
+    return filepath
+
+
 class Object_model:
 
     __api_Integration_ObjectModel_Export: str = 'api/Integration/ObjectModel/Export'
     _transfer_folder: str = 'transfer_files'
     _object_model_folder: str = 'object_model'
     _object_model_file: str = 'object_model_export_server.json'
-    _om_export_server_info_file: str = 'om_export_server.info' # needs for separation import procedures on export server during one session
-    License = license.License()
+    _om_export_server_info_file: str = '__object_model_export_server.info' # needs for separation import procedures on export server during one session
 
     def __init__(self):
-        self.is_first_launch_export_obj_model: bool = True
         self.failed_workflows: list = []
         self.exported_workflows: list = []
+        self.tools = Tools()
+
+    def is_export_obj_model_file_exists(self):
+        """ Check if the exported object model file already exists.
+            Need to figurate if it's the first launch of export operation or not.
+        """
+
 
     def create_folders_to_export_om(self):
         """ Function creates transfer_files/object_model catalogs at the current user location. """
@@ -37,40 +65,34 @@ class Object_model:
         time.sleep(0.1)
         Folder.create_folder(os.getcwd() + '/' + self._transfer_folder, self._object_model_folder)
         time.sleep(0.1)
-        self.is_first_launch_export_obj_model = False
 
-    def get_object_model(self, filename, url, token):
+    def export_object_model(self, filename, url, token):
         """   Function gets object model from the server, and writes it into a file.   """
 
         path_to_file = f'{self._transfer_folder}/{self._object_model_folder}/{filename}'
         if os.path.isfile(path_to_file):
-            confirm_to_delete = input(f'{filename} file already exists. Do you want to overwrite it?(y/n): ').lower()
-            if confirm_to_delete == 'y':
+            confirm_to_delete = input('File already exists. Do you want to overwrite it?(Y/N): ').lower()
+            if confirm_to_delete in ('y', 'yes'):
                 os.remove(path_to_file)
             else: return
-
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-        url_get_object_model: str = url + '/' + self.__api_Integration_ObjectModel_Export
-        try:
-            response = requests.get(url_get_object_model, headers=headers, verify=False)
-            if response.status_code != 200:
-                _logger.error(f"{self.get_object_model.__name__}\n{response.text}")
+        url += '/' + self.__api_Integration_ObjectModel_Export
+        response = self.tools.make_request('GET', url, headers=headers, verify=False, return_err_response=True)
+        if response.status_code not in range(200, 205):
+            _logger.error(response.text)
+            print(_logs.err_message)
+            return None
+        else:
             data = response.json()
-        except self.possible_request_errors as err:
-            _logger.error(f"{err}")
-            print("Error: Couldn't export object model. Check the logs.")
-            return False
-
         try:
             with open(f"{self._transfer_folder}/{self._object_model_folder}/{filename}", "w", encoding="utf-8") as json_file:
                 json.dump(data, json_file, ensure_ascii=False, indent=4)
                 _logger.info(f"Object model has been exported. '{filename}' file is ready.")
-                if filename != 'object_model_import_server.json':
-                    print(f"\n   - object model exported in '{filename}' file.")
+                print(f"Successfully exported to: {self._transfer_folder}/{self._object_model_folder}/{filename}")
         except (FileNotFoundError, OSError) as err:
             _logger.error(err)
-            print('Error occurred. Check the logs.')
-            return False
+            print(_logs.err_message)
+            return None
         return True
 
 
@@ -87,12 +109,10 @@ class Workflows:
     _workflows_active_file: str = 'Active_workflows_export_server.json'
     _selected_workflow_nodes_file: str = 'workflow_nodes_to_import.list'
     _exported_workflows_list: str = 'exported_workflows.list'
-    _wf_export_server_info_file: str = 'wf_export_server.info' # needs for separation import procedures on export server during one session
-    License = license.License()
+    _wf_export_server_info_file: str = '__wf_export_server.info' # needs for separation import procedures on export server during one session
 
     def __init__(self):
         self.issue_message = lambda status_code, wf: print("Error {0}: {1}.".format(status_code, wf))
-        self.is_first_launch_export_workflows: bool = True
         self.tools = Tools()
         self.console = Console()
 
@@ -103,25 +123,6 @@ class Workflows:
         time.sleep(0.1)
         Folder.create_folder(os.getcwd() + '/' + self._transfer_folder, self._workflows_folder)
         time.sleep(0.1)
-        self.is_first_launch_export_workflows = False
-
-    def export_wf_server_info(self, url: str, token: str) -> str:
-        """
-        Processes data(received server ID) and writes it to a file on disk.
-        Returns the absolute path to the generated text file.
-        """
-        response = self.License.get_serverID(url, token)
-        success: bool = response[0]
-        message: str = response[1]
-        if not success:
-            print(f"Error: {message}")
-            return None
-        else:
-            serverId: str = message
-        with open(f'{self._transfer_folder}/{self._wf_export_server_info_file}', 'w', encoding='utf-8') as file:
-            file.write("{0}\n".format(url.split('//')[1]))
-            file.write(serverId)
-        return f"{self._transfer_folder}/{self._wf_export_server_info_file}"
 
     def get_workflow_nodes_id(self, url, token):
         """ Function returns a dictionary with all the nodes in format: {"NodeName": "NodeId"}. """
@@ -239,10 +240,11 @@ class Workflows:
                         except OSError as err:
                             _logger.error(err)
                             continue
+        successful_workflows: int = len(exported_workflows)
         exported_workflows.extend(failed_workflows)
         panel = ScrollablePanel(exported_workflows, title="Exported workflows", height=10, width=95)
         panel.auto_scroll(delay=0.07)
-        print(f"Successful: {len(exported_workflows)} Failed: {len(failed_workflows)}")
+        print(f"Successful: {successful_workflows} Failed: {len(failed_workflows)}")
         return True
 
     def export_workflows_by_choice(self, url, token, wf_id_array):
@@ -358,6 +360,7 @@ options:
   --active      Active node of workflows
   --archived    Archived node of workflows
   --all         All three nodes
+  --type        Workflows type(Task, DocumentFlow, AcceptanceInspection, IncomingInspection, WorkPermit)
 """
 
         if ls: print(ls_workflows)
