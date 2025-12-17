@@ -72,8 +72,6 @@ class Workflows:
     __api_Integration_WorkFlow_Import: str = 'api/Integration/WorkFlow/Import'
     _workflows_folder: str = 'workflows'
     _transfer_folder: str = 'transfer_files'
-    _exported_workflows_list: str = 'exported_workflows.list'
-    _wf_export_server_info_file: str = '__wf_export_server.info'
 
     def __init__(self):
         self.console = Console()
@@ -95,15 +93,15 @@ class Workflows:
         workflows = [x for x in File.read_file(filepath).split('\n') if x.split()]
         failed_workflows: list = []
         imported_workflows: list = []
-        with self.console.status("Importing workflows...", spinner="earth") as status:
+        with self.console.status("Importing workflows...", spinner="earth"):
             for workflow in workflows:
                 # workflow format: <status>  <id>  <name>
                 id = workflow.split(' '*2, maxsplit=2)[1].strip()
                 name = workflow.split(' '*2, maxsplit=2)[2].strip()
-                wf_title: str = textwrap.shorten("{0}".format(name), width=75, placeholder="...")
+                wf_title: str = textwrap.shorten("{0}".format(name), width=84, placeholder="...")
                 try:
                     with open(f'{self._transfer_folder}/{self._workflows_folder}/{id}.zip', mode='rb') as file:
-                        response = self.tools.make_request('POST', url, headers=headers, files={'file': file}, verify=False, return_err_response=True)
+                        response = self.tools.make_request('POST', url, headers=headers, files={'file': file}, verify=False, return_err_response=True, custom_log_msg=name)
                         if response.status_code not in range(200, 205):
                             _logger.error(response.text)
                             failed_workflows.append("Error {0}: {1})".format(response.status_code, wf_title))
@@ -119,7 +117,9 @@ class Workflows:
                     continue
         successful_workflows: int = len(imported_workflows)
         imported_workflows.extend(failed_workflows)
-        panel = ScrollablePanel(imported_workflows, title="Imported workflows", height=10, width=95)
+        for x in imported_workflows:
+            print(x)
+        panel = ScrollablePanel(imported_workflows, title="Imported workflows", height=10, width=115)
         panel.auto_scroll(delay=0.07)
         print(f"Successful: {successful_workflows} Failed: {len(failed_workflows)}")
         return

@@ -273,7 +273,7 @@ class Tools:
         return username, password
 
     @staticmethod
-    def make_request(method: str, url: str, print_err=False, return_err_response=False, **kwargs):
+    def make_request(method: str, url: str, print_err=False, return_err_response=False, custom_log_msg=None, **kwargs):
         """
         A wrapper function to make http requests with centralized exception handling.
         Args:
@@ -307,7 +307,10 @@ class Tools:
             else:
                 raise ValueError(f"Unsupported HTTP method: {method}")
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
-            _logger.info(f"{caller_func} {response.status_code} {method} {url}")
+            if custom_log_msg:
+                _logger.info(f"{caller_func} {response.status_code} {custom_log_msg}")
+            else:
+                _logger.info(f"{caller_func} {response.status_code} {method} {url}")
             return response
         except requests.exceptions.HTTPError as err:
             _logger.error(f"{caller_func} {err}")

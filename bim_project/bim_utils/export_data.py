@@ -45,12 +45,13 @@ class Object_model:
     _transfer_folder: str = 'transfer_files'
     _object_model_folder: str = 'object_model'
     _object_model_file: str = 'object_model_export_server.json'
-    _om_export_server_info_file: str = '__object_model_export_server.info' # needs for separation import procedures on export server during one session
+    _om_export_server_info_file: str = '_object_model_export_server.info' # needs for separation import procedures on export server during one session
 
     def __init__(self):
         self.failed_workflows: list = []
         self.exported_workflows: list = []
         self.tools = Tools()
+        self.console = Console()
 
     def is_export_obj_model_file_exists(self):
         """ Check if the exported object model file already exists.
@@ -77,13 +78,14 @@ class Object_model:
             else: return
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
         url += '/' + self.__api_Integration_ObjectModel_Export
-        response = self.tools.make_request('GET', url, headers=headers, verify=False, return_err_response=True)
-        if response.status_code not in range(200, 205):
-            _logger.error(response.text)
-            print(_logs.err_message)
-            return None
-        else:
-            data = response.json()
+        with self.console.status("Exporting object model...", spinner="earth"):
+            response = self.tools.make_request('GET', url, headers=headers, verify=False, return_err_response=True)
+            if response.status_code not in range(200, 205):
+                _logger.error(response.text)
+                print(_logs.err_message)
+                return None
+            else:
+                data = response.json()
         try:
             with open(f"{self._transfer_folder}/{self._object_model_folder}/{filename}", "w", encoding="utf-8") as json_file:
                 json.dump(data, json_file, ensure_ascii=False, indent=4)
@@ -109,7 +111,7 @@ class Workflows:
     _workflows_active_file: str = 'Active_workflows_export_server.json'
     _selected_workflow_nodes_file: str = 'workflow_nodes_to_import.list'
     _exported_workflows_list: str = 'exported_workflows.list'
-    _wf_export_server_info_file: str = '__wf_export_server.info' # needs for separation import procedures on export server during one session
+    _wf_export_server_info_file: str = '_wf_export_server.info' # needs for separation import procedures on export server during one session
 
     def __init__(self):
         self.issue_message = lambda status_code, wf: print("Error {0}: {1}.".format(status_code, wf))

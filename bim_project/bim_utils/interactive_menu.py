@@ -132,12 +132,12 @@ def launch_menu():
 
             # Import data
             case ['import', 'workflows']:
-                server_info_filepath = f"{Workflows_import._transfer_folder}/{Workflows_import._workflows_folder}/{Workflows_import._wf_export_server_info_file}"
-                wf_filepath = f"{Workflows_import._transfer_folder}/{Workflows_import._workflows_folder}/{Workflows_import._exported_workflows_list}"
+                server_info_filepath = f"{Workflows_import._transfer_folder}/{Workflows_import._workflows_folder}/{Workflows_export._wf_export_server_info_file}"
+                exported_wf_filepath = f"{Workflows_import._transfer_folder}/{Workflows_import._workflows_folder}/{Workflows_export._exported_workflows_list}"
                 if not import_data.validate_import_server(url, token, server_info_filepath):
                     print("Server validation failed")
                     continue
-                Workflows_import.import_workflows(url, token, wf_filepath)
+                Workflows_import.import_workflows(url, token, exported_wf_filepath)
 
             case ['import', 'om']:
                 server_info_filepath = f"{Object_model_import._transfer_folder}/{Object_model_import._object_model_folder}/{Object_model_export._om_export_server_info_file}"
