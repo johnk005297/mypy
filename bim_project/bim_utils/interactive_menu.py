@@ -20,7 +20,6 @@ def launch_menu():
     Object_model_import = import_data.Object_model()
     Workflows_export = export_data.Workflows()
     Workflows_import = import_data.Workflows()
-    Import_data_main = import_data.Import_data()
     Risk_assessment = import_data.RiskAssesment()
     Abac = import_data.Abac()
     FT = featureToggle.FeatureToggle()
@@ -133,18 +132,20 @@ def launch_menu():
 
             # Import data
             case ['import', 'workflows']:
-                filepath = f"{Object_model_import._transfer_folder}/{Object_model_import._object_model_folder}/{Object_model_import._object_model_file}" # CHANGEME
-                if not import_data.validate_import_server(url, token, filepath):
+                server_info_filepath = f"{Workflows_import._transfer_folder}/{Workflows_import._workflows_folder}/{Workflows_import._wf_export_server_info_file}"
+                wf_filepath = f"{Workflows_import._transfer_folder}/{Workflows_import._workflows_folder}/{Workflows_import._exported_workflows_list}"
+                if not import_data.validate_import_server(url, token, server_info_filepath):
                     print("Server validation failed")
                     continue
-                # Import_data_main.import_workflows(url, token)
+                Workflows_import.import_workflows(url, token, wf_filepath)
 
             case ['import', 'om']:
-                filepath = f"{Object_model_import._transfer_folder}/{Object_model_import._object_model_folder}/{Object_model_export._om_export_server_info_file}"
-                if not import_data.validate_import_server(url, token, filepath):
+                server_info_filepath = f"{Object_model_import._transfer_folder}/{Object_model_import._object_model_folder}/{Object_model_export._om_export_server_info_file}"
+                om_filepath = f"{Object_model_import._transfer_folder}/{Object_model_import._object_model_folder}/{Object_model_export._object_model_file}"
+                if not import_data.validate_import_server(url, token, server_info_filepath):
                     print("Server validation failed")
                     continue
-                Object_model_import.import_object_model(url, token)
+                Object_model_import.import_object_model(url, token, om_filepath)
 
             case ['rm', 'files']:
                 Folder.clean_folder(f"{os.getcwd()}/transfer_files")

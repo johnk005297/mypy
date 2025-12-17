@@ -51,9 +51,9 @@ class Folder:
                 if not remove:
                     os.mkdir(path_to_folder)
                     time.sleep(0.10)
-                    print(f'\n   - {filename} folder is now empty.')
+                    print(f'{filename} folder is empty')
             else:
-                print(f'   - no {filename} folder was found.')
+                print(f'no {filename} folder was found')
         except OSError as err:
             _logger.error(err)
             print(_logs.err_message)
