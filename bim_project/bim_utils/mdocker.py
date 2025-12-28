@@ -7,14 +7,13 @@ import docker
 from docker.errors import DockerException, APIError, ImageNotFound
 from mlogger import Logs
 from rich.console import Console
-from datetime import datetime
+from pathlib import Path
 
 _logger = logging.getLogger(__name__)
 _logs = Logs()
 
 
 class Docker:
-    # _log_folder = 'docker_logs'
     _client = None
 
     def __init__(self):
@@ -34,7 +33,6 @@ class Docker:
         except APIError as err:
             _logger.error(err)
             print(f"Docker API error: {err}")
-            # print("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
             return False
         except Exception as err:
             _logger.error(err)
@@ -74,7 +72,7 @@ class Docker:
         for image in images:
             print(image)
 
-    def save_images(self, images: list, onefile=False, purge=True):
+    def save_images(self, images: list, purge=True, output=None):
         """ Function saves docker images locally into tgz archive files, 
             or packing tgz file(s) into single tar archive.
         """
@@ -83,30 +81,33 @@ class Docker:
             raise ValueError(f"{self.save_images.__name__}: argument images expected to be a list")
         tgz_files: list = []
         with self.console.status("Start saving images", spinner='moon') as status:
-            for name in images:
+            if len(images) == 1 and output:
+                image_arch_name = output
+            for image_ref in images:
                 try:
-                    image = self._client.images.get(name)
-                    image_arch_name = f"{name.replace('/', '^').replace(':','#')}.tgz"
+                    image = self._client.images.get(image_ref)
+                    if output and len(images) == 1:
+                        image_arch_name = output[:-len(Path(output).suffix)] + '.tgz' if Path(output).suffix else output + '.tgz'
+                    else:
+                        image_arch_name = f"{image_ref.replace('/', '^').replace(':','#')}.tgz"
                     tgz_files.append(image_arch_name)
-                    status.update(f"Saving image: {name}")
+                    status.update(f"Saving image: {image_ref}")
                     with gzip.open(image_arch_name, 'wb') as file:
                         for chunk in image.save(named=True):
                             file.write(chunk)
                         self.console.print(f"[green]Saved: {image_arch_name}[/green]")
                     if purge:
-                        self._client.images.remove(image=name, force=True)
+                        self._client.images.remove(image=image_ref, force=True)
                 except ImageNotFound as err:
                     _logger.error(err)
-                    self.console.print(f"[red]Error: Image '{name}' not found locally.[/red]")
+                    self.console.print(f"[red]Error: Image '{image_ref}' not found locally.[/red]")
                     continue
                 except Exception as err:
                     _logger.error(err)
                     print(_logs.err_message)
                     continue
-            if onefile:
-                arcname: str = 'images.tar'
-                if os.path.isfile(arcname):
-                    arcname = datetime.today().strftime("%d.%m.%Y") + "_" + arcname
+            if len(images) > 1 and output:
+                arcname: str = output if output else 'images.tar'
                 status.update(f"Packing final archive: {arcname}")
                 try:
                     with tarfile.open(arcname, 'w') as tar:
@@ -123,6 +124,26 @@ class Docker:
                     print(f"Enexpected error: {err}")
                     sys.exit()
 
-    def push_images(self, images: list):
-        """ Fucntion to push docker images into registry. """
-        pass
+    # def push_images(self, **kwargs):
+    #     """ Fucntion to push docker images to registry. """
+
+    #     registry_url = kwargs['repo_url']
+    #     repo_name = kwargs['repo_name']
+    #     username = kwargs['user']
+    #     password = kwargs['password']
+    #     tag = kwargs['tag']
+    #     image_ref = kwargs['image_ref']
+
+    # def check_registry_access(self, registry_url, username, password):
+    #     """ Check access to a private container registry. """
+
+    #     try:
+    #         self._client.login(
+    #             registry = registry_url,
+    #             username = username,
+    #             password = password
+    #         )
+    #     except APIError as err:
+    #         _logger.error(err)
+    #         print("Login to registry failed.")
+    #         sys.exit()

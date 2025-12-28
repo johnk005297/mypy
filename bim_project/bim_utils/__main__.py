@@ -407,10 +407,10 @@ if __name__ == '__main__':
             docker = mdocker.Docker()
             if not docker.is_connected:
                 sys.exit()
-            if args.list_images:
+            if args.list:
                 images = docker.get_list_of_images()
                 docker.print_images(images)
-            elif args.save_images:
+            elif args.save:
                 if args.file:
                     data = File.read_file(args.file)
                     images = [image for image in data.split()]
@@ -420,7 +420,7 @@ if __name__ == '__main__':
                     print("docker: error: one of the arguments -f/--file -i/--images is required")
                     sys.exit()
                 pulled_images = docker.pull_images(images)
-                docker.save_images(pulled_images, onefile=args.onefile, purge=args.no_purge)
+                docker.save_images(pulled_images, purge=args.no_purge, output=args.output)
         else:
             interactive_menu.launch_menu()
     except KeyboardInterrupt:
