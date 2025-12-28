@@ -204,7 +204,7 @@ class Vsphere:
                 count += 1
                 power_status = self.get_vm_power_state(headers, moId)
                 status.update(power_on_msg + "  [green]✅[/green]")
-                time.sleep(1)
+                time.sleep(0.5)
                 if power_status == "POWERED_ON":
                     self.console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
                     return True
@@ -240,7 +240,7 @@ class Vsphere:
                 count += 1
                 power_status = self.get_vm_power_state(headers, moId)
                 status.update(shutting_down_msg)
-                time.sleep(1)
+                time.sleep(0.5)
                 if power_status != "POWERED_OFF":
                     continue
                 elif power_status == "POWERED_OFF":

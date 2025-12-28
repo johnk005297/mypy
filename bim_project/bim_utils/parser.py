@@ -156,6 +156,21 @@ class Parser():
         token.add_argument('-p', '--password', required=True, help='User\'s password with access to Bimeister')
         token.add_argument('-pid', '--providerId', required=False, help='Pass providerId in cases where more the one providers had been set up')
 
+        docker = subparser.add_parser('docker', help='Perform operations with Docker Engine')
+        docker.add_argument('--list-images', required=False, action='store_true', help='Get list of images on a localhost')
+        docker.add_argument('--save-images', required=False, action='store_true', help='Save docker image(s) in tgz archive')
+        docker.add_argument('--push-images', required=False, action='store_true', help='Push images to the registry ##NOT READY')
+        docker.add_argument('-u', '--user', required=False, help='Username with access to the registry')
+        docker.add_argument('-p', '--password', required=False, help='User password with access to the registry')
+        docker.add_argument('-ru', '--repo-url', required=False, help='Registry URL')
+        docker.add_argument('-rn', '--repo-name', required=False, help='Repository name')
+        docker.add_argument('-ref', '--image-ref', required=False, help='Image reference REPOSITORY[:TAG]')
+        docker.add_argument('--tag', required=False, help='Image tag')
+        docker.add_argument('--onefile', required=False, action='store_true', help='Pack tgz docker image(s) into single tar archive')
+        docker_images_group = docker.add_mutually_exclusive_group(required=True)
+        docker_images_group.add_argument('-f', '--file', required=False, help='Text file with a list of images')
+        docker_images_group.add_argument('-i', '--images', required=False, help='Images names separated with whitespace')
+
         # create parser for passwork
         # passwork = subparser.add_parser('pk', help='Work with passwork vault')
         # passwork.add_argument('--url', required=False, help='')

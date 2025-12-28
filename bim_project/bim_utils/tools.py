@@ -172,9 +172,9 @@ class Tools:
     def calculate_timedelta(days):
         """ Function gets days as input data, and provides the amount of epoch seconds by subtracting provided days from current time. """
 
-        epoch_time:int = int(datetime.now().timestamp())
-        days:int = days * 86400      # 86400 is the amount of seconds in 24 hours
-        delta:int = epoch_time - days
+        epoch_time: int = int(datetime.now().timestamp())
+        days: int = days * 86400      # 86400 is the amount of seconds in 24 hours
+        delta: int = epoch_time - days
         return delta
 
     @staticmethod
@@ -384,6 +384,8 @@ class Bimeister:
 
         if not url.startswith('http'):
             url = 'https://' + url
+        url = url[:-len('/products')] if url.endswith('/products') else url
+        url = url[:-len('/auth')] if url.endswith('/auth') else url
         url = url + '/assets/version.json' if not url[-1] == '/' else url + 'assets/version.json'
         count = 0
         while True:

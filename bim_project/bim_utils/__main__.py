@@ -11,6 +11,7 @@ import vsphere
 import time
 import confluence
 import platform
+import mdocker
 # import rlcompleter
 import interactive_menu
 from parser import Parser
@@ -18,7 +19,7 @@ from passwork import *
 from git import Git
 from rich.console import Console
 from getpass import getpass
-from tools import Bimeister, Tools
+from tools import Bimeister, Tools, File
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=Tools.get_resourse_path(".env"))
 
@@ -36,6 +37,7 @@ if __name__ == '__main__':
     logger = mlogger.file_logger(logs.filepath, logLevel=logging.INFO)
     parser = Parser().get_parser()
     args = parser.parse_args()
+    
     try:
         if args.command == 'git':
             g = Git()
@@ -401,6 +403,21 @@ if __name__ == '__main__':
             elif providers and isinstance(providers, str):
                 token = autht.get_user_access_token(args.url, args.user, args.password, providers)
                 print(token if token else '')
+        elif args.command == 'docker':
+            docker = mdocker.Docker()
+            if not docker.is_connected:
+                sys.exit()
+            if args.list_images:
+                images = docker.get_list_of_images()
+                docker.print_images(images)
+            elif args.save_images:
+                if args.file:
+                    data = File.read_file(args.file)
+                    images = [image for image in data.split()]
+                elif args.images:
+                    images = [image for image in args.images.split()]
+                pulled_images = docker.pull_images(images)
+                docker.save_images(pulled_images, onefile=args.onefile)
         else:
             interactive_menu.launch_menu()
     except KeyboardInterrupt:
