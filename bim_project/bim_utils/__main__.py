@@ -416,8 +416,11 @@ if __name__ == '__main__':
                     images = [image for image in data.split()]
                 elif args.images:
                     images = [image for image in args.images.split()]
+                else:
+                    print("docker: error: one of the arguments -f/--file -i/--images is required")
+                    sys.exit()
                 pulled_images = docker.pull_images(images)
-                docker.save_images(pulled_images, onefile=args.onefile)
+                docker.save_images(pulled_images, onefile=args.onefile, purge=args.no_purge)
         else:
             interactive_menu.launch_menu()
     except KeyboardInterrupt:

@@ -167,7 +167,8 @@ class Parser():
         docker.add_argument('-ref', '--image-ref', required=False, help='Image reference REPOSITORY[:TAG]')
         docker.add_argument('--tag', required=False, help='Image tag')
         docker.add_argument('--onefile', required=False, action='store_true', help='Pack tgz docker image(s) into single tar archive')
-        docker_images_group = docker.add_mutually_exclusive_group(required=True)
+        docker.add_argument('--no-purge', required=False, action='store_false', help='Purge images from the docker after. Default value: False')
+        docker_images_group = docker.add_mutually_exclusive_group(required=False)
         docker_images_group.add_argument('-f', '--file', required=False, help='Text file with a list of images')
         docker_images_group.add_argument('-i', '--images', required=False, help='Images names separated with whitespace')
 

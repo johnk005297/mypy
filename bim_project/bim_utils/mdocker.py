@@ -52,7 +52,7 @@ class Docker:
         """ Function for pulling images on a localhost. 
             Takes a list as an argument, and returns a list of successfully pulled ones.
         """
-        if not isinstance(images, list):
+        if not isinstance(images, list) or not images:
             raise ValueError(f"{self.pull_images.__name__}: argument images expected to be a list")
         not_pulled_images: list = []
         with self.console.status("Start pulling images", spinner='moon') as status:
@@ -60,7 +60,7 @@ class Docker:
                 try:
                     status.update(f"Pulling image: {image}")
                     self._client.images.pull(image)
-                    self.console.print(f"[green]Pulled image: {image}[/green]")
+                    self.console.print(f"[green]Pulled: {image}[/green]")
                 except docker.errors.APIError as err:
                     _logger.error(err)
                     self.console.print(f"[red]Failed image: {err}[/red]")
@@ -74,7 +74,7 @@ class Docker:
         for image in images:
             print(image)
 
-    def save_images(self, images: list, onefile=False):
+    def save_images(self, images: list, onefile=False, purge=True):
         """ Function saves docker images locally into tgz archive files, 
             or packing tgz file(s) into single tar archive.
         """
@@ -92,7 +92,9 @@ class Docker:
                     with gzip.open(image_arch_name, 'wb') as file:
                         for chunk in image.save(named=True):
                             file.write(chunk)
-                        self.console.print(f"[green]Saved image: {image_arch_name}[/green]")
+                        self.console.print(f"[green]Saved: {image_arch_name}[/green]")
+                    if purge:
+                        self._client.images.remove(image=name, force=True)
                 except ImageNotFound as err:
                     _logger.error(err)
                     self.console.print(f"[red]Error: Image '{name}' not found locally.[/red]")
