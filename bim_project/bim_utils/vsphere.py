@@ -200,7 +200,7 @@ class Vsphere:
                 self.console.log(f"[red]No connection to {name}. Check VM in vCenter![/red]")
                 return False
             count = 0
-            while count < 350:
+            while count < 650:
                 count += 1
                 power_status = self.get_vm_power_state(headers, moId)
                 status.update(power_on_msg + "  [green]✅[/green]")
@@ -211,7 +211,7 @@ class Vsphere:
                 elif power_status != "POWERED_ON":
                     continue
             else:
-                self.console.log(f"[red]Error on start {name} within 5 minutes. Check VM status in vCenter![/red]")
+                self.console.log(f"[red]Error on start {name} within 10 minutes. Check VM status in vCenter![/red]")
                 return False
 
     def stop_vm(self, headers, moId, name):
@@ -236,7 +236,7 @@ class Vsphere:
                 elif response.status_code in (200, 204):
                     power_off = True
             count = 0
-            while count < 650:
+            while count < 900:
                 count += 1
                 power_status = self.get_vm_power_state(headers, moId)
                 status.update(shutting_down_msg)
@@ -250,7 +250,7 @@ class Vsphere:
                         self.console.print(shutdown_msg, overflow="ellipsis")
                     return True
             else:
-                self.console.log(f"[red]Error on stop {name} within 5 minutes. Check VM status in vCenter![/red]")
+                self.console.log(f"[red]Error on stop {name} within 15 minutes. Check VM status in vCenter![/red]")
                 return False
 
     def take_snapshot(self, headers, moId, vm_name, snap_name='', description=''):

@@ -366,7 +366,7 @@ if __name__ == '__main__':
         elif args.command == 'pk':
             pass
         elif args.command == 'ft':
-            conf = confluence.Conf()
+            conf = confluence.FT()
             page = conf.get_confluence_page()
             data = conf.get_ft_data_of_all_projects(page)
             if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].strip() == '--save') or (len(sys.argv) == 3 and sys.argv[2].strip() == '--save-pretty'):

@@ -10,7 +10,7 @@ from rich.table import Table
 logger = logging.getLogger(__name__)
 
 
-class Conf:
+class FT:
 
     ft_page_id = "1461357571"
     url = "https://confluence.bimeister.io"
