@@ -11,7 +11,7 @@ import vsphere
 import time
 import platform
 import mdocker
-import argcomplete
+# import argcomplete
 import interactive_menu
 from featureToggle import Conf, FeatureToggle
 from parser import Parser
@@ -36,7 +36,6 @@ if __name__ == '__main__':
     logs.set_full_access_to_log_file(logs.filepath, 0o666)
     logger = mlogger.file_logger(logs.filepath, logLevel=logging.INFO)
     parser = Parser().get_parser()
-    argcomplete.autocomplete(parser)
     args = parser.parse_args()
     
     try:
@@ -399,11 +398,23 @@ if __name__ == '__main__':
                 else:
                     conf.get_ft_for_project(data, conf.project_name_salavat, args.save, args.save_pretty, args.no_print)
             elif args.novatek_murmansk:
-                conf.get_ft_for_project(data, conf.project_name_murmansk, args.save, args.save_pretty, args.no_print)
+                if args.check:
+                    conf_ft_list = conf.get_ft_for_project(data, conf.project_name_murmansk, args.save, args.save_pretty, no_print=True, env=args.env)
+                    FT.compare_source_and_target(conf_ft_list, conf.project_name_murmansk, args.env)
+                else:
+                    conf.get_ft_for_project(data, conf.project_name_murmansk, args.save, args.save_pretty, args.no_print)
             elif args.novatek_yamal:
-                conf.get_ft_for_project(data, conf.project_name_yamal, args.save, args.save_pretty, args.no_print)
+                if args.check:
+                    conf_ft_list = conf.get_ft_for_project(data, conf.project_name_yamal, args.save, args.save_pretty, no_print=True, env=args.env)
+                    FT.compare_source_and_target(conf_ft_list, conf.project_name_yamal, args.env)
+                else:
+                    conf.get_ft_for_project(data, conf.project_name_yamal, args.save, args.save_pretty, args.no_print)
             elif args.crea_cod:
-                conf.get_ft_for_project(data, conf.project_name_crea_cod, args.save, args.save_pretty, args.no_print)
+                if args.check:
+                    conf_ft_list = conf.get_ft_for_project(data, conf.project_name_crea_cod, args.save, args.save_pretty, no_print=True, env=args.env)
+                    FT.compare_source_and_target(conf_ft_list, conf.project_name_crea_cod, args.env)
+                else:
+                    conf.get_ft_for_project(data, conf.project_name_crea_cod, args.save, args.save_pretty, args.no_print)
         elif args.version:
             if args.url:
                 Bimeister.print_bim_version(args.url)
