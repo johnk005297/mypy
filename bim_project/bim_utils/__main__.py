@@ -9,11 +9,11 @@ import import_data
 import postgre
 import vsphere
 import time
-import confluence
 import platform
 import mdocker
-# import rlcompleter
+import argcomplete
 import interactive_menu
+from featureToggle import Conf, FeatureToggle
 from parser import Parser
 from passwork import *
 from git import Git
@@ -36,6 +36,7 @@ if __name__ == '__main__':
     logs.set_full_access_to_log_file(logs.filepath, 0o666)
     logger = mlogger.file_logger(logs.filepath, logLevel=logging.INFO)
     parser = Parser().get_parser()
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
     
     try:
@@ -366,24 +367,43 @@ if __name__ == '__main__':
         elif args.command == 'pk':
             pass
         elif args.command == 'ft':
-            conf = confluence.FT()
+            conf = Conf()
+            FT = FeatureToggle()
             page = conf.get_confluence_page()
             data = conf.get_ft_data_of_all_projects(page)
+            if args.check and not args.env:
+                print("bimutils ft: error: --env argument is required")
+                sys.exit()
+            elif args.env and not args.check:
+                print("bimutils ft: error: --check argument is required")
+                sys.exit()
             if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].strip() == '--save') or (len(sys.argv) == 3 and sys.argv[2].strip() == '--save-pretty'):
                 project = conf.choose_project()
-                conf.display_ft_for_project(data, project, args.save, args.save_pretty)
+                conf.get_ft_for_project(data, project, args.save, args.save_pretty)
             elif args.gazprom_suid:
-                conf.display_ft_for_project(data, conf.project_name_suid, args.save, args.save_pretty)
+                if args.check:
+                    conf_ft_list = conf.get_ft_for_project(data, conf.project_name_suid, args.save, args.save_pretty, no_print=True, env=args.env)
+                    FT.compare_source_and_target(conf_ft_list, conf.project_name_suid, args.env)
+                else:
+                    conf.get_ft_for_project(data, conf.project_name_suid, args.save, args.save_pretty, args.no_print)
             elif args.gazprom_dtoir:
-                conf.display_ft_for_project(data, conf.project_name_dtoir, args.save, args.save_pretty)
+                if args.check:
+                    conf_ft_list = conf.get_ft_for_project(data, conf.project_name_dtoir, args.save, args.save_pretty, no_print=True, env=args.env)
+                    FT.compare_source_and_target(conf_ft_list, conf.project_name_dtoir, args.env)
+                else:
+                    conf.get_ft_for_project(data, conf.project_name_dtoir, args.save, args.save_pretty, args.no_print)
             elif args.gazprom_salavat:
-                conf.display_ft_for_project(data, conf.project_name_salavat, args.save, args.save_pretty)
+                if args.check:
+                    conf_ft_list = conf.get_ft_for_project(data, conf.project_name_salavat, args.save, args.save_pretty, no_print=True, env=args.env)
+                    FT.compare_source_and_target(conf_ft_list, conf.project_name_salavat, args.env)
+                else:
+                    conf.get_ft_for_project(data, conf.project_name_salavat, args.save, args.save_pretty, args.no_print)
             elif args.novatek_murmansk:
-                conf.display_ft_for_project(data, conf.project_name_murmansk, args.save, args.save_pretty)
+                conf.get_ft_for_project(data, conf.project_name_murmansk, args.save, args.save_pretty, args.no_print)
             elif args.novatek_yamal:
-                conf.display_ft_for_project(data, conf.project_name_yamal, args.save, args.save_pretty)
+                conf.get_ft_for_project(data, conf.project_name_yamal, args.save, args.save_pretty, args.no_print)
             elif args.crea_cod:
-                conf.display_ft_for_project(data, conf.project_name_crea_cod, args.save, args.save_pretty)
+                conf.get_ft_for_project(data, conf.project_name_crea_cod, args.save, args.save_pretty, args.no_print)
         elif args.version:
             if args.url:
                 Bimeister.print_bim_version(args.url)

@@ -43,6 +43,7 @@ def launch_menu():
     url, token, username, password = Auth.url, Auth.token, Auth.username, Auth.password
     if not License_main.get_license_status(url, token, username, password):
         print("Warning!!! Incorrect license detected! Please check!".upper())
+
     while True:
         user_command = AppMenu_main.get_user_command()
         match user_command:

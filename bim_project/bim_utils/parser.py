@@ -12,7 +12,7 @@ class Parser():
         """ Function for parsing arguments of the command line. """
 
         # create top-level parser with arguments and subparser
-        parser = argparse.ArgumentParser(prog="bim-utils", description="Frankenstein's CLI for work with Bimeister(licenses/workflows/featureToggles/roleModes), gitlab, vCenter, etc.")
+        parser = argparse.ArgumentParser(prog="bimutils", description="Frankenstein's CLI for work with Bimeister(licenses/workflows/featureToggles/roleModes), gitlab, vCenter, etc.")
         parser.add_argument('-V', '--version', required=False, action='store_true', help='Get version of the bim_utils')
         parser.add_argument('--url', required=False, help='Url to get bimeister version')
         subparser = parser.add_subparsers(dest='command', required=False)
@@ -139,12 +139,17 @@ class Parser():
 
         # create parser for confluence
         ft = subparser.add_parser('ft', help='Get information about feature toggles from confluence')
-        ft.add_argument('-suid', '--gazprom-suid', required=False, action='store_true', help='FT for the project Gazprom Suid')
-        ft.add_argument('-dtoir', '--gazprom-dtoir', required=False, action='store_true', help='FT for the project Gazprom Dtoir')
-        ft.add_argument('-salavat', '--gazprom-salavat', required=False, action='store_true', help='FT for the project Gazprom Salavat')
-        ft.add_argument('-murmansk', '--novatek-murmansk', required=False, action='store_true', help='FT for the project Novatek Murmansk')
-        ft.add_argument('-yamal', '--novatek-yamal', required=False, action='store_true', help='FT for the project Novatek Yamal')
-        ft.add_argument('-crea', '--crea-cod', required=False, action='store_true', help='FT for the project Rosatom Crea-Cod')
+        ft.add_argument('--no-print' ,required=False, action='store_true', help='Just save the file without print')
+        ft_project_group = ft.add_mutually_exclusive_group(required=True)
+        ft_project_group.add_argument('-suid', '--gazprom-suid', required=False, action='store_true', help='FT for the project Gazprom Suid')
+        ft_project_group.add_argument('-dtoir', '--gazprom-dtoir', required=False, action='store_true', help='FT for the project Gazprom Dtoir')
+        ft_project_group.add_argument('-salavat', '--gazprom-salavat', required=False, action='store_true', help='FT for the project Gazprom Salavat')
+        ft_project_group.add_argument('-murmansk', '--novatek-murmansk', required=False, action='store_true', help='FT for the project Novatek Murmansk')
+        ft_project_group.add_argument('-yamal', '--novatek-yamal', required=False, action='store_true', help='FT for the project Novatek Yamal')
+        ft_project_group.add_argument('-crea', '--crea-cod', required=False, action='store_true', help='FT for the project Rosatom Crea-Cod')
+        ft_check_group = ft.add_argument_group("Args for checking difference")
+        ft_check_group.add_argument('--check', required=False, action='store_true', help='Check difference between Confluence data and current Bimeister settings')
+        ft_check_group.add_argument('--env', required=False)
         ft_save_group = ft.add_mutually_exclusive_group(required=False)
         ft_save_group.add_argument('--save', required=False, action='store_true', help='Save output in file')
         ft_save_group.add_argument('--save-pretty', required=False, action='store_true', help='Save output in file more human readable')
