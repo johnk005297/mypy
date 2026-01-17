@@ -114,7 +114,7 @@ class FeatureToggle:
             print(f"{project_name}: FT in confluence not found.")
             return None
         enabled_ft_on_stand = sorted([key.capitalize() for key,value in all_ft_on_stand.items() if value])
-        result = {"Add": [ft for ft in ft_conf if ft not in enabled_ft_on_stand], 
+        result = {"Add": [ft for ft in ft_conf if ft not in enabled_ft_on_stand],
                   "Remove": [ft for ft in enabled_ft_on_stand if ft not in ft_conf]}
         add_empty: bool = not result['Add']
         remove_empty: bool = not result['Remove']
@@ -122,7 +122,6 @@ class FeatureToggle:
             print("Total match!")
             return
         if not add_empty or not remove_empty:
-            print(f"{env.upper()}")
             if not add_empty:
                 print("Add:\n" + "\n".join(f"- {ft}" for ft in result['Add']))
             if not remove_empty:
@@ -203,46 +202,46 @@ class Conf:
             ft_name: str = row.find_all('td')[ft_name_idx].get_text(strip=True)
 
             if row.find_all('td')[gazprom_suid_prod_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_suid]['prod'].append(ft_name.title())
+                ft_projects_data[self.project_name_suid]['prod'].append(ft_name.lower().capitalize())
             if row.find_all('td')[gazprom_suid_test_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_suid]['test'].append(ft_name.title())
+                ft_projects_data[self.project_name_suid]['test'].append(ft_name.lower().capitalize())
             if row.find_all('td')[gazprom_suid_demo_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_suid]['demo'].append(ft_name.title())
+                ft_projects_data[self.project_name_suid]['demo'].append(ft_name.lower().capitalize())
 
             if row.find_all('td')[gazprom_dtoir_prod_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_dtoir]['prod'].append(ft_name.title())
+                ft_projects_data[self.project_name_dtoir]['prod'].append(ft_name.lower().capitalize())
             if row.find_all('td')[gazprom_dtoir_test_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_dtoir]['test'].append(ft_name.title())
+                ft_projects_data[self.project_name_dtoir]['test'].append(ft_name.lower().capitalize())
             if row.find_all('td')[gazprom_dtoir_demo_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_dtoir]['demo'].append(ft_name.title())
+                ft_projects_data[self.project_name_dtoir]['demo'].append(ft_name.lower().capitalize())
 
             if row.find_all('td')[gazprom_salavat_prod_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_salavat]['prod'].append(ft_name.title())
+                ft_projects_data[self.project_name_salavat]['prod'].append(ft_name.lower().capitalize())
             if row.find_all('td')[gazprom_salavat_test_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_salavat]['test'].append(ft_name.title())
+                ft_projects_data[self.project_name_salavat]['test'].append(ft_name.lower().capitalize())
             if row.find_all('td')[gazprom_salavat_demo_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_salavat]['demo'].append(ft_name.title())
+                ft_projects_data[self.project_name_salavat]['demo'].append(ft_name.lower().capitalize())
 
             if row.find_all('td')[novatek_murmansk_prod_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_murmansk]['prod'].append(ft_name.title())
+                ft_projects_data[self.project_name_murmansk]['prod'].append(ft_name.lower().capitalize())
             if row.find_all('td')[novatek_murmansk_test_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_murmansk]['test'].append(ft_name.title())
+                ft_projects_data[self.project_name_murmansk]['test'].append(ft_name.lower().capitalize())
             if row.find_all('td')[novatek_murmansk_demo_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_murmansk]['demo'].append(ft_name.title())
+                ft_projects_data[self.project_name_murmansk]['demo'].append(ft_name.lower().capitalize())
 
             if row.find_all('td')[novatek_yamal_prod_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_yamal]['prod'].append(ft_name.title())
+                ft_projects_data[self.project_name_yamal]['prod'].append(ft_name.lower().capitalize())
             if row.find_all('td')[novatek_yamal_test_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_yamal]['test'].append(ft_name.title())
+                ft_projects_data[self.project_name_yamal]['test'].append(ft_name.lower().capitalize())
             if row.find_all('td')[novatek_yamal_demo_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_yamal]['demo'].append(ft_name.title())
+                ft_projects_data[self.project_name_yamal]['demo'].append(ft_name.lower().capitalize())
 
             if row.find_all('td')[crea_cod_prod_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_crea_cod]['prod'].append(ft_name.title())
+                ft_projects_data[self.project_name_crea_cod]['prod'].append(ft_name.lower().capitalize())
             if row.find_all('td')[crea_cod_test_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_crea_cod]['test'].append(ft_name.title())
+                ft_projects_data[self.project_name_crea_cod]['test'].append(ft_name.lower().capitalize())
             if row.find_all('td')[crea_cod_demo_idx].get_text(strip=True) == on:
-                ft_projects_data[self.project_name_crea_cod]['demo'].append(ft_name.title())
+                ft_projects_data[self.project_name_crea_cod]['demo'].append(ft_name.lower().capitalize())
         for key in ft_projects_data:
             ft_projects_data[key]['prod'].sort()
             ft_projects_data[key]['test'].sort()
