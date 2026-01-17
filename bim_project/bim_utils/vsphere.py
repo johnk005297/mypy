@@ -132,7 +132,7 @@ class Vsphere:
             logger.error(err)
             return None
 
-    def get_array_of_vm(self, headers, exclude: list, search_for='', powered_on=False) -> dict:
+    def get_array_of_vm(self, headers, search_for_exclude='', search_for='', powered_on=False) -> dict:
         """ Function returns an array of VM in vSphere's cluster in format {'vm-moId': 'vm-name'}. """
 
         url = f"{self.url}/api/vcenter/vm"
@@ -145,21 +145,22 @@ class Vsphere:
             logger.error(err)
             return None
 
+        exclude_vm: list = [vm['name'] for vm in data if search_for_exclude and re.search(search_for_exclude.replace('*', '.*'), vm['name'])]
         if not search_for:
             if powered_on:
-                vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] and vm['name'] not in exclude }
+                vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] and vm['name'] not in exclude_vm }
             else:
-                vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] and vm['name'] not in exclude }
+                vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] and vm['name'] not in exclude_vm }
         else:
             if powered_on:
                 vm_array: dict = {
                                     vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']}
-                                    for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude
+                                    for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude_vm
                                     }
             else:
                 vm_array: dict = {
                                     vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']}
-                                    for vm in data if vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude
+                                    for vm in data if vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude_vm
                                     }
         return vm_array
 

@@ -145,7 +145,6 @@ if __name__ == '__main__':
             v = vsphere.Vsphere()
             console = Console()
             headers = v.get_headers(args.user, args.password)
-            exclude_vm: list = args.exclude.split() if args.exclude else []
             def take_snap(snap_name):
                 for value in vm_array.values():
                     with console.status(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]", spinner="earth"):
@@ -195,7 +194,7 @@ if __name__ == '__main__':
             if not headers:
                 sys.exit()
             elif args.vsphere_command == 'list-vm':
-                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter, args.powered_on)
+                vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter, args.powered_on)
                 v.print_list_of_vm(vm_array)
             elif args.vsphere_command == 'restart-vm':
                 console.rule(title="Reboot guest OS")
@@ -204,23 +203,23 @@ if __name__ == '__main__':
                     if not confirm:
                         print("Restart procedure aborted!")
                         sys.exit()
-                    vm_array: dict = v.get_array_of_vm(headers, exclude_vm, powered_on=True)
+                    vm_array: dict = v.get_array_of_vm(headers, args.exclude, powered_on=True)
                     v.restart_os(headers, vm_array)
                 else:
-                    vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter, powered_on=True)
+                    vm_array: dict = v.get_array_of_vm(headers, args.exclude, powered_on=True)
                     v.restart_os(headers, vm_array)
             elif args.vsphere_command == 'start-vm':
                 console.rule(title="Power On virtual machine")
-                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
+                vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
                 for value in vm_array.values():
                     v.start_vm(headers, value["moId"], value["name"])
             elif args.vsphere_command == 'stop-vm':
                 console.rule(title="Shutdown guest OS")
-                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
+                vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
                 for value in vm_array.values():
                     v.stop_vm(headers, value["moId"], value["name"])
             elif args.vsphere_command == 'show-snap':
-                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
+                vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
                 for value in vm_array.values():
                     snapshots: dict = v.get_vm_snapshots(headers, value["moId"], value["name"])
                     v.print_vm_snapshots(value["name"], snapshots)
@@ -228,7 +227,7 @@ if __name__ == '__main__':
             elif args.vsphere_command in ('take-snap', 'revert-snap', 'remove-snap', 'replace-snap'):
                 # Logic of snaps procedures:
                 # get needed VMs -> power OFF -> take/revert/remove snaps -> restore power state
-                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
+                vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
                 if not vm_array:
                     sys.exit("No VM were matched. Exit!")
                 for vm in vm_array:
