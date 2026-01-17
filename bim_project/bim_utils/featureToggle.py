@@ -110,7 +110,8 @@ class FeatureToggle:
                 print("No url was found.")
                 return None
         all_ft_on_stand = self.get_list_of_features(url, return_data=True)
-        if not all_ft_on_stand or not ft_conf:
+        if not ft_conf:
+            print(f"{project_name}: FT in confluence not found.")
             return None
         enabled_ft_on_stand = sorted([key.capitalize() for key,value in all_ft_on_stand.items() if value])
         result = {"Add": [ft for ft in ft_conf if ft not in enabled_ft_on_stand], 
@@ -120,10 +121,17 @@ class FeatureToggle:
         if add_empty and remove_empty:
             print("Total match!")
             return
-        if not add_empty:
-            print("Add:\n" + "\n".join(f"- {ft}" for ft in result['Add']))
-        if not remove_empty:
-            print("Remove:\n" + "\n".join(f"- {ft}" for ft in result['Remove']))
+        if not add_empty or not remove_empty:
+            print(f"{env.upper()}")
+            if not add_empty:
+                print("Add:\n" + "\n".join(f"- {ft}" for ft in result['Add']))
+            if not remove_empty:
+                print("Remove:\n" + "\n".join(f"- {ft}" for ft in result['Remove']))
+            print()
+        
+    def sync_ft_with_conf_page(self):
+        """ Automatically turn on and off feature toggles on a stand according to confluence page. """
+        pass
 
 
 class Conf:
