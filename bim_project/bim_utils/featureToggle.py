@@ -127,7 +127,6 @@ class FeatureToggle:
                 print("Add:\n" + "\n".join(f"- {ft}" for ft in result['Add']))
             if not remove_empty:
                 print("Remove:\n" + "\n".join(f"- {ft}" for ft in result['Remove']))
-            print()
         
     def sync_ft_with_conf_page(self):
         """ Automatically turn on and off feature toggles on a stand according to confluence page. """
