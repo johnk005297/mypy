@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import logging
+import asyncio
 import mlogger
 import sys
 import app_menu
@@ -37,7 +38,6 @@ if __name__ == '__main__':
     logger = mlogger.file_logger(logs.filepath, logLevel=logging.INFO)
     parser = Parser().get_parser()
     args = parser.parse_args()
-    
     try:
         if args.command == 'git':
             g = Git()
@@ -145,52 +145,56 @@ if __name__ == '__main__':
             v = vsphere.Vsphere()
             console = Console()
             headers = v.get_headers(args.user, args.password)
-            def take_snap(snap_name):
-                for value in vm_array.values():
-                    with console.status(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]", spinner="earth"):
-                        take_snap_status: bool = v.take_snapshot(headers, value['moId'], value['name'], snap_name=snap_name, description=args.desc)
-                        time.sleep(2)
-                        if take_snap_status:
-                            count = Tools.counter()
-                            while True:
-                                time.sleep(5)
-                                if v.is_has_snap(headers, value['name'], snap_name):
-                                    break
-                                elif count() == 1200:
-                                    sys.exit("Error: Couldn't take snapshot in 20 minutes. Abort procedure!")
-                                    break
-                                else:
-                                    continue
-                            console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
-                        else:
-                            console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
-            def remove_snap(snap_name):
-                for value in vm_array.values():
-                    with console.status(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]", spinner="earth"):
-                        snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
-                        is_snap_exists: bool = False
-                        for snap in snapshots.values():
-                            if snap['snapName'].strip() == snap_name:
-                                is_snap_exists = True
-                                remove_snap_status = v.remove_vm_snapshot(headers, snap['snapId'], print_msg=False)
-                                time.sleep(2)
-                                if remove_snap_status:
-                                    count = Tools.counter()
-                                    while True:
-                                        time.sleep(5)
-                                        if not v.is_has_snap(headers, value['name'], snap['snapName'].strip()):
-                                            break
-                                        elif count() == 1200:
-                                            sys.exit("Error: Couldn't remove snapshot in 20 minutes. Abort procedure!")
-                                            break
-                                        else:
-                                            continue
-                                    console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
-                                else:
-                                    console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
+            async def start_all_vm(vm_array):
+                tasks: list = [v.start_vm_async(headers, value["moId"], value["name"]) for value in vm_array.values()]
+                await asyncio.gather(*tasks)
+            async def stop_all_vm(vm_array):
+                tasks: list = [v.stop_vm_async(headers, value["moId"], value["name"]) for value in vm_array.values()]
+                await asyncio.gather(*tasks)
+            async def take_snap(value, snap_name=""):
+                with console.status(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]", spinner="earth"):
+                    take_snap_status: bool = v.take_snapshot(headers, value['moId'], value['name'], snap_name=snap_name, description=args.desc)
+                    await asyncio.sleep(2)
+                    if take_snap_status:
+                        count = Tools.counter()
+                        while True:
+                            await asyncio.sleep(3)
+                            if v.is_has_snap(headers, value['name'], snap_name):
                                 break
-                        if not is_snap_exists:
-                            console.print(f"[red]No snapshot name '{snap_name}' for VM: {value['name']}[/red]")
+                            elif count() == 1200:
+                                sys.exit("Error: Couldn't take snapshot in 20 minutes. Abort procedure!")
+                                break
+                            else:
+                                continue
+                        console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
+                    else:
+                        console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
+            async def remove_snap(snap_name, value):
+                with console.status(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]", spinner="earth"):
+                    snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
+                    is_snap_exists: bool = False
+                    for snap in snapshots.values():
+                        if snap['snapName'].strip() == snap_name:
+                            is_snap_exists = True
+                            remove_snap_status = v.remove_vm_snapshot(headers, snap['snapId'], print_msg=False)
+                            await asyncio.sleep(2)
+                            if remove_snap_status:
+                                count = Tools.counter()
+                                while True:
+                                    await asyncio.sleep(2)
+                                    if not v.is_has_snap(headers, value['name'], snap['snapName'].strip()):
+                                        break
+                                    elif count() == 1200:
+                                        sys.exit("Error: Couldn't remove snapshot in 20 minutes. Abort procedure!")
+                                        break
+                                    else:
+                                        continue
+                                console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
+                            else:
+                                console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
+                            break
+                    if not is_snap_exists:
+                        console.print(f"[red]No snapshot name '{snap_name}' for VM: {value['name']}[/red]")
             if not headers:
                 sys.exit()
             elif args.vsphere_command == 'list-vm':
@@ -211,13 +215,11 @@ if __name__ == '__main__':
             elif args.vsphere_command == 'start-vm':
                 console.rule(title="Power On virtual machine")
                 vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
-                for value in vm_array.values():
-                    v.start_vm(headers, value["moId"], value["name"])
+                asyncio.run(start_all_vm(vm_array))
             elif args.vsphere_command == 'stop-vm':
                 console.rule(title="Shutdown guest OS")
                 vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
-                for value in vm_array.values():
-                    v.stop_vm(headers, value["moId"], value["name"])
+                asyncio.run(stop_all_vm(vm_array))
             elif args.vsphere_command == 'show-snap':
                 vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
                 for value in vm_array.values():
@@ -237,16 +239,18 @@ if __name__ == '__main__':
                     sys.exit("Abort procedure!")
 
                 console.rule(title="Shutdown guest OS")
-                for value in vm_array.values():
-                    v.stop_vm(headers, value["moId"], value["name"])
+                vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
+                asyncio.run(stop_all_vm(vm_array))
                 if args.vsphere_command == 'take-snap':
-                    snap_name: str = args.name.strip()
-                    console.rule(title="Create snaphost")
-                    take_snap(snap_name)
+                    console.rule(title="Create virtual machine snaphost")
+                    async def get_take_snap_tasks():
+                        tasks = [take_snap(value, snap_name=args.name) for value in vm_array.values()]
+                        await asyncio.gather(*tasks)
+                    asyncio.run(get_take_snap_tasks())
                 elif args.vsphere_command == 'revert-snap':
-                    snap_name: str = args.name.strip()
                     console.rule(title="Revert virtual machine snapshot")
-                    for value in vm_array.values():
+                    snap_name: str = args.name.strip()
+                    async def revert_snap(value):
                         with console.status(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]", spinner="earth"):
                             snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
                             is_snap_exists: bool = False
@@ -254,7 +258,7 @@ if __name__ == '__main__':
                                 if snap['snapName'].strip() == snap_name:
                                     is_snap_exists = True
                                     revert_snap_status = v.revert_to_snapshot(headers, snap['snapId'], value['name'], print_msg=False)
-                                    time.sleep(1)
+                                    await asyncio.sleep(1)
                                     if revert_snap_status:
                                         console.print(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
                                     else:
@@ -262,21 +266,34 @@ if __name__ == '__main__':
                                     break
                             if not is_snap_exists:
                                 console.print(f"[red]No snapshot name '{snap_name}' for VM: {value['name']}[/red]")
+                    async def get_revert_snap_tasks():
+                        tasks = [revert_snap(value) for value in vm_array.values()]
+                        await asyncio.gather(*tasks)
+                    asyncio.run(get_revert_snap_tasks())
                 elif args.vsphere_command == 'remove-snap':
-                    snap_name: str = args.name.strip()
                     console.rule(title="Remove virtual machine snaphost")
-                    remove_snap(snap_name)
+                    snap_name: str = args.name.strip()
+                    async def get_remove_snap_tasks(snap_name):
+                        tasks = [remove_snap(snap_name, value) for value in vm_array.values()]
+                        await asyncio.gather(*tasks)
+                    asyncio.run(get_remove_snap_tasks(snap_name))
                 elif args.vsphere_command == 'replace-snap':
+                    console.rule(title="Replace virtual machine snapshot")
                     old_snap_name: str = args.old
                     new_snap_name: str = args.new
-                    remove_snap(old_snap_name)
-                    take_snap(new_snap_name)
+                    async def get_remove_snap_tasks(snap_name):
+                        tasks = [remove_snap(snap_name, value) for value in vm_array.values()]
+                        await asyncio.gather(*tasks)
+                    asyncio.run(get_remove_snap_tasks(old_snap_name))
+                    async def get_take_snap_tasks():
+                        tasks = [take_snap(value, snap_name=new_snap_name) for value in vm_array.values()]
+                        await asyncio.gather(*tasks)
+                    asyncio.run(get_take_snap_tasks())
 
                 # Restoring power state
                 console.rule(title="Power state restore")
-                for value in vm_array.values():
-                    if value["power_state"] == "POWERED_ON":
-                        v.start_vm(headers, value["moId"], value["name"])
+                vm_values = [value for value in vm_array.values() if value["power_state"] == "POWERED_ON"]
+                asyncio.run(start_all_vm(vm_array))
 
         elif args.command == 'mdm':
             mdm = import_data.Mdmconnector()

@@ -99,16 +99,22 @@ class FeatureToggle:
             case "gazprom-dtoir":
                 url = "https://dtoir-t.bimeister.io" if env == "test" else "https://dtoir-p.bimeister.io"
             case "gazprom-salavat":
-                url = "https://gazprom-salavat-t.bimeister.io"
+                url = "https://gazprom-salavat-t.bimeister.io" if env == "test" else ""
             case "novatek-murmansk":
-                url = "https://novatek-murmansk-p.bimeister.io"
+                url = "https://novatek-murmansk-p.bimeister.io" if env == "prod" else ""
             case "novatek-yamal":
-                url = "https://novatek-yamal-t.bimeister.io"
+                url = "https://novatek-yamal-d.bimeister.io" if env == "demo" else ""
             case "crea-cod":
                 url = "https://crea-cod.bimeister.io"
             case _:
                 print("No url was found.")
                 return None
+        if not url:
+            print("URL for current env not found.")
+            return None
+        elif not Tools.is_url_available(url):
+            print(f"URL:{url} incorrect or unavailable.")
+            return None
         all_ft_on_stand = self.get_list_of_features(url, return_data=True)
         if not ft_conf:
             print(f"{project_name}: FT in confluence not found.")
