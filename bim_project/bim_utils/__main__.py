@@ -230,6 +230,7 @@ if __name__ == '__main__':
                 # Logic of snaps procedures:
                 # get needed VMs -> power OFF -> take/revert/remove snaps -> restore power state
                 vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
+                vm_power_on = {k: v for k,v in vm_array.items() if v.get('power_state') == 'POWERED_ON'}
                 if not vm_array:
                     sys.exit("No VM were matched. Exit!")
                 for vm in vm_array:
@@ -238,9 +239,9 @@ if __name__ == '__main__':
                 if confirm not in ('y', 'yes'):
                     sys.exit("Abort procedure!")
 
-                console.rule(title="Shutdown guest OS")
-                vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
-                asyncio.run(stop_all_vm(vm_array))
+                if vm_power_on:
+                    console.rule(title="Shutdown guest OS")
+                    asyncio.run(stop_all_vm(vm_power_on))
                 if args.vsphere_command == 'take-snap':
                     console.rule(title="Create virtual machine snaphost")
                     async def get_take_snap_tasks():
@@ -291,9 +292,9 @@ if __name__ == '__main__':
                     asyncio.run(get_take_snap_tasks())
 
                 # Restoring power state
-                console.rule(title="Power state restore")
-                vm_values = [value for value in vm_array.values() if value["power_state"] == "POWERED_ON"]
-                asyncio.run(start_all_vm(vm_array))
+                if vm_power_on:
+                    console.rule(title="Power state restore")
+                    asyncio.run(start_all_vm(vm_power_on))
 
         elif args.command == 'mdm':
             mdm = import_data.Mdmconnector()
