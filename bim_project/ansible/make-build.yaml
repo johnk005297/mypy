@@ -1,0 +1,324 @@
+---
+# v0.1.44
+#
+# Плейбук подготовки необходимого пакета для обновления Bimeister и передачи заказчику.
+# Запуск плейбука всегда выполняется из каталога tools.
+#
+# По завершении работы в домашней директории пользователя будет создан каталог со следующими подкаталогами:
+#   tools - содержит инструментарий внедрения для различных задач
+#   helm - содержит чарты и переопределяющие values файлы
+#   inventory - содержит inventory-файлы для работы плейбуков ansible
+#   extra-works - каталог для любых временных операций, которые могут потребоваться
+#
+# Передаваемые аргументы:
+#   обязательные:
+#     release - префикс в итоговом имени каталога со сборкой, а так же инф-ия о самой сборке, которая записывается в файл data.yaml
+#               и в дальнейшем используется при обновлении.
+#     helm_chart_version - версия хелм-чарта в формате, который можно скачать с репозитория
+#     project_number - номер проекта из списка
+#     env - указание контура(тест, продуктив, демо и тд)
+#     is_templates_ready - атрибут, указывающий на готовность/неготовность чартов
+#   опциональные:
+#     is_pull_images - булевый атрибут, определяющий необходимость скачивания образов. По умолчанию true
+#
+# Некоторые переменные:
+#   is_local_update - является директивой для определения контура: заказчик или внутренние стенды bimeister. По умолчанию(true).
+#   is_local_repo - указание для хелм-чартов(global.image.localRepository) о том, какой репозиторий использовать: локальный или тот, что прописан чартах по умолчанию
+
+- name: Build update package
+  hosts: localhost
+
+  vars_prompt:
+  - name: release
+    prompt: 'Set release number(example: 143)'
+    private: false
+
+  - name: helm_chart_version
+    prompt: |-
+        Set helm chart version. Use tag or commit.
+          tag "sprint-143" example: 1.18.0-release-sprint-143
+          commit "ca01bff7" example: 1.18.0-shaca01bff7
+        value
+    private: false
+
+  - name: project_number
+    prompt: "{{ projects_list | join('\n')}}"
+    private: false
+
+  - name: env
+    prompt: "Select environment: \nprod | test"
+    default: "test"
+    private: false
+
+  - name: is_templates_ready
+    prompt: "\nTemplates ready? default"
+    default: "No"
+    private: false
+
+  vars:
+    projects_list:
+    - 1. gazprom-suid
+    - 2. gazprom-dtoir
+    - 3. gazprom-shelf
+    - 4. gazprom-salavat
+    - 5. novatek-murmansk
+    - 6. novatek-yamal
+    - 7. bimeister-techsupport-03
+    - 8. bimeister-demo-0
+    - Select project number
+
+    is_local_repo: false
+    is_local_update: true
+    is_pull_images: true
+
+    # getting absolute paths to ansible and build folders locations
+    repo_dir_path: "{{ playbook_dir.split('/') | join('/') }}"
+    project_short_name: "{{ projects_list[project_number | int - 1].split('-')[1]}}"
+    build_dir_path: "{{ ansible_env.HOME }}/{{ _release }}_{{ _helm_chart_version }}_{{ project_short_name }}"
+    images_dir_path: "{{ build_dir_path }}/tools/images/"
+
+    _release: "{{ release | trim }}"
+    _helm_chart_version: "{{ helm_chart_version | trim }}"
+    _tag: "{{ _helm_chart_version.split('-')[1:] | join('-') }}"
+
+    max_project_number: "{{ projects_list[:-1][-1].split('.')[0] }}"
+
+    _env: "{{ env | trim }}"
+    env_file: "{{ _env }}.yaml"
+    values_template_file: "bimeister.yaml.j2"
+    values_file: "{{ values_template_file[:-3] }}"
+    inventory_template_file: "hosts.yaml.j2"
+    inventory_file: "{{ inventory_template_file[:-3] }}"
+
+    helm_chart: "bimeister-{{ _helm_chart_version }}"
+    helm_repo_name: "bimeister"
+    helm_repo_url: "https://nexus.dev.bimeister.io/repository/bim-helm"
+
+    find_images_regex: '^\s*image:\s*(.*)' # поиск строк в формате: <пробел(ы)>image:<пробел(ы)>...<конец строки>
+
+  pre_tasks:
+  - name: Populate services data
+    ansible.builtin.service_facts:
+
+  - name: Project number validation
+    ansible.builtin.fail:
+      msg: "Invalid project number! Must be between 1 and {{ max_project_number }}."
+    when: (project_number | int < 1) or (project_number | int > max_project_number | int)
+
+  - name: Variables declaration
+    block:
+    - ansible.builtin.set_fact:
+        # каталоги в формате organization/project(прим: gazprom/dtoir)
+        organization_project: "{{ projects_list[project_number | int - 1].split()[1] | replace('-', '/', 1) }}"
+        projects_dir_path: "{{ repo_dir_path }}/projects"
+    - ansible.builtin.set_fact:
+        env_file_path: "{{ projects_dir_path }}/{{ organization_project }}/env-files/{{ env_file }}"
+        values_template_path: "{{ projects_dir_path }}/{{ organization_project }}/templates/{{ values_template_file }}"
+        inventory_template_path: "{{ projects_dir_path }}/{{ organization_project }}/templates/{{ inventory_template_file }}"
+        instruction_file_path: "{{ projects_dir_path }}/{{ organization_project }}/instructions/bimeister-update-instruction.txt"
+        user_message: |
+             Charts have been pulled to {{ build_dir_path }}/helm
+             To continue building an update package, prepare two jinja templates:
+                templates/{{ organization_project }}/{{ values_template_file }}
+                templates/{{ organization_project }}/{{ inventory_template_file }}
+
+  - name: Multiple checks
+    block:
+    - name: Check if helm charts {{ helm_chart }}.tgz exist
+      ansible.builtin.stat:
+        path: "{{ build_dir_path }}/charts/{{ helm_chart }}.tgz"
+      register: helm_chart_exists
+
+    - name: Check if {{ values_template_file }} template exists
+      ansible.builtin.stat:
+        path: "{{ projects_dir_path }}/{{ organization_project }}/templates/{{ values_template_file }}"
+      register: values_template_exists
+
+    - name: Check if {{ inventory_template_file }} template exists
+      ansible.builtin.stat:
+        path: "{{ projects_dir_path }}/{{ organization_project }}/templates/{{ inventory_template_file }}"
+      register: inventory_template_exists
+
+    - name: Check if {{ env_file }} file exists
+      ansible.builtin.stat:
+        path: "{{ env_file_path }}"
+      register: env_file_exists
+
+    - name: Final check
+      ansible.builtin.assert:
+        that:
+        - _release | length > 0
+        - ansible_facts.services['docker.service'] is defined
+        - values_template_exists.stat.exists
+        - inventory_template_exists.stat.exists
+        - env_file_exists.stat.exists
+        fail_msg: "Assertions failed. Exit!"
+
+  tasks:
+  - name: Gather package facts
+    ansible.builtin.package_facts:
+
+  - name: Include {{ env_file }} file with variables
+    ansible.builtin.include_vars:
+      file: "{{ env_file_path }}"
+
+  - name: Create directories for the build
+    ansible.builtin.file:
+      dest: '{{ item }}'
+      state: directory
+      owner: '{{ ansible_env.USER }}'
+      recurse: true
+    loop:
+    - '{{ images_dir_path }}'
+    - '{{ build_dir_path }}/helm/charts'
+    - '{{ build_dir_path }}/helm/values'
+    - '{{ build_dir_path }}/inventory'
+    - '{{ build_dir_path }}/extra-works'
+    become: true
+
+  - name: Download helm charts and values
+    block:
+    - name: Add {{ helm_repo_name }} helm repository
+      kubernetes.core.helm_repository:
+        name: '{{ helm_repo_name }}'
+        repo_url: '{{ helm_repo_url }}'
+        force_update: true
+
+    - name: Pull helm chart {{ helm_chart }}
+      kubernetes.core.helm_pull:
+        repo_url: '{{ helm_repo_url }}'
+        chart_ref: '{{ helm_repo_name }}'
+        chart_version: '{{ _helm_chart_version }}'
+        destination: '{{ build_dir_path }}/helm/charts'
+
+    - name: Extract helm chart {{ helm_chart }}
+      ansible.builtin.unarchive:
+        src: '{{ build_dir_path }}/helm/charts/{{ helm_chart }}.tgz'
+        dest: '{{ build_dir_path }}/helm/charts'
+    when: not helm_chart_exists.stat.exists
+
+  - name: Sync needed folders and files for the build from tools repo
+    block:
+    - name: Copy tools folder to {{ build_dir_path }}
+      ansible.posix.synchronize:
+        src: '{{ repo_dir_path }}'
+        dest: '{{ build_dir_path }}'
+        delete: false
+        recursive: true
+        archive: true
+        rsync_opts:
+        - "--include=create-hosts-and-values-files.yaml"
+        - "--include=push-docker-images-into-containerd.yaml"
+        - "--include=enable-kubectl.yaml"
+        - "--include=create-databases-and-users.yaml"
+        - "--exclude=projects"
+        - "--exclude=.*"
+        - "--exclude=misc"
+        - "--exclude=*.yaml"
+        - "--exclude=README.md"
+
+    - name: Copy project template and env files
+      ansible.posix.synchronize:
+        src: "{{ projects_dir_path }}/{{ organization_project }}/{{ item }}"
+        dest: "{{ build_dir_path }}/tools"
+        delete: true
+        recursive: true
+        rsync_opts:
+          - "--exclude=.*"
+      loop: ['env-files', 'templates']
+
+  - name: Check if {{ values_template_file }} is ready
+    block:
+    - name: User message
+      ansible.builtin.debug:
+        msg: "{{ user_message.split('\n') }}"
+
+    - name: Stop play if charts aren't ready
+      ansible.builtin.meta: end_play
+    when: is_templates_ready | lower not in ['y', 'yes', 'true']
+
+  - name: Render helm values chart file
+    block:
+    - name: Create values file from helm template
+      ansible.builtin.template:
+        src: "{{ projects_dir_path }}/{{ organization_project }}/templates/{{ values_template_file }}"
+        dest: "{{ build_dir_path }}/helm/values/{{ values_file }}"
+
+    - name: Render helm values file
+      kubernetes.core.helm_template:
+        chart_ref: '{{ build_dir_path }}/helm/charts/bimeister'
+        values_files:
+        - '{{ build_dir_path }}/helm/values/{{ values_file }}'
+      register: result
+
+  - name: Get docker images list from rendered values file
+    ansible.builtin.set_fact:
+      docker_images_list: "{{ result.stdout | regex_findall(find_images_regex, multiline=true) | unique | map('regex_replace', '\"', '') }}"
+
+  - name: Prepare archive with docker images
+    block:
+    - name: Save file images.list
+      ansible.builtin.copy:
+        content: "{{ docker_images_list | join('\n') }}"
+        dest: "{{ images_dir_path }}/images.list"
+
+    - name: Print docker images list
+      ansible.builtin.debug:
+        var: docker_images_list
+
+    - name: Pull docker images
+      community.docker.docker_image:
+        name: '{{ item }}'
+        source: pull
+      loop: '{{ docker_images_list }}'
+
+    - name: Install pigz for fast compression
+      ansible.builtin.dnf:
+        name: pigz
+      become: true
+      when: ansible_facts.packages['pigz'] is not defined
+
+    - name: Save compressed docker images in {{ images_dir_path }}
+      ansible.builtin.shell:
+        cmd: "docker save {{ item | quote }} | pigz -9 > {{ images_dir_path | quote }}/{{ item | quote | regex_replace('/', '^') | regex_replace(':', '#') }}.tgz"
+      loop: '{{ docker_images_list }}'
+
+    - name: Create final archive images.tar
+      community.general.archive:
+        path: "{{ images_dir_path }}/*"
+        dest: "{{ images_dir_path.split('/')[:-1] | join('/') }}/images.tar"
+        format: tar
+        force_archive: true
+        remove: true
+      tags:
+      - final_archive
+    when: is_pull_images | bool
+
+  - name: Create file with build info
+    ansible.builtin.copy:
+      content: |
+        project_name: {{ organization_project.split('/')[1] }}
+        release_version: {{ _release }}
+      dest: "{{ build_dir_path }}/build.yaml"
+    run_once: true
+
+  - name: Remove docker images, values.yaml file, and print final message
+    block:
+    - name: Purge docker images
+      community.docker.docker_image:
+        name: '{{ item }}'
+        state: absent
+      loop: '{{ docker_images_list }}'
+      when: is_pull_images | bool
+
+    - name: Remove generated values.yaml
+      ansible.builtin.file:
+        path: "{{ build_dir_path }}/helm/values/{{ values_file }}"
+        state: absent
+
+    - name: MESSAGE
+      ansible.builtin.debug:
+        msg:
+        - "=============== {{ 'Build saved in' | upper }} {{ build_dir_path }} ============================================"
+
+  ignore_errors: false

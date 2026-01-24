@@ -1,0 +1,105 @@
+---
+# v0.1.17
+# Плейбук для автоматической генерации values и inventory файлов на основе jinja2 шаблонов.
+# Некоторые переменные:
+#   is_local_update - является директивой для определения контура: заказчик или внутренние стенды bimeister
+#   is_local_repo - указание для хелм-чартов(global.image.localRepository) о том, какой репозиторий использовать: локальный или тот, что прописан чартах по умолчанию
+#
+# Пример запуска:
+# $ ansible-playbook create-hosts-and-values-files.yaml
+# $ ansible-playbook create-hosts-and-values-files.yaml --extra-vars "is_local_update=True"
+
+- name: Create files
+  hosts: localhost
+
+  vars_prompt:
+  - name: env
+    prompt: "Choose environment:\nprod | test"
+    default: "test"
+    private: False
+
+  vars:
+    _env: "{{ env | trim }}"
+    env_file: "{{ _env }}.yaml"
+
+    is_local_update: False # описание в заголовочном комментарии
+    is_local_repo: True # описание в заголовочном комментарии
+
+    abs_path: "{{ playbook_dir.split('/')[:-1] | join('/') }}"
+    tools_dir_path: "{{ abs_path }}/tools"
+    values_dir_path: "{{ abs_path }}/helm/values"
+    original_values_file_path: "{{ abs_path }}/helm/charts/bimeister/values.yaml"
+    inventory_dir_path: "{{ abs_path }}/inventory"
+    templates_dir_path: "{{ tools_dir_path }}/templates"
+    env_master_dir_path: "{{ tools_dir_path }}/env-files"
+    env_slave_dir_path: "/bimeister/releases/.env"
+
+    values_template_file: "bimeister.yaml.j2"
+    values_file: "bimeister.yaml"
+    inventory_template_file: "hosts.yaml.j2"
+    inventory_file: "hosts.yaml"
+
+
+  # Проверяем, что:
+  # - файлы prod.yaml или test.yaml находятся в каталоге /bimeister/releases/.env
+  # - файлы prod.yaml или test.yaml находятся в каталоге tools/env-files
+  # - шаблоны bimeister.yaml.j2 и hosts.yaml.j2 находятся в каталоге tools/templates
+  pre_tasks:
+  - name: Multiple checks
+    block:
+    - name: Check if {{ values_template_file }} exists
+      ansible.builtin.stat:
+        path: "{{ templates_dir_path }}/{{ values_template_file }}"
+      register: values_template_file_exists
+
+    - name: Check if {{ inventory_template_file }} exists
+      ansible.builtin.stat:
+        path: "{{ templates_dir_path }}/{{ inventory_template_file }}"
+      register: inventory_template_file_exists
+
+    - name: Check if env-slave file exists
+      ansible.builtin.stat:
+        path: "{{ env_slave_dir_path }}/{{ env_file }}"
+      register: env_slave_file_exists
+
+    - name: Check if env-master file exists
+      ansible.builtin.stat:
+        path: "{{ env_master_dir_path }}/{{ env_file }}"
+      register: env_master_file_exists
+
+    - name: Final check
+      ansible.builtin.assert:
+        that:
+        - values_template_file_exists.stat.exists
+        - inventory_template_file_exists.stat.exists
+        - inventory_template_file_exists.stat.exists
+        - env_slave_file_exists.stat.exists
+        - env_master_file_exists.stat.exists
+        fail_msg: "Assertions failed. Exit!"
+
+  tasks:
+  - name: Import variables from {{ env_slave_dir_path }}
+    ansible.builtin.include_vars: "{{ item }}"
+    loop:
+    - "{{ env_slave_dir_path }}/{{ env_file }}"
+
+  - name: Access variables in {{ original_values_file_path }}
+    ansible.builtin.set_fact:
+      values: "{{ lookup('ansible.builtin.file', original_values_file_path) | from_yaml }}"
+
+  - name: Create {{ values_file }} file
+    ansible.builtin.template:
+      src: "{{ templates_dir_path }}/{{ values_template_file }}"
+      dest: "{{ values_dir_path }}/{{ values_file }}"
+      force: True
+
+  - name: Create {{ inventory_file }} file
+    ansible.builtin.template:
+      src: "{{ templates_dir_path }}/{{ inventory_template_file }}"
+      dest: "{{ inventory_dir_path }}/{{ inventory_file }}"
+      force: True
+
+  - debug:
+      msg:
+      - "File {{ values_file }} successfully created in {{ values_dir_path }}/"
+      - "File {{ inventory_file }} successfully created in {{ inventory_dir_path }}/"

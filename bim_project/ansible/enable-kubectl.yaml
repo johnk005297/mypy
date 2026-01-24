@@ -1,0 +1,55 @@
+---
+#
+
+- name: Copy config for kubectl
+  hosts: "{{ target | default('k8s_masters') }}"
+
+  vars:
+    kubectl_admin_config_cluster_patch:
+      cluster:
+        server: https://{{ ansible_default_ipv4.address }}:6443
+
+  tasks:
+  - name: Get kubernetes admin config
+    block:
+    - name: create .kube directory
+      ansible.builtin.file:
+        dest: "{{ lookup('env', 'HOME') }}/.kube"
+        owner: "{{ lookup('env', 'USER') }}"
+        mode: 0700
+        state: directory
+      delegate_to: localhost
+
+    - name: Copy admin.conf from k8s master node
+      ansible.builtin.slurp:
+        src: /etc/kubernetes/admin.conf
+      register: kubectl_admin_config
+      become: true
+
+    - ansible.builtin.set_fact:
+        kubectl_admin_config: "{{ kubectl_admin_config['content'] | b64decode | from_yaml }}"
+
+    - ansible.builtin.set_fact:
+        kubectl_admin_config_cluster_patched: '{{ kubectl_admin_config.clusters[0] | ansible.builtin.combine(kubectl_admin_config_cluster_patch, recursive=true) }}'
+
+    - ansible.builtin.set_fact:
+        kubectl_admin_config_patch:
+          clusters:
+          - '{{ kubectl_admin_config_cluster_patched }}'
+
+    - ansible.builtin.set_fact:
+        kubectl_admin_config_patched: '{{ kubectl_admin_config | ansible.builtin.combine(kubectl_admin_config_patch, recursive=true) }}'
+
+    run_once: true
+
+  - name: Save kubernetes admin config
+    block:
+    - name: Save patched admin config in .kube/config
+      ansible.builtin.copy:
+        content: "{{ kubectl_admin_config_patched | to_nice_yaml(indent=2, width=1337) }}"
+        dest: "{{ lookup('env', 'HOME') }}/.kube/config"
+        owner: "{{ lookup('env', 'USER') }}"
+        mode: 0700
+
+    delegate_to: localhost
+    run_once: yes
