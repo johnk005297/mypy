@@ -4,10 +4,10 @@ import argparse
 import json
 import requests
 import time
-import export_data
-import auth
-import license
-from tools import File, Tools
+import textwrap
+from rich.console import Console
+from license import License
+from tools import File, Tools, ScrollablePanel
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
@@ -17,131 +17,113 @@ _logger = logging.getLogger(__name__)
 _logs = Logs()
 _tools = Tools()
 
-class Import_data:
 
-    __api_WorkFlows: str = 'api/WorkFlows'
-    __api_Integration_ObjectModel_Import: str = 'api/Integration/ObjectModel/Import'
-    __api_Integration_WorkFlow_Import: str = 'api/Integration/WorkFlow/Import'
+
+def validate_import_server(url: str, token: str, filepath: str):
+    ''' Function needs to protect export server from import procedure during a single user session. '''
+
+    server_info = File.read_file(filepath)
+    is_serverId_received, server_id = License.get_serverID(License, url, token)
+    if not is_serverId_received:
+        return None
+    if server_info and server_info.split()[1] == server_id:
+        ask_for_confirmation: bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
+        return True if ask_for_confirmation in ('y', 'yes') else False
+    elif not server_info:
+        _logger.error(f"Can't detect server info ID in {filepath} file.")
+        return False
+    else:
+        return True
+
+
+class Object_model:
+
     _transfer_folder: str = 'transfer_files'
-    _workflows_folder: str = 'workflows'
-    _all_workflow_nodes_file: str = 'all_workflow_nodes_import_server.json'
     _object_model_folder: str = 'object_model'
     _object_model_file: str = 'object_model_import_server.json'
-    _modified_object_model_file: str = 'modified_object_model.json'
-    Export_data = export_data.Export_data()
-    License = license.License()
-    possible_request_errors = auth.Auth().possible_request_errors
 
     def __init__(self):
-        self.export_serverId = None
+        self.console = Console()
+
+    def import_object_model(self, url, token, filepath):
+        """ Function takes full path to object model file, and perform POST method. """
+
+        headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
+        url += '/api/Integration/ObjectModel/Import'
+        if not os.path.isfile(filepath) or not url or not token:
+            print(f"Error: {filepath} file not found")
+            return None
+        with open(filepath, "r", encoding="utf-8") as file:
+            data = file.read()
+        # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file
+
+        with self.console.status("Importing object model...", spinner="earth"):
+            response = _tools.make_request('POST', url, data=data.encode("utf-8"),  headers=headers, verify=False, return_err_response=True)
+            if response.status_code not in range(200, 205):
+                _logger.error(response.text)
+                print(f"Status: {response.status_code}. {_logs.err_message}.")
+                return False
+            else:
+                print(f"Status: {response.status_code} Object model successfully imported.")
+                return True
 
 
-    def validate_import_server(self, url, token):
-        ''' Function needs to protect export server from import procedure during a single user session. '''
+class Workflows:
+    __api_Integration_WorkFlow_Import: str = 'api/Integration/WorkFlow/Import'
+    _workflows_folder: str = 'workflows'
+    _transfer_folder: str = 'transfer_files'
 
-        filepath: str = self._transfer_folder + '/' + self.Export_data._export_server_info_file
-        server_info = File.read_file(filepath)
-        response = self.License.get_serverID(url, token)
-        success: bool = response[0]
-        message: str = response[1] # if True, message is a serverId, otherwise error message
-        if not success:
-            print(message)
-            return False
-        if server_info and server_info.split()[1] == message:
-            ask_for_confirmation: bool = input('This is an export server. Wish to import here?(Y/N): ').lower()
-            return True if ask_for_confirmation == 'y' else False
-        elif not server_info:
-            _logger.error("Can't local server info ID in server_info file.")
-            return False
-        else:
-            self.export_serverId = server_info.split()[1]
-            return True
+    def __init__(self):
+        self.console = Console()
+        self.tools = Tools()
 
-    def post_workflows(self, url, token):
+    def import_workflows(self, url: str, token: str, filepath: str):
         ''' Function to post workflows using .zip archives data from the export procedure.
-            Workflows IDs' are taken from exported_workflows.list file.
+            Takes full path to exported_workflows.list file, and takes workflows' IDs from it.
         '''
 
-        url_import = f'{url}/{self.__api_Integration_WorkFlow_Import}'
+        url += f'/{self.__api_Integration_WorkFlow_Import}'
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
 
-        # Read the file with workflows in the list without blank lines
-        workflows = [x for x in File.read_file(f'{self._transfer_folder}/{self._workflows_folder}/{self.Export_data._exported_workflows_list}',).split('\n') if x.split()]
-        count = Tools.counter()
-        for workflow in workflows:
-            # workflow format: <status>  <id>  <name>
-            id = workflow.split(' '*2, maxsplit=2)[1].strip()
-            name = workflow.split(' '*2, maxsplit=2)[2].strip()
-            try:
-                with open(f'{self._transfer_folder}/{self._workflows_folder}/{id}.zip', mode='rb') as file:
-                    response = requests.post(url=url_import, headers=headers, files={'file': file}, verify=False)
-                    time.sleep(0.1)
-                    if response.status_code != 200:
-                        print(f"  {count()}) ERROR {response.status_code} >>> {name}, id: {id}.")
-                        _logger.error(response.text)
-                        continue
+        if not os.path.isfile(filepath) or not url or not token:
+            print(f"Error: {filepath} file not found")
+            return None
 
-                    _logger.debug(f'{response.request.method} "{name}: {id}" {response.status_code}')
-                    print(f"   {count()}) {name}.")   # display the name of the process in the output
-            except FileNotFoundError:
-                print(f"Process not found: {name}")
-                continue
-            except:
-                _logger.error()
-                continue
+        # Read the file with workflows in the list without blank lines
+        workflows = [x for x in File.read_file(filepath).split('\n') if x.split()]
+        failed_workflows: list = []
+        imported_workflows: list = []
+        with self.console.status("Importing workflows...", spinner="earth"):
+            for workflow in workflows:
+                # workflow format: <status>  <id>  <name>
+                id = workflow.split(' '*2, maxsplit=2)[1].strip()
+                name = workflow.split(' '*2, maxsplit=2)[2].strip()
+                wf_title: str = textwrap.shorten("{0}".format(name), width=84, placeholder="...")
+                try:
+                    with open(f'{self._transfer_folder}/{self._workflows_folder}/{id}.zip', mode='rb') as file:
+                        response = self.tools.make_request('POST', url, headers=headers, files={'file': file}, verify=False, return_err_response=True, custom_log_msg=name)
+                        if response.status_code not in range(200, 205):
+                            _logger.error(response.text)
+                            failed_workflows.append("Error {0}: {1})".format(response.status_code, wf_title))
+                            continue
+                        imported_workflows.append(wf_title)
+                        time.sleep(0.03)
+                        _logger.debug(f'{response.request.method} "{name}: {id}" {response.status_code}')
+                except FileNotFoundError:
+                    print(f"Process not found: {name}")
+                    continue
+                except:
+                    _logger.error()
+                    continue
+        successful_workflows: int = len(imported_workflows)
+        imported_workflows.extend(failed_workflows)
+        for x in imported_workflows:
+            print(x)
+        panel = ScrollablePanel(imported_workflows, title="Imported workflows", height=10, width=115)
+        panel.auto_scroll(delay=0.07)
+        print(f"Successful: {successful_workflows} Failed: {len(failed_workflows)}")
         return
 
-    def post_object_model(self, url, token):
-
-        headers_import = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-        url_post_object_model: str = f'{url}/{self.__api_Integration_ObjectModel_Import}'
-        with open(f"{self._transfer_folder}/{self._object_model_folder}/{self.Export_data._object_model_file}", "r", encoding="utf-8") as file:
-            data = file.read()
-        # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file   
-        try:
-            post_request = requests.post(url=url_post_object_model, data=data.encode("utf-8"),  headers=headers_import, verify=False)
-        except self.possible_request_errors as err:
-            _logger.error(err)
-            print("Error with POST object model. Check the logs.")
-            return False
-
-        if post_request.status_code not in (200, 201, 204):
-            _logger.error(f"\n{post_request.text}")
-            print("   - post object model:                  error ", post_request.status_code)
-            return False
-        else:
-            print("   - post object model:                  done")
-            return True
-
-    def import_object_model(self, url, token):
-        server_validation: bool = self.validate_import_server(url, token)
-        object_model_file_exists: bool = os.path.isfile(f'{self._transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}')
-        if object_model_file_exists and server_validation:
-            # Check if the import server object model file is already exists. Need to delete it. Case, when user already made attempts to make import.
-            # In order to avoid message about the file is already there from Export_data.get_object_model function, need to remove it first.
-            if os.path.isfile(f'{self._transfer_folder}/{self._object_model_folder}/{self._object_model_file}'):
-                os.remove(f'{self._transfer_folder}/{self._object_model_folder}/{self._object_model_file}')
-            # self.Export_data.get_object_model(self._object_model_file, url, token)
-            # self.prepare_object_model_file_for_import()
-            # self.fix_defaulValues_in_object_model()
-            self.post_object_model(url, token)
-            return True
-        else:
-            print("No object_model for import." if not os.path.isfile(f'{self._transfer_folder}/{self.Export_data._object_model_folder}/{self.Export_data._object_model_file}') else "")
-            return False
-
-    def import_workflows(self, url, token):
-        server_validation: bool = self.validate_import_server(url, token)
-        workflows_folder_exists: bool = os.path.isdir(self._transfer_folder + '/' + self._workflows_folder)
-        if workflows_folder_exists and server_validation:
-            self.post_workflows(url, token)
-
-            ### Need to disable this block to test another API method for transferring process ###
-            # self.post_workflows_full_way(url, token)
-            return True
-        else:
-            print("No workflows for import." if not os.listdir(f'{self._transfer_folder}/{self._workflows_folder}') else "")
-            return False
 
 class Users_attributes:
 

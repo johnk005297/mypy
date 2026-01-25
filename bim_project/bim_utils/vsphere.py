@@ -132,7 +132,7 @@ class Vsphere:
             logger.error(err)
             return None
 
-    def get_array_of_vm(self, headers, exclude: list, search_for='', powered_on=False) -> dict:
+    def get_array_of_vm(self, headers, search_for_exclude='', search_for='', powered_on=False) -> dict:
         """ Function returns an array of VM in vSphere's cluster in format {'vm-moId': 'vm-name'}. """
 
         url = f"{self.url}/api/vcenter/vm"
@@ -145,21 +145,22 @@ class Vsphere:
             logger.error(err)
             return None
 
+        exclude_vm: list = [vm['name'] for vm in data if search_for_exclude and re.search(search_for_exclude.replace('*', '.*'), vm['name'])]
         if not search_for:
             if powered_on:
-                vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] and vm['name'] not in exclude }
+                vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] and vm['name'] not in exclude_vm }
             else:
-                vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] and vm['name'] not in exclude }
+                vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['name'] and vm['name'] not in exclude_vm }
         else:
             if powered_on:
                 vm_array: dict = {
                                     vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']}
-                                    for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude
+                                    for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude_vm
                                     }
             else:
                 vm_array: dict = {
                                     vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']}
-                                    for vm in data if vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude
+                                    for vm in data if vm['name'] and re.search(search_for.replace('*', '.*'), vm['name']) and vm['name'] not in exclude_vm
                                     }
         return vm_array
 
@@ -191,27 +192,26 @@ class Vsphere:
         url: str = f"{self.url}/rest/vcenter/vm/{moId}/power/start"
         power_on_msg: str = f"[bold magenta]Power On VM: {name}[/bold magenta]"
 
+        if self.get_vm_power_state(headers, moId) == "POWERED_ON":
+            self.console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
+            return True
         with self.console.status(power_on_msg, spinner="earth") as status:
-            if self.get_vm_power_state(headers, moId) == "POWERED_ON":
-                self.console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
-                return True
             response = self.tools.make_request('POST', url, headers=headers, verify=False, return_err_response=True)
             if response.status_code not in (200, 204):
                 self.console.log(f"[red]No connection to {name}. Check VM in vCenter![/red]")
                 return False
             count = 0
-            while count < 350:
+            while count < 900:
+                time.sleep(1)
                 count += 1
                 power_status = self.get_vm_power_state(headers, moId)
-                status.update(power_on_msg + "  [green]✅[/green]")
-                time.sleep(1)
                 if power_status == "POWERED_ON":
-                    self.console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
+                    status.console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
                     return True
                 elif power_status != "POWERED_ON":
                     continue
             else:
-                self.console.log(f"[red]Error on start {name} within 5 minutes. Check VM status in vCenter![/red]")
+                self.console.log(f"[red]Error on start {name} within 15 minutes. Check VM status in vCenter![/red]")
                 return False
 
     def stop_vm(self, headers, moId, name):
@@ -222,10 +222,10 @@ class Vsphere:
         shutdown_msg: str = f"[bold magenta]Shutdown guest OS: {name}[bold magenta]  [green]✅[/green]"
         shutting_down_msg: str = f"[bold magenta]Shutdown guest OS: {name}[/bold magenta]"
 
+        if self.get_vm_power_state(headers, moId) == "POWERED_OFF":
+            self.console.print(shutdown_msg, overflow="ellipsis")
+            return True
         with self.console.status(shutting_down_msg, spinner="earth") as status:
-            if self.get_vm_power_state(headers, moId) == "POWERED_OFF":
-                self.console.print(shutdown_msg, overflow="ellipsis")
-                return True
             power_off: bool = False
             response = self.tools.make_request('POST', url_shutdown, headers=headers, return_err_response=True, verify=False)
             if response.status_code not in (200, 204):
@@ -236,21 +236,20 @@ class Vsphere:
                 elif response.status_code in (200, 204):
                     power_off = True
             count = 0
-            while count < 650:
+            while count < 900:
+                time.sleep(1)
                 count += 1
                 power_status = self.get_vm_power_state(headers, moId)
-                status.update(shutting_down_msg)
-                time.sleep(1)
                 if power_status != "POWERED_OFF":
                     continue
                 elif power_status == "POWERED_OFF":
                     if power_off:
-                        self.console.print(f"[bold magenta]Power Off VM: {name}[/bold magenta]  [green]✅[/green]", overflow="ellipsis")
+                        status.console.print(f"[bold magenta]Power Off VM: {name}[/bold magenta]  [green]✅[/green]", overflow="ellipsis")
                     else:
-                        self.console.print(shutdown_msg, overflow="ellipsis")
+                        status.console.print(shutdown_msg, overflow="ellipsis")
                     return True
             else:
-                self.console.log(f"[red]Error on stop {name} within 5 minutes. Check VM status in vCenter![/red]")
+                self.console.log(f"[red]Error on stop {name} within 15 minutes. Check VM status in vCenter![/red]")
                 return False
 
     def take_snapshot(self, headers, moId, vm_name, snap_name='', description=''):

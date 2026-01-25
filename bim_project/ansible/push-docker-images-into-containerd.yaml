@@ -1,0 +1,108 @@
+---
+# v0.0.2
+
+# Плейбук прямой прогрузки docker образов на ноды кластера k8s в containerd.
+# Запуск плейбука всегда выполняется из каталога tools.
+
+# Передаваемые аргументы:
+#   upload_target
+#     k8s_cluster - прогрузка на все ноды кластера
+#     k8s_workers - прогрузка на рабочие ноды кластера
+#     k8s_masters - прогрузка на мастер ноды кластера
+
+# Пример запуска:
+#   ansible-playbook -i ../inventory/hosts.yaml -kK bim-update/push-docker-images-into-containerd.yaml -e "upload_target=k8s_cluster"
+
+
+- name: Push docker images into containerd
+  hosts: k8s_cluster
+
+  vars_prompt:
+  - name: upload_target
+    prompt: "{{ k8s_nodes | join('\n')}}"
+    private: false
+
+  vars:
+    tools_dir_path: "{{ playbook_dir.split('/')[:-1] | join('/') }}"
+    tmp_path: /tmp
+    images_arch_file: images.tar
+    upload_images_script: images-push.sh
+    k8s_nodes:
+    - k8s_masters
+    - k8s_workers
+    - k8s_cluster
+    - "Select target node(s) to upload images to"
+
+  pre_tasks:
+  - block:
+    - ansible.builtin.service_facts:
+
+    - name: Check containerd service
+      ansible.builtin.assert:
+        that: ansible_facts.services['containerd.service'] is defined
+        fail_msg: Containerd service not found. Run install-containerd playbook or install containerd manual.
+
+    when: inventory_hostname in groups[upload_target]
+    tags: check
+
+  tasks:
+  - block:
+    - name: Start containerd service
+      ansible.builtin.systemd:
+        name: containerd.service
+        state: started
+
+    - name: Copy {{ images_arch_file }}
+      ansible.builtin.copy:
+        src: '{{ tools_dir_path }}/images/{{ images_arch_file }}'
+        dest: '{{ tmp_path }}/{{ images_arch_file }}'
+      tags: copy
+  
+    - name: Create {{ upload_images_script }} file
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          export PATH=$PATH:/opt/deckhouse/bin
+
+          IMG_FOLDER="images"
+          IMG_LIST="images.list"
+          IMG_TAR="images.tar"
+
+          # extract images.list file from the images.tar archive
+          tar --extract --file=${IMG_TAR} ${IMG_FOLDER}/${IMG_LIST} && mv -f ${IMG_FOLDER}/${IMG_LIST} . && rm -fr ${IMG_FOLDER}
+
+          for IMG_ARCH in $(cat $(pwd)/${IMG_LIST})
+            do
+             # rename image name from images.list with '/' and ':' symbols to it's name in {{ images_arch_file }} archive
+             ARCH_NAME=$(echo ${IMG_ARCH} | sed 's/\//^/g;s/:/#/g').tgz
+             tar --extract --file=${IMG_TAR} ${IMG_FOLDER}/$ARCH_NAME
+             tar -xf ${IMG_FOLDER}/${ARCH_NAME} -O | ctr -n k8s.io --debug image import -
+             rm -fr ${IMG_FOLDER}
+            done
+
+        dest: "{{ tmp_path }}/{{ upload_images_script }}"
+        mode: 0755
+      tags: script
+  
+    - name: Run {{ upload_images_script }} file
+      ansible.builtin.command: bash {{ upload_images_script }}
+      args:
+        chdir: "{{ tmp_path }}"
+      register: script_output
+      tags: load
+  
+    - debug:
+        msg: "{{ script_output.stdout_lines }}"
+      tags: load
+  
+    - name: Remove images
+      ansible.builtin.file:
+        path: "{{ tmp_path }}/{{ item }}"
+        state: absent
+      with_items:
+      - images
+      - "{{ images_arch_file }}"
+      - images.list
+
+    become: yes
+    when: inventory_hostname in groups[upload_target]

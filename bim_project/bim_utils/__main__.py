@@ -9,16 +9,17 @@ import import_data
 import postgre
 import vsphere
 import time
-import confluence
 import platform
-# import rlcompleter
+import mdocker
+# import argcomplete
 import interactive_menu
+from featureToggle import Conf, FeatureToggle
 from parser import Parser
 from passwork import *
 from git import Git
 from rich.console import Console
 from getpass import getpass
-from tools import Bimeister, Tools
+from tools import Bimeister, Tools, File
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=Tools.get_resourse_path(".env"))
 
@@ -143,12 +144,11 @@ if __name__ == '__main__':
             v = vsphere.Vsphere()
             console = Console()
             headers = v.get_headers(args.user, args.password)
-            exclude_vm: list = args.exclude.split() if args.exclude else []
             def take_snap(snap_name):
                 for value in vm_array.values():
-                    with console.status(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]", spinner="earth"):
+                    with console.status(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]", spinner="earth") as status:
                         take_snap_status: bool = v.take_snapshot(headers, value['moId'], value['name'], snap_name=snap_name, description=args.desc)
-                        time.sleep(2)
+                        time.sleep(0.5)
                         if take_snap_status:
                             count = Tools.counter()
                             while True:
@@ -160,19 +160,19 @@ if __name__ == '__main__':
                                     break
                                 else:
                                     continue
-                            console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
+                            status.console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
                         else:
-                            console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
+                            status.console.print(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
             def remove_snap(snap_name):
                 for value in vm_array.values():
-                    with console.status(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]", spinner="earth"):
+                    with console.status(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]", spinner="earth") as status:
                         snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
                         is_snap_exists: bool = False
                         for snap in snapshots.values():
                             if snap['snapName'].strip() == snap_name:
                                 is_snap_exists = True
                                 remove_snap_status = v.remove_vm_snapshot(headers, snap['snapId'], print_msg=False)
-                                time.sleep(2)
+                                time.sleep(0.5)
                                 if remove_snap_status:
                                     count = Tools.counter()
                                     while True:
@@ -184,16 +184,16 @@ if __name__ == '__main__':
                                             break
                                         else:
                                             continue
-                                    console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
+                                    status.console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
                                 else:
-                                    console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
+                                    status.console.print(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
                                 break
                         if not is_snap_exists:
-                            console.print(f"[red]No snapshot name '{snap_name}' for VM: {value['name']}[/red]")
+                            status.console.print(f"[red]No snapshot name '{snap_name}' for VM: {value['name']}[/red]")
             if not headers:
                 sys.exit()
             elif args.vsphere_command == 'list-vm':
-                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter, args.powered_on)
+                vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter, args.powered_on)
                 v.print_list_of_vm(vm_array)
             elif args.vsphere_command == 'restart-vm':
                 console.rule(title="Reboot guest OS")
@@ -202,23 +202,23 @@ if __name__ == '__main__':
                     if not confirm:
                         print("Restart procedure aborted!")
                         sys.exit()
-                    vm_array: dict = v.get_array_of_vm(headers, exclude_vm, powered_on=True)
+                    vm_array: dict = v.get_array_of_vm(headers, args.exclude, powered_on=True)
                     v.restart_os(headers, vm_array)
                 else:
-                    vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter, powered_on=True)
+                    vm_array: dict = v.get_array_of_vm(headers, args.exclude, powered_on=True)
                     v.restart_os(headers, vm_array)
             elif args.vsphere_command == 'start-vm':
                 console.rule(title="Power On virtual machine")
-                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
+                vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
                 for value in vm_array.values():
                     v.start_vm(headers, value["moId"], value["name"])
             elif args.vsphere_command == 'stop-vm':
                 console.rule(title="Shutdown guest OS")
-                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
+                vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
                 for value in vm_array.values():
                     v.stop_vm(headers, value["moId"], value["name"])
             elif args.vsphere_command == 'show-snap':
-                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
+                vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
                 for value in vm_array.values():
                     snapshots: dict = v.get_vm_snapshots(headers, value["moId"], value["name"])
                     v.print_vm_snapshots(value["name"], snapshots)
@@ -226,7 +226,8 @@ if __name__ == '__main__':
             elif args.vsphere_command in ('take-snap', 'revert-snap', 'remove-snap', 'replace-snap'):
                 # Logic of snaps procedures:
                 # get needed VMs -> power OFF -> take/revert/remove snaps -> restore power state
-                vm_array: dict = v.get_array_of_vm(headers, exclude_vm, args.filter)
+                vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter)
+                vm_power_on = {k: v for k,v in vm_array.items() if v.get('power_state') == 'POWERED_ON'}
                 if not vm_array:
                     sys.exit("No VM were matched. Exit!")
                 for vm in vm_array:
@@ -235,16 +236,17 @@ if __name__ == '__main__':
                 if confirm not in ('y', 'yes'):
                     sys.exit("Abort procedure!")
 
-                console.rule(title="Shutdown guest OS")
-                for value in vm_array.values():
-                    v.stop_vm(headers, value["moId"], value["name"])
+                if vm_power_on:
+                    console.rule(title="Shutdown guest OS")
+                    for value in vm_power_on.values():
+                        v.stop_vm(headers, value["moId"], value["name"])
                 if args.vsphere_command == 'take-snap':
                     snap_name: str = args.name.strip()
-                    console.rule(title="Create snaphost")
+                    console.rule(title="Create virtual machine snaphost")
                     take_snap(snap_name)
                 elif args.vsphere_command == 'revert-snap':
-                    snap_name: str = args.name.strip()
                     console.rule(title="Revert virtual machine snapshot")
+                    snap_name: str = args.name.strip()
                     for value in vm_array.values():
                         with console.status(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]", spinner="earth"):
                             snapshots: dict = v.get_vm_snapshots(headers, value['moId'], value['name'])
@@ -262,19 +264,20 @@ if __name__ == '__main__':
                             if not is_snap_exists:
                                 console.print(f"[red]No snapshot name '{snap_name}' for VM: {value['name']}[/red]")
                 elif args.vsphere_command == 'remove-snap':
-                    snap_name: str = args.name.strip()
                     console.rule(title="Remove virtual machine snaphost")
+                    snap_name: str = args.name.strip()
                     remove_snap(snap_name)
                 elif args.vsphere_command == 'replace-snap':
+                    console.rule(title="Replace virtual machine snapshot")
                     old_snap_name: str = args.old
                     new_snap_name: str = args.new
                     remove_snap(old_snap_name)
                     take_snap(new_snap_name)
 
                 # Restoring power state
-                console.rule(title="Power state restore")
-                for value in vm_array.values():
-                    if value["power_state"] == "POWERED_ON":
+                if vm_power_on: # type: ignore
+                    console.rule(title="Power state restore")
+                    for value in vm_power_on.values():
                         v.start_vm(headers, value["moId"], value["name"])
 
         elif args.command == 'mdm':
@@ -364,24 +367,55 @@ if __name__ == '__main__':
         elif args.command == 'pk':
             pass
         elif args.command == 'ft':
-            conf = confluence.Conf()
+            conf = Conf()
+            FT = FeatureToggle()
             page = conf.get_confluence_page()
             data = conf.get_ft_data_of_all_projects(page)
+            if args.check and not args.env:
+                print("bimutils ft: error: --env argument is required")
+                sys.exit()
+            elif args.env and not args.check:
+                print("bimutils ft: error: --check argument is required")
+                sys.exit()
             if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].strip() == '--save') or (len(sys.argv) == 3 and sys.argv[2].strip() == '--save-pretty'):
                 project = conf.choose_project()
-                conf.display_ft_for_project(data, project, args.save, args.save_pretty)
+                conf.get_ft_for_project(data, project, args.save, args.save_pretty)
             elif args.gazprom_suid:
-                conf.display_ft_for_project(data, conf.project_name_suid, args.save, args.save_pretty)
+                if args.check:
+                    conf_ft_list = conf.get_ft_for_project(data, conf.project_name_suid, args.save, args.save_pretty, no_print=True, env=args.env)
+                    FT.compare_source_and_target(conf_ft_list, conf.project_name_suid, args.env)
+                else:
+                    conf.get_ft_for_project(data, conf.project_name_suid, args.save, args.save_pretty, args.no_print)
             elif args.gazprom_dtoir:
-                conf.display_ft_for_project(data, conf.project_name_dtoir, args.save, args.save_pretty)
+                if args.check:
+                    conf_ft_list = conf.get_ft_for_project(data, conf.project_name_dtoir, args.save, args.save_pretty, no_print=True, env=args.env)
+                    FT.compare_source_and_target(conf_ft_list, conf.project_name_dtoir, args.env)
+                else:
+                    conf.get_ft_for_project(data, conf.project_name_dtoir, args.save, args.save_pretty, args.no_print)
             elif args.gazprom_salavat:
-                conf.display_ft_for_project(data, conf.project_name_salavat, args.save, args.save_pretty)
+                if args.check:
+                    conf_ft_list = conf.get_ft_for_project(data, conf.project_name_salavat, args.save, args.save_pretty, no_print=True, env=args.env)
+                    FT.compare_source_and_target(conf_ft_list, conf.project_name_salavat, args.env)
+                else:
+                    conf.get_ft_for_project(data, conf.project_name_salavat, args.save, args.save_pretty, args.no_print)
             elif args.novatek_murmansk:
-                conf.display_ft_for_project(data, conf.project_name_murmansk, args.save, args.save_pretty)
+                if args.check:
+                    conf_ft_list = conf.get_ft_for_project(data, conf.project_name_murmansk, args.save, args.save_pretty, no_print=True, env=args.env)
+                    FT.compare_source_and_target(conf_ft_list, conf.project_name_murmansk, args.env)
+                else:
+                    conf.get_ft_for_project(data, conf.project_name_murmansk, args.save, args.save_pretty, args.no_print)
             elif args.novatek_yamal:
-                conf.display_ft_for_project(data, conf.project_name_yamal, args.save, args.save_pretty)
+                if args.check:
+                    conf_ft_list = conf.get_ft_for_project(data, conf.project_name_yamal, args.save, args.save_pretty, no_print=True, env=args.env)
+                    FT.compare_source_and_target(conf_ft_list, conf.project_name_yamal, args.env)
+                else:
+                    conf.get_ft_for_project(data, conf.project_name_yamal, args.save, args.save_pretty, args.no_print)
             elif args.crea_cod:
-                conf.display_ft_for_project(data, conf.project_name_crea_cod, args.save, args.save_pretty)
+                if args.check:
+                    conf_ft_list = conf.get_ft_for_project(data, conf.project_name_crea_cod, args.save, args.save_pretty, no_print=True, env=args.env)
+                    FT.compare_source_and_target(conf_ft_list, conf.project_name_crea_cod, args.env)
+                else:
+                    conf.get_ft_for_project(data, conf.project_name_crea_cod, args.save, args.save_pretty, args.no_print)
         elif args.version:
             if args.url:
                 Bimeister.print_bim_version(args.url)
@@ -401,6 +435,24 @@ if __name__ == '__main__':
             elif providers and isinstance(providers, str):
                 token = autht.get_user_access_token(args.url, args.user, args.password, providers)
                 print(token if token else '')
+        elif args.command == 'docker':
+            docker = mdocker.Docker()
+            if not docker.is_connected:
+                sys.exit()
+            if args.list:
+                images = docker.get_list_of_images()
+                docker.print_images(images)
+            elif args.save:
+                if args.file:
+                    data = File.read_file(args.file)
+                    images = [image for image in data.split()]
+                elif args.images:
+                    images = [image for image in args.images.split()]
+                else:
+                    print("docker: error: one of the arguments -f/--file -i/--images is required")
+                    sys.exit()
+                pulled_images = docker.pull_images(images)
+                docker.save_images(pulled_images, purge=args.no_purge, output=args.output)
         else:
             interactive_menu.launch_menu()
     except KeyboardInterrupt:

@@ -1,0 +1,175 @@
+---
+# v0.2.20
+#
+# Плейбук для передачи архивов со сборкой в обменник. 
+# Ключевые моменты/требования некоторых заказчиков: 
+#   1) Передаваемые файлы не должны превышать 1.8ГБ, в связи с чем архив необходимо разбить на части.
+#   2) Архив должен быть защищён паролем.
+#
+# Условия запуска:
+#   - имя каталога со сборкой должно иметь строгий формат xxx_zzz-yyyyyyyy(xxx - номер версии, zzz - номер инкремента, y* - номер сборки с sha-суммой или тег).
+#     пример: 137_1.17.0-sha921c4b10 или 137_1.17.0-release-sprint137
+#
+# После запуска потребуется ввести имя проекта. Затем последует запрос об указании полного пути до каталога со сборкой.
+# При необходимости можно установить любую величину разбития на блоки передаваемого архива через переменную split_size(в мегабайтах). По умолчанию значение 1800МБ.
+# Далее архив будет выложен в обменник, согласно требованиям заказчиков, описанными выше.
+
+### First Play ###
+- name: Publish build archive - first part
+  hosts: localhost
+
+  vars:
+    home_dir_path: "{{ ansible_env.HOME }}"
+
+  pre_tasks:
+  - name: Check home dir path
+    ansible.builtin.stat:
+      path: '{{ home_dir_path }}'
+    register: check_for_builds_folder
+
+  - name: Check for {{ home_dir_path }} folder
+    ansible.builtin.assert:
+      that:
+      - check_for_builds_folder.stat.exists
+      fail_msg: "No {{ home_dir_path }} folder was found. Exit!"
+      quiet: true
+
+  - name: Get a list of builds
+    ansible.builtin.find:
+      path: '{{ home_dir_path }}'
+      file_type: directory
+      patterns: '^[0-9]'
+      use_regex: true
+      recurse: false
+    register: list_of_builds
+  - debug:
+      msg: "{{ list_of_builds.files | map(attribute='path') }}"
+
+### Second Play ###
+- name: Publish build archive - second part
+  hosts: localhost
+
+  vars_prompt:
+  - name: build_path # full path to build
+    prompt: "Enter full path for the build"
+    private: false
+
+  - name: project
+    prompt: "{{ projects_list | join('\n') }}"
+    private: false
+
+  vars:
+    projects_list:
+    - 1. gazprom-suid
+    - 2. gazprom-dtoir
+    - 3. gazprom-shelf
+    - 4. gazprom-salavat
+    - 5. novatek-murmansk
+    - 6. novatek-yamal
+    - Select project number
+
+    split_size: "10000" # archive chunks in megabytes to split, if requires
+    bash_script_filename: "create_zip_archive.sh"
+    _full_build_path: "{{ build_path | trim }}"
+    _project: "{{ projects_list[project | int - 1].split()[1] }}"
+    generated_password: "{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_letters', 'digits'], length=10) }}"
+
+  pre_tasks:
+  - name: Define variables block
+    block:
+    - name: Set vars
+      ansible.builtin.set_fact:
+        release_number: "{{ _full_build_path.split('/')[-1].split('_')[0] }}"
+        release_folder_name: "{{ _full_build_path.split('/')[-1] }}"
+
+    - name: Set vars
+      ansible.builtin.set_fact:
+        archive:
+          name: "{{ _project }}-release-{{ release_number }}.zip"
+          password: "{{ generated_password }}"
+        path:
+          build: "{{ ansible_env.HOME }}"
+          exchange: /mnt/projects/{{ _project | replace('-', '/', 1) }}/releases
+
+  - name: Block with checks
+    block:
+    - name: Look for build > {{ _full_build_path }}
+      ansible.builtin.stat:
+        path: '{{ _full_build_path }}'
+      register: build_check
+
+    - name: Look for exchange storage > {{ path.exchange }}
+      ansible.builtin.stat:
+        path: '{{ path.exchange }}'
+      register: path_to_exchange_storage_check
+
+    - name: Check if build and storage exist
+      ansible.builtin.assert:
+        that:
+        - build_check.stat.exists
+        - build_check.stat.isdir        
+        - path_to_exchange_storage_check.stat.exists
+        - path_to_exchange_storage_check.stat.isdir
+        fail_msg: "Assertions failed. Exit!"
+
+  tasks:
+  - name: Create folder in {{ path.exchange }} if doesn't exist
+    ansible.builtin.file:
+      path: '{{ path.exchange }}/{{ release_number }}'
+      state: directory
+    become: true
+
+  - name: Create bash script to create zip archive
+    ansible.builtin.copy:
+      dest: "{{ _full_build_path.split('/')[:-1] | join('/') }}/{{ bash_script_filename }}"
+      mode: '0755'
+      content: |
+        #!/bin/bash
+        zip -r -q --password {{ archive.password }} {{ archive.name }} {{ release_folder_name }}
+        final_archive_size_in_bytes=$(wc -c < {{ archive.name }})
+        split_size_in_bytes=$(( {{ split_size }} * 1024 * 1024 ))
+        if [ ${final_archive_size_in_bytes} -gt ${split_size_in_bytes} ]
+        then
+          split -b "{{ split_size }}M" {{ archive.name }} "{{ archive.name }}.part"
+          sudo mv {{ archive.name }}.part* {{ path.exchange }}/{{ release_number }}
+        else
+          sudo mv {{ archive.name }} {{ path.exchange }}/{{ release_number }}
+        fi
+        rm -f {{ archive.name }}
+      force: true
+
+  - name: Create zip archive
+    ansible.builtin.command: bash {{ bash_script_filename }}
+    args:
+      chdir: "{{ _full_build_path.split('/')[:-1] | join('/') }}" # переход в каталог, где располагается сборка
+    async: 1000
+    poll: 0
+    register: zip_archive_task
+
+  - name: Check create zip archive task process
+    ansible.builtin.async_status:
+      jid: "{{ zip_archive_task.ansible_job_id }}"
+    register: job_result
+    until: job_result.finished
+    retries: 50
+    delay: 20
+
+  - name: Remove temporary bash script
+    ansible.builtin.file:
+      path: "{{ _full_build_path.split('/')[:-1] | join('/') }}/{{ bash_script_filename }}"
+      state: absent
+
+  - name: Create readme.txt file for users
+    ansible.builtin.copy:
+      dest: '{{ path.exchange }}/{{ release_number }}/readme.txt'
+      mode: '0755'
+      content: |
+        archive password: {{ archive.password }}
+    become: true
+
+
+# Примеры команд утилит zip/unzip/split:
+# $ zip -r -q --password 123 my.zip 121_1.13.0-sha39dc5e57      # пакует каталог 121_1.13.0-sha39dc5e57 в архив с паролем "123", называет my.zip
+# $ split -b 1800M my.zip "my.zip.part"                         # разбивает архив на блоки не более 1800Мб с префиксом my.zip.part*
+# $ cat my.zip.part* > my_final.zip                             # собирает блоки в архив с именем my_final.zip
+# $ unzip -q my_final.zip                                       # распаковывает архив

@@ -1,0 +1,295 @@
+---
+
+
+- name: Create databases and users
+  hosts: '{{ target | default("postgresql_servers") }}'
+
+
+  vars:
+    postgresql_collation: 'en_US.UTF-8'
+    postgresql_encoding: UTF-8
+    postgresql_ctype: 'en_US.UTF-8'
+    postgresql_ip: '{{ "" if postgresql_superuser_username == "postgres" else ansible_default_ipv4.address }}'
+    postgresql_password: '{{ postgresql_superuser_password | default("") }}'
+    postgresql_default_user_role: 'CREATEDB,NOSUPERUSER,INHERIT'
+    postgresql_pro: false
+    postgresql_recreate_db: false
+    pool_args: "timezone=UTC client_encoding=UNICODE"
+
+
+  tasks:
+  - name: Check config /etc/patroni/patroni.yml
+    ansible.builtin.stat:
+      path: /etc/patroni/patroni.yml
+    become: yes
+    register: _patroni_config
+
+
+  - block:
+    - name: Get config /etc/patroni/patroni.yml
+      ansible.builtin.slurp:
+        src: /etc/patroni/patroni.yml
+      register: patroni_yaml_config
+
+    - name: Parse config /etc/patroni/patroni.yml
+      ansible.builtin.set_fact:
+        patroni_config: "{{ patroni_yaml_config['content'] | b64decode | from_yaml }}"
+
+    - name: Get patroni config from dcs
+      ansible.builtin.command: patronictl -c /etc/patroni/patroni.yml show-config
+      register: _patroni_dcs_config
+
+    - name: Parse patroni config from dcs
+      ansible.builtin.set_fact:
+        patroni_dcs_config: "{{ _patroni_dcs_config.stdout | from_yaml }}"
+
+    - name: List patroni cluster
+      ansible.builtin.command: patronictl -c /etc/patroni/patroni.yml list {{ patroni_config.scope }} -f yaml
+      register: _patroni_cluster_list
+
+    - name: Set var patroni_cluster_list
+      ansible.builtin.set_fact:
+        patroni_cluster_list: '{{ _patroni_cluster_list.stdout|from_yaml }}'
+
+    - name: Set var postgresql_master_ip
+      ansible.builtin.set_fact:
+        postgresql_master_ip: "{{ ((patroni_cluster_list|selectattr('Role','in','Leader'))[0]['Host']|split(':'))[0] }}"
+
+    become: yes
+    when: _patroni_config.stat.exists
+
+  - name: Set var postgresql_master_ip
+    ansible.builtin.set_fact:
+      postgresql_master_ip: '{{ ansible_default_ipv4.address }}'
+    when: not _patroni_config.stat.exists
+
+
+  - name: Get postgresql databases
+    community.postgresql.postgresql_info:
+      login_user: '{{ postgresql_superuser_username }}'
+      login_password: '{{ postgresql_password }}'
+      login_host: '{{ postgresql_ip }}'
+      port: '{{ postgresql_port }}'
+      db: postgres
+      filter:
+      - "databases"
+    register: _postgresql_info
+    become: yes
+    become_user: postgres
+
+  - block:
+    - name: Create postgresql users
+      community.postgresql.postgresql_user:
+        login_user: '{{ postgresql_superuser_username }}'
+        login_password: '{{ postgresql_password }}'
+        login_host: '{{ postgresql_ip }}'
+        port: '{{ postgresql_port }}'
+        db: postgres
+        name: '{{ item.username }}'
+        password: '{{ item.password }}'
+        role_attr_flags: '{{ item.role if item.role is defined else postgresql_default_user_role }}'
+      loop: '{{ postgresql_databases | flatten }}'
+      loop_control:
+        label: 'user: {{item.username}}'
+
+    - name: Remove postgresql databases when postgresql_recreate_db is true
+      community.postgresql.postgresql_db:
+        login_user: '{{ postgresql_superuser_username }}'
+        login_password: '{{ postgresql_password }}'
+        login_host: '{{ postgresql_ip }}'
+        name: '{{ item.dbname }}'
+        port: '{{ postgresql_port }}'
+        state: absent
+      with_items: '{{ postgresql_databases }}'
+      loop_control:
+        label: 'db: {{item.dbname}}'
+      when: postgresql_recreate_db | bool
+
+    - name: Create postgresql databases
+      community.postgresql.postgresql_db:
+        login_user: '{{ postgresql_superuser_username }}'
+        login_password: '{{ postgresql_password }}'
+        login_host: '{{ postgresql_ip }}'
+        name: '{{ item.dbname }}'
+        encoding: '{{ item.encoding | default(postgresql_encoding) }}'
+        port: '{{ postgresql_port }}'
+        lc_collate: '{{ item.lc_collate | default(postgresql_collation) }}{{ "@icu" if postgresql_pro|bool and postgresql__version|int == 14 else "" }}'
+        lc_ctype: '{{ item.lc_ctype | default(postgresql_ctype) }}'
+        template: '{{ item.template | default("template0") }}'
+      with_items: '{{ postgresql_databases }}'
+      loop_control:
+        label: 'db: {{item.dbname}}'
+      when: item.dbname not in _postgresql_info.databases.keys() or postgresql_recreate_db | bool
+
+    - name: Set postgresql database owner
+      community.postgresql.postgresql_owner:
+        login_user: '{{ postgresql_superuser_username }}'
+        login_password: '{{ postgresql_password }}'
+        login_host: '{{ postgresql_ip }}'
+        db: '{{ item.dbname }}'
+        new_owner: '{{ item.username }}'
+        obj_type: database
+        obj_name: '{{ item.dbname }}'
+        port: '{{ postgresql_port }}'
+      with_items: '{{ postgresql_databases }}'
+      loop_control:
+        label: 'user: {{item.username}} on db: {{item.dbname}}'
+
+    - name: Grant postgresql database privs
+      community.postgresql.postgresql_privs:
+        login_user: '{{ postgresql_superuser_username }}'
+        login_password: '{{ postgresql_password }}'
+        login_host: '{{ postgresql_ip }}'
+        db: '{{ item.dbname }}'
+        privs: '{{ item.priv if item.priv is defined else "ALL" }}'
+        type: database
+        port: '{{ postgresql_port }}'
+        role: '{{ item.username }}'
+        obj: '{{ item.dbname }}'
+      with_items: '{{ postgresql_databases }}'
+      loop_control:
+        label: 'user: {{item.username}} on db: {{item.dbname}}'
+
+    - name: Create postgresql database extensions
+      community.postgresql.postgresql_ext:
+        login_user: '{{ postgresql_superuser_username }}'
+        login_password: '{{ postgresql_password }}'
+        login_host: '{{ postgresql_ip }}'
+        name: '{{ item.1 }}'
+        db: '{{ item.0.dbname }}'
+        port: '{{ postgresql_port }}'
+        state: present
+        cascade: True
+      with_subelements:
+      - '{{ postgresql_databases }}'
+      - extensions
+      loop_control:
+        label: 'extension: {{ item.1 }} on db: {{ item.0.dbname }}'
+      when: item.1 is defined
+
+    when: ansible_default_ipv4.address == postgresql_master_ip
+    become: yes
+    become_user: postgres
+
+  - block:
+    - ansible.builtin.set_fact:
+        pg_hba_add: '{% set l=[] %}{% for db in postgresql_databases %}{% do l.append("host %s %s 0.0.0.0/0 scram-sha-256" % (db.dbname, db.username)) %}{% endfor %}{{ l }}'
+
+    - ansible.builtin.set_fact:
+       patroni_config_patch:
+          postgresql:
+            pg_hba: '{{ patroni_dcs_config.postgresql.pg_hba | union(pg_hba_add) }}'
+      when: patroni_config.postgresql.pg_hba is not defined
+
+    - ansible.builtin.set_fact:
+        patroni_config_patched: '{{ patroni_dcs_config | ansible.builtin.combine(patroni_config_patch, recursive=true) }}'
+      when: patroni_config.postgresql.pg_hba is not defined
+
+    - name: Save /tmp/patroni-dcs-config.yaml
+      ansible.builtin.copy:
+        content: '{{ patroni_config_patched | to_nice_yaml(indent=2, width=1337) }}'
+        dest: /tmp/patroni-dcs-config.yaml
+        backup: true
+      when: patroni_config.postgresql.pg_hba is not defined
+
+    - name: Update patroni dcs config
+      ansible.builtin.command: patronictl -c /etc/patroni/patroni.yml edit-config --replace /tmp/patroni-dcs-config.yaml --force
+      register: _patroni_dcs_config_update
+      when:
+      - patroni_config.postgresql.pg_hba is not defined
+      - ansible_default_ipv4.address == postgresql_master_ip
+
+    - debug: var=_patroni_dcs_config_update.stdout_lines
+      when: patroni_config.postgresql.pg_hba is not defined
+
+    - ansible.builtin.set_fact:
+        patroni_config_patch:
+          postgresql:
+            pg_hba: '{{ patroni_config.postgresql.pg_hba | union(pg_hba_add) }}'
+      when: patroni_config.postgresql.pg_hba is defined
+
+    - ansible.builtin.set_fact:
+        patroni_config_patched: '{{ patroni_config | ansible.builtin.combine(patroni_config_patch, recursive=true) }}'
+      when: patroni_config.postgresql.pg_hba is defined
+
+    - name: Update config /etc/patroni/patroni.yml
+      ansible.builtin.copy:
+        content: '{{ patroni_config_patched|to_nice_yaml(indent=2, width=1337) }}'
+        dest: /etc/patroni/patroni.yml
+        backup: true
+      notify: reload patroni cluster
+      when: patroni_config.postgresql.pg_hba is defined
+
+    when: _patroni_config.stat.exists
+    become: yes
+
+
+  - block:
+    - name: Update pgbouncer userlist
+      ansible.builtin.lineinfile:
+        path: /etc/pgbouncer/userlist.txt
+        regexp: '^"{{ item.username }}".*'
+        line: '"{{ item.username }}" "{{ item.password }}"'
+      notify: restart pgbouncer
+      loop: '{{ postgresql_databases }}'
+      loop_control:
+        label: 'user: {{item.username}}'
+
+    - name: Update /etc/pgbouncer/pgbouncer.ini
+      ansible.builtin.lineinfile:
+        path: /etc/pgbouncer/pgbouncer.ini
+        insertafter: '^\[databases\]'
+        regexp: '^{{ item.dbname }} = .*'
+        line: "{{ item.dbname }} = host={{ postgresql_ip }} port={{ postgresql_port }} dbname={{ item.dbname }} {{ pool_args }} {{ item.pool_parameters|default('') }}"
+      notify: restart pgbouncer
+      loop: '{{ postgresql_databases }}'
+      loop_control:
+        label: 'db:{{item.dbname}} user:{{item.username}}'
+
+    when: postgresql_pgbouncer_enable|default('false')|bool
+    become: yes
+
+
+  - name: Add databases and users into pg_hba.conf
+    community.postgresql.postgresql_pg_hba:
+      dest: '{{ postgresql_data_dir }}/pg_hba.conf'
+      contype: "{{ item.type|default('host') }}"
+      users: '{{ item.username }}'
+      source: "{{ item.address|default('0.0.0.0/0') }}"
+      databases: '{{ item.dbname if item.dbname is defined else "postgres" }}'
+      method: "{{ item.method|default('scram-sha-256') }}"
+      keep_comments_at_rules: true
+      comment: '{{ item.comment if item.comment is defined else "" }}'
+      backup: true
+    loop: '{{ postgresql_databases | flatten }}'
+    loop_control:
+      label: 'username({{item.username}}) on dbname({{item.dbname | default("postgres")}})'
+    notify: reload pg_hba
+
+    when: not _patroni_config.stat.exists
+    become: yes
+
+
+  handlers:
+  - name: reload patroni cluster
+    ansible.builtin.command: patronictl -c /etc/patroni/patroni.yml reload {{ patroni_config.scope }} --force
+    run_once: yes
+    become: yes
+
+  - name: restart pgbouncer
+    ansible.builtin.systemd:
+      name: pgbouncer
+      enabled: true
+      state: restarted
+    become: yes
+
+  - name: reload pg_hba
+    community.postgresql.postgresql_query:
+      db: postgres
+      query: SELECT pg_reload_conf()
+      port: '{{ postgresql_port }}'
+      login_user: '{{ postgresql_superuser_username }}'
+      login_password: '{{ postgresql_password }}'
+      login_host: '{{ postgresql_ip }}'
+    become: yes
+    become_user: postgres

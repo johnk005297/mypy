@@ -16,8 +16,10 @@ def launch_menu():
     Auth = auth.Auth()
     User_main = user.User()
     License_main = license.License()
-    Export_data = export_data.Export_data()
-    Import_data_main = import_data.Import_data()
+    Object_model_export = export_data.Object_model()
+    Object_model_import = import_data.Object_model()
+    Workflows_export = export_data.Workflows()
+    Workflows_import = import_data.Workflows()
     Risk_assessment = import_data.RiskAssesment()
     Abac = import_data.Abac()
     FT = featureToggle.FeatureToggle()
@@ -41,6 +43,7 @@ def launch_menu():
     url, token, username, password = Auth.url, Auth.token, Auth.username, Auth.password
     if not License_main.get_license_status(url, token, username, password):
         print("Warning!!! Incorrect license detected! Please check!".upper())
+
     while True:
         user_command = AppMenu_main.get_user_command()
         match user_command:
@@ -86,57 +89,67 @@ def launch_menu():
 
             # Export data
             case ['export', 'om']:
-                if Export_data.is_first_launch_export_data:
-                    Export_data.create_folders_for_export_files()
+                filepath: str = f"{Object_model_export._transfer_folder}/{Object_model_export._object_model_folder}/{Object_model_export._om_export_server_info_file}"
+                if not os.path.isfile(filepath):
+                    Object_model_export.create_folders_to_export_om()
                 if user_command == ['export', 'om']:
-                    Export_data.export_server_info(url, token)
-                    Export_data.get_object_model(Export_data._object_model_file, Auth.url, Auth.token)
+                    export_data.export_server_info(url, token, filepath=filepath)
+                    Object_model_export.export_object_model(Object_model_export._object_model_file, Auth.url, Auth.token)
 
             case ['ls', 'workflows', *_] | ['export', 'workflows', *_] | ['rm', 'workflows', *_]:
+                filepath: str = f"{Workflows_export._workflows_folder_path}/{Workflows_export._wf_export_server_info_file}"
                 if user_command == ['ls', 'workflows', '--help'] or user_command == ['ls', 'workflows', '-h']:
-                    Export_data.print_help(ls=True)
+                    Workflows_export.print_help(ls=True)
                     continue
                 if user_command == ['export', 'workflows', '--help'] or user_command == ['export', 'workflows', '-h']:
-                    Export_data.print_help(export=True)
+                    Workflows_export.print_help(export=True)
                     continue
                 if user_command == ['rm', 'workflows', '--help'] or user_command == ['rm', 'workflows', '-h']:
-                    Export_data.print_help(remove=True)
+                    Workflows_export.print_help(remove=True)
                     continue
-                if Export_data.is_first_launch_export_data:
-                    Export_data.create_folders_for_export_files()
+                if not os.path.isfile(filepath):
+                    Workflows_export.create_folders_to_export_wf()
 
                 args = user_command[2:]
                 startswith: str = Tools.get_flag_values_from_args_str(args, '--startswith')
                 search_for: str = Tools.get_flag_values_from_args_str(args, '--search')
                 wf_id_array: list = Tools.get_flag_values_from_args_str(args, '--id').split()
-                wf_type: str = Tools.get_flag_values_from_args_str(args, '--type')
+                wf_type: str = Tools.get_flag_values_from_args_str(args, '--type').lower()
 
                 if wf_id_array and user_command[:2] == ['export', 'workflows']:
-                    Export_data.export_server_info(url, token)
-                    Export_data.export_workflows_by_choice(url, token, wf_id_array)
+                    export_data.export_server_info(url, token, filepath=filepath)
+                    Workflows_export.export_workflows_by_choice(url, token, wf_id_array)
                     continue
-                workflows = Export_data.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for, type=wf_type)
+                workflows = Workflows_export.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for, type=wf_type)
                 if not workflows:
                     continue
                 if user_command[:2] == ['export', 'workflows']:
-                    Export_data.export_server_info(url, token)
-                    Export_data.export_workflows_at_once(url, token, workflows)
+                    export_data.export_server_info(url, token, filepath=filepath)
+                    Workflows_export.export_workflows_at_once(url, token, workflows)
                 elif user_command[:2] == ['ls', 'workflows']:
-                    Export_data.display_list_of_workflowsName_and_workflowsId(workflows)
+                    Workflows_export.display_list_of_workflowsName_and_workflowsId(workflows)
                 elif user_command[:2] == ['rm', 'workflows']:
-                    Export_data.delete_workflows(url, token, workflows)
+                    Workflows_export.delete_workflows(url, token, workflows)
 
             # Import data
             case ['import', 'workflows']:
-                Import_data_main.import_workflows(url, token)
+                server_info_filepath = f"{Workflows_import._transfer_folder}/{Workflows_import._workflows_folder}/{Workflows_export._wf_export_server_info_file}"
+                exported_wf_filepath = f"{Workflows_import._transfer_folder}/{Workflows_import._workflows_folder}/{Workflows_export._exported_workflows_list}"
+                if not import_data.validate_import_server(url, token, server_info_filepath):
+                    print("Server validation failed")
+                    continue
+                Workflows_import.import_workflows(url, token, exported_wf_filepath)
 
             case ['import', 'om']:
-                Import_data_main.import_object_model(url, token)
+                server_info_filepath = f"{Object_model_import._transfer_folder}/{Object_model_import._object_model_folder}/{Object_model_export._om_export_server_info_file}"
+                om_filepath = f"{Object_model_import._transfer_folder}/{Object_model_import._object_model_folder}/{Object_model_export._object_model_file}"
+                if not import_data.validate_import_server(url, token, server_info_filepath):
+                    print("Server validation failed")
+                    continue
+                Object_model_import.import_object_model(url, token, om_filepath)
 
             case ['rm', 'files']:
-                Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._object_model_folder}")
-                Folder.clean_folder(f"{os.getcwd()}/{Export_data._transfer_folder}/{Export_data._workflows_folder}")
-                File.remove_file(f"{os.getcwd()}/{Export_data._transfer_folder}/export_server.info")                    
+                Folder.clean_folder(f"{os.getcwd()}/transfer_files")
 
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
             case ['ft', _, *_]:

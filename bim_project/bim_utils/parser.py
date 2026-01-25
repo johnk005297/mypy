@@ -12,7 +12,7 @@ class Parser():
         """ Function for parsing arguments of the command line. """
 
         # create top-level parser with arguments and subparser
-        parser = argparse.ArgumentParser(prog="bim-utils", description="Frankenstein's CLI for work with Bimeister(licenses/workflows/featureToggles/roleModes), gitlab, vCenter, etc.")
+        parser = argparse.ArgumentParser(prog="bimutils", description="Frankenstein's CLI for work with Bimeister(licenses/workflows/featureToggles/roleModes), gitlab, vCenter, etc.")
         parser.add_argument('-V', '--version', required=False, action='store_true', help='Get version of the bim_utils')
         parser.add_argument('--url', required=False, help='Url to get bimeister version')
         subparser = parser.add_subparsers(dest='command', required=False)
@@ -25,46 +25,46 @@ class Parser():
 
         list_vm_parser = vsphere_subparser.add_parser('list-vm', help='Print VMs in implementation cluster')
         list_vm_parser.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name using regular expressions')
-        list_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
+        list_vm_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
         list_vm_parser.add_argument('--powered-on', required=False, action='store_true', help='Print only VM with POWERED_ON status')
 
         show_snap_parser = vsphere_subparser.add_parser('show-snap', help='Print list of snapshots for a given VMs')
         show_snap_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name using regular expressions')
-        show_snap_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
+        show_snap_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
 
         revert_snap_parser = vsphere_subparser.add_parser('revert-snap', help='Revert to snapshot for a given VMs')
         revert_snap_parser.add_argument('--name', required=True, help='Snapshot name')
         revert_snap_parser.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name using regular expressions')
-        revert_snap_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
+        revert_snap_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
 
         remove_snap_parser = vsphere_subparser.add_parser('remove-snap', help='Remove snapshot from vCenter')
         remove_snap_parser.add_argument('--name', required=True, help='Snapshot name')
         remove_snap_parser.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name using regular expressions')
-        remove_snap_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
+        remove_snap_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
 
         take_snap_parser = vsphere_subparser.add_parser('take-snap', help='Take snaphost for a given VMs')
         take_snap_parser.add_argument('--name', required=False, default='{}'.format(datetime.today().strftime("%d.%m.%Y_%H:%M:%S")), help='vSphere snapshot name')
         take_snap_parser.add_argument('--desc', required=False, default=' ', help='Description for a snapshot')
         take_snap_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name using regular expressions')
-        take_snap_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
+        take_snap_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
 
         replace_snap_parser = vsphere_subparser.add_parser('replace-snap', help='Replace one snapshot in vSphere to another for a given VMs')
         replace_snap_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name using regular expressions')
-        replace_snap_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
+        replace_snap_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
         replace_snap_parser.add_argument('--old', required=True, help='Old snapshot to delete')
         replace_snap_parser.add_argument('--new', required=False, default='{}'.format(datetime.today().strftime("%d.%m.%Y_%H:%M:%S")), help='New snapshot to create')
         replace_snap_parser.add_argument('--desc', required=False, default=' ', help='Description for a snapshot')
 
         start_vm_parser = vsphere_subparser.add_parser('start-vm', help='Start select VMs in vSphere')
         start_vm_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name using regular expressions')
-        start_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
+        start_vm_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
 
         stop_vm_parser = vsphere_subparser.add_parser('stop-vm', help='Stop select VMs in vSphere')
         stop_vm_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name using regular expressions')
-        stop_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
+        stop_vm_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
 
         restart_vm_parser = vsphere_subparser.add_parser('restart-vm', help='Perform guest OS reboot for VMs in implementation cluster')
-        restart_vm_parser.add_argument('--exclude', required=False, help='Full VM name to exclude from filter')
+        restart_vm_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
         restart_vm_group = restart_vm_parser.add_mutually_exclusive_group(required=False)
         restart_vm_group.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name using regular expressions')
         restart_vm_group.add_argument('--all', required=False, action='store_true', help='Restart all working VMs in implementation cluster')
@@ -139,12 +139,17 @@ class Parser():
 
         # create parser for confluence
         ft = subparser.add_parser('ft', help='Get information about feature toggles from confluence')
-        ft.add_argument('-suid', '--gazprom-suid', required=False, action='store_true', help='FT for the project Gazprom Suid')
-        ft.add_argument('-dtoir', '--gazprom-dtoir', required=False, action='store_true', help='FT for the project Gazprom Dtoir')
-        ft.add_argument('-salavat', '--gazprom-salavat', required=False, action='store_true', help='FT for the project Gazprom Salavat')
-        ft.add_argument('-murmansk', '--novatek-murmansk', required=False, action='store_true', help='FT for the project Novatek Murmansk')
-        ft.add_argument('-yamal', '--novatek-yamal', required=False, action='store_true', help='FT for the project Novatek Yamal')
-        ft.add_argument('-crea', '--crea-cod', required=False, action='store_true', help='FT for the project Rosatom Crea-Cod')
+        ft.add_argument('--no-print' ,required=False, action='store_true', help='Just save the file without print')
+        ft_project_group = ft.add_mutually_exclusive_group(required=True)
+        ft_project_group.add_argument('-suid', '--gazprom-suid', required=False, action='store_true', help='FT for the project Gazprom Suid')
+        ft_project_group.add_argument('-dtoir', '--gazprom-dtoir', required=False, action='store_true', help='FT for the project Gazprom Dtoir')
+        ft_project_group.add_argument('-salavat', '--gazprom-salavat', required=False, action='store_true', help='FT for the project Gazprom Salavat')
+        ft_project_group.add_argument('-murmansk', '--novatek-murmansk', required=False, action='store_true', help='FT for the project Novatek Murmansk')
+        ft_project_group.add_argument('-yamal', '--novatek-yamal', required=False, action='store_true', help='FT for the project Novatek Yamal')
+        ft_project_group.add_argument('-crea', '--crea-cod', required=False, action='store_true', help='FT for the project Rosatom Crea-Cod')
+        ft_check_group = ft.add_argument_group("Args for checking difference")
+        ft_check_group.add_argument('--check', required=False, action='store_true', help='Check difference between Confluence data and current Bimeister settings')
+        ft_check_group.add_argument('--env', required=False)
         ft_save_group = ft.add_mutually_exclusive_group(required=False)
         ft_save_group.add_argument('--save', required=False, action='store_true', help='Save output in file')
         ft_save_group.add_argument('--save-pretty', required=False, action='store_true', help='Save output in file more human readable')
@@ -155,6 +160,24 @@ class Parser():
         token.add_argument('-u', '--user', required=True, help='Username with access to Bimeister')
         token.add_argument('-p', '--password', required=True, help='User\'s password with access to Bimeister')
         token.add_argument('-pid', '--providerId', required=False, help='Pass providerId in cases where more the one providers had been set up')
+
+        docker = subparser.add_parser('docker', help='Perform operations with Docker Engine')
+        main_commands_group = docker.add_mutually_exclusive_group(required=True)
+        main_commands_group.add_argument('--list', required=False, action='store_true', help='Get list of images on a localhost')
+        main_commands_group.add_argument('--save', required=False, action='store_true', help='Save docker image(s) locally')
+        docker.add_argument('-o', '--output', required=False, help='Output image archive filename')
+        docker.add_argument('--no-purge', required=False, action='store_false', help='Do not purge images from docker engine after saving. Default value: False')
+        file_group = docker.add_mutually_exclusive_group(required=False)
+        file_group.add_argument('-f', '--file', required=False, help='Text file with a list of images')
+        file_group.add_argument('-i', '--images', required=False, help='Images names separated with whitespace')
+        # main_commands_group.add_argument('--push', required=False, action='store_true', help='Push images to the registry')
+        # docker.add_argument('-u', '--user', required=False, help='Username with access to the registry')
+        # docker.add_argument('-p', '--password', required=False, help='User password with access to the registry')
+        # docker.add_argument('-ru', '--repo-url', required=False, help='Registry URL')
+        # docker.add_argument('-rn', '--repo-name', required=False, help='Repository name')
+        # docker.add_argument('-iref', '--image-ref', required=False, help='Image reference REPOSITORY[:TAG]')
+        # docker.add_argument('--tag', required=False, help='Image tag')
+
 
         # create parser for passwork
         # passwork = subparser.add_parser('pk', help='Work with passwork vault')
