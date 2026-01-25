@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import requests
 import base64
@@ -202,89 +201,17 @@ class Vsphere:
                 self.console.log(f"[red]No connection to {name}. Check VM in vCenter![/red]")
                 return False
             count = 0
-            while count < 650:
-                count += 1
-                power_status = self.get_vm_power_state(headers, moId)
-                status.update(power_on_msg + "  [green]✅[/green]")
-                time.sleep(0.5)
-                if power_status == "POWERED_ON":
-                    self.console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
-                    return True
-                elif power_status != "POWERED_ON":
-                    continue
-            else:
-                self.console.log(f"[red]Error on start {name} within 10 minutes. Check VM status in vCenter![/red]")
-                return False
-
-    async def start_vm_async(self, headers, moId, name):
-        """ This is a coroutine of a start_vm function. """
-
-        url: str = f"{self.url}/rest/vcenter/vm/{moId}/power/start"
-        power_on_msg: str = f"[bold magenta]Power On VM: {name}[/bold magenta]"
-
-        if self.get_vm_power_state(headers, moId) == "POWERED_ON":
-            self.console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
-            return True
-        with self.console.status(power_on_msg, spinner="earth"):
-            await asyncio.sleep(0.1)
-            response = await asyncio.to_thread(self.tools.make_request,'POST', url, headers=headers, verify=False, return_err_response=True)
-            if response.status_code not in (200, 204):
-                self.console.print(f"[red]No connection to {name}. Check VM in vCenter![/red]")
-                return False
-            count = 0
-            while count < 650:
-                count += 1
-                power_status = self.get_vm_power_state(headers, moId)
-                await asyncio.sleep(1)
-                if power_status == "POWERED_ON":
-                    self.console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
-                    await asyncio.sleep(0.1)
-                    return True
-                elif power_status != "POWERED_ON":
-                    continue
-            else:
-                self.console.print(f"[red]Error on start {name} within 10 minutes. Check VM status in vCenter![/red]")
-                return False
-
-    async def stop_vm_async(self, headers, moId, name):
-        """ Stop provided VM in vSphere. """
-
-        url_shutdown: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachine/{moId}/ShutdownGuest"
-        url_stop: str = f"{self.url}/api/vcenter/vm/{moId}/power?action=stop"
-        shutdown_msg: str = f"[bold magenta]Shutdown guest OS: {name}[bold magenta]  [green]✅[/green]"
-        shutting_down_msg: str = f"[bold magenta]Shutdown guest OS: {name}[/bold magenta]"
-
-        if self.get_vm_power_state(headers, moId) == "POWERED_OFF":
-            self.console.print(shutdown_msg, overflow="ellipsis")
-            return True
-        with self.console.status(shutting_down_msg, spinner="earth"):
-            await asyncio.sleep(0.1)
-            power_off: bool = False
-            response = await asyncio.to_thread(self.tools.make_request,'POST', url_shutdown, headers=headers, return_err_response=True, verify=False)
-            if response.status_code not in (200, 204):
-                response = self.tools.make_request('POST', url_stop, headers=headers, return_err_response=True, verify=False)
-                if response.status_code not in (200, 204):
-                    self.console.print(f"[red]No connection to {name}. Check VM in vCenter![/red]")
-                    return False
-                elif response.status_code in (200, 204):
-                    power_off = True
-            count = 0
             while count < 900:
+                time.sleep(1)
                 count += 1
                 power_status = self.get_vm_power_state(headers, moId)
-                await asyncio.sleep(0.5)
-                if power_status != "POWERED_OFF":
-                    continue
-                elif power_status == "POWERED_OFF":
-                    if power_off:
-                        self.console.print(f"[bold magenta]Power Off VM: {name}[/bold magenta]  [green]✅[/green]", overflow="ellipsis")
-                        await asyncio.sleep(0.1)
-                    else:
-                        self.console.print(shutdown_msg, overflow="ellipsis")
-                        await asyncio.sleep(0.1)
+                if power_status == "POWERED_ON":
+                    status.console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
                     return True
+                elif power_status != "POWERED_ON":
+                    continue
             else:
-                self.console.print(f"[red]Error on stop {name} within 15 minutes. Check VM status in vCenter![/red]")
+                self.console.log(f"[red]Error on start {name} within 15 minutes. Check VM status in vCenter![/red]")
                 return False
 
     def stop_vm(self, headers, moId, name):
@@ -295,10 +222,10 @@ class Vsphere:
         shutdown_msg: str = f"[bold magenta]Shutdown guest OS: {name}[bold magenta]  [green]✅[/green]"
         shutting_down_msg: str = f"[bold magenta]Shutdown guest OS: {name}[/bold magenta]"
 
+        if self.get_vm_power_state(headers, moId) == "POWERED_OFF":
+            self.console.print(shutdown_msg, overflow="ellipsis")
+            return True
         with self.console.status(shutting_down_msg, spinner="earth") as status:
-            if self.get_vm_power_state(headers, moId) == "POWERED_OFF":
-                self.console.print(shutdown_msg, overflow="ellipsis")
-                return True
             power_off: bool = False
             response = self.tools.make_request('POST', url_shutdown, headers=headers, return_err_response=True, verify=False)
             if response.status_code not in (200, 204):
@@ -310,17 +237,16 @@ class Vsphere:
                     power_off = True
             count = 0
             while count < 900:
+                time.sleep(1)
                 count += 1
                 power_status = self.get_vm_power_state(headers, moId)
-                status.update(shutting_down_msg)
-                time.sleep(0.5)
                 if power_status != "POWERED_OFF":
                     continue
                 elif power_status == "POWERED_OFF":
                     if power_off:
-                        self.console.print(f"[bold magenta]Power Off VM: {name}[/bold magenta]  [green]✅[/green]", overflow="ellipsis")
+                        status.console.print(f"[bold magenta]Power Off VM: {name}[/bold magenta]  [green]✅[/green]", overflow="ellipsis")
                     else:
-                        self.console.print(shutdown_msg, overflow="ellipsis")
+                        status.console.print(shutdown_msg, overflow="ellipsis")
                     return True
             else:
                 self.console.log(f"[red]Error on stop {name} within 15 minutes. Check VM status in vCenter![/red]")
