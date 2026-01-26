@@ -202,10 +202,10 @@ if __name__ == '__main__':
                     if not confirm:
                         print("Restart procedure aborted!")
                         sys.exit()
-                    vm_array: dict = v.get_array_of_vm(headers, args.exclude, powered_on=True)
+                    vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter, powered_on=True)
                     v.restart_os(headers, vm_array)
                 else:
-                    vm_array: dict = v.get_array_of_vm(headers, args.exclude, powered_on=True)
+                    vm_array: dict = v.get_array_of_vm(headers, args.exclude, args.filter, powered_on=True)
                     v.restart_os(headers, vm_array)
             elif args.vsphere_command == 'start-vm':
                 console.rule(title="Power On virtual machine")
