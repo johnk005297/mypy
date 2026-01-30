@@ -4,7 +4,7 @@ import gzip
 import tarfile
 import logging
 import docker
-from docker.errors import DockerException, APIError, ImageNotFound
+from docker.errors import DockerException, APIError, ImageNotFound, NotFound
 from mlogger import Logs
 from rich.console import Console
 from pathlib import Path
@@ -59,13 +59,21 @@ class Docker:
                     status.update(f"Pulling image: {image}")
                     self._client.images.pull(image)
                     self.console.print(f"[green]Pulled: {image}[/green]")
-                except docker.errors.APIError as err:
+                except NotFound as err:
+                    self.console.print(f"ImageNotFound: {err}")
+                    not_pulled_images.append(image)
+                    continue
+                except APIError as err:
                     _logger.error(err)
                     self.console.print(f"[red]Failed image: {err}[/red]")
                     not_pulled_images.append(image)
                     continue
+                except Exception as err:
+                    _logger.error(err)
+                    print(_logs.err_message)
+                    continue
         images = [image for image in images if image not in not_pulled_images]
-        return images
+        return images if images else None
 
     def print_images(self, images: list):
         """ Function prints a list of host machine images on a screen. """
@@ -77,8 +85,12 @@ class Docker:
             or packing tgz file(s) into single tar archive.
         """
 
-        if not images or not isinstance(images, list):
-            raise ValueError(f"{self.save_images.__name__}: argument images expected to be a list")
+        if not images:
+            _logger.error(f"{self.save_images.__name__}: empty list of images")
+            return None
+        elif isinstance(images, list):
+            _logger.error(f"{self.save_images.__name__}: argument images expected to be a list")
+            return None
         tgz_files: list = []
         with self.console.status("Start saving images", spinner='moon') as status:
             if len(images) == 1 and output:
