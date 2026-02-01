@@ -15,6 +15,5 @@ bim_project/bimutils/log_test.py
 bim_project/bimutils/ssh_connect.py
 pyi_spec_file/
 bim_project/bimutils/textual_menu.py
-bim_project/bimutils/deprecated_modules
 mypy.code-workspace
 bimutils.spec
