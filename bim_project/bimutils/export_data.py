@@ -1,15 +1,17 @@
+import textwrap
+from rich.console import Console
+from urllib3.exceptions import InsecureRequestWarning
+from urllib3 import disable_warnings
+disable_warnings(InsecureRequestWarning)
+
 import logging
 import os
 import json
 import time
+
 from license import License
-import textwrap
-from rich.console import Console
-from urllib3.exceptions import InsecureRequestWarning
 from tools import Tools, Folder, ScrollablePanel
 from mlogger import Logs
-from urllib3 import disable_warnings
-disable_warnings(InsecureRequestWarning)
 
 _logger = logging.getLogger(__name__)
 _logs = Logs()

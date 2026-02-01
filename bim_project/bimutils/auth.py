@@ -1,12 +1,14 @@
-import logging
-import sys
 import requests
-from mlogger import Logs
-from tools import Tools
-from getpass import getpass
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
+
+import logging
+import sys
+from getpass import getpass
+
+from mlogger import Logs
+from tools import Tools
 
 _logger = logging.getLogger(__name__)
 _logs = Logs()

@@ -1,4 +1,5 @@
 import argparse
+
 from datetime import datetime
 
 
@@ -18,55 +19,57 @@ class Parser():
         subparser = parser.add_subparsers(dest='command', required=False)
 
         # create parser and subparser for the "vsphere" command
+        filter_vm_help: str = "Filter VMs by occurrences in the name using regular expressions"
+        exclude_vm_help: str = "Exclude VMs by occurrences in the name using regular expressions"
         vsphere_parser = subparser.add_parser('vsphere', help='Perform operations in vSphere')
         vsphere_parser.add_argument('-u', '--user', required=False, help='Login account for vCenter')
         vsphere_parser.add_argument('-p', '--password', required=False, help='Password for vCenter')
         vsphere_subparser = vsphere_parser.add_subparsers(dest='vsphere_command')
 
         list_vm_parser = vsphere_subparser.add_parser('list-vm', help='Print VMs in implementation cluster')
-        list_vm_parser.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name using regular expressions')
-        list_vm_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
+        list_vm_parser.add_argument('-f', '--filter', required=False, help=filter_vm_help)
+        list_vm_parser.add_argument('--exclude', required=False, help=exclude_vm_help)
         list_vm_parser.add_argument('--powered-on', required=False, action='store_true', help='Print only VM with POWERED_ON status')
 
         show_snap_parser = vsphere_subparser.add_parser('show-snap', help='Print list of snapshots for a given VMs')
-        show_snap_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name using regular expressions')
-        show_snap_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
+        show_snap_parser.add_argument('-f', '--filter', required=True, help=filter_vm_help)
+        show_snap_parser.add_argument('--exclude', required=False, help=exclude_vm_help)
 
         revert_snap_parser = vsphere_subparser.add_parser('revert-snap', help='Revert to snapshot for a given VMs')
         revert_snap_parser.add_argument('--name', required=True, help='Snapshot name')
-        revert_snap_parser.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name using regular expressions')
-        revert_snap_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
+        revert_snap_parser.add_argument('-f', '--filter', required=False, help=filter_vm_help)
+        revert_snap_parser.add_argument('--exclude', required=False, help=exclude_vm_help)
 
         remove_snap_parser = vsphere_subparser.add_parser('remove-snap', help='Remove snapshot from vCenter')
         remove_snap_parser.add_argument('--name', required=True, help='Snapshot name')
-        remove_snap_parser.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name using regular expressions')
-        remove_snap_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
+        remove_snap_parser.add_argument('-f', '--filter', required=False, help=filter_vm_help)
+        remove_snap_parser.add_argument('--exclude', required=False, help=exclude_vm_help)
 
         take_snap_parser = vsphere_subparser.add_parser('take-snap', help='Take snaphost for a given VMs')
         take_snap_parser.add_argument('--name', required=False, default='{}'.format(datetime.today().strftime("%d.%m.%Y_%H:%M:%S")), help='vSphere snapshot name')
         take_snap_parser.add_argument('--desc', required=False, default=' ', help='Description for a snapshot')
-        take_snap_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name using regular expressions')
-        take_snap_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
+        take_snap_parser.add_argument('-f', '--filter', required=True, help=filter_vm_help)
+        take_snap_parser.add_argument('--exclude', required=False, help=exclude_vm_help)
 
         replace_snap_parser = vsphere_subparser.add_parser('replace-snap', help='Replace one snapshot in vSphere to another for a given VMs')
-        replace_snap_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name using regular expressions')
-        replace_snap_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
+        replace_snap_parser.add_argument('-f', '--filter', required=True, help=filter_vm_help)
+        replace_snap_parser.add_argument('--exclude', required=False, help=exclude_vm_help)
         replace_snap_parser.add_argument('--old', required=True, help='Old snapshot to delete')
         replace_snap_parser.add_argument('--new', required=False, default='{}'.format(datetime.today().strftime("%d.%m.%Y_%H:%M:%S")), help='New snapshot to create')
         replace_snap_parser.add_argument('--desc', required=False, default=' ', help='Description for a snapshot')
 
         start_vm_parser = vsphere_subparser.add_parser('start-vm', help='Start select VMs in vSphere')
-        start_vm_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name using regular expressions')
-        start_vm_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
+        start_vm_parser.add_argument('-f', '--filter', required=True, help=filter_vm_help)
+        start_vm_parser.add_argument('--exclude', required=False, help=exclude_vm_help)
 
         stop_vm_parser = vsphere_subparser.add_parser('stop-vm', help='Stop select VMs in vSphere')
-        stop_vm_parser.add_argument('-f', '--filter', required=True, help='Filter VMs by occurrences in the name using regular expressions')
-        stop_vm_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
+        stop_vm_parser.add_argument('-f', '--filter', required=True, help=filter_vm_help)
+        stop_vm_parser.add_argument('--exclude', required=False, help=exclude_vm_help)
 
         restart_vm_parser = vsphere_subparser.add_parser('restart-vm', help='Perform guest OS reboot for VMs in implementation cluster')
-        restart_vm_parser.add_argument('--exclude', required=False, help='Exclude VMs by occurrences in the name using regular expressions')
+        restart_vm_parser.add_argument('--exclude', required=False, help=exclude_vm_help)
         restart_vm_group = restart_vm_parser.add_mutually_exclusive_group(required=False)
-        restart_vm_group.add_argument('-f', '--filter', required=False, help='Filter VMs by occurrences in the name using regular expressions')
+        restart_vm_group.add_argument('-f', '--filter', required=False, help=filter_vm_help)
         restart_vm_group.add_argument('--all', required=False, action='store_true', help='Restart all working VMs in implementation cluster')
 
         # create parser for the "drop-UO" subcommand

@@ -1,24 +1,24 @@
-#!/usr/bin/env python
+from rich.console import Console
+
 import logging
-import mlogger
 import sys
+import time
+import platform
+from getpass import getpass
+
+import mlogger
 import app_menu
 import auth
 import license
 import import_data
 import postgre
 import vsphere
-import time
-import platform
 import mdocker
-# import argcomplete
 import interactive_menu
 from featureToggle import Conf, FeatureToggle
 from parser import Parser
 from passwork import *
 from git import Git
-from rich.console import Console
-from getpass import getpass
 from tools import Bimeister, Tools, File
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=Tools.get_resourse_path(".env"))

@@ -1,19 +1,21 @@
+import requests
+from urllib3.exceptions import InsecureRequestWarning
+from urllib3 import disable_warnings
+disable_warnings(InsecureRequestWarning)
+from dateutil.relativedelta import relativedelta
+from rich.console import Console
+from rich.table import Table
+
+import base64
 import logging
 import os
 import sys
 import json
-import requests
-import base64
-import auth
 import time
 import binascii
-from dateutil.relativedelta import relativedelta
-from rich.console import Console
-from rich.table import Table
 from datetime import date, datetime, timedelta
-from urllib3 import disable_warnings
-from urllib3.exceptions import InsecureRequestWarning
-disable_warnings(InsecureRequestWarning)
+
+import auth
 from tools import Tools
 from mlogger import Logs
 
@@ -343,6 +345,7 @@ class Issue:
         if not username or not password:
             print("Username and password must be provided. Exit.")
             return False
+
         payload = json.dumps({
             "username": username,
             "password": password,

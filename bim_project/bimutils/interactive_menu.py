@@ -1,8 +1,10 @@
+import argparse
+
 import os
+
 import app_menu
 import auth
 import user
-import argparse
 import license
 import export_data
 import import_data

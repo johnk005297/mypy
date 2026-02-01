@@ -1,10 +1,12 @@
-import logging
 import yaml
 import base64
 import requests
-import os
 from rich.console import Console
 from rich.table import Table
+
+import logging
+import os
+
 from tools import Tools
 from mlogger import Logs
 

@@ -1,13 +1,15 @@
+import docker
+from docker.errors import DockerException, APIError, ImageNotFound, NotFound
+from rich.console import Console
+
 import os
 import sys
 import gzip
 import tarfile
 import logging
-import docker
-from docker.errors import DockerException, APIError, ImageNotFound, NotFound
-from mlogger import Logs
-from rich.console import Console
 from pathlib import Path
+
+from mlogger import Logs
 
 _logger = logging.getLogger(__name__)
 _logs = Logs()
@@ -88,7 +90,7 @@ class Docker:
         if not images:
             _logger.error(f"{self.save_images.__name__}: empty list of images")
             return None
-        elif isinstance(images, list):
+        elif not isinstance(images, list):
             _logger.error(f"{self.save_images.__name__}: argument images expected to be a list")
             return None
         tgz_files: list = []

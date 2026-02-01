@@ -1,145 +1,19 @@
-import requests
-from rich.console import Console
-from rich.table import Table
-from tools import Tools
 from atlassian import Confluence
 from bs4 import BeautifulSoup
+from rich.console import Console
+from rich.table import Table
 
 import logging
-import platform
 import os
 import sys
 
-
-_logger = logging.getLogger(__name__)
-
-class FeatureToggle:
-
-    _api_GetFeatures: str = 'api/Features/GetFeatures'
-    _api_Features: str = 'api/Features'
-    headers = {'accept': '*/*', 'Content-type': 'application/json; charset=utf-8'}
-
-    def display_features(self, url, enabled=False, disabled=False):
-        """ Display list of features in pretty table. """
-
-        try:
-            response = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=self.headers, verify=False)
-        except Exception as err:
-            _logger.error(err)
-            print("Error! Couldn't get list of features. Check the logs.")
-            return False
-        table = Table()
-        table.add_column("No.", style="cyan", no_wrap=True)
-        table.add_column("Feature", style="magenta")
-        table.add_column("Status", justify="center", highlight=False)
-        count = Tools.counter()
-        if response.status_code == 200:
-            _logger.info(f"{self._api_GetFeatures} {response}")
-            data: dict = response.json()
-            print()
-            for key,value in sorted(data.items()):
-                if enabled and value:
-                    table.add_row(str(count()), key.capitalize(), "[green]on[/green]")
-                elif disabled and not value:
-                    table.add_row(str(count()), key.capitalize(), "[red]off[/red]")
-                elif not enabled and not disabled:
-                    table.add_row(str(count()), key.capitalize(), "[green]on[/green]" if value else "[red]off[/red]")
-        else:
-            print(f"Error {response.status_code} occurred during GetFeatures request. Check the logs.")
-            _logger.error(response.text)
-            return False
-        console = Console()
-        console.print(table)
-
-    def get_list_of_features(self, url, return_data=False) -> list:
-        """ Function returns a list of features, or return's all data(dict) if return_data is true. """
-
-        try:
-            response = requests.get(url=f"{url}/{self._api_GetFeatures}", headers=self.headers, verify=False)
-        except Exception as err:
-            _logger.error(err)
-            print("Error! Couldn't get list of features. Check the logs.")
-            return False
-        if response.status_code == 200:
-            _logger.info(f"{self._api_GetFeatures} {response}")
-            data: dict = response.json()
-            ft_list: list = [ft for ft in data]
-        else:
-            print(f"Error {response.status_code} occurred during GetFeatures request. Check the logs.")
-            _logger.error(response.text)
-            return False
-        return data if return_data else ft_list
-
-    def set_feature(self, url, bearerToken, features: list, is_enabled=True):
-        """ Function to enable/disable FT. """
-
-        ft_list = self.get_list_of_features(url)
-        headers = {'Authorization': f'Bearer {bearerToken}', 'accept': '*/*', 'Content-type':'application/json; charset=utf-8'}
-        json_data = is_enabled
-        for feature in features:
-            if feature.lower() not in ft_list:
-                print(f"Incorrect FT name: {feature}")
-                continue
-            response = requests.put(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
-            if response.status_code in (200, 201, 204):
-                _logger.info(f"{url}/{self._api_Features}/{feature} {response}")
-                response = requests.get(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
-                ft_enabled: bool = response.json()
-                print("{0}: {1}".format(feature, 'enabled' if ft_enabled else 'disabled'))
-            else:
-                _logger.error(response.status_code, '\n', response.text)
-                print(f"{feature} wasn't enabled. Check the log. Error: {response.status_code}.")
-        return
-
-    def compare_source_and_target(self, ft_conf: list, project_name: str, env: str):
-        """ Function compares FT between confluence and current Bimeister settings on a given stand. """
-
-        match project_name:
-            case "gazprom-suid":
-                url = "https://suid-t.bimeister.io" if env == "test" else "https://suid-p.bimeister.io"
-            case "gazprom-dtoir":
-                url = "https://dtoir-t.bimeister.io" if env == "test" else "https://dtoir-p.bimeister.io"
-            case "gazprom-salavat":
-                url = "https://gazprom-salavat-t.bimeister.io" if env == "test" else ""
-            case "novatek-murmansk":
-                url = "https://novatek-murmansk-p.bimeister.io" if env == "prod" else ""
-            case "novatek-yamal":
-                url = "https://novatek-yamal-d.bimeister.io" if env == "demo" else ""
-            case "crea-cod":
-                url = "https://crea-cod.bimeister.io"
-            case _:
-                print("No url was found.")
-                return None
-        if not url:
-            print("URL for current env not found.")
-            return None
-        elif not Tools.is_url_available(url):
-            print(f"URL:{url} incorrect or unavailable.")
-            return None
-        all_ft_on_stand = self.get_list_of_features(url, return_data=True)
-        if not ft_conf:
-            print(f"{project_name}: FT in confluence not found.")
-            return None
-        enabled_ft_on_stand = sorted([key.capitalize() for key,value in all_ft_on_stand.items() if value])
-        result = {"Add": [ft for ft in ft_conf if ft not in enabled_ft_on_stand],
-                  "Remove": [ft for ft in enabled_ft_on_stand if ft not in ft_conf]}
-        add_empty: bool = not result['Add']
-        remove_empty: bool = not result['Remove']
-        if add_empty and remove_empty:
-            print("Total match!")
-            return
-        if not add_empty or not remove_empty:
-            if not add_empty:
-                print("Add:\n" + "\n".join(f"- {ft}" for ft in result['Add']))
-            if not remove_empty:
-                print("Remove:\n" + "\n".join(f"- {ft}" for ft in result['Remove']))
-        
-    def sync_ft_with_conf_page(self):
-        """ Automatically turn on and off feature toggles on a stand according to confluence page. """
-        pass
+from tools import *
 
 
-class Conf:
+logger = logging.getLogger(__name__)
+
+
+class FT:
 
     ft_page_id = "1461357571"
     url = "https://confluence.bimeister.io"
@@ -166,7 +40,7 @@ class Conf:
         try:
             page = confluence.get_page_by_id(self.ft_page_id, expand="body.view")
         except Exception as err:
-            _logger.error(err)
+            logger.error(err)
             print(err)
             sys.exit()
         return page
@@ -274,13 +148,13 @@ class Conf:
                 print("Incorrect input. Exit!")
                 sys.exit()
         except ValueError as err:
-            _logger.error(err)
+            logger.error(err)
             print(f"Incorrect input. Should be a number in range between 1 and {len(projects)}")
             sys.exit()
         return projects[project_number]
 
-    def get_ft_for_project(self, all_ft_data, project_name, save=False, save_pretty=False, no_print=False, env=""):
-        """ Save in different formats or print FT for specific project. Function requires data of all projects FT."""
+    def display_ft_for_project(self, all_ft_data, project_name, save=False, save_pretty=False):
+        """ Display FT for specific project. Function requires data of all projects FT."""
 
         if not all_ft_data or not project_name:
             return None
@@ -300,30 +174,26 @@ class Conf:
         for prod, test, demo in zip(prod, test, demo):
             table.add_row(prod, test, demo)
         console = Console()
-        if not no_print:
-            console.print(table)
+        console.print(table)
+
         if save or save_pretty:
-            filename: str = f'{project_name}-ft.txt' if save else f'{project_name}-ft.yaml'
+            filename: str = f'{project_name}-ft.txt'
             with open(filename, 'w', encoding='utf-8') as file:
                 if save:
                     for env, ft in project_data.items():
                         file.write("{0}: {1}\n".format(env, " ".join(map(str, ft))))
                 elif save_pretty:
                     for env in project_data:
-                        file.write(f"{env}:")
+                        file.write(f"[{env}]")
                         env_ft_list = list(filter(None, project_data[env]))
                         if not env_ft_list:
-                            file.write("\n")
+                            file.write(' None\n')
                             continue
                         for ft in env_ft_list:
-                            file.write(f"\n- {ft}")
+                            file.write(f"\n - {ft}")
                         file.write('\n\n')
             sep = "\\" if platform.system == "Windows" else "/"
             print(f"File saved: {os.getcwd()}{sep}{filename}")
-        else:
-            if env:
-                project_data = [x for x in project_data[env] if x]
-            return project_data
 
     def display_projects(self):
         """ Print all the projects which exist. """

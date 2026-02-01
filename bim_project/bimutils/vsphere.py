@@ -1,5 +1,12 @@
-import logging
 import requests
+from urllib3.exceptions import InsecureRequestWarning
+from urllib3 import disable_warnings
+disable_warnings(InsecureRequestWarning)
+from rich.console import Console
+from rich.tree import Tree
+from rich import print as rprint
+
+import logging
 import base64
 import time
 import json
@@ -7,12 +14,7 @@ import re
 import binascii
 import os
 from getpass import getpass
-from urllib3.exceptions import InsecureRequestWarning
-from urllib3 import disable_warnings
-disable_warnings(InsecureRequestWarning)
-from rich.console import Console
-from rich.tree import Tree
-from rich import print as rprint
+
 from tools import Tools
 from mlogger import Logs
 
