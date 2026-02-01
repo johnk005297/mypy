@@ -1,2 +1,3 @@
-# Some usefull scripts from work
+Personal playground
+
 
