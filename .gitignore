@@ -9,11 +9,5 @@ bim_project/archived
 bim_project/bimutils/*.lic
 bim_project/bimutils/transfer_files
 bim_project/bimutils/archive
-bim_project/bimutils/query.sql
-bim_project/bimutils/check.sql
-bim_project/bimutils/log_test.py
-bim_project/bimutils/ssh_connect.py
-pyi_spec_file/
-bim_project/bimutils/textual_menu.py
 mypy.code-workspace
 bimutils.spec
