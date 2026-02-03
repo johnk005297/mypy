@@ -236,7 +236,7 @@ if __name__ == '__main__':
                 if confirm not in ('y', 'yes'):
                     sys.exit("Abort procedure!")
 
-                if vm_power_on:
+                if vm_power_on: # type: ignore
                     console.rule(title="Shutdown guest OS")
                     for value in vm_power_on.values():
                         v.stop_vm(headers, value["moId"], value["name"])
