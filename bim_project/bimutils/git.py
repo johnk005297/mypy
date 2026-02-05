@@ -1,9 +1,11 @@
 import yaml
 import base64
 import requests
+import typer
 from rich.console import Console
 from rich.table import Table
 
+import sys
 import logging
 import os
 
@@ -67,6 +69,7 @@ class Project(Git):
         except Exception as err:
             logger.error(err)
             return None
+        logger.error(f"Id for project {project} not found.")
         return False
 
 
@@ -461,6 +464,109 @@ class Product_collection_file(Git):
         for service, database in zip(svc, db):
             table.add_row(service, database)
         self.console.print(table)
+
+
+
+git_app = typer.Typer(help="Get info from gitlab. Search branches, tags, commits, product-collection.yaml data.")
+
+@git_app.command()
+def search(
+    branches: list[str] = typer.Argument(..., help="Search pattern by it's name"),
+    project_id: str = typer.Option("bimeister", "--project", "-p", help="Name of the project in gitlab")
+        ):
+    """ Get table with info about branches, commits, tags, helm charts. """
+
+    g = Git()
+    project = g.project()
+    branch = g.branch()
+    project_id = project.get_project_id(project='bimeister')
+    if not project_id:
+        sys.exit()
+    data = branch.search_branches_commits_tags_jobs(project_id, search=branches)
+    g.display_table_with_branches_commits_tags_jobs(data)
+
+@git_app.command()
+def build_charts(commit: str = typer.Argument(..., help="Requires commit to activate job")):
+    """ Activate gitlab job: Build Charts. For a given commit. """
+
+    g = Git()
+    project = g.project()
+    branch = g.branch()
+    job = g.job()
+    project_id = project.get_project_id(project='bimeister')
+    branches: list = branch.get_branch_name_using_commit(project_id, commit)
+    if len(branches) == 1:
+        branch_name = branches[0]
+    else:
+        branch_name = input(f"{branches} commit appears in several branches: {branches}\nSelect branch: ")
+    charts_jobs = job.get_specific_jobs(project_id, commit=commit, branch_name=branch_name)
+    pipeline_id = charts_jobs['pipeline_id']
+    if not pipeline_id:
+        print("No pipelines with 'success' status. Can't run the job.")
+        sys.exit()
+    job.run_job(project_id, str(charts_jobs['build_chart']['id']).split())
+
+@git_app.command()
+def commit(
+    commit: str = typer.Argument(..., help="Commit for product-collection.yaml info from"),
+    project_name: str = typer.Option(None, "--project", "-p", help="Provide project name from the product-collection.yaml without prompt")
+        ):
+    """ Get info about services and databases from the product-collection.yaml file for a given commit. """
+
+    g = Git()
+    project = g.project()
+    product_collection = g.product_collection()
+    project_id = project.get_project_id(project='bimeister')
+    file_content: dict = product_collection.get_product_collection_file_content(project_id, commit)
+    if not file_content:
+        sys.exit()
+    data = product_collection.parse_product_collection_yaml(file_content, project_name=project_name)
+    if not data:
+        sys.exit()
+    else:
+        project_name, services, db = data
+    if not services or not db:
+        sys.exit()
+    product_collection.print_services_and_db(services, db)
+
+@git_app.command()
+def compare(
+    commits: list[str] = typer.Argument(help="Flag expects two commits to compare differences between them")
+        ):
+    """ Compare two commits for difference in product-collection.yaml in DBs list and services list """
+
+    g = Git()
+    project = g.project()
+    product_collection = g.product_collection()
+    project_id = project.get_project_id(project='bimeister')
+
+    if len(commits) != 2:
+        print("Need two commits two compare.")
+        return None
+    first_commit, second_commit = commits[0], commits[1]
+    first_commit_data: dict = product_collection.get_product_collection_file_content(project_id, first_commit)
+    second_commit_data: dict = product_collection.get_product_collection_file_content(project_id, second_commit)
+    if not first_commit_data or not second_commit_data:
+        sys.exit()
+    data = product_collection.parse_product_collection_yaml(first_commit_data)
+    if not data:
+        sys.exit()
+    first_commit_project_name, first_commit_services, first_commit_db = data
+    data = product_collection.parse_product_collection_yaml(second_commit_data, project_name=first_commit_project_name)
+    if not data:
+        sys.exit()
+    second_commit_project_name, second_commit_services, second_commit_db = data
+    product_collection.compare_two_commits(first_commit_services, first_commit_db, second_commit_services, second_commit_db)
+
+
+
+
+
+
+
+
+
+
 
 
     ### NOT IN USE ###
