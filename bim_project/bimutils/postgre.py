@@ -1,3 +1,4 @@
+import typer
 import pandas as pd
 import psycopg2
 from psycopg2 import errors
@@ -11,7 +12,7 @@ from getpass import getpass
 from time import perf_counter
 from datetime import timedelta
 
-from tools import File
+from tools import File, Tools
 from mlogger import Logs
 
 _logger = logging.getLogger(__name__)
@@ -310,6 +311,97 @@ class Queries:
         if not result and not result[0]:
             return None
         return result[0]
+
+
+# sql_app CLI
+sql_app = typer.Typer(help="Execute sql query provided in a *.sql file, find/drop materialized views.")
+
+class SQLContext:
+    """Store shared DB connection parameters"""
+    def __init__(self):
+        self.host = None
+        self.db = None
+        self.user = None
+        self.password = None
+        self.port = None
+        self.conn = None
+        self.folder = None
+
+# Create a context instance
+sql_context = SQLContext()
+
+@sql_app.callback()
+def sql_callback(
+    host: str = typer.Option(..., "--host", "-h", help="DB hostname or IP address"),
+    db: str = typer.Option(..., "--db", "-d", help="Database name"),
+    user: str = typer.Option(..., "--user", "-u", help="Username with access to db"),
+    password: str = typer.Option(None, "--password", "-p", help="Database user password"),
+    port: int = typer.Option(5432, "--port", help="Database port")
+                ):
+    # Store parameters in context
+    sql_context.host = host
+    sql_context.db = db
+    sql_context.user = user
+    sql_context.password = password
+    sql_context.port = port
+    sql_context.folder = Tools.get_resourse_path('sql_queries')
+
+    # validate connection
+    pg = DB()
+    sql_context.conn = pg.connect_to_db(
+        host=host,
+        port=port,
+        db=db,
+        user=user,
+        password=password
+        )
+    if not sql_context.conn:
+        sys.exit(1)
+
+@sql_app.command()
+def exec(
+    filepath: str = typer.Option(..., "--file", "-f", help="Path to a filename with sql query"),
+    chunk_size: int = typer.Option(10_000, "--chunk-size", help="Adjust chunks of pulled data from database during select large amount of data"),
+    read_by_line: bool = typer.Option("False", "--read-by-line", help="Read .sql file line by line delimited by semicolons. This flag forces to read all the data from .sql file'"),
+    print_: bool = typer.Option("False", "--print", help="Print content of dataframe on a screen"),
+    print_max: bool = typer.Option("False", '--print-max', help='Print full content of dataframe on a screen')
+        ):
+    """ Command to execute SQL query in a given database. """
+
+    pg = DB()
+    pg.execute_query_from_file(sql_context.conn, filepath=filepath, chunk_size=chunk_size, read_by_line=read_by_line, print_=print_, print_max=print_max)
+
+@sql_app.command()
+def get_matviews(
+    search_pattern: str = typer.Argument(..., help="Name pattern to search"),
+    print_: bool = typer.Option("False", "--print", help="Print content of dataframe on a screen")
+                ):
+    """ Get list of materialized views by it's name pattern. Default all. """
+
+    pg = DB()
+    query = pg.get_list_matviews_query(filepath=os.path.join(sql_context.folder, 'get_list_of_matviews.sql'))
+    params: dict = {"name": search_pattern.replace('*', '%')}
+    pg.exec_query(sql_context.conn, query, output_file="matviews-list.csv", remove_output_file=True, params=params, print_=print_)
+
+@sql_app.command(name="drop-matviews")
+@sql_app.command(name="drop-matview", hidden=True)
+def drop_matviews(search_pattern: str = typer.Argument(..., help="Name pattern to search")):
+    """ Delete materialized views by it's name pattern. Default all. """
+
+    pg = DB()
+    q = Queries()
+    pattern = search_pattern.replace('*', '%')
+    matviews_before: int = q.count_matviews(pattern, sql_context.conn)
+    drop_matviews_query = pg.get_query(filepath=os.path.join(sql_context.folder, 'drop_matviews.sql'), search_pattern=pattern)
+    pg.exec_query(sql_context.conn, drop_matviews_query, keep_conn=True)
+    if not pg.get_query_status():
+        sql_context.conn.close()
+        sys.exit()
+    matviews_after: int = q.count_matviews(pattern, sql_context.conn)
+    print(f"Deleted: {matviews_before - matviews_after}")
+    sql_context.conn.close()
+
+
 
     # DEPRECATED MODULE
     # @staticmethod

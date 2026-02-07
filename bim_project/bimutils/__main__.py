@@ -32,6 +32,7 @@ if platform.system() == 'Linux':
 
 import typer
 from git import git_app
+from postgre import sql_app
 
 if __name__ == '__main__':
     logs = mlogger.Logs()
@@ -40,69 +41,12 @@ if __name__ == '__main__':
 
     app = typer.Typer()
     app.add_typer(git_app, name="git")
+    app.add_typer(sql_app, name="sql")
     app()
     # sys.exit()
     # parser = Parser().get_parser()
     # args = parser.parse_args()
     # try:
-    #     if args.command == 'git':
-    #         g = Git()
-    #         project = g.project()
-    #         branch = g.branch()
-    #         product_collection = g.product_collection()
-    #         job = g.job()
-    #         tree = g.tree()
-    #         project_id = project.get_project_id(project='bimeister')
-    #         if not project_id:
-    #             sys.exit()
-    #         if args.search:
-    #             data = branch.search_branches_commits_tags_jobs(project_id, args.search)
-    #             g.display_table_with_branches_commits_tags_jobs(data)
-    #         elif args.build_charts:
-    #             branches: list = branch.get_branch_name_using_commit(project_id, args.build_charts)
-    #             if len(branches) == 1:
-    #                 branch_name = branches[0]
-    #             else:
-    #                 branch_name = input(f"{args.build_charts} commit appears in several branches: {branches}\nSelect branch: ")
-    #             charts_jobs = job.get_specific_jobs(project_id, args.build_charts, branch_name)
-    #             pipeline_id = charts_jobs['pipeline_id']
-    #             if not pipeline_id:
-    #                 print("No pipelines with 'success' status. Can't run the job.")
-    #                 sys.exit()
-    #             job.run_job(project_id, str(charts_jobs['build_chart']['id']).split())
-    #         elif args.commit:
-    #             file_content: dict = product_collection.get_product_collection_file_content(project_id, args.commit)
-    #             if not file_content:
-    #                 sys.exit()
-    #             data = product_collection.parse_product_collection_yaml(file_content, project_name=args.project_name)
-    #             if not data:
-    #                 sys.exit()
-    #             else:
-    #                 project_name, services, db = data
-    #             if not services or not db:
-    #                 sys.exit()
-    #             product_collection.print_services_and_db(services, db)
-    #         elif args.compare:
-    #             first_commit, second_commit = args.compare[0], args.compare[1]
-    #             first_commit_data: dict = product_collection.get_product_collection_file_content(project_id, first_commit)
-    #             second_commit_data: dict = product_collection.get_product_collection_file_content(project_id, second_commit)
-    #             if not first_commit_data or not second_commit_data:
-    #                 sys.exit()
-    #             data = product_collection.parse_product_collection_yaml(first_commit_data)
-    #             if not data:
-    #                 sys.exit()
-    #             first_commit_project_name, first_commit_services, first_commit_db = data
-    #             data = product_collection.parse_product_collection_yaml(second_commit_data, project_name=first_commit_project_name)
-    #             if not data:
-    #                 sys.exit()
-    #             second_commit_project_name, second_commit_services, second_commit_db = data
-    #             product_collection.compare_two_commits(first_commit_services, first_commit_db, second_commit_services, second_commit_db)
-    #         elif args.ls_branch_folder:
-    #             tree.print_list_of_branch_files(project_id, args.ls_branch_folder)
-
-    #     # elif args.command == 'drop-UO':
-    #     #     postgre.DB.drop_userObjects(args.url, username=args.user, password=args.password)
-
     #     elif args.command == 'sql':
     #         sql_queries_folder: str = Tools.get_resourse_path('sql_queries')
     #         pg = postgre.DB()

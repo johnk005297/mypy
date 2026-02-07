@@ -466,7 +466,7 @@ class Product_collection_file(Git):
         self.console.print(table)
 
 
-
+# git_app CLI
 git_app = typer.Typer(help="Get info from gitlab. Search branches, tags, commits, product-collection.yaml data.")
 
 @git_app.command()
