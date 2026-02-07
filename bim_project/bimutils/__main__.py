@@ -26,6 +26,7 @@ load_dotenv(dotenv_path=Tools.get_resourse_path(".env"))
 from git import git_app
 from postgre import sql_app
 from featureToggle import ft_app
+from mdocker import docker_app
 
 # opportunity to have access of input history
 if platform.system() == 'Linux':
@@ -47,16 +48,14 @@ def main(
 app.add_typer(git_app, name="git")
 app.add_typer(sql_app, name="sql")
 app.add_typer(ft_app, name="ft")
+app.add_typer(docker_app, name="docker")
 
 if __name__ == '__main__':
     logs = mlogger.Logs()
     logs.set_full_access_to_log_file(logs.filepath, 0o666)
     logger = mlogger.file_logger(logs.filepath, logLevel=logging.INFO)
     app()
-    # sys.exit()
-    # parser = Parser().get_parser()
-    # args = parser.parse_args()
-    # try:
+
 
     #     elif args.command == 'vsphere':
     #         v = vsphere.Vsphere()
@@ -296,24 +295,6 @@ if __name__ == '__main__':
     #         elif providers and isinstance(providers, str):
     #             token = autht.get_user_access_token(args.url, args.user, args.password, providers)
     #             print(token if token else '')
-    #     elif args.command == 'docker':
-    #         docker = mdocker.Docker()
-    #         if not docker.is_connected:
-    #             sys.exit()
-    #         if args.list:
-    #             images = docker.get_list_of_images()
-    #             docker.print_images(images)
-    #         elif args.save:
-    #             if args.file:
-    #                 data = File.read_file(args.file)
-    #                 images = [image for image in data.split()]
-    #             elif args.images:
-    #                 images = [image for image in args.images.split()]
-    #             else:
-    #                 print("docker: error: one of the arguments -f/--file -i/--images is required")
-    #                 sys.exit()
-    #             pulled_images = docker.pull_images(images)
-    #             docker.save_images(pulled_images, purge=args.no_purge, output=args.output)
     #     else:
     #         interactive_menu.launch_menu()
     # except KeyboardInterrupt:
