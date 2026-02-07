@@ -360,7 +360,7 @@ def sql_callback(
 
 @sql_app.command()
 def exec(
-    filepath: str = typer.Option(..., "--file", "-f", help="Path to a filename with sql query"),
+    filepath: str = typer.Option(..., "--file", "-f", help="Path to a file with sql query"),
     chunk_size: int = typer.Option(10_000, "--chunk-size", help="Adjust chunks of pulled data from database during select large amount of data"),
     read_by_line: bool = typer.Option("False", "--read-by-line", help="Read .sql file line by line delimited by semicolons. This flag forces to read all the data from .sql file'"),
     print_: bool = typer.Option("False", "--print", help="Print content of dataframe on a screen"),
@@ -371,7 +371,8 @@ def exec(
     pg = DB()
     pg.execute_query_from_file(sql_context.conn, filepath=filepath, chunk_size=chunk_size, read_by_line=read_by_line, print_=print_, print_max=print_max)
 
-@sql_app.command()
+@sql_app.command(name="get-matviews")
+@sql_app.command(name="get-matview", hidden=True)
 def get_matviews(
     search_pattern: str = typer.Argument(..., help="Name pattern to search"),
     print_: bool = typer.Option("False", "--print", help="Print content of dataframe on a screen")

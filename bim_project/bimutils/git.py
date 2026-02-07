@@ -485,7 +485,8 @@ def search(
     data = branch.search_branches_commits_tags_jobs(project_id, search=branches)
     g.display_table_with_branches_commits_tags_jobs(data)
 
-@git_app.command()
+@git_app.command(name="build-charts")
+@git_app.command(name="build-chart", hidden=True)
 def build_charts(commit: str = typer.Argument(..., help="Requires commit to activate job")):
     """ Activate gitlab job: Build Charts. For a given commit. """
 
@@ -498,7 +499,7 @@ def build_charts(commit: str = typer.Argument(..., help="Requires commit to acti
     if len(branches) == 1:
         branch_name = branches[0]
     else:
-        branch_name = input(f"{branches} commit appears in several branches: {branches}\nSelect branch: ")
+        branch_name = input(f"{commit} commit appears in several branches: {branches}\nSelect branch: ")
     charts_jobs = job.get_specific_jobs(project_id, commit=commit, branch_name=branch_name)
     pipeline_id = charts_jobs['pipeline_id']
     if not pipeline_id:

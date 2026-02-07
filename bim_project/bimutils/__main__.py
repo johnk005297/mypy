@@ -1,4 +1,5 @@
 from rich.console import Console
+import typer
 
 import logging
 import sys
@@ -22,74 +23,40 @@ from git import Git
 from tools import Bimeister, Tools, File
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=Tools.get_resourse_path(".env"))
-
+from git import git_app
+from postgre import sql_app
+from featureToggle import ft_app
 
 # opportunity to have access of input history
 if platform.system() == 'Linux':
     import readline
-    # readline.set_completer(rlcompleter.Completer().complete)
-    # readline.parse_and_bind('tab: complete')
 
-import typer
-from git import git_app
-from postgre import sql_app
+
+app = typer.Typer()
+
+def version_callback(value: bool):
+    if value:
+        print(f"version: {app_menu.AppMenu.__version__}")
+        raise typer.Exit()
+
+@app.callback()
+def main(
+    version: bool = typer.Option(None, "--version", "-V", callback=version_callback, help="Show CLI version.")):
+    pass
+
+app.add_typer(git_app, name="git")
+app.add_typer(sql_app, name="sql")
+app.add_typer(ft_app, name="ft")
 
 if __name__ == '__main__':
     logs = mlogger.Logs()
     logs.set_full_access_to_log_file(logs.filepath, 0o666)
     logger = mlogger.file_logger(logs.filepath, logLevel=logging.INFO)
-
-    app = typer.Typer()
-    app.add_typer(git_app, name="git")
-    app.add_typer(sql_app, name="sql")
     app()
     # sys.exit()
     # parser = Parser().get_parser()
     # args = parser.parse_args()
     # try:
-    #     elif args.command == 'sql':
-    #         sql_queries_folder: str = Tools.get_resourse_path('sql_queries')
-    #         pg = postgre.DB()
-    #         queries = postgre.Queries()
-    #         conn = pg.connect_to_db(db=args.db, host=args.host, user=args.user, password=args.password, port=args.port)
-    #         if not conn:
-    #             sys.exit()
-    #         pg.execute_query_from_file(conn, filepath=args.file, chunk_size=args.chunk_size, read_by_line=args.read_by_line, print_=args.print, print_max=args.print_max)
-    #         if args.get_matviews:
-    #             query = pg.get_list_matviews_query(filepath=os.path.join(sql_queries_folder, 'get_list_of_matviews.sql'))
-    #             params: dict = {"name": args.get_matviews.replace('*', '%')}
-    #             pg.exec_query(conn, query, output_file="matviews-list.csv", remove_output_file=True, params=params, print_=args.print)
-    #         elif args.drop_matviews:
-    #             pattern = args.drop_matviews.replace('*', '%')
-    #             matviews_before: int = queries.count_matviews(pattern, conn)
-    #             drop_matviews_query = pg.get_query(filepath=os.path.join(sql_queries_folder, 'drop_matviews.sql'), search_pattern=pattern)
-    #             pg.exec_query(conn, drop_matviews_query, keep_conn=True)
-    #             if not pg.get_query_status():
-    #                 conn.close()
-    #                 sys.exit()
-    #             matviews_after: int = queries.count_matviews(pattern, conn)
-    #             print(f"Deleted: {matviews_before - matviews_after}")
-    #             conn.close()
-    #         elif args.refresh_matviews:
-    #             pattern = args.refresh_matviews.replace('*', '%')
-    #             refresh_matviews_query = pg.get_query(filepath=os.path.join(sql_queries_folder, 'refresh_matviews.sql'), search_pattern=pattern)
-    #             pg.exec_query(conn, refresh_matviews_query, keep_conn=True, print_elapsed_time=True)
-    #             conn.close()
-    #         # elif args.get_db:
-    #         #     pg.execute_query_from_file(conn, filepath=os.path.join(sql_queries_folder, 'get_list_of_db.sql'), print_output=args.print, name=args.get_db.replace('*', '%'))
-    #         # elif args.get_tables:
-    #         #     pg.execute_query_from_file(conn, filepath=os.path.join(sql_queries_folder, 'get_list_of_db_tables.sql'), print_output=args.print, name=args.get_tables.replace('*', '%'))
-    #         # elif args.get_users:
-    #         #     pg.execute_query_from_file(conn, filepath=os.path.join(sql_queries_folder, 'get_list_of_all_db_users.sql'), print_output=args.print, name=args.get_users.replace('*', '%'))
-    #         # elif args.create_user_ro:
-    #         #     password: str = getpass("Create user password: ")
-    #         #     pg.execute_query_from_file(conn, filepath=os.path.join(sql_queries_folder, 'create_user_ro.sql'), split_by_delimiter=True, print_output=args.print, name=args.create_user_ro, password=password)
-    #         # elif args.mdm:
-    #         #     if args.mdm == 'prod':
-    #         #         pg.execute_query(conn_string, query=q.swith_externalKey_for_mdm_connector(value='Prod'), query_name='swith-extkey-mdm-connector')
-    #         #     elif args.mdm == 'test':
-    #         #         pg.execute_query(conn_string, query=q.swith_externalKey_for_mdm_connector(value='Test'), query_name='swith-extkey-mdm-connector')
-    #         #     else: print("mdm option has two values: prod or test.")
 
     #     elif args.command == 'vsphere':
     #         v = vsphere.Vsphere()
@@ -231,14 +198,6 @@ if __name__ == '__main__':
     #                 for value in vm_power_on.values():
     #                     v.start_vm(headers, value["moId"], value["name"])
 
-    #     elif args.command == 'mdm':
-    #         mdm = import_data.Mdmconnector()
-    #         url = mdm.check_url(args.url)
-    #         if args.export_file:
-    #             mdm.export_mdm_config(url)
-    #         else:
-    #             mdm.import_mdm_config(url, args.import_file)
-
     #     elif args.command == 'issue-lic':
     #         lic_issue = license.Issue()
     #         lic = license.License()
@@ -317,56 +276,7 @@ if __name__ == '__main__':
     #                 lic.apply_license(args.url, auth.token, args.user, args.password, license=server_license)
     #     elif args.command == 'pk':
     #         pass
-    #     elif args.command == 'ft':
-    #         conf = Conf()
-    #         FT = FeatureToggle()
-    #         page = conf.get_confluence_page()
-    #         data = conf.get_ft_data_of_all_projects(page)
-    #         if args.check and not args.env:
-    #             print("bimutils ft: error: --env argument is required")
-    #             sys.exit()
-    #         elif args.env and not args.check:
-    #             print("bimutils ft: error: --check argument is required")
-    #             sys.exit()
-    #         if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].strip() == '--save') or (len(sys.argv) == 3 and sys.argv[2].strip() == '--save-pretty'):
-    #             project = conf.choose_project()
-    #             conf.get_ft_for_project(data, project, args.save, args.save_pretty)
-    #         elif args.gazprom_suid:
-    #             if args.check:
-    #                 conf_ft_list = conf.get_ft_for_project(data, conf.project_name_suid, args.save, args.save_pretty, no_print=True, env=args.env)
-    #                 FT.compare_source_and_target(conf_ft_list, conf.project_name_suid, args.env)
-    #             else:
-    #                 conf.get_ft_for_project(data, conf.project_name_suid, args.save, args.save_pretty, args.no_print)
-    #         elif args.gazprom_dtoir:
-    #             if args.check:
-    #                 conf_ft_list = conf.get_ft_for_project(data, conf.project_name_dtoir, args.save, args.save_pretty, no_print=True, env=args.env)
-    #                 FT.compare_source_and_target(conf_ft_list, conf.project_name_dtoir, args.env)
-    #             else:
-    #                 conf.get_ft_for_project(data, conf.project_name_dtoir, args.save, args.save_pretty, args.no_print)
-    #         elif args.gazprom_salavat:
-    #             if args.check:
-    #                 conf_ft_list = conf.get_ft_for_project(data, conf.project_name_salavat, args.save, args.save_pretty, no_print=True, env=args.env)
-    #                 FT.compare_source_and_target(conf_ft_list, conf.project_name_salavat, args.env)
-    #             else:
-    #                 conf.get_ft_for_project(data, conf.project_name_salavat, args.save, args.save_pretty, args.no_print)
-    #         elif args.novatek_murmansk:
-    #             if args.check:
-    #                 conf_ft_list = conf.get_ft_for_project(data, conf.project_name_murmansk, args.save, args.save_pretty, no_print=True, env=args.env)
-    #                 FT.compare_source_and_target(conf_ft_list, conf.project_name_murmansk, args.env)
-    #             else:
-    #                 conf.get_ft_for_project(data, conf.project_name_murmansk, args.save, args.save_pretty, args.no_print)
-    #         elif args.novatek_yamal:
-    #             if args.check:
-    #                 conf_ft_list = conf.get_ft_for_project(data, conf.project_name_yamal, args.save, args.save_pretty, no_print=True, env=args.env)
-    #                 FT.compare_source_and_target(conf_ft_list, conf.project_name_yamal, args.env)
-    #             else:
-    #                 conf.get_ft_for_project(data, conf.project_name_yamal, args.save, args.save_pretty, args.no_print)
-    #         elif args.crea_cod:
-    #             if args.check:
-    #                 conf_ft_list = conf.get_ft_for_project(data, conf.project_name_crea_cod, args.save, args.save_pretty, no_print=True, env=args.env)
-    #                 FT.compare_source_and_target(conf_ft_list, conf.project_name_crea_cod, args.env)
-    #             else:
-    #                 conf.get_ft_for_project(data, conf.project_name_crea_cod, args.save, args.save_pretty, args.no_print)
+
     #     elif args.version:
     #         if args.url:
     #             Bimeister.print_bim_version(args.url)
