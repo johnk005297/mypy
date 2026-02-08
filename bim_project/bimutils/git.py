@@ -469,6 +469,14 @@ class Product_collection_file(Git):
 # git_app CLI
 git_app = typer.Typer(help="Get info from gitlab. Search branches, tags, commits, product-collection.yaml data.")
 
+class GitContext:
+    """Store shared FT parameters"""
+    def __init__(self):
+        self.git = Git()
+
+# Create a context instance
+git_context = GitContext()
+
 @git_app.command()
 def search(
     branches: list[str] = typer.Argument(..., help="Search pattern by it's name"),
@@ -476,24 +484,22 @@ def search(
         ):
     """ Get table with info about branches, commits, tags, helm charts. """
 
-    g = Git()
-    project = g.project()
-    branch = g.branch()
+    project = git_context.git.project()
+    branch = git_context.git.branch()
     project_id = project.get_project_id(project='bimeister')
     if not project_id:
         sys.exit()
     data = branch.search_branches_commits_tags_jobs(project_id, search=branches)
-    g.display_table_with_branches_commits_tags_jobs(data)
+    git_context.git.display_table_with_branches_commits_tags_jobs(data)
 
 @git_app.command(name="build-charts")
 @git_app.command(name="build-chart", hidden=True)
 def build_charts(commit: str = typer.Argument(..., help="Requires commit to activate job")):
     """ Activate gitlab job: Build Charts. For a given commit. """
 
-    g = Git()
-    project = g.project()
-    branch = g.branch()
-    job = g.job()
+    project = git_context.git.project()
+    branch = git_context.git.branch()
+    job = git_context.git.job()
     project_id = project.get_project_id(project='bimeister')
     branches: list = branch.get_branch_name_using_commit(project_id, commit)
     if len(branches) == 1:
@@ -514,9 +520,8 @@ def commit(
         ):
     """ Get info about services and databases from the product-collection.yaml file for a given commit. """
 
-    g = Git()
-    project = g.project()
-    product_collection = g.product_collection()
+    project = git_context.git.project()
+    product_collection = git_context.git.product_collection()
     project_id = project.get_project_id(project='bimeister')
     file_content: dict = product_collection.get_product_collection_file_content(project_id, commit)
     if not file_content:
@@ -536,9 +541,8 @@ def compare(
         ):
     """ Compare two commits for difference in product-collection.yaml in DBs list and services list """
 
-    g = Git()
-    project = g.project()
-    product_collection = g.product_collection()
+    project = git_context.git.project()
+    product_collection = git_context.git.product_collection()
     project_id = project.get_project_id(project='bimeister')
 
     if len(commits) != 2:

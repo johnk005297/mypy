@@ -27,6 +27,7 @@ from git import git_app
 from postgre import sql_app
 from featureToggle import ft_app
 from mdocker import docker_app
+from license import lic_app
 
 # opportunity to have access of input history
 if platform.system() == 'Linux':
@@ -49,6 +50,7 @@ app.add_typer(git_app, name="git")
 app.add_typer(sql_app, name="sql")
 app.add_typer(ft_app, name="ft")
 app.add_typer(docker_app, name="docker")
+app.add_typer(lic_app, name="license")
 
 if __name__ == '__main__':
     logs = mlogger.Logs()
@@ -197,82 +199,7 @@ if __name__ == '__main__':
     #                 for value in vm_power_on.values():
     #                     v.start_vm(headers, value["moId"], value["name"])
 
-    #     elif args.command == 'issue-lic':
-    #         lic_issue = license.Issue()
-    #         lic = license.License()
-    #         if not tools.is_socket_available(lic_issue._license_server, lic_issue._license_server_port):
-    #             print(f"Socket is NOT available on {lic_issue._license_server}:{lic_issue._license_server_port}\nCheck the log!")
-    #             sys.exit()
-    #         lic_username, lic_password = Tools.get_creds_from_env('LICENSE_USER', 'LICENSE_PASSWORD')
-    #         if not lic_username or not lic_password:
-    #             # logger.error("No 'LICENSE_USER' and 'LICENSE_PASSWORD' in .env file.")
-    #             print("Enter credentials for license server:")
-    #             lic_username = input("login: ")
-    #             lic_password = getpass("password: ")
-    #         token = lic_issue.get_token_to_issue_license(username=lic_username, password=lic_password)
-    #         if args.serverId:
-    #             server_license = lic_issue.issue_license(
-    #                         token
-    #                         ,version=args.version
-    #                         ,product=args.product
-    #                         ,licenceType=args.licenceType
-    #                         ,activationType=args.activationType
-    #                         ,client=args.client
-    #                         ,clientEmail=args.clientEmail
-    #                         ,organization=args.organization
-    #                         ,isOrganization=args.isOrganization
-    #                         ,numberOfUsers=args.numberOfUsers
-    #                         ,numberOfIpConnectionsPerUser=args.numberOfIpConnectionsPerUser
-    #                         ,serverId=args.serverId
-    #                         ,period=args.period
-    #                         ,until=args.until
-    #                         ,orderId=args.orderId
-    #                         ,crmOrderId=args.crmOrderId
-    #                         ,save=args.save
-    #                         ,url=args.url
-    #                         ,print=args.print
-    #             )
-    #             sys.exit()
-    #         if args.url:
-    #             url = tools.is_url_available(args.url)
-    #             if not url:
-    #                 print(f"URL {args.url} is not available.")
-    #                 sys.exit()
-    #             else:
-    #                 args.url = url
-    #             auth = auth.Auth()
-    #             check = auth.establish_connection(url=args.url, username=args.user, password=args.password)
-    #             if not check:
-    #                 sys.exit()
-    #             success, message = lic.get_serverID(args.url, auth.token)
-    #             if success:
-    #                 server_id: str = message
-    #             else:
-    #                 print(f"Error: {message}")
-    #                 sys.exit()
-    #             server_license = lic_issue.issue_license(
-    #                         token
-    #                         ,version=args.version
-    #                         ,product=args.product
-    #                         ,licenceType=args.licenceType
-    #                         ,activationType=args.activationType
-    #                         ,client=args.client
-    #                         ,clientEmail=args.clientEmail
-    #                         ,organization=args.organization
-    #                         ,isOrganization=args.isOrganization
-    #                         ,numberOfUsers=args.numberOfUsers
-    #                         ,numberOfIpConnectionsPerUser=args.numberOfIpConnectionsPerUser
-    #                         ,serverId=server_id
-    #                         ,period=args.period
-    #                         ,until=args.until
-    #                         ,orderId=args.orderId
-    #                         ,crmOrderId=args.crmOrderId
-    #                         ,save=args.save
-    #                         ,url=args.url
-    #                         ,print=args.print
-    #             )
-    #             if args.apply:
-    #                 lic.apply_license(args.url, auth.token, args.user, args.password, license=server_license)
+
     #     elif args.command == 'pk':
     #         pass
 

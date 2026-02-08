@@ -340,6 +340,14 @@ ft_app = typer.Typer(
     """
                     )
 
+class FtContext:
+    """Store shared FT parameters"""
+    def __init__(self):
+        self.conf = Conf()
+
+# Create a context instance
+ft_context = FtContext()
+
 def choose_project(
     gazprom_suid: bool = False,
     gazprom_dtoir: bool = False,
@@ -348,7 +356,6 @@ def choose_project(
     novatek_yamal: bool = False,
     crea_cod: bool = False
 ):
-    conf = Conf()
     project_map = {
         'gazprom-suid': gazprom_suid,
         'gazprom-dtoir': gazprom_dtoir,
@@ -364,7 +371,7 @@ def choose_project(
     elif len(selected) == 1:
         project = selected[0]  # Map to actual project name
     else:
-        project = conf.choose_project_prompt()
+        project = ft_context.conf.choose_project_prompt()
     return project
 
 
@@ -380,10 +387,9 @@ def check_difference(
                     ):
     """ Check difference between confluence data and a currect FT on a stand. """
 
-    conf = Conf()
     FT = FeatureToggle()
-    page = conf.get_confluence_page()
-    data = conf.get_ft_data_of_all_projects(page)
+    page = ft_context.conf.get_confluence_page()
+    data = ft_context.conf.get_ft_data_of_all_projects(page)
     project = choose_project(gazprom_suid=gazprom_suid,
                              gazprom_dtoir=gazprom_dtoir,
                              gazprom_salavat=gazprom_salavat,
@@ -391,7 +397,7 @@ def check_difference(
                              novatek_yamal=novatek_yamal,
                              crea_cod=crea_cod)
 
-    conf_ft_list = conf.get_ft_for_project(data, project_name=project, no_print=True, env=env)
+    conf_ft_list = ft_context.conf.get_ft_for_project(data, project_name=project, no_print=True, env=env)
     FT.compare_source_and_target(conf_ft_list, project_name=project, env=env)
 
 
@@ -410,9 +416,8 @@ def get_ft(
         ):
     """ Get feature toggles from confluence page and save it or print on a display. """
 
-    conf = Conf()
-    page = conf.get_confluence_page()
-    data = conf.get_ft_data_of_all_projects(page)
+    page = ft_context.conf.get_confluence_page()
+    data = ft_context.conf.get_ft_data_of_all_projects(page)
 
     project = choose_project(gazprom_suid=gazprom_suid,
                              gazprom_dtoir=gazprom_dtoir,
@@ -420,4 +425,4 @@ def get_ft(
                              novatek_murmansk=novatek_murmansk,
                              novatek_yamal=novatek_yamal,
                              crea_cod=crea_cod)
-    conf.get_ft_for_project(data, project_name=project, save=save, save_pretty=save_pretty, no_print=no_print)
+    ft_context.conf.get_ft_for_project(data, project_name=project, save=save, save_pretty=save_pretty, no_print=no_print)

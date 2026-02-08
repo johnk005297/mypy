@@ -1,4 +1,5 @@
 import requests
+import typer
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
@@ -14,6 +15,7 @@ import json
 import time
 import binascii
 from datetime import date, datetime, timedelta
+from getpass import getpass
 
 import auth
 from tools import Tools
@@ -256,6 +258,8 @@ class License:
 
         headers = {'accept': 'text/plain', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
         _logger.info("Posting a license:")
+        if not url.startswith("http"):
+            url = "https://" + url
         # create a tuple to check if license is already presents in Bimeister
         licenses_id = tuple(dict.get('licenseID', False) for dict in self.get_licenses(url, token, username, password))
         new_license_data: list = self.read_license_token(data=license)
@@ -384,12 +388,16 @@ class Issue:
             sys.exit()
         except requests.exceptions.RequestException as err:
             print(err)
+            sys.exit()
 
-    def issue_license(self, token, **kwagrs):
+    def issue_license(self, **kwagrs):
         """ Issue a new license from the license server. """
 
+        if not kwagrs['token']:
+            print("Missing token.")
+            sys.exit()
         url = f'http://{self._license_server}:{self._license_server_port}/{self.__api_license_sign}'
-        headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': f"Bearer {token}"}
+        headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': f"Bearer {kwagrs['token']}"}
 
         iso_yesterday: str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S%z")
         try:
@@ -411,7 +419,6 @@ class Issue:
             _logger.error(err)
             print("Error. Check the log.")
             sys.exit()
-
         params = {
             "version": kwagrs['version']
             ,"product": kwagrs['product']
@@ -435,13 +442,99 @@ class Issue:
             license = response.json()
             if kwagrs['save']:
                 # remove protocol to the left and slash sign to the right in URL string
-                license_filename: str = '' if not kwagrs['url'] else kwagrs['url'].split('//')[1].rstrip('/')
-                with open(license_filename + '.lic' if license_filename else kwagrs['serverId'] + '.lic', 'w', encoding='utf-8') as file:
+                if kwagrs.get('url'):
+                    url_parts = kwagrs['url'].split('//')
+                    if len(url_parts) > 1:
+                        license_filename = url_parts[1].rstrip('/')
+                    else:
+                        license_filename = url_parts[0].rstrip('/')
+                else:
+                    license_filename = kwagrs['serverId']
+                with open(license_filename + '.lic', 'w', encoding='utf-8') as file:
                     file.write(license)
-            if kwagrs['print']:
+            if kwagrs['print_']:
                 print(license)
             return license
         except Exception as err:
             _logger.error(err)
             print("Error. Check the log!")
             sys.exit()
+
+
+
+# lic_app CLI
+lic_app = typer.Typer(help="Different operations with licenses.")
+
+class LicContext:
+    """Store shared license parameters"""
+    def __init__(self):
+        self.tools = Tools()
+        self.issue = Issue()
+        self.auth_ = auth.Auth()
+        self.lic = License()
+
+# Create a context instance
+lic_context = LicContext()
+
+@lic_app.callback()
+def check_connection():
+    if not lic_context.tools.is_socket_available(lic_context.issue._license_server, lic_context.issue._license_server_port):
+        print(f"License server socket is NOT available <{lic_context.issue._license_server}:{lic_context.issue._license_server_port}>")
+        raise typer.Abort()
+
+@lic_app.command(name="issue", help="Issue, apply license.")
+def issue_lic(
+    version: int = typer.Option(1, "-v", "--version", help="Parameter of the license: version."),
+    product: str = typer.Option("Bimeister", "-pr", "--product", help="Parameter of the license: product."),
+    licenceType: str = typer.Option("Trial", "-ltype", "--licenceType", help="Parameter of the license: licenceType."),
+    activationType: str = typer.Option("Offline", "-atype", "--activationType", help="Parameter of the license: activationType."),
+    client: str = typer.Option("", "-c", "--client", help="Parameter of the license: client."),
+    clientEmail: str = typer.Option("", "-email", "--clientEmail", help="Parameter of the license: clientEmail."),
+    organization: str = typer.Option("", "-org", "--organization", help="Parameter of the license: organization."),
+    isOrganization: bool = typer.Option("False", "-isOrg", "--isOrganization", help="Parameter of the license: isOrganization."),
+    numberOfUsers: int = typer.Option(50, "-nou", "--numberOfUsers", help="Parameter of the license: numberOfUsers."),
+    numberOfIpConnectionsPerUser: int = typer.Option(0, "-uip", "--numberOfIpConnectionsPerUser", help="Parameter of the license: numberOfIpConnectionsPerUser."),
+    serverId: str = typer.Option("", "-sid", "--serverId", help="Parameter of the license: serverID. Server which requires a license."),
+    period: int = typer.Option(3, "-p", "--period", help="eriod of the license in months."),
+    until: str = typer.Option("", "--until", help="Date until the license is valid in format YYYY-MM-DD e.g. 2025-12-26"),
+    orderId: str = typer.Option("", "-oId", "--orderId", help="Parameter of the license: orderId."),
+    crmOrderId: str = typer.Option("", "-crmId", "--crmOrderId", help="Parameter of the license: crmOrderId."),
+    save: bool = typer.Option("False", "-s", "--save", help="Save license into a file."),
+    url: str = typer.Option("", "--url", help="URL endpoint which needs a license to activate."),
+    print_: bool = typer.Option("False", "--print", help="Print license on a screen."),
+    user: str = typer.Option("admin", "-u", "--user", help="Username with access to web interface and privileges to work with licenses."),
+    password: str = typer.Option("Qwerty12345!", "-pw", "--password", help="User's password to web interface."),
+    apply: bool = typer.Option("False", "--apply", help="Activate license for specified URL. Requires --url flag.")
+            ):
+    if url and serverId:
+        typer.echo("Error: Cannot use --url and --serverId together.")
+        raise typer.Abort()
+    elif not serverId and not url:
+        typer.echo("Error: Either --serverId or --url is required.")
+        raise typer.Abort()
+    lic_username, lic_password = lic_context.tools.get_creds_from_env('LICENSE_USER', 'LICENSE_PASSWORD')
+    if not lic_username or not lic_password:
+        print("Enter credentials for license server:")
+        lic_username = input("login: ")
+        lic_password = getpass("password: ")
+    token = lic_context.issue.get_token_to_issue_license(username=lic_username, password=lic_password)
+    if not token:
+        sys.exit()
+    params = locals().copy()
+    if serverId:
+        server_license = lic_context.issue.issue_license(**params)
+    else:
+        if not lic_context.tools.is_url_available(url):
+            print(f"URL: {url} is not available.")
+            raise typer.Abort()
+        check = lic_context.auth_.establish_connection(url=url, username=user, password=password)
+        if not check:
+            sys.exit()
+        success, message = lic_context.lic.get_serverID(url, lic_context.auth_.token)
+        if success:
+            params['serverId'] = message
+        else:
+            print(f"Error: {message}")
+        server_license = lic_context.issue.issue_license(**params)
+        if apply:
+            lic_context.lic.apply_license(url, lic_context.auth_.token, user, password, license=server_license)
