@@ -1,3 +1,4 @@
+import typer
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
@@ -233,3 +234,30 @@ class Auth:
             _logger.error(err)
             return False
         return self.privateToken
+
+
+#auth_app CLI
+auth_app = typer.Typer(help="Options related to authorization.")
+
+@auth_app.command(name="token")
+def get_token(
+    url: str = typer.Option(..., "--url", help="URL of the stand which access token is required."),
+    providerId: str = typer.Option("", "-pid", "--providerId", help="Bimeister provider Id in cases where more the one providers had been set up."),
+    user: str = typer.Option("admin", "-u", "--user", help="Username with access to Bimeister."),
+    password: str = typer.Option("Qwerty12345!", "-p", "--password", help="User\'s password with access to Bimeister.")
+        ):
+    """ Get user access token for a given URL. """
+
+    auth = Auth()
+    providers = auth.get_providerId(url, interactive=False)
+    if providers and isinstance(providers, list) and len(providers) > 1 and not providerId:
+        print("Provide needed id with flag --providerId")
+        for provider in providers:
+            for k,v in provider.items():
+                print(k,v)
+    elif providers and providerId:
+        token = auth.get_user_access_token(url, user, password, providerId)
+        print(token if token else '')
+    elif providers and isinstance(providers, str):
+        token = auth.get_user_access_token(url, user, password, providers)
+        print(token if token else '')

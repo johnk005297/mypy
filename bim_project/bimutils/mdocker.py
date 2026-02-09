@@ -141,6 +141,7 @@ class Docker:
                     sys.exit()
 
 
+
 # docker_app CLI
 docker_app = typer.Typer(help="Perform operations with docker images.")
 
@@ -154,7 +155,7 @@ def docker_callback(): # validate docker engine connection
 def save_images(
     file: str = typer.Option(None, "-f", "--file", help="Full path to a text file with a list of images."),
     images: list[str] = typer.Option(None, "-i", "--image", help="Image reference(s). Usage: docker save -i \"image_ref\" -i \"image_ref\" "),
-    purge: bool = typer.Option("True", "--no-purge", help="Do not purge images from docker engine after saving."),
+    purge: bool = typer.Option("True", "--purge/--no-purge", help="Do not purge images from docker engine after saving."),
     output: str = typer.Option(None, "-o", "--output", help="Output filename without extension, because file is compressed in tgz.")
             ):
     d = Docker()
