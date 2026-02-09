@@ -477,7 +477,8 @@ class GitContext:
 # Create a context instance
 git_context = GitContext()
 
-@git_app.command()
+@git_app.command(name="search")
+@git_app.command(name="s", hidden=True)
 def search(
     branches: list[str] = typer.Argument(..., help="Search pattern by it's name"),
     project_id: str = typer.Option("bimeister", "--project", "-p", help="Name of the project in gitlab")

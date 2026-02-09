@@ -1,18 +1,16 @@
-import argparse
-
 import os
 
-import app_menu
-import auth
-import user
-import license
-import export_data
-import import_data
-import featureToggle
-from passwork import *
-from tools import *
-
 def launch_menu():
+    import argparse
+    import app_menu
+    import auth
+    import user
+    import license
+    import export_data
+    import import_data
+    import featureToggle
+    from tools import Tools, Folder
+    from bimeister import Bimeister
 
     AppMenu_main = app_menu.AppMenu()
     Auth = auth.Auth()

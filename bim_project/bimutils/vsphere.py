@@ -76,7 +76,6 @@ class Vsphere:
             logger.error(err)
             print("Invalid base64-encoded string. Check the logs. Exit!")
             return False
-
         creds = self.get_credentials(username=username, password=password)
         if not creds:
             return False

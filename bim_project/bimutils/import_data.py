@@ -12,7 +12,8 @@ import json
 import time
 
 from license import License
-from tools import File, Tools, ScrollablePanel
+from tools import File, Tools
+from mrich import ScrollablePanel
 from mlogger import Logs
 
 _logger = logging.getLogger(__name__)
