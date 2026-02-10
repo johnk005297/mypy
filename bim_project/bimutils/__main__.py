@@ -29,7 +29,7 @@ def main(
     version: bool = typer.Option(None, "-V", "--version",
                                  callback=version_callback,
                                  help="Show bimutils version."),
-    url: str = typer.Option(None, "--url", help="Bimeister URL.")
+    url: str = typer.Option(None, "--url", help="Check bimeister version.")
         ):
         if url:
             from bimeister import Bimeister
