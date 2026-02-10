@@ -477,7 +477,7 @@ class GitContext:
 # Create a context instance
 git_context = GitContext()
 
-@git_app.command(name="search")
+@git_app.command(name="search", help="Get table with info about branches, commits, tags, helm charts. (aliases: s)")
 @git_app.command(name="s", hidden=True)
 def search(
     branches: list[str] = typer.Argument(..., help="Search pattern by it's name"),
