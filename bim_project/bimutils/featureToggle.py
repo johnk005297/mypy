@@ -1,4 +1,5 @@
 import requests
+import typer
 from rich.console import Console
 from rich.table import Table
 from tools import Tools
@@ -255,7 +256,7 @@ class Conf:
             ft_projects_data[key]['demo'].sort()
         return ft_projects_data
     
-    def choose_project(self) -> str:
+    def choose_project_prompt(self) -> str:
         """ Prompt user to project if nothing was provided. """
 
         projects: list = [
@@ -329,3 +330,99 @@ class Conf:
         """ Print all the projects which exist. """
 
         pass
+
+
+# ft_app CLI
+ft_app = typer.Typer(
+    help="""
+    Get information about feature toggles from confluence for all projects.
+    Check difference for any project between confluence data and Bimeister stand. 
+    """
+                    )
+
+class FtContext:
+    """Store shared FT parameters"""
+    def __init__(self):
+        self.conf = Conf()
+
+# Create a context instance
+ft_context = FtContext()
+
+def choose_project(
+    gazprom_suid: bool = False,
+    gazprom_dtoir: bool = False,
+    gazprom_salavat: bool = False,
+    novatek_murmansk: bool = False,
+    novatek_yamal: bool = False,
+    crea_cod: bool = False
+):
+    project_map = {
+        'gazprom-suid': gazprom_suid,
+        'gazprom-dtoir': gazprom_dtoir,
+        'gazprom-salavat': gazprom_salavat,
+        'novatek-murmansk': novatek_murmansk,
+        'novatek-yamal': novatek_yamal,
+        'crea-cod': crea_cod,
+    }
+    selected = [name for name, flag in project_map.items() if flag]
+    if len(selected) > 1:
+        typer.echo("Error: Select only one project!")
+        raise typer.Exit(1)
+    elif len(selected) == 1:
+        project = selected[0]  # Map to actual project name
+    else:
+        project = ft_context.conf.choose_project_prompt()
+    return project
+
+
+@ft_app.command(name="diff")
+def check_difference(
+    gazprom_suid: bool = typer.Option(False, "-suid", "--gazprom-suid", help="FT for Gazprom Suid."),
+    gazprom_dtoir: bool = typer.Option(False, "-dtoir", "--gazprom-dtoir", help="FT for Gazprom Dtoir."),
+    gazprom_salavat: bool = typer.Option(False, "-salavat", "--gazprom-salavat", help="FT for Gazprom Salavat."),
+    novatek_murmansk: bool = typer.Option(False, "-murmansk", "--novatek-murmansk", help="FT for Novatek Murmansk."),
+    novatek_yamal: bool = typer.Option(False, "-yamal", "--novatek-yamal", help="FT for Novatek Yamal."),
+    crea_cod: bool = typer.Option(False, "-crea", "--crea-cod", help="FT for Rosatom Crea-Cod."),
+    env: str = typer.Option(..., "--env", help="Define environment: test, prod, demo.")
+                    ):
+    """ Check difference between confluence data and a currect FT on a stand. """
+
+    FT = FeatureToggle()
+    page = ft_context.conf.get_confluence_page()
+    data = ft_context.conf.get_ft_data_of_all_projects(page)
+    project = choose_project(gazprom_suid=gazprom_suid,
+                             gazprom_dtoir=gazprom_dtoir,
+                             gazprom_salavat=gazprom_salavat,
+                             novatek_murmansk=novatek_murmansk,
+                             novatek_yamal=novatek_yamal,
+                             crea_cod=crea_cod)
+
+    conf_ft_list = ft_context.conf.get_ft_for_project(data, project_name=project, no_print=True, env=env)
+    FT.compare_source_and_target(conf_ft_list, project_name=project, env=env)
+
+
+
+@ft_app.command(name="get")
+def get_ft(
+    no_print: bool = typer.Option(False, "-q", "--quiet", help="Save without printing on a display."),
+    gazprom_suid: bool = typer.Option(False, "-suid", "--gazprom-suid", help="FT for Gazprom Suid."),
+    gazprom_dtoir: bool = typer.Option(False, "-dtoir", "--gazprom-dtoir", help="FT for Gazprom Dtoir."),
+    gazprom_salavat: bool = typer.Option(False, "-salavat", "--gazprom-salavat", help="FT for Gazprom Salavat."),
+    novatek_murmansk: bool = typer.Option(False, "-murmansk", "--novatek-murmansk", help="FT for Novatek Murmansk."),
+    novatek_yamal: bool = typer.Option(False, "-yamal", "--novatek-yamal", help="FT for Novatek Yamal."),
+    crea_cod: bool = typer.Option(False, "-crea", "--crea-cod", help="FT for Rosatom Crea-Cod."),
+    save: bool = typer.Option(False, "--save", help="Save output in file in one line."),
+    save_pretty: bool = typer.Option(False, "--save-pretty", help="Save output more human readable in yaml format.")
+        ):
+    """ Get feature toggles from confluence page and save it or print on a display. """
+
+    page = ft_context.conf.get_confluence_page()
+    data = ft_context.conf.get_ft_data_of_all_projects(page)
+
+    project = choose_project(gazprom_suid=gazprom_suid,
+                             gazprom_dtoir=gazprom_dtoir,
+                             gazprom_salavat=gazprom_salavat,
+                             novatek_murmansk=novatek_murmansk,
+                             novatek_yamal=novatek_yamal,
+                             crea_cod=crea_cod)
+    ft_context.conf.get_ft_for_project(data, project_name=project, save=save, save_pretty=save_pretty, no_print=no_print)
