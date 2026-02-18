@@ -342,8 +342,8 @@ def sql_callback(
     host: str = typer.Option(..., "--host", "-h", help="DB hostname or IP address"),
     db: str = typer.Option(..., "--db", "-d", help="Database name"),
     user: str = typer.Option(..., "--user", "-u", help="Username with access to db"),
-    password: str = typer.Option(None, "--password", "-p", help="Database user password"),
-    port: int = typer.Option(5432, "--port", help="Database port")
+    password: str = typer.Option(None, "--password", "-pw", help="Database user password"),
+    port: int = typer.Option(5432, "--port", "-p", help="Database port")
                 ):
     # Store parameters in context
     sql_context.host = host
