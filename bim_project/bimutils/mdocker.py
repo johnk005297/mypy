@@ -171,7 +171,7 @@ def save_images(
     pulled_images = d.pull_images(images)
     d.save_images(pulled_images, purge=purge, output=output)
 
-@docker_app.command(name="list", help="Show current images on localhost. (aliases: ls)")
+@docker_app.command(name="list", help="Show current images on localhost \[aliases: ls]")
 @docker_app.command(name="ls", hidden=True)
 def print_images():
     d = Docker()

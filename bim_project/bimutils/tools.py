@@ -1,4 +1,5 @@
 import requests
+from requests import Response
 import logging
 import inspect
 import os
@@ -103,13 +104,6 @@ class File:
         with open(filepath_2write, 'w', encoding='utf-8') as file:
             file.write(new_json)
 
-    @staticmethod
-    def remove_file(path_to_file):
-        if os.path.isfile(path_to_file):
-            os.remove(path_to_file)
-            return True
-        return False
-
 
 class Tools:
 
@@ -173,14 +167,14 @@ class Tools:
         return delta
 
     @staticmethod
-    def is_user_in_group(group):
+    def is_user_in_group(group) -> bool:
         """ Check user groups in linux. Function receives an argument which is a group name, and checks if there is such a group in the list. """
         import grp
         lst = [grp.getgrgid(group).gr_name for group in os.getgroups()]
         return True if group in lst else False
 
     @staticmethod
-    def is_user_root():
+    def is_user_root() -> bool:
         """ Get current user id. """
         user_id = os.getuid()
         return True if user_id == 0 else False
@@ -198,7 +192,7 @@ class Tools:
         return result
 
     @staticmethod
-    def is_socket_available(host: str, port: int, timeout: int=1):
+    def is_socket_available(host: str, port: int, timeout: int=1) -> bool:
         """
         Checks if a TCP socket is available (open) on a remote host and port.
 
@@ -268,7 +262,7 @@ class Tools:
         return username, password
 
     @staticmethod
-    def make_request(method: str, url: str, print_err=False, return_err_response=False, custom_log_msg=None, **kwargs):
+    def make_request(method: str, url: str, print_err=False, return_err_response=False, custom_log_msg=None, **kwargs) -> Response | None:
         """
         A wrapper function to make http requests with centralized exception handling.
         Args:

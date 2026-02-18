@@ -265,9 +265,16 @@ class DB:
             _logger.error(err)
             print(self._log.err_message)
         else:
-            File.remove_file(filepath)
+            try:
+                os.remove(filepath)
+            except FileNotFoundError:
+                _logger.error(f"Error: {filepath} not found.")
+            except PermissionError:
+                _logger.error(f"Error: Permission denied to remove {filepath}.")
+            except OSError as e:
+                _logger.error(f"Error: {e.strerror} (Code: {e.errno})")
 
-    def print_list_of_users(self, file):
+    def print_list_of_users(self, file) -> None:
         """ Function to print users on a screen. """
 
         if not file:

@@ -39,7 +39,7 @@ def main(
 app.add_typer(git_app, name="git")
 app.add_typer(sql_app, name="sql")
 app.add_typer(ft_app, name="ft")
-app.add_typer(docker_app, name="docker")
+app.add_typer(docker_app, name="image")
 app.add_typer(lic_app, name="license")
 app.add_typer(vsphere_app, name="vsphere")
 app.add_typer(auth_app)
