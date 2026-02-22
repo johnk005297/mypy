@@ -123,7 +123,7 @@ class Docker:
                     print(_logs.err_message)
                     continue
             if len(images) > 1 and output:
-                arcname: str = output if output else 'images.tar'
+                arcname: str = output
                 status.update(f"Packing final archive: {arcname}")
                 try:
                     with tarfile.open(arcname, 'w') as tar:
@@ -132,12 +132,16 @@ class Docker:
                             os.remove(file)
                     self.console.print(f"\nImages packed into: {arcname}")
                 except PermissionError as err:
-                    if os.path.isfile(arcname):
-                        print(f"File {arcname} already exists.")
+                    print(f"\nFile '{arcname}' already exists. Not enought permissions to overwrite it.")
                     print("You might need to run command with elevated privileges (as an administrator/using sudo).")
                     sys.exit()
+                except FileExistsError as err:
+                    print(f"\nFile {arcname} already exists.")
+                except IsADirectoryError as err:
+                    print(f"\nYour output filename is '{arcname}'. Conflict: there is a directory with such name.")
+                    sys.exit()
                 except Exception as err:
-                    print(f"Enexpected error: {err}")
+                    print(f"\nEnexpected error: {err}")
                     sys.exit()
 
 
@@ -156,7 +160,7 @@ def save_images(
     file: str = typer.Option(None, "-f", "--file", help="Full path to a text file with a list of images."),
     images: list[str] = typer.Option(None, "-i", "--image", help="Image reference(s). Usage: docker save -i \"image_ref\" -i \"image_ref\" "),
     purge: bool = typer.Option("True", "--purge/--no-purge", help="Do not purge images from docker engine after saving."),
-    output: str = typer.Option(None, "-o", "--output", help="Output filename without extension, because file is compressed in tgz.")
+    output: str = typer.Option("images.tar", "-o", "--output", help="Output filename.")
             ):
     d = Docker()
     if images and file:
