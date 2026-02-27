@@ -180,6 +180,8 @@ class Branch(Git):
         url = f"{self._url}/projects/{project_id}/repository/commits/{commit}/refs?type=branch&per_page=100"
         try:
             response = requests.get(url=url, headers=self.headers, verify=False)
+            print(response.text)
+            sys.exit()
             response.raise_for_status()
             branches: list = [branch['name'] for branch in response.json()]
             next_page = response.headers['X-Next-Page']
@@ -503,6 +505,9 @@ def build_charts(commit: str = typer.Argument(..., help="Requires commit to acti
     job = git_context.git.job()
     project_id = project.get_project_id(project='bimeister')
     branches: list = branch.get_branch_name_using_commit(project_id, commit)
+    if isinstance(branches, bool):
+        print("No branch was found for provided commit.")
+        sys.exit()
     if len(branches) == 1:
         branch_name = branches[0]
     else:
