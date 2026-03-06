@@ -180,8 +180,6 @@ class Branch(Git):
         url = f"{self._url}/projects/{project_id}/repository/commits/{commit}/refs?type=branch&per_page=100"
         try:
             response = requests.get(url=url, headers=self.headers, verify=False)
-            print(response.text)
-            sys.exit()
             response.raise_for_status()
             branches: list = [branch['name'] for branch in response.json()]
             next_page = response.headers['X-Next-Page']
