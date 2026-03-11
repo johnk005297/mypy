@@ -524,6 +524,10 @@ def issue_lic(
     if serverId:
         server_license = lic_context.issue.issue_license(**params)
     else:
+        url = url[:-1] if url.endswith('/') else url
+        url = url[:-len("/auth")] if url.endswith('/auth') else url
+        url = url[:-len("/products")] if url.endswith('/products') else url
+        url = "https://" + url if not url.startswith('http') else url
         if not lic_context.tools.is_url_available(url):
             print(f"URL: {url} is not available.")
             raise typer.Abort()
