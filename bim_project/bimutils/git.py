@@ -107,9 +107,11 @@ class Tag(Git):
                 return False
             for tag in data:
                 branch: list = self.branch().get_branch_name_using_commit(project_id, tag['commit']['short_id'])
+                if not branch:
+                    continue
                 tag_data[tag['commit']['short_id']] = {'tag_name': tag['name'], 'branch_name': branch}
         if not tag_data:
-            return False
+            return None
         else:
             '''Some tags may have more than one branch, and they may have the same branches like another tags which has only one branch in the list.
                Need to remove duplicate branches from such tags.
