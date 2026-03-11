@@ -375,7 +375,7 @@ def choose_project(
     return project
 
 
-@ft_app.command(name="diff")
+@ft_app.command(name="check")
 def check_difference(
     gazprom_suid: bool = typer.Option(False, "-suid", "--gazprom-suid", help="FT for Gazprom Suid."),
     gazprom_dtoir: bool = typer.Option(False, "-dtoir", "--gazprom-dtoir", help="FT for Gazprom Dtoir."),
