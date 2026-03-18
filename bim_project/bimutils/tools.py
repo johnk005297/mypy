@@ -289,6 +289,8 @@ class Tools:
                 response = requests.put(url, **kwargs)
             elif method == 'DELETE':
                 response = requests.delete(url, **kwargs)
+            elif method == 'PATCH':
+                response = requests.delete(url, **kwargs)
             elif method == 'HEAD':
                 response = requests.head(url, **kwargs)
             elif method == 'OPTIONS':

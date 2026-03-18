@@ -208,3 +208,63 @@ class Bimeister:
             _logger.error(err)
             print(_logs.err_message)
             return None
+
+    @staticmethod
+    def import_activity_collector(url: str, token: str, x_imui_key: str ="ce090efa0262d185e3ea3b12c9565d66f6d30e06", filepath: str = None) -> requests.Response:
+        """ Import  activity collector configuration file to bimeister. """
+
+        if not url or not token or not filepath:
+            print("No url, token or file were provided.")
+            return None
+        headers = {
+            'accept': '*/*',
+            'X-IMUI-Key': x_imui_key,
+            'Authorization': f'Bearer {token}'
+            }
+        url: str = f"{url.rstrip('/')}/api/activity-collector/configuration/tasks/upload"
+        try:
+            with open(filepath, mode='rb') as file:
+                response = Tools.make_request('POST', url, headers=headers, files={'file': file}, verify=False, return_err_response=True)
+                if response.status_code in range(200, 205):
+                    print("Configuration uploaded successfully.")
+                else:
+                    _logger.error(response.text)
+                    print(_logs.err_message)
+        except FileNotFoundError as err:
+            print(err)
+            return None
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+
+    @staticmethod
+    def export_activity_collector(url: str, token: str) -> requests.Response:
+        """ Import  activity collector configuration file to bimeister. """
+
+        if not url or not token:
+            _logger.error("No url or token were provided.")
+            return None
+        headers = {
+            'accept': '*/*',
+            'Authorization': f'Bearer {token}'
+            }
+        url: str = f"{url.rstrip('/')}/api/activity-collector/configuration/tasks/download"
+        try:
+            response = Tools.make_request('GET', url, headers=headers, verify=False, return_err_response=True)
+            if response.status_code in range(200, 205):
+                data = response.json()
+                filename: str = 'ActivityCollectorConfiguration.json'
+                with open(filename, mode='w', encoding='utf-8') as file:
+                    json.dump(data, file, indent=2, ensure_ascii=False)
+                print(f"Configuration file downloaded: {filename}")
+            else:
+                _logger.error(response.text)
+                print(_logs.err_message)
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+
+
+        

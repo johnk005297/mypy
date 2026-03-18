@@ -39,6 +39,10 @@ def main_menu():
                             \n   ABAC                                                                                   \
                             \n      abac import                         import attribute-based access control file(s)   \
                             \n                                                                                          \
+                            \n   Activity collector                                                                     \
+                            \n      ac export                           export activity collector configuration file    \
+                            \n      ac import -f [path_to_file]         import activity collector configuration file    \
+                            \n                                                                                          \
                             \n   Custom UI                                                                              \
                             \n      apply UI -f [filename]              apply custom user interface                     \
                             \n                                                                                          \
@@ -60,7 +64,7 @@ def main_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu',)
-    __version__ = '1.79.1'
+    __version__ = '1.79.2'
 
     def __init__(self):
         self._main_menu = main_menu()

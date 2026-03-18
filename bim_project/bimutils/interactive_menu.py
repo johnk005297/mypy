@@ -376,6 +376,22 @@ def launch_menu():
                 else:
                     print("Unknown command")
 
+            #    ''' =============================================================================== Activity collector =============================================================================== '''
+            case ['ac', 'import', *_]:
+                no_file_msg: str = "Incorrect command. No file pointed out."
+                if '-f' not in user_command:
+                    print(no_file_msg)
+                    continue
+                try:
+                    file = user_command[2:][1]
+                    Bimeister.import_activity_collector(url, token, filepath=file)
+                except IndexError as err:
+                    print(no_file_msg)
+
+            case ['ac', 'export', *_]:
+                Bimeister.export_activity_collector(url, token)
+
+
             # wildcard pattern if no cases before where matched
             case _:
                 print("Unknown command")
