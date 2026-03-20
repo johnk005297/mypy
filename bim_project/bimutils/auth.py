@@ -85,8 +85,8 @@ class Auth:
                     print(_logs.err_message)
                     return False
                 elif x == 1 and response.status_code == 502:
-                    _logger.error(f"{response.text}\n{message}")
-                    print(_logs.err_message)
+                    _logger.error(f"Response: {response.status_code} {response.text}")
+                    print(f"{response.status_code}. {_logs.err_message}")
                     return False
                 else:
                     _logger.error(response.text)
