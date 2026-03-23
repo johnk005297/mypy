@@ -32,8 +32,8 @@ def main(
     url: str = typer.Option(None, "--url", help="Check bimeister version.")
         ):
         if url:
-            from bimeister import Bimeister
-            Bimeister.print_bim_version(url)
+            import bimeister
+            bimeister.print_bim_version(url)
             raise typer.Exit()
 
 app.add_typer(git_app, name="git")

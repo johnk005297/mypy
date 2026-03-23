@@ -159,7 +159,10 @@ class Abac:
     def export_abac_and_events(self, url, token):
         """ Export ABAC files and notifications. """
 
-        pass
+        if not url or not token:
+            _logger.error("url or token wasn't provided.")
+            return None
+        
 
     def collect_abac_data(self, **kwargs):
         """ Collect data needed for abac import. """
@@ -347,7 +350,7 @@ opions:
             case 'rm-msg':
                 print(rm_msg)
             case 'auth-msg':
-                print(auth_msg)        
+                print(auth_msg)
 
 
 class Mdmconnector:

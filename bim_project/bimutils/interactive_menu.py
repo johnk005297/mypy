@@ -10,7 +10,7 @@ def launch_menu():
     import import_data
     import featureToggle
     from tools import Tools, Folder
-    from bimeister import Bimeister
+    import bimeister
 
     AppMenu_main = app_menu.AppMenu()
     Auth = auth.Auth()
@@ -21,7 +21,7 @@ def launch_menu():
     Workflows_export = export_data.Workflows()
     Workflows_import = import_data.Workflows()
     Risk_assessment = import_data.RiskAssesment()
-    Abac = import_data.Abac()
+    Abac = bimeister.Abac()
     FT = featureToggle.FeatureToggle()
 
 
@@ -173,13 +173,152 @@ def launch_menu():
 
             #    ''' =============================================================================== ABAC ============================================================================================= '''
             case ['abac', 'export', *_]:
-                pass
+                if user_command == ['abac', 'export', '-h'] or user_command == ['abac', 'export', '--help']:
+                    Abac.print_help('main-msg')
+                    continue
+                parser = Abac.get_parser_export()
+                try:
+                    args = parser.parse_args(user_command[2:])
+                except argparse.ArgumentError:
+                    continue
+                except SystemExit:
+                    continue
+                if args.command == 'data-sync':
+                    if args.all:
+                        args.permission_objects = args.roles = args.roles_mapping = args.common = True
+                    data: dict = Abac.collect_abac_data_export(
+                                                        url_permission=f"{url}/api/data-synchronizer/AbacConfiguration/DownloadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/data-synchronizer/AbacConfiguration/DownloadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/data-synchronizer/AbacConfiguration/DownloadRolesMappingConfiguration",
+                                                        url_common=f"{url}/api/data-synchronizer/AbacConfiguration/DownloadCommonConfiguration",
+                                                        permission_objects=args.permission_objects,
+                                                        roles=args.roles,
+                                                        roles_mapping=args.roles_mapping,
+                                                        common=args.common
+                                                        )
+                    Abac.export_abac_and_events(token, data, 'data-synchronizer')
+                if args.command == 'maint':
+                    if args.all:
+                        args.permission_objects = args.roles = args.roles_mapping = args.events = True
+                    data: dict = Abac.collect_abac_data_export(
+                                                        url_permission=f"{url}/api/maintenance-planning/AbacConfiguration/DownloadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/maintenance-planning/AbacConfiguration/DownloadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/maintenance-planning/AbacConfiguration/DownloadRolesMappingConfiguration",
+                                                        url_events=f"{url}/api/EnterpriseAssetManagementNotificationHub/download-event-rules",
+                                                        permission_objects=args.permission_objects,
+                                                        roles=args.roles,
+                                                        roles_mapping=args.roles_mapping,
+                                                        notification=args.events
+                                                        )
+                    Abac.export_abac_and_events(token, data, 'maintenance-planning')
+                if args.command == 'asset':
+                    if args.all:
+                        args.permission_objects = args.roles = args.roles_mapping = args.events = True
+                    data: dict = Abac.collect_abac_data_export(
+                                                        url_permission=f"{url}/api/asset-performance-management/AbacConfiguration/DownloadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/asset-performance-management/AbacConfiguration/DownloadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/asset-performance-management/AbacConfiguration/DownloadRolesMappingConfiguration",
+                                                        url_events=f"{url}/api/asset-performance-management/NotificationHub/download-event-rules",
+                                                        url_common=f"{url}/api/asset-performance-management/AbacConfiguration/DownloadCommonConfiguration",
+                                                        permission_objects=args.permission_objects,
+                                                        roles=args.roles,
+                                                        roles_mapping=args.roles_mapping,
+                                                        notification=args.events,
+                                                        common=args.common
+                                                        )
+                    Abac.export_abac_and_events(token, data, 'asset-performance-management')
+                if args.command == 'wpm':
+                    print("NEED TO FIND API ROUTES!")
+                    continue
+                    if args.all:
+                        args.permission_objects = args.roles = args.roles_mapping = args.events = True
+                    data: dict = Abac.collect_abac_data_export(
+                                                        url_permission=f"{url}",
+                                                        url_roles=f"{url}",
+                                                        url_roles_mapping=f"{url}",
+                                                        permission_objects=args.permission_objects,
+                                                        roles=args.roles,
+                                                        roles_mapping=args.roles_mapping
+                                                        )
+                    Abac.export_abac_and_events(token, data, 'work-permits-management')
+                if args.command == 'fmeca':
+                    print("NEED TO FIND API ROUTES!")
+                    continue
+                    if args.all:
+                        args.permission_objects = args.roles = args.roles_mapping = args.events = True
+                    data: dict = Abac.collect_abac_data_export(
+                                                        url_permission=f"{url}",
+                                                        url_roles=f"{url}",
+                                                        url_roles_mapping=f"{url}",
+                                                        permission_objects=args.permission_objects,
+                                                        roles=args.roles,
+                                                        roles_mapping=args.roles_mapping
+                                                        )
+                    Abac.export_abac_and_events(token, data, 'fmeca')
+                if args.command == 'rca':
+                    if args.all:
+                        args.permission_objects = args.roles = args.roles_mapping = args.events = True
+                    data: dict = Abac.collect_abac_data_export(
+                                                        url_permission=f"{url}/api/root-cause-analysis/AbacConfiguration/DownloadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/root-cause-analysis/AbacConfiguration/DownloadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/root-cause-analysis/AbacConfiguration/DownloadRolesMappingConfiguration",
+                                                        permission_objects=args.permission_objects,
+                                                        roles=args.roles,
+                                                        roles_mapping=args.roles_mapping
+                                                        )
+                    Abac.export_abac_and_events(token, data, 'root-cause-analysis')
+                if args.command == 'rbi':
+                    if args.all:
+                        args.permission_objects = args.roles = args.roles_mapping = args.events = True
+                    data: dict = Abac.collect_abac_data_export(
+                                                        url_permission=f"{url}/api/risk-based-inspections/AbacConfiguration/DownloadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/risk-based-inspections/AbacConfiguration/DownloadPermissionObjectsConfiguration",
+                                                        url_roles_mapping=f"{url}/api/risk-based-inspections/AbacConfiguration/DownloadRolesMappingConfiguration",
+                                                        permission_objects=args.permission_objects,
+                                                        roles=args.roles,
+                                                        roles_mapping=args.roles_mapping
+                                                        )
+                    Abac.export_abac_and_events(token, data, 'risk-based-inspections')
+                if args.command == 'rcm':
+                    print("NEED TO FIND API ROUTES!")
+                    continue
+                    if args.all:
+                        args.permission_objects = args.roles = args.roles_mapping = args.events = True
+                    data: dict = Abac.collect_abac_data_export(
+                                                        url_permission=f"{url}",
+                                                        url_roles=f"{url}",
+                                                        url_roles_mapping=f"{url}",
+                                                        permission_objects=args.permission_objects,
+                                                        roles=args.roles,
+                                                        roles_mapping=args.roles_mapping
+                                                        )
+                    Abac.export_abac_and_events(token, data, 'reliability-centered-maintenance')
+                if args.command == 'rm':
+                    if args.all:
+                        args.permission_objects = args.roles = args.roles_mapping = args.events = True
+                    data: dict = Abac.collect_abac_data_export(
+                                                        url_permission=f"{url}/api/recommendation-management/AbacConfiguration/DownloadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/recommendation-management/AbacConfiguration/DownloadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/recommendation-management/AbacConfiguration/DownloadRolesMappingConfiguration",
+                                                        permission_objects=args.permission_objects,
+                                                        roles=args.roles,
+                                                        roles_mapping=args.roles_mapping
+                                                        )
+                    Abac.export_abac_and_events(token, data, 'recommendation-management')
+                if args.command == 'auth':
+                    if args.all:
+                        args.rules = True
+                    data: dict = Abac.collect_abac_data_export(
+                                                        url_rules=f"{url}/api/abac/rules/export",
+                                                        rules=args.rules
+                                                        )
+                    Abac.export_abac_and_events(token, data, 'auth')
 
             case ['abac', 'import', *_]:
                 if user_command == ['abac', 'import', '-h'] or user_command == ['abac', 'import', '--help']:
-                    Abac.print_help('main-msg')
+                    Abac.print_help_import('main-msg')
                     continue
-                parser = Abac.get_parser()
+                parser = Abac.get_parser_import()
                 try:
                     args = parser.parse_args(user_command[2:])
                 except argparse.ArgumentError:
@@ -188,128 +327,128 @@ def launch_menu():
                     continue
                 if args.command == 'data-sync':
                     if args.help:
-                        Abac.print_help('data-sync-msg')
+                        Abac.print_help_import('data-sync-msg')
                         continue
-                    data: dict = Abac.collect_abac_data(
-                                                        url_permission=f"{url}/api/data-synchronizer/AbacConfiguration/UploadPermissionObjectsConfiguration"
-                                                        ,url_roles=f"{url}/api/data-synchronizer/AbacConfiguration/UploadRolesConfiguration"
-                                                        ,url_roles_mapping=f"{url}/api/data-synchronizer/AbacConfiguration/UploadRolesMappingConfiguration"
-                                                        ,url_common=f"{url}/api/data-synchronizer/AbacConfiguration/UploadCommonConfiguration"
-                                                        ,permissionObjects_file=args.permission_objects
-                                                        ,roles_file=args.roles
-                                                        ,rolesMapping_file=args.roles_mapping
-                                                        ,common_file=args.common
+                    data: dict = Abac.collect_abac_data_import(
+                                                        url_permission=f"{url}/api/data-synchronizer/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/data-synchronizer/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/data-synchronizer/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        url_common=f"{url}/api/data-synchronizer/AbacConfiguration/UploadCommonConfiguration",
+                                                        permissionObjects_file=args.permission_objects,
+                                                        roles_file=args.roles,
+                                                        rolesMapping_file=args.roles_mapping,
+                                                        common_file=args.common
                                                         )
-                    Abac.import_abac_and_events(token, data, 'data-synchronizer-api')
+                    Abac.import_abac_and_events(token, data, 'data-synchronizer')
                 if args.command == 'maint':
                     if args.help:
-                        Abac.print_help('maintenance-msg')
+                        Abac.print_help_import('maintenance-msg')
                         continue
-                    data: dict = Abac.collect_abac_data(
-                                                        url_permission=f"{url}/api/maintenance-planning/AbacConfiguration/UploadPermissionObjectsConfiguration"
-                                                        ,url_roles=f"{url}/api/maintenance-planning/AbacConfiguration/UploadRolesConfiguration"
-                                                        ,url_roles_mapping=f"{url}/api/maintenance-planning/AbacConfiguration/UploadRolesMappingConfiguration"
-                                                        ,url_events=f"{url}/api/EnterpriseAssetManagementNotificationHub/upload-event-rules"
-                                                        ,permissionObjects_file=args.permission_objects
-                                                        ,roles_file=args.roles
-                                                        ,rolesMapping_file=args.roles_mapping
-                                                        ,notification_file=args.events
+                    data: dict = Abac.collect_abac_data_import(
+                                                        url_permission=f"{url}/api/maintenance-planning/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/maintenance-planning/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/maintenance-planning/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        url_events=f"{url}/api/EnterpriseAssetManagementNotificationHub/upload-event-rules",
+                                                        permissionObjects_file=args.permission_objects,
+                                                        roles_file=args.roles,
+                                                        rolesMapping_file=args.roles_mapping,
+                                                        notification_file=args.events
                                                         )
                     Abac.import_abac_and_events(token, data, 'maintenance-planning')
                 if args.command == 'asset':
                     if args.help:
-                        Abac.print_help('asset-msg')
-                    data: dict = Abac.collect_abac_data(
-                                                        url_permission=f"{url}/api/asset-performance-management/AbacConfiguration/UploadPermissionObjectsConfiguration"
-                                                        ,url_roles=f"{url}/api/asset-performance-management/AbacConfiguration/UploadRolesConfiguration"
-                                                        ,url_roles_mapping=f"{url}/api/asset-performance-management/AbacConfiguration/UploadRolesMappingConfiguration"
-                                                        ,url_events=f"{url}/api/asset-performance-management/NotificationHub/upload-event-rules"
-                                                        ,url_common=f"{url}/api/asset-performance-management/AbacConfiguration/UploadCommonConfiguration"
-                                                        ,permissionObjects_file=args.permission_objects
-                                                        ,roles_file=args.roles
-                                                        ,rolesMapping_file=args.roles_mapping
-                                                        ,notification_file=args.events
-                                                        ,common_file=args.common
+                        Abac.print_help_import('asset-msg')
+                    data: dict = Abac.collect_abac_data_import(
+                                                        url_permission=f"{url}/api/asset-performance-management/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/asset-performance-management/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/asset-performance-management/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        url_events=f"{url}/api/asset-performance-management/NotificationHub/upload-event-rules",
+                                                        url_common=f"{url}/api/asset-performance-management/AbacConfiguration/UploadCommonConfiguration",
+                                                        permissionObjects_file=args.permission_objects,
+                                                        roles_file=args.roles,
+                                                        rolesMapping_file=args.roles_mapping,
+                                                        notification_file=args.events,
+                                                        common_file=args.common
                                                         )
                     Abac.import_abac_and_events(token, data, 'asset-performance-management')
                 if args.command == 'wpm':
                     if args.help:
-                        Abac.print_help('work-permits-msg')
-                    data: dict = Abac.collect_abac_data(
-                                                        url_permission=f"{url}/api/work-permits-management/AbacConfiguration/UploadPermissionObjectsConfiguration"
-                                                        ,url_roles=f"{url}/api/work-permits-management/AbacConfiguration/UploadRolesConfiguration"
-                                                        ,url_roles_mapping=f"{url}/api/work-permits-management/AbacConfiguration/UploadRolesMappingConfiguration"
-                                                        ,permissionObjects_file=args.permission_objects
-                                                        ,roles_file=args.roles
-                                                        ,rolesMapping_file=args.roles_mapping
+                        Abac.print_help_import('work-permits-msg')
+                    data: dict = Abac.collect_abac_data_import(
+                                                        url_permission=f"{url}/api/work-permits-management/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/work-permits-management/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/work-permits-management/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=args.permission_objects,
+                                                        roles_file=args.roles,
+                                                        rolesMapping_file=args.roles_mapping
                                                         )
                     Abac.import_abac_and_events(token, data, 'work-permits-management')
                 if args.command == 'fmeca':
                     if args.help:
-                        Abac.print_help('fmeca-msg')
-                    data: dict = Abac.collect_abac_data(
-                                                        url_permission=f"{url}/api/fmeca/AbacConfiguration/UploadPermissionObjectsConfiguration"
-                                                        ,url_roles=f"{url}/api/fmeca/AbacConfiguration/UploadRolesConfiguration"
-                                                        ,url_roles_mapping=f"{url}/api/fmeca/AbacConfiguration/UploadRolesMappingConfiguration"
-                                                        ,permissionObjects_file=args.permission_objects
-                                                        ,roles_file=args.roles
-                                                        ,rolesMapping_file=args.roles_mapping
+                        Abac.print_help_import('fmeca-msg')
+                    data: dict = Abac.collect_abac_data_import(
+                                                        url_permission=f"{url}/api/fmeca/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/fmeca/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/fmeca/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=args.permission_objects,
+                                                        roles_file=args.roles,
+                                                        rolesMapping_file=args.roles_mapping
                                                         )
                     Abac.import_abac_and_events(token, data, 'fmeca')
                 if args.command == 'rca':
                     if args.help:
-                        Abac.print_help('rca-msg')
-                    data: dict = Abac.collect_abac_data(
-                                                        url_permission=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadPermissionObjectsConfiguration"
-                                                        ,url_roles=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadRolesConfiguration"
-                                                        ,url_roles_mapping=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadRolesMappingConfiguration"
-                                                        ,permissionObjects_file=args.permission_objects
-                                                        ,roles_file=args.roles
-                                                        ,rolesMapping_file=args.roles_mapping
+                        Abac.print_help_import('rca-msg')
+                    data: dict = Abac.collect_abac_data_import(
+                                                        url_permission=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=args.permission_objects,
+                                                        roles_file=args.roles,
+                                                        rolesMapping_file=args.roles_mapping
                                                         )
                     Abac.import_abac_and_events(token, data, 'root-cause-analysis')
                 if args.command == 'rbi':
                     if args.help:
-                        Abac.print_help('rbi-msg')
-                    data: dict = Abac.collect_abac_data(
-                                                        url_permission=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadPermissionObjectsConfiguration"
-                                                        ,url_roles=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadRolesConfiguration"
-                                                        ,url_roles_mapping=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadRolesMappingConfiguration"
-                                                        ,permissionObjects_file=args.permission_objects
-                                                        ,roles_file=args.roles
-                                                        ,rolesMapping_file=args.roles_mapping
+                        Abac.print_help_import('rbi-msg')
+                    data: dict = Abac.collect_abac_data_import(
+                                                        url_permission=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=args.permission_objects,
+                                                        roles_file=args.roles,
+                                                        rolesMapping_file=args.roles_mapping
                                                         )
                     Abac.import_abac_and_events(token, data, 'risk-based-inspections')
                 if args.command == 'rcm':
                     if args.help:
-                        Abac.print_help('rcm-msg')
-                    data: dict = Abac.collect_abac_data(
-                                                        url_permission=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadPermissionObjectsConfiguration"
-                                                        ,url_roles=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadRolesConfiguration"
-                                                        ,url_roles_mapping=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadRolesMappingConfiguration"
-                                                        ,permissionObjects_file=args.permission_objects
-                                                        ,roles_file=args.roles
-                                                        ,rolesMapping_file=args.roles_mapping
+                        Abac.print_help_import('rcm-msg')
+                    data: dict = Abac.collect_abac_data_import(
+                                                        url_permission=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=args.permission_objects,
+                                                        roles_file=args.roles,
+                                                        rolesMapping_file=args.roles_mapping
                                                         )
                     Abac.import_abac_and_events(token, data, 'reliability-centered-maintenance')
                 if args.command == 'rm':
                     if args.help:
-                        Abac.print_help('rm-msg')
-                    data: dict = Abac.collect_abac_data(
-                                                        url_permission=f"{url}/api/recommendation-management/AbacConfiguration/UploadPermissionObjectsConfiguration"
-                                                        ,url_roles=f"{url}/api/recommendation-management/AbacConfiguration/UploadRolesConfiguration"
-                                                        ,url_roles_mapping=f"{url}/api/recommendation-management/AbacConfiguration/UploadRolesMappingConfiguration"
-                                                        ,permissionObjects_file=args.permission_objects
-                                                        ,roles_file=args.roles
-                                                        ,rolesMapping_file=args.roles_mapping
+                        Abac.print_help_import('rm-msg')
+                    data: dict = Abac.collect_abac_data_import(
+                                                        url_permission=f"{url}/api/recommendation-management/AbacConfiguration/UploadPermissionObjectsConfiguration",
+                                                        url_roles=f"{url}/api/recommendation-management/AbacConfiguration/UploadRolesConfiguration",
+                                                        url_roles_mapping=f"{url}/api/recommendation-management/AbacConfiguration/UploadRolesMappingConfiguration",
+                                                        permissionObjects_file=args.permission_objects,
+                                                        roles_file=args.roles,
+                                                        rolesMapping_file=args.roles_mapping
                                                         )
                     Abac.import_abac_and_events(token, data, 'recommendation-management')
                 if args.command == 'auth':
                     if args.help:
-                        Abac.print_help('auth-msg')
-                    data: dict = Abac.collect_abac_data(
-                                                        url_rules=f"{url}/api/abac/rules/import"
-                                                        ,auth_file=args.rules
+                        Abac.print_help_import('auth-msg')
+                    data: dict = Abac.collect_abac_data_import(
+                                                        url_rules=f"{url}/api/abac/rules/import",
+                                                        auth_file=args.rules
                                                         )
                     Abac.import_abac_and_events(token, data, 'auth')
 
@@ -326,21 +465,21 @@ def launch_menu():
                     file = user_command[2:][1]
                 except IndexError as err:
                     print("Incorrect command. No file pointed out.")
-                Bimeister.apply_bimeister_customUI(url, token, file)
+                bimeister.apply_bimeister_customUI(url, token, file)
             
             #    ''' =============================================================================== Recalculate path ================================================================================= '''
             case ['recalc-paths', *_]:
-                Bimeister.recalculate_path(url, token)
+                bimeister.recalculate_path(url, token)
             
             #    ''' =============================================================================== Templates ======================================================================================== '''
             case ['ls', 'templates']:
-                templates: list = Bimeister.get_list_of_templates(url, token)
-                Bimeister.print_list_of_templates(templates)
+                templates: list = bimeister.get_list_of_templates(url, token)
+                bimeister.print_list_of_templates(templates)
             
             case ['export', 'template' | 'templates', *_]:
                 args = user_command[2:]
                 id: list = Tools.get_flag_values_from_args_str(args, '--id').split()
-                data = Bimeister.export_templates(url, token, id)
+                data = bimeister.export_templates(url, token, id)
 
             #    ''' =============================================================================== Tools ============================================================================================ '''
             case ['ptoken']:
@@ -370,9 +509,9 @@ def launch_menu():
 
             case ['basic-auth', *_]:
                 if user_command == ['basic-auth']:
-                    Bimeister.basic_auth(url, token, username, password)
+                    bimeister.basic_auth(url, token, username, password)
                 elif user_command == ['basic-auth', '--set']:
-                    Bimeister.basic_auth(url, token, username, password, set=True)
+                    bimeister.basic_auth(url, token, username, password, set=True)
                 else:
                     print("Unknown command")
 
@@ -384,12 +523,12 @@ def launch_menu():
                     continue
                 try:
                     file = user_command[2:][1]
-                    Bimeister.import_activity_collector(url, token, filepath=file)
+                    bimeister.import_activity_collector(url, token, filepath=file)
                 except IndexError as err:
                     print(no_file_msg)
 
             case ['ac', 'export', *_]:
-                Bimeister.export_activity_collector(url, token)
+                bimeister.export_activity_collector(url, token)
 
 
             # wildcard pattern if no cases before where matched
