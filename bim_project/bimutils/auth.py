@@ -248,6 +248,11 @@ def get_token(
         ):
     """ Get user access token for a given URL. """
 
+    if not url.startswith('http'):
+        url = 'https://' + url
+    url = url[:-len('/products')] if url.endswith('/products') else url
+    url = url[:-len('/auth')] if url.endswith('/auth') else url
+    
     auth = Auth()
     providers = auth.get_providerId(url, interactive=False)
     if providers and isinstance(providers, list) and len(providers) > 1 and not providerId:
