@@ -174,7 +174,7 @@ def launch_menu():
             #    ''' =============================================================================== ABAC ============================================================================================= '''
             case ['abac', 'export', *_]:
                 if user_command == ['abac', 'export', '-h'] or user_command == ['abac', 'export', '--help']:
-                    Abac.print_help_export('main-msg')
+                    Abac.print_abac_help_export('main-msg')
                     continue
                 parser = Abac.get_parser_export()
                 try:
@@ -185,7 +185,7 @@ def launch_menu():
                     continue
                 if args.command == 'data-sync':
                     if args.help:
-                        Abac.print_help_export('data-sync-msg')
+                        Abac.print_abac_help_export('data-sync-msg')
                         continue
                     if args.all:
                         args.permission_objects = args.roles = args.roles_mapping = args.common = True
@@ -202,7 +202,7 @@ def launch_menu():
                     Abac.export_abac_and_events(token, data, 'data-synchronizer')
                 if args.command == 'maint':
                     if args.help:
-                        Abac.print_help_export('maintenance-msg')
+                        Abac.print_abac_help_export('maintenance-msg')
                         continue
                     if args.all:
                         args.permission_objects = args.roles = args.roles_mapping = args.events = True
@@ -219,7 +219,7 @@ def launch_menu():
                     Abac.export_abac_and_events(token, data, 'maintenance-planning')
                 if args.command == 'asset':
                     if args.help:
-                        Abac.print_help_export('asset-msg')
+                        Abac.print_abac_help_export('asset-msg')
                         continue
                     if args.all:
                         args.permission_objects = args.roles = args.roles_mapping = args.events = True
@@ -238,7 +238,7 @@ def launch_menu():
                     Abac.export_abac_and_events(token, data, 'asset-performance-management')
                 if args.command == 'wpm':
                     if args.help:
-                        Abac.print_help_export('work-permits-msg')
+                        Abac.print_abac_help_export('work-permits-msg')
                         continue
                     if args.all:
                         args.permission_objects = args.roles = args.roles_mapping = args.events = True
@@ -253,7 +253,7 @@ def launch_menu():
                     Abac.export_abac_and_events(token, data, 'work-permits-management')
                 if args.command == 'fmeca':
                     if args.help:
-                        Abac.print_help_export('fmeca-msg')
+                        Abac.print_abac_help_export('fmeca-msg')
                         continue
                     if args.all:
                         args.permission_objects = args.roles = args.roles_mapping = args.events = True
@@ -268,7 +268,7 @@ def launch_menu():
                     Abac.export_abac_and_events(token, data, 'fmeca')
                 if args.command == 'rca':
                     if args.help:
-                        Abac.print_help_export('rca-msg')
+                        Abac.print_abac_help_export('rca-msg')
                         continue
                     if args.all:
                         args.permission_objects = args.roles = args.roles_mapping = args.events = True
@@ -283,7 +283,7 @@ def launch_menu():
                     Abac.export_abac_and_events(token, data, 'root-cause-analysis')
                 if args.command == 'rbi':
                     if args.help:
-                        Abac.print_help_export('rbi-msg')
+                        Abac.print_abac_help_export('rbi-msg')
                         continue
                     if args.all:
                         args.permission_objects = args.roles = args.roles_mapping = args.events = True
@@ -298,7 +298,7 @@ def launch_menu():
                     Abac.export_abac_and_events(token, data, 'risk-based-inspections')
                 if args.command == 'rcm':
                     if args.help:
-                        Abac.print_help_export('rcm-msg')
+                        Abac.print_abac_help_export('rcm-msg')
                         continue
                     if args.all:
                         args.permission_objects = args.roles = args.roles_mapping = args.events = True
@@ -313,7 +313,7 @@ def launch_menu():
                     Abac.export_abac_and_events(token, data, 'reliability-centered-maintenance')
                 if args.command == 'rm':
                     if args.help:
-                        Abac.print_help_export('rm-msg')
+                        Abac.print_abac_help_export('rm-msg')
                         continue
                     if args.all:
                         args.permission_objects = args.roles = args.roles_mapping = args.events = True
@@ -326,21 +326,10 @@ def launch_menu():
                                                         roles_mapping=args.roles_mapping
                                                         )
                     Abac.export_abac_and_events(token, data, 'recommendation-management')
-                if args.command == 'auth':
-                    if args.help:
-                        Abac.print_help_export('auth-msg')
-                        continue
-                    if args.all:
-                        args.rules = True
-                    data: dict = Abac.collect_abac_data_export(
-                                                        url_rules=f"{url}/api/abac/rules/export",
-                                                        rules=args.rules
-                                                        )
-                    Abac.export_abac_and_events(token, data, 'auth')
 
             case ['abac', 'import', *_]:
                 if user_command == ['abac', 'import', '-h'] or user_command == ['abac', 'import', '--help']:
-                    Abac.print_help_import('main-msg')
+                    Abac.print_abac_help_import('main-msg')
                     continue
                 parser = Abac.get_parser_import()
                 try:
@@ -351,7 +340,7 @@ def launch_menu():
                     continue
                 if args.command == 'data-sync':
                     if args.help:
-                        Abac.print_help_import('data-sync-msg')
+                        Abac.print_abac_help_import('data-sync-msg')
                         continue
                     data: dict = Abac.collect_abac_data_import(
                                                         url_permission=f"{url}/api/data-synchronizer/AbacConfiguration/UploadPermissionObjectsConfiguration",
@@ -366,7 +355,7 @@ def launch_menu():
                     Abac.import_abac_and_events(token, data, 'data-synchronizer')
                 if args.command == 'maint':
                     if args.help:
-                        Abac.print_help_import('maintenance-msg')
+                        Abac.print_abac_help_import('maintenance-msg')
                         continue
                     data: dict = Abac.collect_abac_data_import(
                                                         url_permission=f"{url}/api/maintenance-planning/AbacConfiguration/UploadPermissionObjectsConfiguration",
@@ -381,7 +370,7 @@ def launch_menu():
                     Abac.import_abac_and_events(token, data, 'maintenance-planning')
                 if args.command == 'asset':
                     if args.help:
-                        Abac.print_help_import('asset-msg')
+                        Abac.print_abac_help_import('asset-msg')
                     data: dict = Abac.collect_abac_data_import(
                                                         url_permission=f"{url}/api/asset-performance-management/AbacConfiguration/UploadPermissionObjectsConfiguration",
                                                         url_roles=f"{url}/api/asset-performance-management/AbacConfiguration/UploadRolesConfiguration",
@@ -397,7 +386,7 @@ def launch_menu():
                     Abac.import_abac_and_events(token, data, 'asset-performance-management')
                 if args.command == 'wpm':
                     if args.help:
-                        Abac.print_help_import('work-permits-msg')
+                        Abac.print_abac_help_import('work-permits-msg')
                     data: dict = Abac.collect_abac_data_import(
                                                         url_permission=f"{url}/api/work-permits-management/AbacConfiguration/UploadPermissionObjectsConfiguration",
                                                         url_roles=f"{url}/api/work-permits-management/AbacConfiguration/UploadRolesConfiguration",
@@ -409,7 +398,7 @@ def launch_menu():
                     Abac.import_abac_and_events(token, data, 'work-permits-management')
                 if args.command == 'fmeca':
                     if args.help:
-                        Abac.print_help_import('fmeca-msg')
+                        Abac.print_abac_help_import('fmeca-msg')
                     data: dict = Abac.collect_abac_data_import(
                                                         url_permission=f"{url}/api/fmeca/AbacConfiguration/UploadPermissionObjectsConfiguration",
                                                         url_roles=f"{url}/api/fmeca/AbacConfiguration/UploadRolesConfiguration",
@@ -421,7 +410,7 @@ def launch_menu():
                     Abac.import_abac_and_events(token, data, 'fmeca')
                 if args.command == 'rca':
                     if args.help:
-                        Abac.print_help_import('rca-msg')
+                        Abac.print_abac_help_import('rca-msg')
                     data: dict = Abac.collect_abac_data_import(
                                                         url_permission=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadPermissionObjectsConfiguration",
                                                         url_roles=f"{url}/api/root-cause-analysis/AbacConfiguration/UploadRolesConfiguration",
@@ -433,7 +422,7 @@ def launch_menu():
                     Abac.import_abac_and_events(token, data, 'root-cause-analysis')
                 if args.command == 'rbi':
                     if args.help:
-                        Abac.print_help_import('rbi-msg')
+                        Abac.print_abac_help_import('rbi-msg')
                     data: dict = Abac.collect_abac_data_import(
                                                         url_permission=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadPermissionObjectsConfiguration",
                                                         url_roles=f"{url}/api/risk-based-inspections/AbacConfiguration/UploadRolesConfiguration",
@@ -445,7 +434,7 @@ def launch_menu():
                     Abac.import_abac_and_events(token, data, 'risk-based-inspections')
                 if args.command == 'rcm':
                     if args.help:
-                        Abac.print_help_import('rcm-msg')
+                        Abac.print_abac_help_import('rcm-msg')
                     data: dict = Abac.collect_abac_data_import(
                                                         url_permission=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadPermissionObjectsConfiguration",
                                                         url_roles=f"{url}/api/reliability-centered-maintenance/AbacConfiguration/UploadRolesConfiguration",
@@ -457,7 +446,7 @@ def launch_menu():
                     Abac.import_abac_and_events(token, data, 'reliability-centered-maintenance')
                 if args.command == 'rm':
                     if args.help:
-                        Abac.print_help_import('rm-msg')
+                        Abac.print_abac_help_import('rm-msg')
                     data: dict = Abac.collect_abac_data_import(
                                                         url_permission=f"{url}/api/recommendation-management/AbacConfiguration/UploadPermissionObjectsConfiguration",
                                                         url_roles=f"{url}/api/recommendation-management/AbacConfiguration/UploadRolesConfiguration",
@@ -467,15 +456,8 @@ def launch_menu():
                                                         rolesMapping_file=args.roles_mapping
                                                         )
                     Abac.import_abac_and_events(token, data, 'recommendation-management')
-                if args.command == 'auth':
-                    if args.help:
-                        Abac.print_help_import('auth-msg')
-                    data: dict = Abac.collect_abac_data_import(
-                                                        url_rules=f"{url}/api/abac/rules/import",
-                                                        auth_file=args.rules
-                                                        )
-                    Abac.import_abac_and_events(token, data, 'auth')
 
+            #    ''' =============================================================================== Risk assesment =================================================================================== '''
             case ['risk-ass', '-f', *_]:
                 path_to_file: str = user_command[2]
                 Risk_assessment.import_risk_assessment_template(url, token, path_to_file)
@@ -516,13 +498,13 @@ def launch_menu():
 
             case ['sh']:
                 Tools.run_terminal_command()
-            
+
             case ['ls', *_]:
                 if len(user_command) == 1:
                     Tools.run_terminal_command(Folder.get_content())
                 else:
                     Tools.run_terminal_command(Folder.get_content(user_command[1]))
-            
+
             case ['ssh', 'connect']:
                 connection_data:list = input("Enter 'remote host' and 'username' separated by a space: ").strip().split()
                 try:
@@ -554,6 +536,25 @@ def launch_menu():
             case ['ac', 'export', *_]:
                 bimeister.export_activity_collector(url, token)
 
+            #    ''' =============================================================================== Auth ============================================================================================= '''
+            case ['auth', *_]:
+                parser = Abac.get_auth_parser()
+                try:
+                    args = parser.parse_args(user_command[1:])
+                except argparse.ArgumentError:
+                    continue
+                except SystemExit:
+                    continue
+                if args.command in ('rules', 'rule'):
+                    if args.export_rule:
+                        Abac.export_auth_rules(token, url)
+                    elif args.import_rule:
+                        Abac.import_auth_rules(token, url, filepath=args.file)
+                elif args.command in ('modules', 'module'):
+                    if args.get:
+                        Abac.print_abac_allowed_modules(token, url)
+                    elif args.set:
+                        Abac.set_abac_allowed_modules(token, url, modules=args.set)
 
             # wildcard pattern if no cases before where matched
             case _:

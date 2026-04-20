@@ -281,8 +281,6 @@ class Abac:
                 data.update({'Notifications': kwargs['url_events']})
             if key and kwargs.get('common'):
                 data.update({'Common': kwargs['url_common']})
-            if key and kwargs.get('url_rules'):
-                data.update({'Rules': kwargs['url_rules']})
         return data
 
     def export_abac_and_events(self, token: str, data: dict, svc_name: str):
@@ -312,6 +310,105 @@ class Abac:
                 _logger.error(err)
                 print(_logs.err_message)
                 return None
+
+    def get_auth_parser(self):
+        """ Parse user's input arguments. """
+
+        parser = argparse.ArgumentParser(prog='auth', description="Service with methods for operations with Auth", exit_on_error=False)
+        subparser = parser.add_subparsers(dest='command', required=False)
+
+        rules_parser = subparser.add_parser('rules', aliases=['rule'], exit_on_error=False)
+        rules_parser.add_argument('--export', dest="export_rule", action="store_true", required=False, help='Export auth access rules .json file')
+        rules_parser.add_argument('--import', dest="import_rule", action="store_true", required=False, help='Import auth access rules .json file')
+
+        modules_parser = subparser.add_parser('modules', aliases=['module'], exit_on_error=False)
+        modules_parser.add_argument('--get', required=False, action="store_true", help='Print AbacRules modules.')
+        modules_parser.add_argument('--set', required=False, action='append', type=str, help='Set AbacRules modules. Flag requires value to set.')
+
+        return parser
+
+    def export_auth_rules(self, token: str, url: str):
+        """ Export auth access rules .json file. """
+
+        if not token:
+            _logger.error("No token was provided.")
+            return None
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        filename: str = "auth_Rules.json"
+        url += '/api/abac/rules/export'
+        try:
+            response = _tools.make_request('POST', url, return_err_response=True, headers=headers, verify=False)
+            data: dict = response.json()
+            with open(filename, mode="w", encoding="utf-8") as file:
+                json.dump(data, file, indent=2, ensure_ascii=False)
+            print(f"Abac rules exported successfully: {filename}")
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+
+    def import_auth_rules(self, token: str, url: str, filepath: str):
+        """ Import auth access rules .json file. """
+
+        if not token:
+            _logger.error("No token was provided.")
+            return None
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        url += '/api/abac/rules/import'
+        try:
+            with open(filepath, mode='rb') as file:
+                response = _tools.make_request('POST', url, files={'file': file}, return_err_response=True, headers=headers, verify=False)
+                if response.status_code in range(200, 205):
+                    print(f"{filepath} imported successfully.")
+                else:
+                    print(_logs.err_message)
+                    _logger.error(f"HEADERS RECEIVED:\n{response.headers}")
+                    _logger.error(f"TEXT:\n{response.text}")
+                    _logger.error(f"HEADERS SENT:\n{response.request.headers}")
+        except FileNotFoundError as err:
+            _logger.error(err)
+            print(err)
+            return None
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+
+    def print_abac_allowed_modules(self, token: str, url: str):
+        """ Print available AbacRules modules. """
+
+        if not token:
+            _logger.error("No token was provided.")
+            return None
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        url += '/api/abac/rules/allowed-modules'
+        try:
+            response = _tools.make_request('GET', url, return_err_response=True, headers=headers, verify=False)
+            print(response.json())
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+
+    def set_abac_allowed_modules(self, token: str, url: str, modules: list):
+        """ Print available AbacRules modules. """
+
+        if not token:
+            _logger.error("No token was provided.")
+            return None
+        headers = {'accept': '*/*', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
+        url += '/api/abac/rules/allowed-modules'
+        try:
+            response = _tools.make_request('PUT', url, data=json.dumps(modules), return_err_response=True, headers=headers, verify=False)
+            if response.status_code in range(200, 205):
+                print(f"{response.status_code}: OK.")
+            else:
+                _logger.error(response.text)
+                print(_logs.err_message)
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
 
     def get_parser_export(self):
         """ Parse user's input arguments. """
@@ -386,10 +483,6 @@ class Abac:
         rm_parser.add_argument('-rmap', '--roles-mapping', action="store_true", required=False)
         rm_parser.add_argument('--all', action="store_true", required=False)
 
-        auth_parser = subparser.add_parser('auth', add_help=False, exit_on_error=False)
-        auth_parser.add_argument('-h', '--help', required=False, action="store_true")
-        auth_parser.add_argument('--rules', action="store_true", required=False)
-        auth_parser.add_argument('--all', action="store_true", required=False)
 
         return parser
 
@@ -508,7 +601,7 @@ class Abac:
 
         return parser
 
-    def print_help_import(self, message):
+    def print_abac_help_import(self, message):
         """ Provide help info for the user. """
 
         main_msg: str = """usage: abac import [--help] [data-sync] [asset] [maintenance] [--permission-objects <file>] [--roles-mapping <file>] [--roles <file>] [--events <file>]
@@ -525,7 +618,6 @@ options:
   rca                   root-cause-analysis service
   rbi                   risk-based-inspections service
   rm                    recommendation-management service
-  auth                  auth access rules file
 """
         standart_options: str = """
 options:
@@ -546,10 +638,7 @@ options:
   --events FILE         file with notifications configuration
   --common FILE         file with common configuration
 """
-        auth_msg: str = """
-opions:
-  --rules FILE          access rules file
-"""
+
         work_permits_msg: str = standart_options
         fmeca_msg: str = standart_options
         rca_msg: str = standart_options
@@ -578,10 +667,8 @@ opions:
                 print(rbi_msg)
             case 'rm-msg':
                 print(rm_msg)
-            case 'auth-msg':
-                print(auth_msg)
 
-    def print_help_export(self, message):
+    def print_abac_help_export(self, message):
         """ Provide help info for the user. """
 
         main_msg: str = """usage: abac export [--help] [data-sync|asset|maintenance] [--permission-objects] [--roles-mapping] [--roles] [--events] [--all]
@@ -599,7 +686,6 @@ options:
   rca                   root-cause-analysis service
   rbi                   risk-based-inspections service
   rm                    recommendation-management service
-  auth                  auth access rules file
 """
         standart_options: str = """
 options:
@@ -619,10 +705,7 @@ options:
   --events         notifications configuration
   --common         common configuration
 """
-        auth_msg: str = """
-opions:
-  --rules          access rules
-"""
+
         work_permits_msg: str = standart_options
         fmeca_msg: str = standart_options
         rca_msg: str = standart_options
@@ -651,5 +734,3 @@ opions:
                 print(rbi_msg)
             case 'rm-msg':
                 print(rm_msg)
-            case 'auth-msg':
-                print(auth_msg)

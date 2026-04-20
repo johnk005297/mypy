@@ -1,5 +1,4 @@
 altgraph==0.17.5
-argcomplete==3.6.3
 atlassian-python-api==4.0.7
 beautifulsoup4==4.14.3
 certifi==2026.1.4

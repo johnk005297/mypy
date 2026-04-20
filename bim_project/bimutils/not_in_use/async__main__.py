@@ -12,7 +12,6 @@ import vsphere
 import time
 import platform
 import mdocker
-# import argcomplete
 import interactive_menu
 from featureToggle import Conf, FeatureToggle
 from parser import Parser
