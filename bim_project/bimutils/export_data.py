@@ -83,7 +83,7 @@ class Object_model:
         url += '/' + self.__api_Integration_ObjectModel_Export
         with self.console.status("Exporting object model...", spinner="earth"):
             response = self.tools.make_request('GET', url, headers=headers, verify=False, return_err_response=True)
-            if response.status_code not in range(200, 205):
+            if response.status_code // 100 != 2:
                 _logger.error(response.text)
                 print(_logs.err_message)
                 return None
@@ -232,7 +232,7 @@ class Workflows:
                         wf_title: str = textwrap.shorten("{0}: {1}".format(node, name), width=75, placeholder="...")
                         url_export = f"{url}/api/Integration/WorkFlow/{id}/Export"
                         response = self.tools.make_request('GET', url_export, headers=headers, verify=False, return_err_response=True)
-                        if response.status_code not in range(200, 205):
+                        if response.status_code // 100 != 2:
                             _logger.error(response.text)
                             failed_workflows.append("Error {0}: {1})".format(response.status_code, name))
                             continue
@@ -264,7 +264,7 @@ class Workflows:
             for id in wf_id_array:
                 url_export = f"{url}/api/WorkFlows/{id}"
                 response = self.tools.make_request('GET', url_export, headers=headers, verify=False, return_err_response=True)
-                if response.status_code not in range(200, 205):
+                if response.status_code // 100 != 2:
                     _logger.error(response.text)
                     if response.status_code == 400 and data['type']:
                         print("InvalidInfoModelException. WorkFlow ID is incorrect. Check the logs.")
@@ -283,7 +283,7 @@ class Workflows:
                     try:
                         response = self.tools.make_request('GET', url_export, headers=headers, verify=False, return_err_response=True)
                         node_name: set = {key for key in nodes if nodes[key] == node_id}
-                        if response.status_code not in range(200, 205):
+                        if response.status_code // 100 != 2:
                             _logger.error(response.text)
                             failed_workflows.append("Error {0}: {1})".format(response.status_code, workflow_name))
                             continue
@@ -323,7 +323,7 @@ class Workflows:
             for id, name in workflows[node].items():
                 url_delete_workflow = f"{url}/{self.__api_WorkFlows}/{id}"
                 response = self.tools.make_request('DELETE', url_delete_workflow, headers=headers, verify=False, return_err_response=True)
-                if response.status_code != 204:
+                if response.status_code // 100 != 2:
                     _logger.error(response.text)
                     self.issue_message(response.status_code, name)
                 print(f'   {count()}){node}: {name}')

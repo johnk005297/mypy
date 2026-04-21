@@ -34,7 +34,7 @@ class FeatureToggle:
         table.add_column("Feature", style="magenta")
         table.add_column("Status", justify="center", highlight=False)
         count = Tools.counter()
-        if response.status_code == 200:
+        if response.status_code // 100 == 2:
             _logger.info(f"{self._api_GetFeatures} {response}")
             data: dict = response.json()
             print()
@@ -61,7 +61,7 @@ class FeatureToggle:
             _logger.error(err)
             print("Error! Couldn't get list of features. Check the logs.")
             return False
-        if response.status_code == 200:
+        if response.status_code // 100 == 2:
             _logger.info(f"{self._api_GetFeatures} {response}")
             data: dict = response.json()
             ft_list: list = [ft for ft in data]
@@ -82,7 +82,7 @@ class FeatureToggle:
                 print(f"Incorrect FT name: {feature}")
                 continue
             response = requests.put(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
-            if response.status_code in (200, 201, 204):
+            if response.status_code // 100 == 2:
                 _logger.info(f"{url}/{self._api_Features}/{feature} {response}")
                 response = requests.get(url=f'{url}/{self._api_Features}/{feature}', json=json_data, headers=headers, verify=False)
                 ft_enabled: bool = response.json()

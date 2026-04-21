@@ -33,7 +33,7 @@ class Reports:
             logger.error(err)
             return False
 
-        if not response.status_code == 200:
+        if response.status_code // 100 != 2:
             return False
 
         print()

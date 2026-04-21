@@ -30,16 +30,16 @@ class User:
         raise AttributeError("User class has no such attribute: " + item)
 
     def delete_user_objects(self, url, token):
-        """ UserObjects – хранилище Frontend-данных на Backend.
+        """ UserObjects - хранилище Frontend-данных на Backend.
             Здесь хранятся всяческие кеши, черновики обходов, выбранные задачи и прочее.
-            Работа с хранилищем не предполагает валидацию, миграции и прочее. Таким образом, если модели данных меняются, работа с хранилищем, 
+            Работа c хранилищем не предполагает валидацию, миграции и прочее. Таким образом, если модели данных меняются, работа с хранилищем, 
             уже наполненным какими-то данными может привести к ошибкам. Чтобы уберечь пользователя от этого, необходимо очищать таблицу.
         """
 
         headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
         try:
             response = requests.delete(url=f"{url}/{self.__api_UserObjects_all}", headers=headers, verify=False)
-            if response.status_code == 204:
+            if response.status_code // 100 == 2:
                 logger.info(response)
                 print("\n   - bimeisterdb.UserObjects table was cleaned successfully.")
             else:
@@ -53,7 +53,7 @@ class User:
         users = request.json()
         return users # list with dictionaries inside
 
-    def get_current_user(self, url, token):
+    def get_current_user(self, url: str, token: str):
         ''' Getting info about current user. Response will provide a dictionary of values. '''
 
         url_get_current_user = f"{url}/{self.__api_Users_currentUser}"

@@ -236,7 +236,7 @@ class Tools:
     def is_url_available(url):
         """ Check if URL is available. """
         response = Tools.make_request('HEAD', url, allow_redirects=True, verify=False)
-        if response and response.status_code in range(200, 299):
+        if response and response.status_code // 100 == 2:
             return response.url.rstrip('/')
         else:
             return False

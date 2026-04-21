@@ -27,7 +27,7 @@ def apply_bimeister_customUI(url, token, file):
             elif response.status_code == 404:
                 print(response.status_code)
                 print("No API route was found!")
-            elif response.status_code == 204:
+            elif response.status_code // 100 == 2:
                 _logger.info(f"{url} | {response.status_code}")
                 print("Files uploaded successfully.")
     except FileNotFoundError as err:
@@ -112,7 +112,7 @@ def recalculate_path(url, token):
     try:
         response = requests.patch(url, headers=headers, verify=False)
         response.raise_for_status()
-        if response.status_code in [200, 201, 204]:
+        if response.status_code // 100 == 2:
             _logger.info(f"{url} {response.status_code}")
             print("Paths recalculated successfully!")
         return True
@@ -129,7 +129,7 @@ def get_list_of_templates(url, token) -> list:
     try:
         response = requests.get(url=url, headers=headers, verify=False)
         response.raise_for_status()
-        if response.status_code == 200:
+        if response.status_code // 100 == 2:
             _logger.info(f"{url} {response.status_code}")
             data = response.json()
             return data
@@ -159,7 +159,7 @@ def export_templates(url, token, id: list):
         try:
             response = requests.get(url=_url, headers=headers, verify=False)
             response.raise_for_status()
-            if response.status_code == 200:
+            if response.status_code // 100 == 2:
                 data = response.json()
                 with open(f"{i}.json", mode='w', encoding='utf-8') as file:
                     file.write(json.dumps(data, indent=2))
@@ -194,7 +194,7 @@ def basic_auth(url, token, username, password, set=False):
         url: str = f"{url}/api/Users/check-user-basic-auth"
     try:
         response = Tools.make_request('POST', url, json=data, return_err_response=True, headers=headers, verify=False)
-        if response.status_code in range(200, 205):
+        if response.status_code // 100 == 2:
             print(f"Username: {username}\nStatus: True")
         else:
             print(f"Username: {username}\nStatus: False")
@@ -218,7 +218,7 @@ def import_activity_collector(url: str, token: str, x_imui_key: str ="ce090efa02
     try:
         with open(filepath, mode='rb') as file:
             response = Tools.make_request('POST', url, headers=headers, files={'file': file}, verify=False, return_err_response=True)
-            if response.status_code in range(200, 205):
+            if response.status_code // 100 == 2:
                 print("Configuration uploaded successfully.")
             else:
                 _logger.error(response.text)
@@ -244,7 +244,7 @@ def export_activity_collector(url: str, token: str) -> requests.Response:
     url: str = f"{url.rstrip('/')}/api/activity-collector/configuration/tasks/download"
     try:
         response = _tools.make_request('GET', url, headers=headers, verify=False, return_err_response=True)
-        if response.status_code in range(200, 205):
+        if response.status_code // 100 == 2:
             data: dict = response.json()
             filename: str = 'ActivityCollectorConfiguration.json'
             with open(filename, mode='w', encoding='utf-8') as file:
@@ -298,7 +298,7 @@ class Abac:
                     response = _tools.make_request('POST', url, return_err_response=True, headers=headers, verify=False)
                 else:
                     response = _tools.make_request('GET', url, return_err_response=True, headers=headers, verify=False)
-                if response.status_code in range(200, 205):
+                if response.status_code // 100 == 2:
                     data: dict = response.json()
                     with open(f"{svc_name}_{object_name}.json", mode="w", encoding="utf-8") as file:
                         json.dump(data, file, indent=2, ensure_ascii=False)
@@ -310,105 +310,6 @@ class Abac:
                 _logger.error(err)
                 print(_logs.err_message)
                 return None
-
-    def get_auth_parser(self):
-        """ Parse user's input arguments. """
-
-        parser = argparse.ArgumentParser(prog='auth', description="Service with methods for operations with Auth", exit_on_error=False)
-        subparser = parser.add_subparsers(dest='command', required=False)
-
-        rules_parser = subparser.add_parser('rules', aliases=['rule'], exit_on_error=False)
-        rules_parser.add_argument('--export', dest="export_rule", action="store_true", required=False, help='Export auth access rules .json file')
-        rules_parser.add_argument('--import', dest="import_rule", action="store_true", required=False, help='Import auth access rules .json file')
-
-        modules_parser = subparser.add_parser('modules', aliases=['module'], exit_on_error=False)
-        modules_parser.add_argument('--get', required=False, action="store_true", help='Print AbacRules modules.')
-        modules_parser.add_argument('--set', required=False, action='append', type=str, help='Set AbacRules modules. Flag requires value to set.')
-
-        return parser
-
-    def export_auth_rules(self, token: str, url: str):
-        """ Export auth access rules .json file. """
-
-        if not token:
-            _logger.error("No token was provided.")
-            return None
-        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
-        filename: str = "auth_Rules.json"
-        url += '/api/abac/rules/export'
-        try:
-            response = _tools.make_request('POST', url, return_err_response=True, headers=headers, verify=False)
-            data: dict = response.json()
-            with open(filename, mode="w", encoding="utf-8") as file:
-                json.dump(data, file, indent=2, ensure_ascii=False)
-            print(f"Abac rules exported successfully: {filename}")
-        except Exception as err:
-            _logger.error(err)
-            print(_logs.err_message)
-            return None
-
-    def import_auth_rules(self, token: str, url: str, filepath: str):
-        """ Import auth access rules .json file. """
-
-        if not token:
-            _logger.error("No token was provided.")
-            return None
-        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
-        url += '/api/abac/rules/import'
-        try:
-            with open(filepath, mode='rb') as file:
-                response = _tools.make_request('POST', url, files={'file': file}, return_err_response=True, headers=headers, verify=False)
-                if response.status_code in range(200, 205):
-                    print(f"{filepath} imported successfully.")
-                else:
-                    print(_logs.err_message)
-                    _logger.error(f"HEADERS RECEIVED:\n{response.headers}")
-                    _logger.error(f"TEXT:\n{response.text}")
-                    _logger.error(f"HEADERS SENT:\n{response.request.headers}")
-        except FileNotFoundError as err:
-            _logger.error(err)
-            print(err)
-            return None
-        except Exception as err:
-            _logger.error(err)
-            print(_logs.err_message)
-            return None
-
-    def print_abac_allowed_modules(self, token: str, url: str):
-        """ Print available AbacRules modules. """
-
-        if not token:
-            _logger.error("No token was provided.")
-            return None
-        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
-        url += '/api/abac/rules/allowed-modules'
-        try:
-            response = _tools.make_request('GET', url, return_err_response=True, headers=headers, verify=False)
-            print(response.json())
-        except Exception as err:
-            _logger.error(err)
-            print(_logs.err_message)
-            return None
-
-    def set_abac_allowed_modules(self, token: str, url: str, modules: list):
-        """ Print available AbacRules modules. """
-
-        if not token:
-            _logger.error("No token was provided.")
-            return None
-        headers = {'accept': '*/*', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
-        url += '/api/abac/rules/allowed-modules'
-        try:
-            response = _tools.make_request('PUT', url, data=json.dumps(modules), return_err_response=True, headers=headers, verify=False)
-            if response.status_code in range(200, 205):
-                print(f"{response.status_code}: OK.")
-            else:
-                _logger.error(response.text)
-                print(_logs.err_message)
-        except Exception as err:
-            _logger.error(err)
-            print(_logs.err_message)
-            return None
 
     def get_parser_export(self):
         """ Parse user's input arguments. """
@@ -483,7 +384,6 @@ class Abac:
         rm_parser.add_argument('-rmap', '--roles-mapping', action="store_true", required=False)
         rm_parser.add_argument('--all', action="store_true", required=False)
 
-
         return parser
 
     def collect_abac_data_import(self, **kwargs):
@@ -515,7 +415,7 @@ class Abac:
             try:
                 with open(value['file'], mode='rb') as file:
                     response = _tools.make_request('POST', value['url'], files={'file': file}, return_err_response=True, headers=headers, verify=False)
-                    if response.status_code in range(200, 205):
+                    if response.status_code // 100 == 2:
                         print(f"{svc_name}: {key} configuration uploaded successfully")
                     else:
                         print(f"Error: {response.status_code} - {svc_name}. Check logs: {_logs.filepath}")
@@ -734,3 +634,259 @@ options:
                 print(rbi_msg)
             case 'rm-msg':
                 print(rm_msg)
+
+
+class Auth:
+
+    def __init__(self):
+        pass
+
+    def get_auth_parser(self):
+        """ Parse user's input arguments. """
+
+        parser = argparse.ArgumentParser(prog='auth', description="Service with methods for operations with Auth", exit_on_error=False)
+        subparser = parser.add_subparsers(dest='command', required=False)
+
+        rules_parser = subparser.add_parser('rules', aliases=['rule'], exit_on_error=False)
+        rules_parser.add_argument('--export', dest="export_rule", action="store_true", required=False, help='Export ABAC auth access rules .json file config')
+        rules_parser.add_argument('--import', dest="import_rule", action="store_true", required=False, help='Import ABAC auth access rules .json file config')
+
+        modules_parser = subparser.add_parser('modules', aliases=['module'], exit_on_error=False)
+        modules_parser.add_argument('--get', required=False, action="store_true", help='Print AbacRules modules')
+        modules_parser.add_argument('--set', required=False, action='append', type=str, help='Set AbacRules modules. Flag requires value to set')
+
+        attr_parser = subparser.add_parser('attr', exit_on_error=False)
+        attr_parser.add_argument('--get', required=False, action="store_true", help="Get list of user's attribute codes")
+        attr_parser.add_argument('--set', required=False, action='append', type=str, help="Set user attribute code")
+        attr_parser.add_argument('--get-values', action="store_true", required=False, help="Get a list of user attribute values")
+        set_values = attr_parser.add_argument_group('Set user attribute values')
+        set_values.add_argument('--set-values', action="store_true", required=False, help="Set user attribute values")
+        set_values.add_argument('--user-id', required=False, default="", help="User ID")
+        set_values.add_argument('--code', required=False, default="", help="Attributes: code")
+        set_values.add_argument('--value', required=False, default="", help="Attributes: values")
+
+        return parser
+
+    def export_auth_rules(self, token: str, url: str):
+        """ Export auth access rules .json file. """
+
+        if not token:
+            _logger.error("No token was provided.")
+            return None
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        filename: str = "auth_Rules.json"
+        url += '/api/abac/rules/export'
+        try:
+            response = _tools.make_request('POST', url, return_err_response=True, headers=headers, verify=False)
+            data: dict = response.json()
+            with open(filename, mode="w", encoding="utf-8") as file:
+                json.dump(data, file, indent=2, ensure_ascii=False)
+            print(f"Abac rules exported successfully: {filename}")
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+
+    def import_auth_rules(self, token: str, url: str, filepath: str):
+        """ Import auth access rules .json file. """
+
+        if not token:
+            _logger.error("No token was provided.")
+            return None
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        url += '/api/abac/rules/import'
+        try:
+            with open(filepath, mode='rb') as file:
+                response = _tools.make_request('POST', url, files={'file': file}, return_err_response=True, headers=headers, verify=False)
+                if response.status_code // 100 == 2:
+                    print(f"{filepath} imported successfully.")
+                else:
+                    print(_logs.err_message)
+                    _logger.error(f"HEADERS RECEIVED:\n{response.headers}")
+                    _logger.error(f"TEXT:\n{response.text}")
+                    _logger.error(f"HEADERS SENT:\n{response.request.headers}")
+        except FileNotFoundError as err:
+            _logger.error(err)
+            print(err)
+            return None
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+
+    def print_abac_allowed_modules(self, token: str, url: str):
+        """ Print available AbacRules modules. """
+
+        if not token:
+            _logger.error("No token was provided.")
+            return None
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        url += '/api/abac/rules/allowed-modules'
+        try:
+            response = _tools.make_request('GET', url, return_err_response=True, headers=headers, verify=False)
+            print(response.json())
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+
+    def set_abac_allowed_modules(self, token: str, url: str, modules: list):
+        """ Print available AbacRules modules. """
+
+        if not token:
+            _logger.error("No token was provided.")
+            return None
+        headers = {'accept': '*/*', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
+        url += '/api/abac/rules/allowed-modules'
+        try:
+            response = _tools.make_request('PUT', url, data=json.dumps(modules), return_err_response=True, headers=headers, verify=False)
+            if response.status_code // 100 == 2:
+                print(f"{response.status_code}: OK.")
+            else:
+                _logger.error(response.text)
+                print(_logs.err_message)
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+
+    def get_user_attributes(self, url: str, token: str):
+        """ Get list of user attributes. """
+        
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        try:
+            response = _tools.make_request('GET', f'{url}/api/public/user-attributes', return_err_response=True, headers=headers, verify=False)
+            if response.status_code // 100 == 2:
+                data = response.json()
+                for item in data:
+                    for k,v in item.items():
+                        print(f"{k}: {v}")
+            else:
+                _logger.error(response.text)
+                print(_logs.err_message)
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+
+    def set_user_attributes(self, url: str, token: str, codes: list):
+        """ Set user attributes. """
+        
+        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
+        if not codes or not isinstance(codes, list):
+            return None
+        for code in codes:
+            try:
+                response = _tools.make_request('PUT', f'{url}/api/public/user-attributes/{code}', return_err_response=True, headers=headers, verify=False)
+                if response.status_code // 100 == 2:
+                    print(f"{code}: attribute applied successfully")
+                else:
+                    _logger.error(response.text)
+                    if response.text and response.json()['error']['key']:
+                        print(response.json()['error']['key'])
+                    else:
+                        print(_logs.err_message)
+            except Exception as err:
+                _logger.error(err)
+                print(_logs.err_message)
+                return None
+
+    def get_user_attribute_values(self, url: str, token: str, user_id: str):
+        """ Get a list of user attribute values. """
+
+        headers = {'accept': '*/*', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
+        if not user_id or not url or not token:
+            _logger.error("Missing value.")
+            print(_logs.err_message)
+            return None
+        payload = {"userIds": [user_id]}
+        try:
+            response = _tools.make_request('POST', f'{url}/api/public/users/attributes', data=json.dumps(payload), return_err_response=True, headers=headers, verify=False)
+            if response.status_code // 100 == 2:
+                data = response.json()
+                for user in data['users']:
+                    for k,v in user.items():
+                        if isinstance(v, list):
+                            print(f"{k}: ", end="")
+                            print(*v, sep=", ")
+                        else:
+                            print(f"{k}: {v}")
+            else:
+                _logger.error(response.text)
+                print(_logs.err_message)
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+
+    def set_user_attribute_values(self, url: str, token: str, **kwargs):
+        """ Set user attribute values. """
+
+        headers = {'accept': '*/*', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
+        if not kwargs['user_id'] or not url or not token:
+            _logger.error("Missing value.")
+            print(_logs.err_message)
+            return None
+        payload = {
+                    "users": 
+                    [{
+                        "userId": kwargs['user_id'],
+                        "attributes": [{
+                                    "code": kwargs['code'],
+                                    "values": kwargs['values']
+                            }]
+                    }]
+                 }
+        try:
+            response = _tools.make_request('PUT', f'{url}/api/public/users/attributes', data=json.dumps(payload), return_err_response=True, headers=headers, verify=False)
+            if response.status_code // 100 == 2:
+                data = response.json()
+                for user in data['users']:
+                    for k,v in user.items():
+                        if isinstance(v, list):
+                            print(f"{k}: ", end="")
+                            print(*v, sep=", ")
+                        else:
+                            print(f"{k}: {v}")
+            else:
+                _logger.error(response.text)
+                print(_logs.err_message)
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+
+class AssetPerformance:
+
+    def get_asset_parser(self):
+        """ Parse user's input arguments. """
+
+        parser = argparse.ArgumentParser(prog='asset', description="Service with methods for operations with Asset Performance management", exit_on_error=False)
+        subparser = parser.add_subparsers(dest='command', required=False)
+
+        rules_parser = subparser.add_parser('attr-code-map', exit_on_error=False)
+        rules_parser.add_argument('--get', action="store_true", required=False, help='Get codes attributes user mapping.')
+        rules_parser.add_argument('--set', action="store_true", required=False, help='Set codes attributes user mapping.')
+
+        return parser
+
+    def get_attr_codes_mapping(self, url: str, token: str):
+        """ Get codes attributes user mapping. """
+
+        headers = {'accept': 'text/plain', 'Authorization': f"Bearer {token}"}
+        if not url or not token:
+            _logger.error("Missing value.")
+            print(_logs.err_message)
+            return None
+        try:
+            response = _tools.make_request('GET', f'{url}/api/asset-performance-management/settings/attribute-codes-mapping', return_err_response=True, headers=headers, verify=False)
+            if response.status_code // 100 == 2:
+                data = response.json()
+                print(data)
+            else:
+                _logger.error(response.text)
+                print(_logs.err_message)
+        except Exception as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None

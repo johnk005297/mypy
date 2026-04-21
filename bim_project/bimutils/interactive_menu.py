@@ -14,7 +14,7 @@ def launch_menu():
 
     AppMenu_main = app_menu.AppMenu()
     Auth = auth.Auth()
-    User_main = user.User()
+    User = user.User()
     License_main = license.License()
     Object_model_export = export_data.Object_model()
     Object_model_import = import_data.Object_model()
@@ -22,6 +22,8 @@ def launch_menu():
     Workflows_import = import_data.Workflows()
     Risk_assessment = import_data.RiskAssesment()
     Abac = bimeister.Abac()
+    Auth_api = bimeister.Auth()
+    AssetPerf = bimeister.AssetPerformance()
     FT = featureToggle.FeatureToggle()
 
 
@@ -80,10 +82,10 @@ def launch_menu():
             #    ''' =============================================================================== User objects BLOCK =============================================================================== '''
 
             case ['drop', 'uo']:
-                User_main.delete_user_objects(url, token)
+                User.delete_user_objects(url, token)
 
             case ['drop', 'uo', '-h']:
-                print(User_main.delete_user_objects.__doc__)
+                print(User.delete_user_objects.__doc__)
 
             #    ''' =============================================================================== TRANSFER DATA BLOCK ============================================================================== '''
 
@@ -538,7 +540,7 @@ def launch_menu():
 
             #    ''' =============================================================================== Auth ============================================================================================= '''
             case ['auth', *_]:
-                parser = Abac.get_auth_parser()
+                parser = Auth_api.get_auth_parser()
                 try:
                     args = parser.parse_args(user_command[1:])
                 except argparse.ArgumentError:
@@ -547,14 +549,38 @@ def launch_menu():
                     continue
                 if args.command in ('rules', 'rule'):
                     if args.export_rule:
-                        Abac.export_auth_rules(token, url)
+                        Auth_api.export_auth_rules(token, url)
                     elif args.import_rule:
-                        Abac.import_auth_rules(token, url, filepath=args.file)
+                        Auth_api.import_auth_rules(token, url, filepath=args.file)
                 elif args.command in ('modules', 'module'):
                     if args.get:
-                        Abac.print_abac_allowed_modules(token, url)
+                        Auth_api.print_abac_allowed_modules(token, url)
                     elif args.set:
-                        Abac.set_abac_allowed_modules(token, url, modules=args.set)
+                        Auth_api.set_abac_allowed_modules(token, url, modules=args.set)
+                elif args.command == 'attr':
+                    if args.get:
+                        Auth_api.get_user_attributes(url, token)
+                    elif args.set:
+                        Auth_api.set_user_attributes(url, token, codes=args.set)
+                    elif args.get_values:
+                        user_id = User.get_current_user(url, token)['id']
+                        Auth_api.get_user_attribute_values(url, token, user_id)
+                    elif args.set_values:
+                        user_id = User.get_current_user(url, token)['id']
+                        Auth_api.set_user_attribute_values(url, token, user_id=user_id, code=args.code, value=args.value)
+
+            #    ''' =============================================================================== Asset ============================================================================================ '''
+            case ['asset', *_]:
+                parser = AssetPerf.get_asset_parser()
+                try:
+                    args = parser.parse_args(user_command[1:])
+                except argparse.ArgumentError:
+                    continue
+                except SystemExit:
+                    continue
+                if args.command == "attr-code-map":
+                    if args.get:
+                        AssetPerf.get_attr_codes_mapping(url, token)
 
             # wildcard pattern if no cases before where matched
             case _:

@@ -43,6 +43,9 @@ def main_menu():
                             \n   Auth                                                                                   \
                             \n      auth -h                             perform operations with Auth                    \
                             \n                                                                                          \
+                            \n   Asset Performance                                                                      \
+                            \n      asset -h                            perform operations with Asset Performance mgmt  \
+                            \n                                                                                          \
                             \n   Activity collector                                                                     \
                             \n      ac export                           export activity collector configuration file    \
                             \n      ac import -f [path_to_file]         import activity collector configuration file    \

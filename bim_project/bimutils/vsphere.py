@@ -83,7 +83,7 @@ class Vsphere:
         payload = {}
         try:
             response = requests.post(url=f"{self.url}/rest/com/vmware/cis/session", headers=headers, data=payload, verify=False)
-            if response.status_code == 200:
+            if response.status_code // 100 == 2:
                 logger.info(f"{response.status_code}")
                 data: dict = response.json()
                 return data['value']
@@ -186,7 +186,7 @@ class Vsphere:
                     if not response:
                         self.console.log(f"[red]No connection to {value['name']}. Check VM in vCenter![/red]")
                         continue
-                if response and response.status_code in range(200, 205):
+                if response and response.status_code // 100 == 2:
                     self.console.print(reboot_vm_msg, overflow="ellipsis")
             else: continue
 
@@ -201,7 +201,7 @@ class Vsphere:
             return True
         with self.console.status(power_on_msg, spinner="earth") as status:
             response = self.tools.make_request('POST', url, headers=headers, verify=False, return_err_response=True)
-            if response.status_code not in (200, 204):
+            if response.status_code // 100 != 2:
                 self.console.log(f"[red]No connection to {name}. Check VM in vCenter![/red]")
                 return False
             count = 0
@@ -232,12 +232,12 @@ class Vsphere:
         with self.console.status(shutting_down_msg, spinner="earth") as status:
             power_off: bool = False
             response = self.tools.make_request('POST', url_shutdown, headers=headers, return_err_response=True, verify=False)
-            if response.status_code not in (200, 204):
+            if response.status_code // 100 != 2:
                 response = self.tools.make_request('POST', url_stop, headers=headers, return_err_response=True, verify=False)
-                if response.status_code not in (200, 204):
+                if response.status_code // 100 != 2:
                     self.console.log(f"[red]No connection to {name}. Check VM in vCenter![/red]")
                     return False
-                elif response.status_code in (200, 204):
+                elif response.status_code // 100 == 2:
                     power_off = True
             count = 0
             while count < 900:
@@ -268,7 +268,7 @@ class Vsphere:
         response = self.tools.make_request('POST', url, headers=headers, data=json.dumps(payload), verify=False, return_err_response=True)
         if not response:
             return False
-        if response.status_code == 200:
+        if response.status_code // 100 == 2:
             logger.info(f"Created snapshot for VM: {vm_name}")
             return True
         else:
@@ -281,7 +281,7 @@ class Vsphere:
         url: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachine/{moId}/snapshot"
         try:
             response = requests.get(url=url, headers=headers, verify=False)
-            if response.status_code == 200:
+            if response.status_code // 100 == 2:
                 data = response.json() if bool(response.text) else False
                 logger.info(f"Get list of snapshots VM: {vm_name}")
         except requests.exceptions.HTTPError as err:
@@ -331,7 +331,7 @@ class Vsphere:
                         "suppressPowerOn": True
                         }
             response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
-            if response.status_code == 200:
+            if response.status_code // 100 == 2:
                 msg: str = f"Revert to snapshot VM: {vm_name}"
                 if print_msg:
                     print(msg)
@@ -359,7 +359,7 @@ class Vsphere:
                         "removeChildren": False
                         }
             response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
-            if response.status_code in (200, 204):
+            if response.status_code // 100 == 2:
                 if print_msg:
                     print(f"Remove snapshot: {moId}")
                 logger.info(f"Remove snapshot: {moId}")

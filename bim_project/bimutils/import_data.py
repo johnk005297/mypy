@@ -62,7 +62,7 @@ class Object_model:
 
         with self.console.status("Importing object model...", spinner="earth"):
             response = _tools.make_request('POST', url, data=data.encode("utf-8"),  headers=headers, verify=False, return_err_response=True)
-            if response.status_code not in range(200, 205):
+            if response.status_code // 100 != 2:
                 _logger.error(response.text)
                 print(f"Status: {response.status_code}. {_logs.err_message}.")
                 return False
@@ -105,7 +105,7 @@ class Workflows:
                 try:
                     with open(f'{self._transfer_folder}/{self._workflows_folder}/{id}.zip', mode='rb') as file:
                         response = self.tools.make_request('POST', url, headers=headers, files={'file': file}, verify=False, return_err_response=True, custom_log_msg=name)
-                        if response.status_code not in range(200, 205):
+                        if response.status_code // 100 != 2:
                             _logger.error(response.text)
                             failed_workflows.append("Error {0}: {1})".format(response.status_code, wf_title))
                             continue
@@ -127,29 +127,6 @@ class Workflows:
         print(f"Successful: {successful_workflows} Failed: {len(failed_workflows)}")
         return
 
-
-class Users_attributes:
-
-    def __init__(self):
-        pass
-
-    def set_user_attributes_code(self, url, token, codes: list):
-        """ Set users attributes codes """
-        
-        headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
-        if not codes or not isinstance(codes, list):
-            return None
-        for code in codes:
-            try:
-                response = _tools.make_request('PUT', f'{url}/api/public/user-attributes/{code}', return_err_response=True, headers=headers, verify=False)
-                if response.status_code in range(200, 205):
-                    print(f"{code}: attribute applied successfully")
-                else:
-                    print(f"Error: {response.status_code} - {code}. Check logs: {_logs.filepath}")
-            except Exception as err:
-                _logger.error(err)
-                print(_logs.err_message)
-                return None
 
 class Abac:
 
@@ -193,7 +170,7 @@ class Abac:
             try:
                 with open(value['file'], mode='rb') as file:
                     response = _tools.make_request('POST', value['url'], files={'file': file}, return_err_response=True, headers=headers, verify=False)
-                    if response.status_code in range(200, 205):
+                    if response.status_code // 100 == 2:
                         print(f"{svc_name}: {key} configuration uploaded successfully")
                     else:
                         print(f"Error: {response.status_code} - {svc_name}. Check logs: {_logs.filepath}")
@@ -380,7 +357,7 @@ class Mdmconnector:
         try:
             with open(file, mode='rb') as f:
                 response = requests.patch(url=url, files={'file': f}, headers=headers, verify=False)
-                if response.status_code in (200, 204):
+                if response.status_code // 100 == 2:
                     _logger.debug(f"{url}: {response.status_code}")
                     print(f"{file} file uploaded successfully")
                 else:
@@ -402,7 +379,7 @@ class Mdmconnector:
         url = url + self.export_url
         try:
             response = requests.patch(url=url, headers=headers, verify=False)
-            if response.status_code in (200, 204):
+            if response.status_code // 100 == 2:
                 data = response.json()
                 with open("mdm-connector-setup.json", mode='w') as file:
                     file.write(json.dumps(data, indent=2))
@@ -436,7 +413,7 @@ class RiskAssesment:
             data = json.load(file)
         try:
             response = requests.post(url=url, headers=headers, data=json.dumps(data))
-            if response.status_code in (200, 204):
+            if response.status_code // 100 == 2:
                 data = response.json()
                 _logger.info(f"{response.text}: {response.status_code}")
                 print("Template uploaded successfully!")

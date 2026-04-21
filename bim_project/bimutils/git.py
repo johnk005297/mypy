@@ -278,7 +278,7 @@ class Job(Git):
                 response = requests.post(url=url, headers=self.headers, verify=False)
                 response.raise_for_status()
                 data = response.json()
-                if response.status_code == 200:
+                if response.status_code // 100 == 2:
                     print(f"Job started successfully                \
                           \nname: {data['name']}                    \
                           \npipeline id: {data['pipeline']['id']}   \

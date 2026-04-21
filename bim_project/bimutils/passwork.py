@@ -28,7 +28,7 @@ class Passwork:
 
         url = cls.url.split('/api')[0]
         response = tools.make_request('HEAD', url, allow_redirects=True, timeout=2)
-        return True if response.status_code in range(200, 300) else False
+        return True if response.status_code // 100 == 2 else False
 
 
 class Token(Passwork):
@@ -41,7 +41,7 @@ class Token(Passwork):
         response = tools.make_request('POST', url, headers=headers, verify=False)
         if not response:
             return response
-        if response.status_code == 200:
+        if response.status_code // 100 == 2:
                 logger.info(f"{self.__class__} {self.get_token.__name__}: {response.status_code}")
                 data = response.json()
                 return data['data']['token']
@@ -110,7 +110,7 @@ class Passwords(Passwork):
         passwords: list = []
         if not response:
             return response
-        if response.status_code == 200:
+        if response.status_code // 100 == 2:
             data = response.json()
             if not data['data']:
                 return None

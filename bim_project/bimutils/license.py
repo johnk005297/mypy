@@ -140,7 +140,7 @@ class License:
                     "password": password
                   }
         response = self.tools.make_request('GET', url_get_licenses, data=payload, headers=headers, return_err_response=True, verify=False)
-        if response.status_code in range(200, 205):
+        if response.status_code // 100 == 2:
             return response.json()
         else:
             _logger.error(response.text)
@@ -180,7 +180,7 @@ class License:
         url: str = url + '/' + self.__api_License_serverId
         response = self.tools.make_request('GET', url=url, return_err_response=True, headers=headers, verify=False)
         message: str = "Current user does not have sufficient privileges."
-        return (True, response.text) if response and response.status_code == 200 else (False, message)
+        return (True, response.text) if response and response.status_code // 100 == 2 else (False, message)
 
     def display_licenses(self, url, token, username, password):
         """ Display the list of licenses. """
@@ -231,7 +231,7 @@ class License:
             for lic in self.__UPP_SUID_lic:
                 if active_licenses.get(lic):
                     response = requests.delete(url=f"{url}/{self.__api_License}/{active_licenses[lic]}", headers=headers, verify=False)
-                    if response.status_code in (200, 201, 204):
+                    if response.status_code // 100 == 2:
                         self.console.print(f"   - license '{lic}': {active_licenses.pop(lic)} has been deactivated!", style="green")
                     else:
                         _logger.error('%s', response.text)
@@ -244,7 +244,7 @@ class License:
                 response = requests.delete(url=url_delete_license, headers=headers, verify=False)
                 response_data = bool(response.text) if not response.text else response.json()
 
-                if response.status_code in (200, 201, 204):
+                if response.status_code // 100 == 2:
                     self.console.print(f"   - license '{name}': {id} has been deactivated!", style="green")
                 else:
                     if response_data and response_data['type'] and response_data['type'] == 'ForbiddenException':
@@ -273,7 +273,7 @@ class License:
                 response = requests.post(url=f'{url}/{self.__api_License}', headers=headers, data=data, verify=False)
                 response_data = response.json()
                 time.sleep(0.15)
-                if response.status_code in (200, 201, 204,):
+                if response.status_code // 100 == 2:
                     self.console.print(f"\n   - new license '{response_data['product']}' has been posted successfully!", style="green")
                     self.activate_license(url, token, username, password, license['LicenseID'])
                     time.sleep(0.15)
@@ -312,7 +312,7 @@ class License:
         response_data = bool(response.text) if not response.text else response.json()
         err_message: str = f"   - error: license '{license_id}' has not been activated! Check logs: {self.logs.filepath}"
 
-        if response.status_code in (200, 201, 204):
+        if response.status_code // 100 == 2:
             self.console.print(f"   - license '{license_id}' has been activated successfully!", style="green")
             return True
         else:
@@ -359,7 +359,7 @@ class Issue:
             response = requests.post(url, headers=headers, data=payload, timeout=2, verify=False)
             data = response.json()
             err_message: str = "Unexpected error. Check the log!"
-            if response.status_code in (200, 201, 204):
+            if response.status_code // 100 == 2:
                 access_token: str = response.json()['access_token']
                 return access_token
             elif response.status_code == 400:

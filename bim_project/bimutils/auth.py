@@ -72,7 +72,7 @@ class Auth:
         for x in range(2):
             try:
                 response = requests.head(url=url, verify=False, allow_redirects=False, timeout=2)
-                if response.status_code == 200:
+                if response.status_code // 100 == 2:
                     _logger.info(f"{url} {response.status_code}")
                     self.url = url
                     return url
@@ -126,9 +126,9 @@ class Auth:
         if not response:
             return response
         _logger.info(f"GET {url} {response.status_code}")
-        if response.status_code == 200:
+        if response.status_code // 100 == 2:
             providers: list = response.json()
-        elif response.status_code != 200:
+        elif response.status_code // 100 != 2:
             print(_logs.err_message)
             return False
         if len(providers) == 1:
@@ -211,7 +211,7 @@ class Auth:
                 return False
             else:
                 return False
-        elif response.status_code in (200, 201, 204):
+        elif response.status_code // 100 == 2:
             self.token = data['access_token']
             return self.token
         else:
@@ -224,7 +224,7 @@ class Auth:
         url = f"{url}/{self.__api_PrivateToken}"
         try:
             response = requests.get(url=url, headers=headers, verify=False)
-            if response.status_code == 204:
+            if response.status_code // 100 == 2:
                 _logger.info(f"{url}: {response.status_code}")
                 response = requests.post(url=url, headers=headers, verify=False)
             data = response.json()
@@ -256,7 +256,7 @@ def get_token(
     auth = Auth()
     providers = auth.get_providerId(url, interactive=False)
     if providers and isinstance(providers, list) and len(providers) > 1 and not providerId:
-        print("Provide needed id with flag --providerId")
+        print("Provide needed id with flag -pid / --providerId")
         for provider in providers:
             for k,v in provider.items():
                 print(k,v)
