@@ -467,7 +467,7 @@ def launch_menu():
             #    ''' =============================================================================== Custom UI ======================================================================================== '''
             case ['apply', 'UI', *_]:
                 if '-f' not in user_command:
-                    print("Unknown command")
+                    print("-f <filename> is required")
                     continue
                 try:
                     file = user_command[2:][1]

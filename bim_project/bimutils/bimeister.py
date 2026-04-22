@@ -30,6 +30,10 @@ def apply_bimeister_customUI(url, token, file):
             elif response.status_code // 100 == 2:
                 _logger.info(f"{url} | {response.status_code}")
                 print("Files uploaded successfully.")
+            else:
+                _logger.error(response.text)
+                _logger.error(f"Response code: {response.status_code}")
+                print(_logs.err_message)
     except FileNotFoundError as err:
         _logger.error(err)
         print(err)
