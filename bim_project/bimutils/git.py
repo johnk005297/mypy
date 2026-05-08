@@ -225,6 +225,7 @@ class Job(Git):
         """ Get id, status, name of jobs and pipeline_id pointed out in 'specific_jobs' tuple from pipeline. """
 
         pipelines = self.pipeline().get_pipelines(project_id, commit)
+
         pipeline_id = False
         if pipelines:
             for pipeline in pipelines:
@@ -308,7 +309,7 @@ class Pipeline(Git):
             try:
                 payload = {
                     "order_by": "updated_at",
-                    "status": "success"
+                    # "status": "success"
                         }
                 response = requests.get(url=url, headers=self.headers, params=payload, verify=False)
                 response.raise_for_status()
