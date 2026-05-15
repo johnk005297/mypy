@@ -651,11 +651,11 @@ class Auth:
         parser = argparse.ArgumentParser(prog='auth', description="Service with methods for operations with Auth", exit_on_error=False)
         subparser = parser.add_subparsers(dest='command', required=False)
 
-        rules_parser = subparser.add_parser('rules', aliases=['rule'], exit_on_error=False)
+        rules_parser = subparser.add_parser('rules', exit_on_error=False)
         rules_parser.add_argument('--export', dest="export_rule", action="store_true", required=False, help='Export ABAC auth access rules .json file config')
         rules_parser.add_argument('--import', dest="import_rule", action="store_true", required=False, help='Import ABAC auth access rules .json file config')
 
-        modules_parser = subparser.add_parser('modules', aliases=['module'], exit_on_error=False)
+        modules_parser = subparser.add_parser('modules', exit_on_error=False)
         modules_parser.add_argument('--get', required=False, action="store_true", help='Print AbacRules modules')
         modules_parser.add_argument('--set', required=False, action='append', type=str, help='Set AbacRules modules. Flag requires value to set')
 
