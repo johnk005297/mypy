@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import re
 
-__version__ = "v0.1.30"
+__version__ = "v0.1.31"
 __abspath__ = os.path.abspath(__file__)
 
 
@@ -111,7 +111,7 @@ def get_all_keys(data):
                 keys.extend(get_all_keys(item))
     return keys
 
-def are_var_types_equal(data_master, data_slave, env_file_slave_path) -> bool:
+def are_var_types_equal(data_master, data_slave, env_file_master_path, env_file_slave_path) -> bool:
     """ Check if vars types of two provided arrays are equal. """
 
     if not len(data_master) == len(data_slave):
@@ -122,7 +122,9 @@ def are_var_types_equal(data_master, data_slave, env_file_slave_path) -> bool:
         return None
     for key in data_master.keys():
         if type(data_master[key]) != type(data_slave[key]):
-            print(f"ValueError: incorrect type for '{key.upper()}' variable in {env_file_slave_path}.")
+            print(f"ValueError: incorrect type for '{key.upper()}' variable in {env_file_slave_path}.\n")
+            print(f"{env_file_master_path}: {type(data_master[key])}")
+            print(f"{env_file_slave_path}: {type(data_slave[key])}")
             return False
     return True
 
@@ -338,7 +340,7 @@ def main():
             sys.exit()
 
     # проверяем, что переменные env-файлов имеют одинаковые типы данных
-    if not are_var_types_equal(data_master, data_slave, env_file_slave_path):
+    if not are_var_types_equal(data_master, data_slave, env_file_master_path, env_file_slave_path):
         sys.exit()
 
     is_revision_changed = check_revision(data_master, data_slave, env_file_master_path, env_file_slave_path)

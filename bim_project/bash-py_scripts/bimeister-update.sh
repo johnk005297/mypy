@@ -2,7 +2,7 @@
 
 set -eo pipefail
 
-__VERSION__="0.0.20"
+__VERSION__="0.0.38"
 
 
 print_help() {
@@ -19,13 +19,18 @@ print_help() {
     -spc, --skip-pods-check - директива для указания того, что требуется пропустить проверку статусов подов k8s
     --skip-images           - директива для указания того, что требуется пропустить шаг прогрузки образов
     --push-images           - директива для указания того, что требуется обязательная прогрузка образов
-    -sfc, --skip-ft-check   - директива для указания того, что требуется пропустить шаг проверки feature toggle
+    -sftc, --skip-ft-check  - директива для указания того, что требуется пропустить шаг проверки feature toggle
                               между исходными данными в confluence и стендом
+    -ru, --registry-user    - имя пользователя для доступа к реестру образов
+    -rp, --registry-pass    - пароль пользователя для доступа к реестру образов
+    --copy-charts           - директива для копирования хелм-чартов по пути /bimeister/helm-charts
+    --replicas              - директива для установки кол-ва реплик(по умолчанию используется кол-во, указанное в чартах)
+    --default-registry      - директива для использования репозитория образов по умолчанию из хелм-чартов
 
   Примеры запуска:
     $ bash bimeister-update.sh --env test --build 152_1.18.0-shae3ba5ce4
     $ bash bimeister-update.sh --env prod -b 152_1.18.0-shae3ba5ce4 --create-db
-    $ bash bimeister-update.sh --env demo -b 152-patch_1.18.0-shae3ba5ce4 --create-db --local-update
+    $ bash bimeister-update.sh --env demo -b 152-patch_1.18.0-shae3ba5ce4 --create-db --local-update --replicas 1
 EOF
   exit
 }
@@ -40,7 +45,12 @@ parse_args() {
       --skip-images) SKIP_IMAGES=true;;
       --push-images) PUSH_IMAGES=true;;
       --skip-pods-check|-spc) SKIP_PODS_CHECK=true;;
-      --skip-ft-check|-sfc) SKIP_FT_CHECK=true;;
+      --skip-ft-check|-sftc) SKIP_FT_CHECK=true;;
+      --registry-user|-ru) shift; REGISTRY_USER=${1};;
+      --registry-pass|-rp) shift; REGISTRY_PASS=${1};;
+      --copy-charts) COPY_CHARTS=true;;
+      --replicas) shift; REPLICAS=${1};;
+      --default-registry) IS_LOCAL_REGISTRY=false;;
       --help|-h) print_help;;
       *) echo "Illegal argument ${1}"; print_help;;
     esac
@@ -132,10 +142,10 @@ remove_matviews() {
   echo -n "Pause reportscollector cronjob: "
   kubectl patch cronjobs -n bimeister reportscollector -p '{"spec": {"suspend": true}}'
   local DB_PORT=$(yq '.bimeister_db_port' ${ENV_FILE_PATH})
-  local DB_USERNAME=$(yq '.bimeister_databases.bimeisterdb.username' ${ENV_FILE_PATH})
-  local DB_PASSWORD=$(yq '.bimeister_databases.bimeisterdb.password' ${ENV_FILE_PATH})
+  local DB_USERNAME=$(yq '.bimeister_databases.db.username' ${ENV_FILE_PATH})
+  local DB_PASSWORD=$(yq '.bimeister_databases.db.password' ${ENV_FILE_PATH})
   echo -n "Matviews "
-  bimutils sql -s $1 -p ${DB_PORT} -d bimeisterdb -u ${DB_USERNAME} -pw ${DB_PASSWORD} --drop-matviews sf_*
+  bimutils sql -h $1 --port ${DB_PORT} -d bimeisterdb -u ${DB_USERNAME} --password ${DB_PASSWORD} drop-matviews "sf_*"
 }
 
 push_images_to_registry() {
@@ -150,16 +160,13 @@ push_images_to_registry() {
   if [[ "${ENV}" == "test" || "${ENV}" == "demo" || "${PUSH_IMAGES}" == "true" ]]; then
     echo "Start pushing images to registry"
     REGISTRY_HOST=$(yq '.registry' ${ENV_FILE_PATH})
-    REGISTRY_USER=$(yq '.registry_username' ${ENV_FILE_PATH})
-    REGISTRY_PASS=$(yq '.registry_password' ${ENV_FILE_PATH})
+    REGISTRY_USER=${REGISTRY_USER:-$(yq '.registry_username' "${ENV_FILE_PATH}")}
+    REGISTRY_PASS=${REGISTRY_PASS:-$(yq '.registry_password' "${ENV_FILE_PATH}")}
     if [[ -z "${REGISTRY_HOST}" ]]; then
           echo "No registry name was found in ${ENV}. Exit!"
           exit 1
-    elif [[ -z "${REGISTRY_USER}" || -z "${REGISTRY_PASS}" ]]; then
-        skopeo-push-images.sh --ignore-tls -i ${RELEASE_PATH}/tools/images/images.tar -r ${REGISTRY_HOST}
-    else
-        skopeo-push-images.sh --ignore-tls -i ${RELEASE_PATH}/tools/images/images.tar -r ${REGISTRY_HOST} -u ${REGISTRY_USER} -p ${REGISTRY_PASS}
     fi
+    skopeo-push-images.sh --ignore-tls -i ${RELEASE_PATH}/tools/images/images.tar -r ${REGISTRY_HOST} -u ${REGISTRY_USER} -p ${REGISTRY_PASS}
   else
     echo $SKIP_MSG
   fi
@@ -187,6 +194,7 @@ prepare_venv() {
   local SOURCE_VENV_DIR_PATH="${RELEASE_PATH}/tools/box-venv"
   echo "Preparing virtual environment..."
   sudo rsync -a --delete ${SOURCE_VENV_DIR_PATH} ${TARGET_VENV_DIR_PATH}/
+  sudo chmod +x ${TARGET_VENV_DIR_PATH}/box-venv/bin/*
   source /opt/bimeister/box-venv/bin/activate
   if [[ -z "$VIRTUAL_ENV" ]]; then
     echo "Virtual environment check: FAILED."
@@ -275,7 +283,7 @@ check_feature_toggles() {
     echo "Feature toggles check: skipped."
     return 0
   fi
-  local CHECK_FT=$(bimutils ft -${__PROJECT__} --env ${ENV} --check)
+  local CHECK_FT=$(bimutils ft check -${__PROJECT__} --env ${ENV})
   if [[ "${CHECK_FT}" == "Total match!" ]]; then
     echo "Feature toggles check: OK."
   else
@@ -283,6 +291,14 @@ check_feature_toggles() {
     echo
     echo "$CHECK_FT"
     exit 1
+  fi
+}
+
+copy_helm_charts() {
+  # Copy helm charts to specific location.
+  # Was created because of security requirements in DTOiR.
+  if [ -d "$1" ]; then
+    cp -a $RELEASE_PATH/helm/. $1
   fi
 }
 
@@ -302,27 +318,33 @@ SKIP_IMAGES=false
 PUSH_IMAGES=false
 SKIP_PODS_CHECK=false
 SKIP_FT_CHECK=false
+COPY_CHARTS=false
+REPLICAS=""
+IS_LOCAL_REGISTRY=true
 parse_args "$@"
 RELEASE_PATH="/bimeister/releases/${BUILD_FOLDER}"
 ENV_FILE_PATH="/bimeister/releases/.env/${ENV}.yaml"
 ANSIBLE_CFG_PATH=${RELEASE_PATH}/tools/ansible.cfg
+HELM_UPGRADE=(helm upgrade bimeister --install --create-namespace -n bimeister "${RELEASE_PATH}/helm/charts/bimeister" -f "${RELEASE_PATH}/helm/values/bimeister.yaml")
 ## END variables initialization ##
 
 ## BEGIN preparation checks ##
 if ! sudo -n true &> /dev/null; then
   echo "Script requires sudo privileges!" && exit 1
 fi
+is_path_exists "/bimeister/releases"
 check_hostname
 check_mandatory_arguments
-get_build_metadata RELEASE __PROJECT__
 prepare_venv
 check_required_apps
+get_build_metadata RELEASE __PROJECT__
 check_kubeAPI_connection
 check_pods_status
 is_path_exists ${RELEASE_PATH} "Release path check: FAILED." "Release path check: OK."
 is_path_exists ${ENV_FILE_PATH} "Env file check: FAILED." "Env file check: OK."
 sync_env_files
 check_feature_toggles
+[[ "$COPY_CHARTS" == "true" ]] && copy_helm_charts "/bimeister/helm-charts"
 echo
 ## END preparation checks ##
 
@@ -330,45 +352,61 @@ echo
 if $IS_NEW_DB; then
   get_ssh_creds SSH_USER SSH_PASS
 fi
+
 echo "Creating hosts and values files..."
 ANSIBLE_CONFIG=${ANSIBLE_CFG_PATH} \
-ansible-playbook ${RELEASE_PATH}/tools/create-hosts-and-values-files.yaml -e "env=${ENV} is_local_update=${IS_LOCAL_UPDATE}"
+ansible-playbook ${RELEASE_PATH}/tools/create-hosts-and-values-files.yaml -e \
+    "env=${ENV} \
+    is_local_update=${IS_LOCAL_UPDATE} \
+    replicas=${REPLICAS} \
+    is_local_repo=${IS_LOCAL_REGISTRY}"
 
-# create database(s) and user(s) if needed
-if $IS_NEW_DB; then
+if $IS_NEW_DB; then # Create database(s) and user(s) if needed
   ANSIBLE_CONFIG=${ANSIBLE_CFG_PATH} \
-  ansible-playbook -i ${RELEASE_PATH}/inventory/hosts.yaml ${RELEASE_PATH}/tools/create-databases-and-users.yaml \
-  -e "ansible_user=${SSH_USER} ansible_ssh_pass=${SSH_PASS} ansible_become_pass=${SSH_PASS}"
+  ansible-playbook -i ${RELEASE_PATH}/inventory/hosts.yaml ${RELEASE_PATH}/tools/create-databases-and-users.yaml -e \
+      "ansible_user=${SSH_USER} \
+      ansible_ssh_pass=${SSH_PASS} \
+      ansible_become_pass=${SSH_PASS}"
 fi
 
 push_images_to_registry
 
-if [[ "${__PROJECT__}" == "suid" ]]; then
-  # Stop reportscollector and remove matviews
+if [[ "${__PROJECT__}" == "suid" ]]; then # Stop reportscollector and remove matviews
   DB_HOST=$(get_db_host)
   remove_matviews ${DB_HOST}
+elif [[ "${__PROJECT__}" == "dtoir" ]]; then # Added because of security requirements in DTOiR.
+  [[ "$COPY_CHARTS" == "false" ]] && copy_helm_charts "/bimeister/helm-charts"
 fi
 ## END prepare upgrade ##
 
 ## BEGIN upgrade ##
+echo
 echo "Test upgrade in DRY-RUN mode"
-helm upgrade bimeister -n bimeister ${RELEASE_PATH}/helm/charts/bimeister -f ${RELEASE_PATH}/helm/values/bimeister.yaml --dry-run # >&3 2>&3
+"${HELM_UPGRADE[@]}" --dry-run # >&3 2>&3
 echo
 echo "BEGIN UPGRADE..."
-helm upgrade bimeister -n bimeister ${RELEASE_PATH}/helm/charts/bimeister -f ${RELEASE_PATH}/helm/values/bimeister.yaml # >&3 2>&3
+"${HELM_UPGRADE[@]}" # >&3 2>&3
 echo
-echo "UPGRADE FINISHED!"
 echo "Необходимо убедиться, что все сервисы пространства bimeister запущены(может занять до 15-ти минут)"
 echo
 start_k9s 10
 echo
+if check_pods_status &> /dev/null; then
+  echo "ОБНОВЛЕНИЕ ВЫПОЛНЕНО УСПЕШНО!"
+else
+  echo "Обновление не завершено."
+  echo "Часть сервисов имеют некорректный статус. Требуется проверить!"
+fi
 ## END upgrade ##
 
 ## BEGIN post upgrade tasks ##
-if [[ "${__PROJECT__}" == "suid" ]]; then
-  # Resume reportscollector cronjob
-  echo
-  echo "После запуска всех сервисов необходимо вручную восстановить работу представлений:"
-  echo "kubectl patch cronjobs -n bimeister reportscollector -p '{\"spec\": {\"suspend\": false}}'"
+if [[ "${__PROJECT__}" == "suid" ]]; then # Resume reportscollector cronjob in Suid
+  if check_pods_status &> /dev/null; then
+    kubectl patch cronjobs -n bimeister reportscollector -p '{"spec": {"suspend": false}}'
+  else
+    echo
+    echo "После запуска всех сервисов необходимо вручную восстановить работу представлений:"
+    echo "kubectl patch cronjobs -n bimeister reportscollector -p '{\"spec\": {\"suspend\": false}}'"
+  fi
 fi
 ## END post upgrade tasks ##
