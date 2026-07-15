@@ -1,19 +1,23 @@
-import typer
-import pandas as pd
-import psycopg2
-from psycopg2 import errors
-
 import logging
-import sys
 import os
 import platform
 import re
+import sys
+from collections.abc import Generator
+from datetime import timedelta
 from getpass import getpass
 from time import perf_counter
-from datetime import timedelta
 
-from tools import File, Tools
+import pandas as pd
+import psycopg
+import typer
+from psycopg import errors
+
 from mlogger import Logs
+from tools import File, Tools
+
+
+
 
 _logger = logging.getLogger(__name__)
 
@@ -25,25 +29,24 @@ class DB:
         self._log = Logs()
 
     @classmethod
-    def get_query_status(cls):
+    def get_query_status(cls) -> bool:
         return cls.__is_query_successful
     
     @classmethod
-    def set_query_status(cls, value):
+    def set_query_status(cls, value: bool) -> bool:
         if isinstance(value, bool):
             cls.__is_query_successful = value
             return cls.__is_query_successful
         else:
-            raise ValueError("Query status suppose to be boolean!")
+            raise ValueError("Query status must be boolean!")
 
-    def connect_to_db(self, **kwargs):
-        """ Function for establishing connection to db. """
-
+    def connect_to_db(self, **kwargs) -> psycopg.Connection | None:
+        """Establishes a connection to the database using psycopg."""
         if not kwargs['password']:
             kwargs['password'] = getpass("Enter db password: ")
         try:
-            conn = psycopg2.connect(
-                database=kwargs['db'],
+            conn = psycopg.connect(
+                dbname=kwargs['db'],
                 host=kwargs['host'],
                 user=kwargs['user'],
                 password=kwargs['password'],
@@ -52,35 +55,29 @@ class DB:
         except errors.OperationalError as err:
             _logger.error(err)
             print(f"Database connection error.\n{err}")
-        except psycopg2.Error as err:
+        except errors.Error as err:
             _logger.error(err)
             print(self._log.err_message)
-            return False
+            return None
         else:
             return conn
 
-    def is_query_file_exists(self, filepath) -> bool:
-        """ Check if sql query file exists. """
-        if not os.path.isfile(filepath):
-            print(f"No such file: {os.path.basename(filepath)}")
-            return False
-        else: return True
+    def get_output_filename(self, query_name: str) -> str | None:
+        """Generates a safe CSV output filename based on the query name."""
+        from pathlib import Path
 
-    def get_output_filename(self, filepath) -> str:
-        """ Check for result output file name. """
+        # Ensure name doesn't contain invalid characters for a filename
+        safe_name = re.sub(r'[^a-zA-Z0-9_]', '_', query_name)
+        output_file = f"{safe_name.lower()}.csv"
+        output_path = Path(output_file)
 
-        if not self.is_query_file_exists(filepath):
-            return None
-        # remove special characters might be in the filename
-        filepath = re.sub(r'[^a-zA-Z0-9./]', '_', filepath)
-        output_file = os.path.basename(filepath).split('.')[0] + '.csv'
-        # remove output file if it exists
-        if os.path.isfile(output_file):
+        # Safely clear out any old run's CSV file before writing fresh data
+        if output_path.is_file():
             try:
-                os.remove(output_file)
+                output_path.unlink(missing_ok=True)
             except OSError as err:
-                print(f"Error removing file '{output_file}': {err}")
-                print(f"Remove the file {output_file} and try again!")
+                print(f"Error removing old output file '{output_file}': {err}")
+                print(f"Please manually delete {output_file} and try again.")
                 return None
         return output_file
 
