@@ -3,10 +3,11 @@ import os
 import platform
 import re
 import sys
-from collections.abc import Generator
-from datetime import timedelta
+from collections.abc import Generator, Sequence
+from datetime import timedelta, datetime
 from getpass import getpass
 from time import perf_counter
+from pathlib import Path
 
 import pandas as pd
 import psycopg
@@ -14,9 +15,32 @@ import typer
 from psycopg import errors
 
 from mlogger import Logs
-from tools import File, Tools
+from tools import Tools
 
 
+
+from psycopg.types.datetime import TimestampLoader, TimestamptzLoader
+
+# Create custom loaders to translate PostgreSQL infinity to Python boundaries
+class SafeTimestampLoader(TimestampLoader):
+    def load(self, data: bytes) -> datetime:
+        if data == b"infinity":
+            return datetime.max
+        if data == b"-infinity":
+            return datetime.min
+        return super().load(data)
+
+class SafeTimestamptzLoader(TimestamptzLoader):
+    def load(self, data: bytes) -> datetime:
+        if data == b"infinity":
+            return datetime.max.replace(tzinfo=datetime.timezone.utc)
+        if data == b"-infinity":
+            return datetime.min.replace(tzinfo=datetime.timezone.utc)
+        return super().load(data)
+
+# Register these globally so Psycopg 3 intercepts them automatically on all queries
+psycopg.adapters.register_loader("timestamp", SafeTimestampLoader)
+psycopg.adapters.register_loader("timestamptz", SafeTimestamptzLoader)
 
 
 _logger = logging.getLogger(__name__)
@@ -50,7 +74,8 @@ class DB:
                 host=kwargs['host'],
                 user=kwargs['user'],
                 password=kwargs['password'],
-                port=kwargs['port']
+                port=kwargs['port'],
+                options="-c client_encoding=UTF8"
                                     )
         except errors.OperationalError as err:
             _logger.error(err)
@@ -64,7 +89,6 @@ class DB:
 
     def get_output_filename(self, query_name: str) -> str | None:
         """Generates a safe CSV output filename based on the query name."""
-        from pathlib import Path
 
         # Ensure name doesn't contain invalid characters for a filename
         safe_name = re.sub(r'[^a-zA-Z0-9_]', '_', query_name)
@@ -82,239 +106,224 @@ class DB:
         return output_file
 
     def exec_query(
-            self,
-            conn,
-            query,
-            output_file=False,
-            remove_output_file=False,
-            cursor=None,
-            chunk_size=10_000,
-            params=None,
-            header=True,
-            print_=False,
-            fetch=False,
-            keep_conn=False,
-            print_elapsed_time=False):
+        self,
+        conn: psycopg.Connection,
+        query: str,
+        output_file: str | bool = False,
+        remove_output_file: bool = False,
+        cursor: psycopg.Cursor | None = None,
+        chunk_size: int = 10_000,
+        params: Sequence | dict | None = None,
+        header: bool = True,
+        print_: bool = False,
+        print_max: bool = False,
+        fetch: bool = False,
+        keep_conn: bool = False,
+        print_elapsed_time: bool = False
+    ) -> list[tuple] | tuple | bool | None:
         if not query:
             return None
-        is_closed_connection: bool = True
-        if remove_output_file and isinstance(output_file, str) and os.path.isfile(output_file):
+
+        if remove_output_file and isinstance(output_file, str):
             try:
-                os.remove(output_file)
-            except OSError as err:
+                Path(output_file).unlink(missing_ok=True)
+            except OSError:
                 print(self._log.err_message)
-        if not cursor:
-            is_closed_connection = False
-            cursor = conn.cursor()
+
+        is_external_cursor = cursor is not None
         start = perf_counter()
+
+        is_read_query = query.strip().upper().startswith(("SELECT", "WITH", "SHOW", "EXPLAIN"))
+        use_server_streaming = is_read_query
+
+        created_internal_cursor = False
+
         try:
-            if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
+            if use_server_streaming:
+                cursor = conn.cursor(name="streaming_cursor")
+                created_internal_cursor = True
+            elif not is_external_cursor:
+                cursor = conn.cursor()
+
+            cursor.execute(query, params or ())
+
             if fetch:
-                result = cursor.fetchone()
-                return result
-            if cursor.rowcount > 0:
-                mode = 'w' if not os.path.isfile(output_file) else 'a'
-                for chunk in self.record_batches(cursor, chunk_size=chunk_size):
-                    chunk.to_csv(output_file, index=False, header=header, mode=mode)
-                    header, mode = False, 'a'                
-        except errors.UndefinedTable as err:
-            _logger.error(err)
-            print(err)
-            return False
-        except errors.InsufficientPrivilege as err:
-            _logger.error(err.pgerror)
-            print(f"Error: Insufficient Privilege (SQLSTATE 42501). Details: {err}")
-            conn.rollback()
-            return False
-        except errors.ProgrammingError as err:
-            if cursor.rowcount in (0, -1):
-                _logger.info(f"{cursor}")
-                print(cursor.statusmessage)
-                conn.commit()
-                self.set_query_status(True)
+                return cursor.fetchone()
+
+            if is_read_query and cursor.description:
+                if not print_ and not print_max:
+                    mode = 'w'
+                    for chunk_df in self.record_batches(cursor, chunk_size=chunk_size):
+                        chunk_df.to_csv(output_file, index=False, header=header, mode=mode)
+                        header, mode = False, 'a'
+                else:
+                    if print_max:
+                        pd.set_option('display.max_rows', None)    # Show all rows in chunk
+                        pd.set_option('display.max_columns', None) # Show all columns
+                        pd.set_option('display.width', None)       # Expand display width
+
+                    total_printed_rows = 0
+                    max_safe_print_rows = 100_000
+
+                    for chunk_df in self.record_batches(cursor, chunk_size=chunk_size):
+                        if not chunk_df.empty:
+                            print(chunk_df)
+                            total_printed_rows += len(chunk_df)
+
+                        if total_printed_rows >= max_safe_print_rows:
+                            print(f"\n⚠️  [Output Truncated: Result set exceeds the safe display limit of {max_safe_print_rows:,} rows]")
+                            break
             else:
-                _logger.error(err)
-                print(self._log.err_message)
-                return None
+                if cursor.rowcount > 0:
+                    print(f"Success: {cursor.rowcount} row(s) affected.")
+                else:
+                    print(f"Command executed successfully: {cursor.statusmessage}")
+
+            self.set_query_status(True)
+            conn.commit()
+
+        except errors.SyntaxError as err:
+            _logger.error(err)
+            print(f"\n❌ SQL Syntax Error: {err}")
+            return False
+        except (errors.UndefinedTable, errors.InsufficientPrivilege) as err:
+            _logger.error(err)
+            print(f"Database constraint error: {err}")
+            conn.rollback()
+            return False
         except errors.ReadOnlySqlTransaction as err:
-            _logger.error(err.pgerror)
-            print(f"Error: {err}")
-            return False
-        except errors.DatabaseError as err:
-            _logger.error(err.pgerror)
-            conn.rollback()
-            print(err.pgerror)
-            return False
-        except errors.InterfaceError as err:
-            _logger.error(err.pgerror)
-            conn.rollback()
-            print(err.pgerror)
-            return False
-        except errors.IntegrityError as err:
+            _logger.error(err)
+            print(f"Caught expected read-only transaction error: {err}")
+        except errors.Error as err:
             conn.rollback()
             _logger.error(err)
             print(self._log.err_message)
             return False
-        except errors.Error as err:
-            conn.rollback()
-            print(err)
-            return False
-        else:
-            end = perf_counter()
-            self.set_query_status(True)
-            conn.commit()
         finally:
-            if not is_closed_connection and not keep_conn:
+            end = perf_counter()
+            if (not is_external_cursor or created_internal_cursor) and cursor:
                 cursor.close()
+            if not keep_conn and not is_external_cursor:
                 conn.close()
+
             if self.get_query_status() and print_elapsed_time:
-                elapsed_time: float = end - start
+                elapsed_time = end - start
                 if elapsed_time < 1:
                     print(f"Elapsed time: {elapsed_time:4.3f} s")
                 else:
-                    print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
-        if print_:
-            self.print_pd_dataframe_csv_file(output_file)
+                    print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')}")
 
-    def execute_query_from_file(self, conn, **kwargs):
-        """ Execute query from the file. """
+    def execute_query_from_file(self, conn: psycopg.Connection, **kwargs) -> None:
+        """Executes query blocks from provided external files securely."""
+        filepath = kwargs.get('filepath')
+        if not filepath:
+            print("Error: No file path provided.")
+            return None
+        file_path_obj = Path(filepath)
+        if not file_path_obj.is_file():
+            print(f"No such file: {file_path_obj.name}")
+            return None
 
-        if kwargs['filepath']:
-            filepath: str = kwargs['filepath']
-        else:
-            return None
-        if not self.is_query_file_exists(filepath):
-            return None
-        output_file: str = self.get_output_filename(filepath)
+        # Generate a clean CSV output filename based on their SQL file's name
+        output_file = self.get_output_filename(file_path_obj.stem)
         if not conn or not output_file:
             return None
 
-        with conn.cursor() as cursor:
-            start = perf_counter()
-            has_delimiter: bool = False
-            with open(filepath, 'r', encoding='utf-8') as f:
-                if kwargs['read_by_line']:
-                    sql_buffer: list = []
-                    for line in f:
-                        line = line.strip()
-                        if not line or line.startswith('--') or line.startswith('#'):
-                            continue # skip empty lines and comments
-                        sql_buffer.append(line)
-                        if line.endswith(';'):
-                            has_delimiter = True
-                            query: str = ' '.join(sql_buffer).strip()
-                            if query:
-                                self.exec_query(conn, query, output_file=output_file, cursor=cursor, chunk_size=kwargs['chunk_size'])
-                                sql_buffer = [] # clear buffer for next query
-                    if not has_delimiter:
-                        print(f"No semicolon(;) symbol was found in {os.path.basename(filepath)}\nCheck query syntax or use '--read-all' flag, and try again!")
-                        sys.exit()
-                else:
-                    query = f.read()
-                    self.exec_query(conn, query, output_file=output_file, cursor=cursor, chunk_size=kwargs['chunk_size'])
-        cursor.close()
-        conn.close()
+        start = perf_counter()
+        has_delimiter = False
+        chunk_size = kwargs.get('chunk_size', 10_000)
+
+        # Extract display preferences safely
+        print_flag = kwargs.get('print_', False)
+        print_max_flag = kwargs.get('print_max', False)
+        should_display_on_screen = print_flag or print_max_flag
+
+        try:
+            with conn.cursor() as cursor:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    if kwargs.get('read_by_line'):
+                        sql_buffer = []
+                        for line in f:
+                            cleaned_line = line.strip()
+                            if not cleaned_line or cleaned_line.startswith(('--', '#')):
+                                continue
+                            sql_buffer.append(cleaned_line)
+
+                            if cleaned_line.endswith(';'):
+                                has_delimiter = True
+                                query = ' '.join(sql_buffer).strip()
+                                if query:
+                                    self.exec_query(
+                                        conn, query, output_file=output_file,
+                                        cursor=cursor, chunk_size=chunk_size, keep_conn=True,
+                                        print_=print_flag, print_max=print_max_flag
+                                    )
+                                    sql_buffer = []
+                        if not has_delimiter:
+                            print(f"No semicolon (;) found in {file_path_obj.name}\nCheck query syntax or remove '--read-by-line' flag, and try again!")
+                            sys.exit(1)
+                    else:
+                        query = f.read()
+                        self.exec_query(
+                            conn, query, output_file=output_file,
+                            cursor=cursor, chunk_size=chunk_size, keep_conn=True,
+                            print_=print_flag, print_max=print_max_flag
+                        )
+        finally:
+            conn.close()
+
         end = perf_counter()
         _logger.info(filepath)
-        elapsed_time: float = end - start
-        if os.path.isfile(output_file):
-            sep = "\\" if platform.system == "Windows" else "/"
-            if kwargs['print_'] or kwargs['print_max']:
-                if kwargs['print_max']:
-                    self.print_pd_dataframe_csv_file(output_file, print_max=True)
-                else:
-                    self.print_pd_dataframe_csv_file(output_file)
-            else:
-                print(f"Query result saved: {os.getcwd()}{sep}{output_file}")
-        new_line = "\n" if kwargs['print_'] or kwargs['print_max'] else ""
+        elapsed_time = end - start
+
+        # Only display file save paths if the user DID NOT request a screen print
+        if not should_display_on_screen and Path(output_file).is_file():
+            sep = "\\" if platform.system() == "Windows" else "/"
+            print(f"Query result saved: {os.getcwd()}{sep}{output_file}")
+
+        new_line = "\n" if should_display_on_screen else ""
         if self.get_query_status():
             if elapsed_time < 1:
                 print(f"{new_line}Elapsed time: {elapsed_time:4.3f} s")
             else:
-                print(f"{new_line}Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
+                print(f"{new_line}Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')}")
 
-    def record_batches(self, cursor, chunk_size):
-        """ Function returns generator class to return large amount of data in chunks. """
+    def record_batches(self, cursor: psycopg.Cursor, chunk_size: int) -> Generator[pd.DataFrame, None, None]:
+        """Function returns generator class to return large amount of data in chunks."""
         while True:
             batch_rows = cursor.fetchmany(chunk_size)
-            column_names = [col[0] for col in cursor.description]
             if not batch_rows:
                 break
+            column_names = [col.name for col in cursor.description] if cursor.description else []
             yield pd.DataFrame(batch_rows, columns=column_names)
-
-    def print_pd_dataframe_csv_file(self, filepath, print_max=False):
-        """ Print .csv file content. """
-        try:
-            df = File.read_file(filepath)
-            if print_max:
-                pd.set_option('display.max_rows', None)  # Display all rows
-                pd.set_option('display.max_columns', None) # Display all columns
-                pd.set_option('display.width', None) # Adjust width for better display of wide data
-            if not isinstance(df, bool) and not df.empty:
-                print(df)
-        except pd.errors.ParserError as err:
-            _logger.error(err)
-            print(f"Can't print output because it contains more than one SELECT results.")
-        except Exception as err:
-            _logger.error(err)
-            print(self._log.err_message)
-        else:
-            try:
-                os.remove(filepath)
-            except FileNotFoundError:
-                _logger.error(f"Error: {filepath} not found.")
-            except PermissionError:
-                _logger.error(f"Error: Permission denied to remove {filepath}.")
-            except OSError as e:
-                _logger.error(f"Error: {e.strerror} (Code: {e.errno})")
-
-    def print_list_of_users(self, file) -> None:
-        """ Function to print users on a screen. """
-
-        if not file:
-            print("No file has been passed. Exit.")
-            sys.exit()
-        data = File.read_file(self.output_file)
-        roles: list = [role for role in data['role_name']]
-        for role in roles:
-            print(role)
-
-    def get_query(self, filepath, **kwargs) -> str:
-        """ Prepare query from provided sql file.
-            Needs for certain .sql queries using multilines and more than one semicolons.
-        """
-        if not filepath or not self.is_query_file_exists(filepath):
-            return None
-        if kwargs and kwargs.get('search_pattern'):
-            pattern = kwargs['search_pattern']
-        else: 
-            return None
-        with open(filepath, 'r', encoding='utf-8') as f:
-            file_data = f.read()
-            query = '\n'.join([x for x in file_data.split('\n') if not x.startswith('--') and not x.startswith('#')]).format(pattern)
-            return query
-
-    def get_list_matviews_query(self, filepath) -> str:
-        """ List matviews by provided name pattern. """
-        if not filepath or not self.is_query_file_exists(filepath):
-            return None
-        with open(filepath, 'r', encoding='utf-8') as f:
-            file_data = f.read()
-            query = '\n'.join([x for x in file_data.split('\n') if not x.startswith('--') and not x.startswith('#')])
-        return query
 
 
 class Queries:
+
+    COUNT_MATVIEWS_SQL = """
+        SELECT count(*) 
+        FROM pg_catalog.pg_matviews 
+        WHERE matviewname ILIKE %s;
+    """
+
+    LIST_MATVIEWS_SQL = """
+        SELECT matviewname, schemaname 
+        FROM pg_catalog.pg_matviews 
+        WHERE matviewname ILIKE %s;
+    """
+
+    DROP_MATVIEW_SQL = "DROP MATERIALIZED VIEW IF EXISTS {};"
+
     @staticmethod
-    def count_matviews(name, conn) -> str:
-        query: str = "select count(*) from pg_catalog.pg_matviews where matviewname ilike '{0}';".format(name)
-        result = DB.exec_query(DB, conn, query, fetch=True, keep_conn=True)
-        if not result and not result[0]:
-            return None
-        return result[0]
+    def count_matviews(name: str, conn: psycopg.Connection) -> int | None:
+        """Securely checks total materialized views matching a pattern."""
+        db_instance = DB()
+        result = db_instance.exec_query(
+            conn, Queries.COUNT_MATVIEWS_SQL, params=(name,), fetch=True, keep_conn=True
+        )
+        if result and isinstance(result, tuple):
+            return result[0]
+        return None
 
 
 # sql_app CLI
@@ -365,12 +374,12 @@ def sql_callback(
 @sql_app.command()
 def exec(
     filepath: str = typer.Option(..., "--file", "-f", help="Path to a file with sql query"),
-    chunk_size: int = typer.Option(10_000, "--chunk-size", help="Adjust chunks of pulled data from database during select large amount of data"),
-    read_by_line: bool = typer.Option("False", "--read-by-line", help="Read .sql file line by line delimited by semicolons. This flag forces to read all the data from .sql file'"),
-    print_: bool = typer.Option("False", "--print", help="Print content of dataframe on a screen"),
-    print_max: bool = typer.Option("False", '--print-max', help='Print full content of dataframe on a screen')
+    chunk_size: int = typer.Option(10_000, "--chunk-size", help="Adjust chunk size for pulling data"),
+    read_by_line: bool = typer.Option("False", "--read-by-line", help="Read .sql file line-by-line"),
+    print_: bool = typer.Option("False", "--print", help="Print dataframe preview to screen"),
+    print_max: bool = typer.Option("False", '--print-max', help='Print full dataframe content')
         ):
-    """ Command to execute SQL query in a given database. """
+    """Command to execute a user's local SQL query file in a given database."""
 
     pg = DB()
     pg.execute_query_from_file(sql_context.conn, filepath=filepath, chunk_size=chunk_size, read_by_line=read_by_line, print_=print_, print_max=print_max)
