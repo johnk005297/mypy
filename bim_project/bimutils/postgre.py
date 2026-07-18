@@ -12,14 +12,10 @@ from pathlib import Path
 import pandas as pd
 import psycopg
 import typer
-from psycopg import errors
+from psycopg import errors, sql
+from psycopg.types.datetime import TimestampLoader, TimestamptzLoader
 
 from mlogger import Logs
-from tools import Tools
-
-
-
-from psycopg.types.datetime import TimestampLoader, TimestamptzLoader
 
 # Create custom loaders to translate PostgreSQL infinity to Python boundaries
 class SafeTimestampLoader(TimestampLoader):
@@ -75,7 +71,8 @@ class DB:
                 user=kwargs['user'],
                 password=kwargs['password'],
                 port=kwargs['port'],
-                options="-c client_encoding=UTF8"
+                options="-c client_encoding=UTF8",
+                cursor_factory=psycopg.ClientCursor
                                     )
         except errors.OperationalError as err:
             _logger.error(err)
@@ -85,6 +82,7 @@ class DB:
             print(self._log.err_message)
             return None
         else:
+            conn.prepare_threshold = None
             return conn
 
     def get_output_filename(self, query_name: str) -> str | None:
@@ -133,19 +131,26 @@ class DB:
         is_external_cursor = cursor is not None
         start = perf_counter()
 
+        # Determine if we are actually writing data out to a physical CSV file
+        should_stream_to_a_file = bool(output_file and isinstance(output_file, str))
         is_read_query = query.strip().upper().startswith(("SELECT", "WITH", "SHOW", "EXPLAIN"))
-        use_server_streaming = is_read_query
+
+        # Only use a Server-Side named cursor if we are BOTH a read query AND saving to a file!
+        use_server_streaming = should_stream_to_a_file and is_read_query
 
         created_internal_cursor = False
-
         try:
+            self.set_query_status(False)
             if use_server_streaming:
                 cursor = conn.cursor(name="streaming_cursor")
                 created_internal_cursor = True
             elif not is_external_cursor:
                 cursor = conn.cursor()
 
-            cursor.execute(query, params or ())
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
 
             if fetch:
                 return cursor.fetchone()
@@ -176,8 +181,6 @@ class DB:
             else:
                 if cursor.rowcount > 0:
                     print(f"Success: {cursor.rowcount} row(s) affected.")
-                else:
-                    print(f"Command executed successfully: {cursor.statusmessage}")
 
             self.set_query_status(True)
             conn.commit()
@@ -194,6 +197,7 @@ class DB:
         except errors.ReadOnlySqlTransaction as err:
             _logger.error(err)
             print(f"Caught expected read-only transaction error: {err}")
+            return False
         except errors.Error as err:
             conn.rollback()
             _logger.error(err)
@@ -214,7 +218,7 @@ class DB:
                     print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')}")
 
     def execute_query_from_file(self, conn: psycopg.Connection, **kwargs) -> None:
-        """Executes query blocks from provided external files securely."""
+        """Executes query blocks from user-provided external files securely."""
         filepath = kwargs.get('filepath')
         if not filepath:
             print("Error: No file path provided.")
@@ -224,51 +228,40 @@ class DB:
             print(f"No such file: {file_path_obj.name}")
             return None
 
-        # Generate a clean CSV output filename based on their SQL file's name
         output_file = self.get_output_filename(file_path_obj.stem)
         if not conn or not output_file:
             return None
 
         start = perf_counter()
-        has_delimiter = False
         chunk_size = kwargs.get('chunk_size', 10_000)
-
-        # Extract display preferences safely
         print_flag = kwargs.get('print_', False)
         print_max_flag = kwargs.get('print_max', False)
-        should_display_on_screen = print_flag or print_max_flag
 
         try:
-            with conn.cursor() as cursor:
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    if kwargs.get('read_by_line'):
-                        sql_buffer = []
-                        for line in f:
-                            cleaned_line = line.strip()
-                            if not cleaned_line or cleaned_line.startswith(('--', '#')):
-                                continue
-                            sql_buffer.append(cleaned_line)
+            with open(filepath, 'r', encoding='utf-8') as f:
+                raw_lines = f.readlines()
+            clean_lines = [
+                line for line in raw_lines
+                if line.strip() and not line.strip().startswith(('--', '#'))
+            ]
+            query = ''.join(clean_lines).strip()
 
-                            if cleaned_line.endswith(';'):
-                                has_delimiter = True
-                                query = ' '.join(sql_buffer).strip()
-                                if query:
-                                    self.exec_query(
-                                        conn, query, output_file=output_file,
-                                        cursor=cursor, chunk_size=chunk_size, keep_conn=True,
-                                        print_=print_flag, print_max=print_max_flag
-                                    )
-                                    sql_buffer = []
-                        if not has_delimiter:
-                            print(f"No semicolon (;) found in {file_path_obj.name}\nCheck query syntax or remove '--read-by-line' flag, and try again!")
-                            sys.exit(1)
-                    else:
-                        query = f.read()
-                        self.exec_query(
-                            conn, query, output_file=output_file,
-                            cursor=cursor, chunk_size=chunk_size, keep_conn=True,
-                            print_=print_flag, print_max=print_max_flag
-                        )
+            if not query:
+                print(f"No valid SQL queries found inside {file_path_obj.name}")
+                return None
+
+            # Execute the clean query string using a plain, unified client cursor
+            with conn.cursor() as cursor:
+                self.exec_query(
+                    conn=conn,
+                    query=query,
+                    output_file=output_file,
+                    cursor=cursor,
+                    chunk_size=chunk_size,
+                    keep_conn=True,
+                    print_=print_flag,
+                    print_max=print_max_flag
+                )
         finally:
             conn.close()
 
@@ -276,7 +269,7 @@ class DB:
         _logger.info(filepath)
         elapsed_time = end - start
 
-        # Only display file save paths if the user DID NOT request a screen print
+        should_display_on_screen = print_flag or print_max_flag
         if not should_display_on_screen and Path(output_file).is_file():
             sep = "\\" if platform.system() == "Windows" else "/"
             print(f"Query result saved: {os.getcwd()}{sep}{output_file}")
@@ -287,6 +280,7 @@ class DB:
                 print(f"{new_line}Elapsed time: {elapsed_time:4.3f} s")
             else:
                 print(f"{new_line}Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')}")
+
 
     def record_batches(self, cursor: psycopg.Cursor, chunk_size: int) -> Generator[pd.DataFrame, None, None]:
         """Function returns generator class to return large amount of data in chunks."""
@@ -312,7 +306,47 @@ class Queries:
         WHERE matviewname ILIKE %s;
     """
 
-    DROP_MATVIEW_SQL = "DROP MATERIALIZED VIEW IF EXISTS {};"
+    DROP_MATVIEWS_WITH_TERMINATE_SQL = """
+    DO $$
+    DECLARE
+        backend RECORD;
+        log_msg TEXT;
+    BEGIN
+        FOR backend IN
+            SELECT pg_stat_activity.pid AS pid, pg_locks.relation::regclass AS locked_relation
+            FROM pg_stat_activity
+            JOIN pg_locks ON pg_stat_activity.pid = pg_locks.pid
+            WHERE pg_locks.relation::regclass::text ILIKE '{pattern}'
+              AND pg_stat_activity.pid <> pg_backend_pid()
+        LOOP
+            EXECUTE format('SELECT pg_terminate_backend(%s)', backend.pid);
+            
+            -- Assemble pure text using standard string concatenation
+            log_msg := 'Terminated connection to matview ' || backend.locked_relation::text || ' with PID ' || backend.pid::text;
+            
+            -- Call RAISE directly with zero placeholders
+            RAISE NOTICE '%', log_msg;
+        END LOOP;
+    END;
+    $$;
+
+    DO $$
+    DECLARE
+        view_record RECORD;
+    BEGIN
+        FOR view_record IN
+            SELECT schemaname, matviewname
+            FROM pg_matviews
+            WHERE matviewname ILIKE '{pattern}'
+        LOOP
+            EXECUTE 'DROP MATERIALIZED VIEW IF EXISTS '
+                    || quote_ident(view_record.schemaname) || '.'
+                    || quote_ident(view_record.matviewname)
+                    || ' CASCADE';
+        END LOOP;
+    END;
+    $$;
+    """
 
     @staticmethod
     def count_matviews(name: str, conn: psycopg.Connection) -> int | None:
@@ -338,7 +372,6 @@ class SQLContext:
         self.password = None
         self.port = None
         self.conn = None
-        self.folder = None
 
 # Create a context instance
 sql_context = SQLContext()
@@ -357,7 +390,6 @@ def sql_callback(
     sql_context.user = user
     sql_context.password = password
     sql_context.port = port
-    sql_context.folder = Tools.get_resourse_path('sql_queries')
 
     # validate connection
     pg = DB()
@@ -375,7 +407,7 @@ def sql_callback(
 def exec(
     filepath: str = typer.Option(..., "--file", "-f", help="Path to a file with sql query"),
     chunk_size: int = typer.Option(10_000, "--chunk-size", help="Adjust chunk size for pulling data"),
-    read_by_line: bool = typer.Option("False", "--read-by-line", help="Read .sql file line-by-line"),
+    read_by_line: bool = typer.Option("False", "--read-by-line", "-rbl", help="Read .sql file line-by-line"),
     print_: bool = typer.Option("False", "--print", help="Print dataframe preview to screen"),
     print_max: bool = typer.Option("False", '--print-max', help='Print full dataframe content')
         ):
@@ -389,31 +421,53 @@ def exec(
 def get_matviews(
     search_pattern: str = typer.Argument(..., help="Name pattern to search"),
     print_: bool = typer.Option("False", "--print", help="Print content of dataframe on a screen")
-                ):
-    """ Get list of materialized views by it's name pattern. Default all. """
-
+):
+    """Get list of materialized views by its name pattern. Default all."""
     pg = DB()
-    query = pg.get_list_matviews_query(filepath=os.path.join(sql_context.folder, 'get_list_of_matviews.sql'))
-    params: dict = {"name": search_pattern.replace('*', '%')}
-    pg.exec_query(sql_context.conn, query, output_file="matviews-list.csv", remove_output_file=True, params=params, print_=print_)
+
+    sql_wildcard = search_pattern.replace('*', '%')
+    pg.exec_query(
+        conn=sql_context.conn, 
+        query=Queries.LIST_MATVIEWS_SQL, 
+        output_file="matviews-list.csv", 
+        remove_output_file=True,
+        params=(sql_wildcard,),  # Secure tuple parameter delivery
+        print_=print_
+    )
 
 @sql_app.command(name="drop-matviews")
 @sql_app.command(name="drop-matview", hidden=True)
 def drop_matviews(search_pattern: str = typer.Argument(..., help="Name pattern to search")):
-    """ Delete materialized views by it's name pattern. Default all. """
-
+    """Delete materialized views by its name pattern using a secure server loop."""
     pg = DB()
     q = Queries()
     pattern = search_pattern.replace('*', '%')
-    matviews_before: int = q.count_matviews(pattern, sql_context.conn)
-    drop_matviews_query = pg.get_query(filepath=os.path.join(sql_context.folder, 'drop_matviews.sql'), search_pattern=pattern)
-    pg.exec_query(sql_context.conn, drop_matviews_query, keep_conn=True)
+
+    # Count matching views before execution
+    matviews_before = q.count_matviews(pattern, sql_context.conn)
+    if matviews_before == 0:
+        print(f"Deleted: {matviews_before}")
+        sql_context.conn.close()
+        return
+
+    # Use string formatting to inject the wildcard pattern safely
+    full_script = q.DROP_MATVIEWS_WITH_TERMINATE_SQL.format(pattern=pattern)
+
+    # Fire the block with params as None to skip Psycopg 3's pre-parser entirely
+    pg.exec_query(sql_context.conn, full_script, keep_conn=True)
+
     if not pg.get_query_status():
         sql_context.conn.close()
-        sys.exit()
-    matviews_after: int = q.count_matviews(pattern, sql_context.conn)
+        sys.exit(1)
+
+    # Count remaining views
+    matviews_after = q.count_matviews(pattern, sql_context.conn)
+
     print(f"Deleted: {matviews_before - matviews_after}")
     sql_context.conn.close()
+
+
+
 
 
 
