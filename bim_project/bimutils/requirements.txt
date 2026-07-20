@@ -1,4 +1,5 @@
 altgraph==0.17.5
+argcomplete==3.6.3
 atlassian-python-api==4.0.7
 beautifulsoup4==4.14.3
 certifi==2026.1.4
@@ -15,6 +16,8 @@ oauthlib==3.3.1
 ordered-set==4.1.0
 packaging==26.0
 pandas==2.3.3
+psycopg==3.3.4
+psycopg-binary==3.3.4
 psycopg2-binary==2.9.11
 Pygments==2.19.2
 pyinstaller==6.18.0

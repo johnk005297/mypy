@@ -424,7 +424,6 @@ def get_matviews(
 ):
     """Get list of materialized views by its name pattern. Default all."""
     pg = DB()
-
     sql_wildcard = search_pattern.replace('*', '%')
     pg.exec_query(
         conn=sql_context.conn, 
