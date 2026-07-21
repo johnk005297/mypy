@@ -12,8 +12,9 @@ from pathlib import Path
 import pandas as pd
 import psycopg
 import typer
-from psycopg import errors, sql
+from psycopg import errors
 from psycopg.types.datetime import TimestampLoader, TimestamptzLoader
+from rich.console import Console
 
 from mlogger import Logs
 
@@ -168,14 +169,13 @@ class DB:
                         pd.set_option('display.width', None)       # Expand display width
 
                     total_printed_rows = 0
-                    max_safe_print_rows = 100_000
+                    max_safe_print_rows = 50_000
 
                     for chunk_df in self.record_batches(cursor, chunk_size=chunk_size):
                         if not chunk_df.empty:
                             print(chunk_df)
                             total_printed_rows += len(chunk_df)
-
-                        if total_printed_rows >= max_safe_print_rows:
+                        if total_printed_rows > max_safe_print_rows:
                             print(f"\n⚠️  [Output Truncated: Result set exceeds the safe display limit of {max_safe_print_rows:,} rows]")
                             break
             else:
@@ -215,7 +215,7 @@ class DB:
                 if elapsed_time < 1:
                     print(f"Elapsed time: {elapsed_time:4.3f} s")
                 else:
-                    print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')}")
+                    print(f"Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
 
     def execute_query_from_file(self, conn: psycopg.Connection, **kwargs) -> None:
         """Executes query blocks from user-provided external files securely."""
@@ -251,20 +251,20 @@ class DB:
                 return None
 
             # Execute the clean query string using a plain, unified client cursor
-            with conn.cursor() as cursor:
-                self.exec_query(
-                    conn=conn,
-                    query=query,
-                    output_file=output_file,
-                    cursor=cursor,
-                    chunk_size=chunk_size,
-                    keep_conn=True,
-                    print_=print_flag,
-                    print_max=print_max_flag
-                )
+            with Console().status(f"Query execution...", spinner="clock"):
+                with conn.cursor() as cursor:
+                    self.exec_query(
+                        conn=conn,
+                        query=query,
+                        output_file=output_file,
+                        cursor=cursor,
+                        chunk_size=chunk_size,
+                        keep_conn=True,
+                        print_=print_flag,
+                        print_max=print_max_flag
+                    )
         finally:
             conn.close()
-
         end = perf_counter()
         _logger.info(filepath)
         elapsed_time = end - start
@@ -279,8 +279,7 @@ class DB:
             if elapsed_time < 1:
                 print(f"{new_line}Elapsed time: {elapsed_time:4.3f} s")
             else:
-                print(f"{new_line}Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')}")
-
+                print(f"{new_line}Elapsed time: {str(timedelta(seconds=elapsed_time)).split('.')[0]}")
 
     def record_batches(self, cursor: psycopg.Cursor, chunk_size: int) -> Generator[pd.DataFrame, None, None]:
         """Function returns generator class to return large amount of data in chunks."""
