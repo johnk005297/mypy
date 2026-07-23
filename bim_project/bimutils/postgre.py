@@ -179,9 +179,8 @@ class DB:
                             print(f"\n⚠️  [Output Truncated: Result set exceeds the safe display limit of {max_safe_print_rows:,} rows]")
                             break
             else:
-                if cursor.rowcount > 0:
-                    print(f"Success: {cursor.rowcount} row(s) affected.")
-
+                if cursor.statusmessage:
+                    print(cursor.statusmessage)
             self.set_query_status(True)
             conn.commit()
 
