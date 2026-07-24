@@ -11,6 +11,8 @@ def main_menu():
                             \n      check lic                           check license                                   \
                             \n      get sid                             get serverId                                    \
                             \n      apply lic                           apply new license                               \
+                            \n        optional: [-f path_to_file]                                                       \
+                            \n        example: apply lic -f /tmp/license.lic                                            \
                             \n      delete lic                          delete active license                           \
                             \n      activate lic                        activate already uploaded license               \
                             \n                                                                                          \
@@ -70,7 +72,7 @@ def main_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu',)
-    __version__ = '1.79.12'
+    __version__ = '1.79.13'
 
     def __init__(self):
         self._main_menu = main_menu()

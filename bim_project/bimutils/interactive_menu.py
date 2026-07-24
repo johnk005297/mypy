@@ -2,6 +2,7 @@ import os
 
 def launch_menu():
     import argparse
+
     import app_menu
     import auth
     import user
@@ -69,8 +70,16 @@ def launch_menu():
                 message: str = response[1]
                 print(f"Error: {message}" if not success else f"\n   - serverId: {message}")
 
-            case ['apply', 'lic']:
-                License_main.apply_license(url, token, username, password)
+            case ['apply', 'lic', *_]:
+                if '-f' not in user_command:
+                    License_main.apply_license(url, token, username, password)
+                else:
+                    try:
+                        flag_index = user_command.index('-f')
+                        filepath = user_command[flag_index + 1].strip('"').strip("'")
+                        License_main.apply_license(url, token, username, password, filepath=filepath)
+                    except IndexError:
+                        print("Error: Missing file path after '-f' flag.")
 
             case  ['delete', 'lic']:
                 License_main.delete_license(url, token, username, password)

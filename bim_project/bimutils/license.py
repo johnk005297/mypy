@@ -58,60 +58,69 @@ class License:
         data = dict([ [x.split('=', 1)[0].strip(), x.split('=', 1)[1].strip()] for x in tuple(x for x in decoded_string.split('\n') if x) ])
         return data
 
-    def read_license_token(self, data=None) -> list:
-        """ Function checks if there is a license.lic file. If not, ask user for a token.
-            To the dictionary in the final list of licenses we add 'base64_encoded_license' key with all the encoded line from the license file.
+    def read_license_token(self, filepath:str=None, raw_token:str=None) -> list:
+        """ Read provided license token from the file, user input, or raw data immediately.
+            To the dictionary in the final list of licenses we add 'base64_encoded_license' key with all the encoded lines from the license file.
             This key 'base64_encoded_license' is used to post and activate license.
-            Returns a list of dictionaries with license data, if everything is correct. 
+            Returns a list of dictionaries with license data, if everything is correct.
         """
 
-        if not data:
-            data = input('Enter the filename(should have .lic extension) containing token or provide token itself: ').strip()
-            if len(data) < 4:
-                print('Incorrect input data.')
-                return False
         err_message: str = 'Error with decoding the string. Check the log.'
         list_of_licenses: list = []
-
-        is_file: bool = os.path.splitext(data)[1] == '.lic'
-        is_file_exists: bool = False if not is_file else os.path.isfile(f"{os.getcwd()}/{data}")
-        if is_file and not is_file_exists:
-            no_file_message: str = f"Error: No such file '{data}' in the current folder. Check for it."
-            _logger.error(no_file_message)
-            print(no_file_message)
-            return False
-        elif is_file and is_file_exists:
-            with open(data, "r", encoding="utf-8") as file:    # get license_token from the .lic file and put it into data_from_lic_file dictionary
-                content = [line for line in file.read().split('\n') if line]
-            for line in content:
-                is_present: bool = False
-                try:
-                    data = self.decode_base64(line)
-                except (binascii.Error, ValueError) as err:
-                    _logger.error(err)
-                    continue
-                except Exception as err:
-                    _logger.error(err)
-                    continue
-                for license in list_of_licenses:
-                    if license.get('LicenseID') == data['LicenseID']:
-                        is_present = True
-                        break
-                if not is_present:
-                    list_of_licenses.append(data)
-                    list_of_licenses[-1]['base64_encoded_license'] = line
-        else:
+        if raw_token and filepath:
+            _logger.error("Can't use raw token and file containing token data together.")
+            print(self.logs.err_message)
+            return None
+        if raw_token:
+            data = raw_token
+        elif not filepath:
+            data = input('Enter license token: ').strip()
+        if raw_token or not filepath:
+            if not data:
+                print("No license token was provided")
+                return None
             try:
                 list_of_licenses.append(self.decode_base64(data))
                 list_of_licenses[0]['base64_encoded_license'] = data
             except binascii.Error:
                 _logger.error(f"Binascii error with decoding the string: {binascii.Error}")
                 print(err_message)
-                return False
+                return None
             except ValueError:
                 _logger.error(f"Value error with decoding the string: {ValueError}")
                 print(err_message)
-                return False
+                return None
+
+        if filepath:
+            try:
+                with open(filepath, "r", encoding="utf-8") as file:
+                    content = [line for line in file.read().split('\n') if line]
+                for line in content:
+                    is_present: bool = False
+                    try:
+                        data = self.decode_base64(line)
+                    except (binascii.Error, ValueError) as err:
+                        _logger.error(err)
+                        continue
+                    except Exception as err:
+                        _logger.error(err)
+                        continue
+                    for license in list_of_licenses:
+                        if license.get('LicenseID') == data['LicenseID']:
+                            is_present = True
+                            break
+                    if not is_present:
+                        list_of_licenses.append(data)
+                        list_of_licenses[-1]['base64_encoded_license'] = line
+            except FileNotFoundError:
+                print("Error: The specified file could not be found.")
+                return None
+            except PermissionError:
+                print("Error: You do not have permission to read this file.")
+                return None
+            except OSError as err:
+                print(err)
+                return None
 
         # Since EDMS and EPMM license could be only applied in strict order, we need to make that order correct.
         EDMS: int = -1
@@ -253,7 +262,15 @@ class License:
                         _logger.error('%s', response.text)
                         self.console.print(f"   - license '{lic}' has not been deactivated! Check logs: {self.logs.filepath}", style="red")
 
-    def apply_license(self, url, token, username, password, license=None):
+    def apply_license(
+        self,
+        url: str,
+        token: str,
+        username: str,
+        password: str,
+        filepath: str | None = None,
+        raw_data: str | None = None
+        ) -> None | bool:
         """ Upload and activate license into Bimeister platform. """
 
         headers = {'accept': 'text/plain', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
@@ -262,9 +279,12 @@ class License:
             url = "https://" + url
         # create a tuple to check if license is already presents in Bimeister
         licenses_id = tuple(dict.get('licenseID', False) for dict in self.get_licenses(url, token, username, password))
-        new_license_data: list = self.read_license_token(data=license)
+        if filepath:
+            new_license_data: list = self.read_license_token(filepath=filepath)
+        else:
+            new_license_data: list = self.read_license_token(raw_token=raw_data)
         if not new_license_data:
-            return False
+            return None
         for license in new_license_data:
             if license['LicenseID'] in licenses_id:
                 self.activate_license(url, token, username, password, license['LicenseID'])
@@ -279,11 +299,11 @@ class License:
                     time.sleep(0.15)
                 elif response_data['type'] and response_data['type'] == 'ForbiddenException':
                     print(f"User '{username}' does not have sufficient privileges!")
-                    return False
+                    return None
                 else:
                     _logger.error('%s', response.text)
                     self.console.print(f"\n   - new license has not been posted!", style="red")
-                    return False
+                    return None
         return True
 
     def activate_license(self, url: str, token: str, username, password, license_id: str):
@@ -541,4 +561,4 @@ def issue_lic(
             print(f"Error: {message}")
         server_license = lic_context.issue.issue_license(**params)
         if apply:
-            lic_context.lic.apply_license(url, lic_context.auth_.token, user, password, license=server_license)
+            lic_context.lic.apply_license(url, lic_context.auth_.token, user, password, raw_data=server_license)
