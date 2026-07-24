@@ -179,7 +179,7 @@ class DB:
                             print(f"\n⚠️  [Output Truncated: Result set exceeds the safe display limit of {max_safe_print_rows:,} rows]")
                             break
             else:
-                if cursor.statusmessage:
+                if cursor.statusmessage and cursor.statusmessage.strip().upper() != "DO":
                     print(cursor.statusmessage)
             self.set_query_status(True)
             conn.commit()
@@ -304,11 +304,10 @@ class Queries:
         WHERE matviewname ILIKE %s;
     """
 
-    DROP_MATVIEWS_WITH_TERMINATE_SQL = """
+    TERMINATE_MATVIEW_CONNECTIONS_SQL = """
     DO $$
     DECLARE
         backend RECORD;
-        log_msg TEXT;
     BEGIN
         FOR backend IN
             SELECT pg_stat_activity.pid AS pid, pg_locks.relation::regclass AS locked_relation
@@ -318,16 +317,13 @@ class Queries:
               AND pg_stat_activity.pid <> pg_backend_pid()
         LOOP
             EXECUTE format('SELECT pg_terminate_backend(%s)', backend.pid);
-            
-            -- Assemble pure text using standard string concatenation
-            log_msg := 'Terminated connection to matview ' || backend.locked_relation::text || ' with PID ' || backend.pid::text;
-            
-            -- Call RAISE directly with zero placeholders
-            RAISE NOTICE '%', log_msg;
+            RAISE NOTICE 'Terminated connection to matview % with PID %', backend.locked_relation, backend.pid;
         END LOOP;
     END;
     $$;
+    """
 
+    DROP_MATVIEWS_CASCADE_SQL = """
     DO $$
     DECLARE
         view_record RECORD;
@@ -447,11 +443,11 @@ def drop_matviews(search_pattern: str = typer.Argument(..., help="Name pattern t
         sql_context.conn.close()
         return
 
-    # Use string formatting to inject the wildcard pattern safely
-    full_script = q.DROP_MATVIEWS_WITH_TERMINATE_SQL.format(pattern=pattern)
+    terminate_script = q.TERMINATE_MATVIEW_CONNECTIONS_SQL.format(pattern=pattern)
+    pg.exec_query(sql_context.conn, terminate_script, keep_conn=True)
 
-    # Fire the block with params as None to skip Psycopg 3's pre-parser entirely
-    pg.exec_query(sql_context.conn, full_script, keep_conn=True)
+    drop_script = q.DROP_MATVIEWS_CASCADE_SQL.format(pattern=pattern)
+    pg.exec_query(sql_context.conn, drop_script, keep_conn=True)
 
     if not pg.get_query_status():
         sql_context.conn.close()
@@ -462,27 +458,3 @@ def drop_matviews(search_pattern: str = typer.Argument(..., help="Name pattern t
 
     print(f"Deleted: {matviews_before - matviews_after}")
     sql_context.conn.close()
-
-
-
-
-
-
-    # DEPRECATED MODULE
-    # @staticmethod
-    # def drop_userObjects(url, username='', password=''):
-    #     """ Truncate bimeisterdb.UserObjects table. """
-
-    #     Auth = auth.Auth()
-    #     user = User()
-    #     if not username:
-    #         username: str = input('Enter username: ')
-    #     if not password:
-    #         from getpass import getpass
-    #         password: str = getpass('Enter password: ')
-    #     url = Auth.url_validation(url)
-    #     url = url if url else sys.exit()
-    #     provider_id = Auth.get_providerId(url)
-    #     user_access_token = Auth.get_user_access_token(url, username, password, provider_id)
-    #     user_access_token = user_access_token if user_access_token else sys.exit()
-    #     user.delete_user_objects(url, user_access_token)
