@@ -148,8 +148,12 @@ class Vsphere:
         except Exception as err:
             logger.error(err)
             return None
-
-        exclude_vm: list = [vm['name'] for vm in data if search_for_exclude and re.search(search_for_exclude.replace('*', '.*'), vm['name'])]
+        exclude_vm: list = []
+        if search_for_exclude:
+            for vm in data:
+                for exc_vm in search_for_exclude.split():
+                    if re.search(exc_vm.replace('*', '.*'), vm['name']) and vm['name'] not in exclude_vm:
+                        exclude_vm.append(vm['name'])
         if not search_for:
             if powered_on:
                 vm_array: dict = { vm['vm']: {'name': vm['name'], 'moId': vm['vm'], 'power_state': vm['power_state']} for vm in data if vm['power_state'] == 'POWERED_ON' and vm['name'] and vm['name'] not in exclude_vm }
