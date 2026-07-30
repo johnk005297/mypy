@@ -30,4 +30,5 @@ class VsphereScreen(Vertical):
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         label = event.item.children[0]
         operation = str(label.render())
-        self.notify(operation)
+        panel = self.query_one("#operation-panel", VsphereOperationPanel)
+        # panel.show_message(operation)
