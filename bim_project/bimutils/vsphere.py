@@ -100,12 +100,12 @@ class Vsphere:
             print(self.connection_err_msg)
             return False
 
-    def print_list_of_vm(self, vm_array):
+    def print_list_of_vm(self, vm_array) -> None:
         """ Print all VM names from the dictionary. """
 
         if not vm_array:
-            return False
-        vm_list = sorted([vm_array[vm]['name'] for vm in vm_array])
+            return None
+        vm_list: list = sorted(vm['name'] for vm in vm_array.values())
         for vm in vm_list:
             print(vm)
 
