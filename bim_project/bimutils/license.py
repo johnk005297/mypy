@@ -16,7 +16,7 @@ import binascii
 from datetime import date, datetime, timedelta
 from getpass import getpass
 
-import auth
+import bimeister.auth
 from tools import Tools
 from mlogger import Logs
 
@@ -488,7 +488,7 @@ class LicContext:
     def __init__(self):
         self.tools = Tools()
         self.issue = Issue()
-        self.auth_ = auth.Auth()
+        self.auth_ = bimeister.auth.Auth()
         self.lic = License()
 
 # Create a context instance

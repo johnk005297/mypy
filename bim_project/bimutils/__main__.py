@@ -10,7 +10,7 @@ from featureToggle import ft_app
 from mdocker import docker_app
 from license import lic_app
 from vsphere import vsphere_app
-from auth import auth_app
+from bimeister.auth import auth_app
 
 app = typer.Typer(
     add_completion=False,
@@ -32,8 +32,8 @@ def main(
     url: str = typer.Option(None, "--url", help="Check bimeister version.")
         ):
         if url:
-            import bimeister
-            bimeister.print_bim_version(url)
+            import bimeister_tools as bt
+            bt.print_bim_version(url)
             raise typer.Exit()
 
 app.add_typer(git_app, name="git")

@@ -4,17 +4,17 @@ def launch_menu():
     import argparse
 
     import app_menu
-    import auth
+    import bimeister.auth
     import user
     import license
     import export_data
     import import_data
     import featureToggle
     from tools import Tools, Folder
-    import bimeister
+    import bimeister_tools as bim_tools
 
     AppMenu_main = app_menu.AppMenu()
-    Auth = auth.Auth()
+    Auth = bimeister.auth.Auth()
     User = user.User()
     License_main = license.License()
     Object_model_export = export_data.Object_model()
@@ -22,22 +22,11 @@ def launch_menu():
     Workflows_export = export_data.Workflows()
     Workflows_import = import_data.Workflows()
     Risk_assessment = import_data.RiskAssesment()
-    Abac = bimeister.Abac()
-    Auth_api = bimeister.Auth()
-    AssetPerf = bimeister.AssetPerformance()
+    Abac = bim_tools.Abac()
+    Auth_api = bim_tools.Auth()
+    AssetPerf = bim_tools.AssetPerformance()
     FT = featureToggle.FeatureToggle()
 
-
-# ---------------------------------------------------------
-#   TEST ZONE       LOBBY
-# ---------------------------------------------------------
-
-
-
-
-# ---------------------------------------------------------
-#
-# ---------------------------------------------------------
 
     AppMenu_main.welcome_info_note()
     if not Auth.establish_connection():  # if connection was not established, do not continue
@@ -482,21 +471,21 @@ def launch_menu():
                     file = user_command[2:][1]
                 except IndexError as err:
                     print("Incorrect command. No file pointed out.")
-                bimeister.apply_bimeister_customUI(url, token, file)
+                bim_tools.apply_bimeister_customUI(url, token, file)
             
             #    ''' =============================================================================== Recalculate path ================================================================================= '''
             case ['recalc-paths', *_]:
-                bimeister.recalculate_path(url, token)
+                bim_tools.recalculate_path(url, token)
             
             #    ''' =============================================================================== Templates ======================================================================================== '''
             case ['ls', 'templates']:
-                templates: list = bimeister.get_list_of_templates(url, token)
-                bimeister.print_list_of_templates(templates)
+                templates: list = bim_tools.get_list_of_templates(url, token)
+                bim_tools.print_list_of_templates(templates)
             
             case ['export', 'template' | 'templates', *_]:
                 args = user_command[2:]
                 id: list = Tools.get_flag_values_from_args_str(args, '--id').split()
-                data = bimeister.export_templates(url, token, id)
+                data = bim_tools.export_templates(url, token, id)
 
             #    ''' =============================================================================== Tools ============================================================================================ '''
             case ['ptoken']:
@@ -526,9 +515,9 @@ def launch_menu():
 
             case ['basic-auth', *_]:
                 if user_command == ['basic-auth']:
-                    bimeister.basic_auth(url, token, username, password)
+                    bim_tools.basic_auth(url, token, username, password)
                 elif user_command == ['basic-auth', '--set']:
-                    bimeister.basic_auth(url, token, username, password, set=True)
+                    bim_tools.basic_auth(url, token, username, password, set=True)
                 else:
                     print("Unknown command")
 
@@ -540,12 +529,12 @@ def launch_menu():
                     continue
                 try:
                     file = user_command[2:][1]
-                    bimeister.import_activity_collector(url, token, filepath=file)
+                    bim_tools.import_activity_collector(url, token, filepath=file)
                 except IndexError as err:
                     print(no_file_msg)
 
             case ['ac', 'export', *_]:
-                bimeister.export_activity_collector(url, token)
+                bim_tools.export_activity_collector(url, token)
 
             #    ''' =============================================================================== Auth ============================================================================================= '''
             case ['auth', *_]:
