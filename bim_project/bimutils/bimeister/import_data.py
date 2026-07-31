@@ -11,7 +11,7 @@ import os
 import json
 import time
 
-from license import License
+from bimeister.license import License
 from tools import File, Tools
 from mrich import ScrollablePanel
 from mlogger import Logs

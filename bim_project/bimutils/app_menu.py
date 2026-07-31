@@ -1,6 +1,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
+from __init__ import __version__
 
 def main_menu():
     """ Help menu of user commands. """
@@ -42,9 +43,6 @@ def main_menu():
                             \n      abac import                         import attribute-based access control file(s)   \
                             \n      abac export                         export attribute-based access control file(s)   \
                             \n                                                                                          \
-                            \n   Auth                                                                                   \
-                            \n      auth -h                             perform operations with Auth                    \
-                            \n                                                                                          \
                             \n   Asset Performance                                                                      \
                             \n      asset -h                            perform operations with Asset Performance mgmt  \
                             \n                                                                                          \
@@ -72,7 +70,6 @@ def main_menu():
 
 class AppMenu:
     __slots__ = ('_main_menu',)
-    __version__ = '1.79.16'
 
     def __init__(self):
         self._main_menu = main_menu()
@@ -82,7 +79,7 @@ class AppMenu:
 
     def welcome_info_note(self):
         """ first note to be displayed """
-        print(f"v{self.__version__}")
+        print(f"v{__version__}")
 
     def get_user_command(self):
         """ Define what the user would like to do """

@@ -280,51 +280,31 @@ class Tools:
         if not url.startswith('http'):
             url = 'https://' + url
         caller_func = inspect.currentframe().f_back.f_code.co_name
+        METHODS = {
+            "GET": requests.get,
+            "POST": requests.post,
+            "PUT": requests.put,
+            "DELETE": requests.delete,
+            "PATCH": requests.patch,
+            "HEAD": requests.head,
+            "OPTIONS": requests.options,
+        }
         try:
-            if method == 'GET':
-                response = requests.get(url, **kwargs)
-            elif method == 'POST':
-                response = requests.post(url, **kwargs)
-            elif method == 'PUT':
-                response = requests.put(url, **kwargs)
-            elif method == 'DELETE':
-                response = requests.delete(url, **kwargs)
-            elif method == 'PATCH':
-                response = requests.delete(url, **kwargs)
-            elif method == 'HEAD':
-                response = requests.head(url, **kwargs)
-            elif method == 'OPTIONS':
-                response = requests.options(url, **kwargs)
-            else:
+            request = METHODS.get(method.upper())
+            if request is None:
                 raise ValueError(f"Unsupported HTTP method: {method}")
+            response = request(url, **kwargs)
             response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
             if custom_log_msg:
                 _logger.info(f"{caller_func} {response.status_code} {custom_log_msg}")
             else:
                 _logger.info(f"{caller_func} {response.status_code} {method} {url}")
             return response
-        except requests.exceptions.HTTPError as err:
-            _logger.error(f"{caller_func} {err}")
-            if print_err: print(f"HTTP Error: {err}")
-            return response if return_err_response else None
-        except requests.exceptions.ConnectionError as err:
-            _logger.error(f"{caller_func} {err}")
-            if print_err: print(f"Connection Error: {err}")
-            return response if return_err_response else None
-        except requests.exceptions.Timeout as err:
-            _logger.error(f"{caller_func} {err}")
-            if print_err: print(f"Timeout Error: {err}")
-            return response if return_err_response else None
-        except requests.exceptions.MissingSchema as err:
-            _logger.error(f"{caller_func} {err}")
-            if print_err: print(f"MissingSchema Error: {err}")
-            return response if return_err_response else None
         except requests.exceptions.RequestException as err:
             _logger.error(f"{caller_func} {err}")
-            if print_err: print(f"An unexpected Requests error occurred: {err}")
-            return response if return_err_response else None
-        except Exception as err:
-            _logger.error(f"{caller_func} {err}")
+            response = getattr(err, "response", None)
+            if print_err:
+                print(f"{type(err).__name__}: {err}")
             return response if return_err_response else None
 
     @staticmethod

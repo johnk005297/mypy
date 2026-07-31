@@ -5,25 +5,22 @@ def launch_menu():
 
     import app_menu
     import bimeister.auth
-    import user
-    import license
-    import export_data
-    import import_data
+    import bimeister.license
+    import bimeister.export_data as bim_export
+    import bimeister.import_data as bim_import
     import featureToggle
     from tools import Tools, Folder
-    import bimeister_tools as bim_tools
+    import bimeister.bimeister_tools as bim_tools
 
     AppMenu_main = app_menu.AppMenu()
     Auth = bimeister.auth.Auth()
-    User = user.User()
-    License_main = license.License()
-    Object_model_export = export_data.Object_model()
-    Object_model_import = import_data.Object_model()
-    Workflows_export = export_data.Workflows()
-    Workflows_import = import_data.Workflows()
-    Risk_assessment = import_data.RiskAssesment()
+    License_main = bimeister.license.License()
+    Object_model_export = bim_export.Object_model()
+    Object_model_import = bim_import.Object_model()
+    Workflows_export = bim_export.Workflows()
+    Workflows_import = bim_import.Workflows()
+    Risk_assessment = bim_import.RiskAssesment()
     Abac = bim_tools.Abac()
-    Auth_api = bim_tools.Auth()
     AssetPerf = bim_tools.AssetPerformance()
     FT = featureToggle.FeatureToggle()
 
@@ -78,12 +75,12 @@ def launch_menu():
                 License_main.activate_license(url, token, username, password, license_id) # type: ignore
 
             #    ''' =============================================================================== User objects BLOCK =============================================================================== '''
+            ### DEPRECATED
+            # case ['drop', 'uo']:
+            #     User.delete_user_objects(url, token)
 
-            case ['drop', 'uo']:
-                User.delete_user_objects(url, token)
-
-            case ['drop', 'uo', '-h']:
-                print(User.delete_user_objects.__doc__)
+            # case ['drop', 'uo', '-h']:
+            #     print(User.delete_user_objects.__doc__)
 
             #    ''' =============================================================================== TRANSFER DATA BLOCK ============================================================================== '''
 
@@ -93,7 +90,7 @@ def launch_menu():
                 if not os.path.isfile(filepath):
                     Object_model_export.create_folders_to_export_om()
                 if user_command == ['export', 'om']:
-                    export_data.export_server_info(url, token, filepath=filepath)
+                    bim_export.export_server_info(url, token, filepath=filepath)
                     Object_model_export.export_object_model(Object_model_export._object_model_file, Auth.url, Auth.token)
 
             case ['ls', 'workflows', *_] | ['export', 'workflows', *_] | ['rm', 'workflows', *_]:
@@ -117,14 +114,14 @@ def launch_menu():
                 wf_type: str = Tools.get_flag_values_from_args_str(args, '--type').lower()
 
                 if wf_id_array and user_command[:2] == ['export', 'workflows']:
-                    export_data.export_server_info(url, token, filepath=filepath)
+                    bim_export.export_server_info(url, token, filepath=filepath)
                     Workflows_export.export_workflows_by_choice(url, token, wf_id_array)
                     continue
                 workflows = Workflows_export.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for, type=wf_type)
                 if not workflows:
                     continue
                 if user_command[:2] == ['export', 'workflows']:
-                    export_data.export_server_info(url, token, filepath=filepath)
+                    bim_export.export_server_info(url, token, filepath=filepath)
                     Workflows_export.export_workflows_at_once(url, token, workflows)
                 elif user_command[:2] == ['ls', 'workflows']:
                     Workflows_export.display_list_of_workflowsName_and_workflowsId(workflows)
@@ -135,7 +132,7 @@ def launch_menu():
             case ['import', 'workflows']:
                 server_info_filepath = f"{Workflows_import._transfer_folder}/{Workflows_import._workflows_folder}/{Workflows_export._wf_export_server_info_file}"
                 exported_wf_filepath = f"{Workflows_import._transfer_folder}/{Workflows_import._workflows_folder}/{Workflows_export._exported_workflows_list}"
-                if not import_data.validate_import_server(url, token, server_info_filepath):
+                if not bim_import.validate_import_server(url, token, server_info_filepath):
                     print("Server validation failed")
                     continue
                 Workflows_import.import_workflows(url, token, exported_wf_filepath)
@@ -143,7 +140,7 @@ def launch_menu():
             case ['import', 'om']:
                 server_info_filepath = f"{Object_model_import._transfer_folder}/{Object_model_import._object_model_folder}/{Object_model_export._om_export_server_info_file}"
                 om_filepath = f"{Object_model_import._transfer_folder}/{Object_model_import._object_model_folder}/{Object_model_export._object_model_file}"
-                if not import_data.validate_import_server(url, token, server_info_filepath):
+                if not bim_import.validate_import_server(url, token, server_info_filepath):
                     print("Server validation failed")
                     continue
                 Object_model_import.import_object_model(url, token, om_filepath)
@@ -537,35 +534,35 @@ def launch_menu():
                 bim_tools.export_activity_collector(url, token)
 
             #    ''' =============================================================================== Auth ============================================================================================= '''
-            case ['auth', *_]:
-                parser = Auth_api.get_auth_parser()
-                try:
-                    args = parser.parse_args(user_command[1:])
-                except argparse.ArgumentError:
-                    continue
-                except SystemExit:
-                    continue
-                if args.command in ('rules', 'rule'):
-                    if args.export_rule:
-                        Auth_api.export_auth_rules(token, url)
-                    elif args.import_rule:
-                        Auth_api.import_auth_rules(token, url, filepath=args.file)
-                elif args.command in ('modules', 'module'):
-                    if args.get:
-                        Auth_api.print_abac_allowed_modules(token, url)
-                    elif args.set:
-                        Auth_api.set_abac_allowed_modules(token, url, modules=args.set)
-                elif args.command == 'attr':
-                    if args.get:
-                        Auth_api.get_user_attributes(url, token)
-                    elif args.set:
-                        Auth_api.set_user_attributes(url, token, codes=args.set)
-                    elif args.get_values:
-                        user_id = User.get_current_user(url, token)['id']
-                        Auth_api.get_user_attribute_values(url, token, user_id)
-                    elif args.set_values:
-                        user_id = User.get_current_user(url, token)['id']
-                        Auth_api.set_user_attribute_values(url, token, user_id=user_id, code=args.code, value=args.value)
+            # case ['auth', *_]:
+            #     parser = Auth_api.get_auth_parser()
+            #     try:
+            #         args = parser.parse_args(user_command[1:])
+            #     except argparse.ArgumentError:
+            #         continue
+            #     except SystemExit:
+            #         continue
+            #     if args.command in ('rules', 'rule'):
+            #         if args.export_rule:
+            #             Auth_api.export_auth_rules(token, url)
+            #         elif args.import_rule:
+            #             Auth_api.import_auth_rules(token, url, filepath=args.file)
+            #     elif args.command in ('modules', 'module'):
+            #         if args.get:
+            #             Auth_api.print_abac_allowed_modules(token, url)
+            #         elif args.set:
+            #             Auth_api.set_abac_allowed_modules(token, url, modules=args.set)
+            #     elif args.command == 'attr':
+            #         if args.get:
+            #             Auth_api.get_user_attributes(url, token)
+            #         elif args.set:
+            #             Auth_api.set_user_attributes(url, token, codes=args.set)
+            #         elif args.get_values:
+            #             user_id = User.get_current_user(url, token)['id']
+            #             Auth_api.get_user_attribute_values(url, token, user_id)
+            #         elif args.set_values:
+            #             user_id = User.get_current_user(url, token)['id']
+            #             Auth_api.set_user_attribute_values(url, token, user_id=user_id, code=args.code, value=args.value)
 
             #    ''' =============================================================================== Asset ============================================================================================ '''
             case ['asset', *_]:

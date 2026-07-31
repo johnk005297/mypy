@@ -9,7 +9,7 @@ import os
 import json
 import time
 
-from license import License
+from bimeister.license import License
 from tools import Tools, Folder
 from mlogger import Logs
 from mrich import ScrollablePanel

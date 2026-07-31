@@ -8,9 +8,10 @@ from git import git_app
 from postgre import sql_app
 from featureToggle import ft_app
 from mdocker import docker_app
-from license import lic_app
+from bimeister.license import lic_app
 from vsphere import vsphere_app
 from bimeister.auth import auth_app
+from __init__ import __version__
 
 app = typer.Typer(
     add_completion=False,
@@ -20,8 +21,7 @@ app = typer.Typer(
 
 def version_callback(value: bool):
     if value:
-        import app_menu
-        print(f"version: {app_menu.AppMenu.__version__}")
+        print(f"version: {__version__}")
         raise typer.Exit()
 
 @app.callback(invoke_without_command=True)
@@ -32,7 +32,7 @@ def main(
     url: str = typer.Option(None, "--url", help="Check bimeister version.")
         ):
         if url:
-            import bimeister_tools as bt
+            import bimeister.bimeister_tools as bt
             bt.print_bim_version(url)
             raise typer.Exit()
 
