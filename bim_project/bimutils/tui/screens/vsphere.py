@@ -2,7 +2,8 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Label, ListView, ListItem
 
-from ..widgets.vsphere_operation_panel import VsphereOperationPanel
+from ..widgets.operation_area import OperationArea
+from ..widgets.vsphere.list_vm_panel import ListVmPanel
 
 class TaskPanel(Vertical):
     pass
@@ -25,10 +26,12 @@ class VsphereScreen(Vertical):
                     ListItem(Label("Replace Snapshot")),
                     id="operations"
                 )
-            yield VsphereOperationPanel()
+            yield OperationArea()
 
-    def on_list_view_selected(self, event: ListView.Selected) -> None:
-        label = event.item.children[0]
-        operation = str(label.render())
-        panel = self.query_one("#operation-panel", VsphereOperationPanel)
-        # panel.show_message(operation)
+    async def on_list_view_selected(self, event: ListView.Selected) -> None:
+        operation_area = self.query_one(OperationArea)
+        await operation_area.show(ListVmPanel())
+    
+    async def on_mount(self) -> None:
+        operation_area = self.query_one(OperationArea)
+        await operation_area.show(ListVmPanel())

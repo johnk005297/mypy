@@ -20,10 +20,6 @@ class Auth:
     __api_Providers: str = 'api/Providers'
     __api_Auth_Login: str = 'api/Auth/Login'
     __api_PrivateToken: str = 'api/PrivateToken'
-    possible_request_errors: tuple = (
-        requests.exceptions.MissingSchema, requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout,
-        requests.exceptions.HTTPError, requests.exceptions.InvalidHeader, requests.exceptions.InvalidURL,
-        requests.exceptions.InvalidSchema, requests.exceptions.InvalidJSONError, requests.exceptions.JSONDecodeError)
 
     def __init__(self, url=None, username=None, password=None):
         self.url = url
@@ -102,7 +98,7 @@ class Auth:
                     _logger.error(f"{err}")
                     print(_logs.err_message)
                 return False
-            except self.possible_request_errors as err:
+            except requests.exceptions.RequestException as err:
                 _logger.error(f"Connection error via '{url[:url.index(':')]}':\n{err}.")
                 url = url[:4] + url[5:] if url[4] == 's' else url[:4] + 's' + url[4:]
                 if x == 1:
@@ -229,8 +225,7 @@ class Auth:
                 response = requests.post(url=url, headers=headers, verify=False)
             data = response.json()
             self.privateToken: str = data['privateToken']
-
-        except self.possible_request_errors as err:
+        except requests.exceptions.RequestException as err:
             _logger.error(err)
             return False
         return self.privateToken

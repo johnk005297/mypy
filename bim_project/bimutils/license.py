@@ -9,7 +9,6 @@ from rich.table import Table
 
 import base64
 import logging
-import os
 import sys
 import json
 import time
@@ -32,7 +31,6 @@ class License:
 
     # This SUID and UPP licenses are actually two parts of one license. Have know idea why it was designed that way.
     __UPP_SUID_lic: tuple = ('Платформа BIMeister, Bimeister УПП', 'Платформа BIMeister, Bimeister СУИД')
-    possible_request_errors: tuple = auth.Auth().possible_request_errors
     privileges_granted: bool = False
     privileges_checked: bool = False
     logs = Logs()

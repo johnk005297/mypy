@@ -136,7 +136,7 @@ class Vsphere:
             logger.error(err)
             return None
 
-    def get_array_of_vm(self, headers, search_for_exclude='', search_for='', powered_on=False) -> dict:
+    def get_array_of_vm(self, headers, search_for_exclude='', search_for='', powered_on=False) -> dict[str, dict] | None:
         """ Function returns an array of VM in vSphere's cluster in format {'vm-moId': 'vm-name'}. """
 
         url = f"{self.url}/api/vcenter/vm"
