@@ -5,7 +5,7 @@ import platform
 import logging
 
 from git_tools import git_app
-from postgre_tools.postgre import sql_app
+from postgre_tools.cli import sql_app
 from bimeister.feature_toggles import ft_app
 from docker_tools import docker_app
 from bimeister.cli import lic_app
