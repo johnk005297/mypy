@@ -49,9 +49,8 @@ if __name__ == '__main__':
     if platform.system() == 'Linux':
         import readline # opportunity to have access of input history
 
-    import mlogger
     from bimeister.interactive.dispatcher import launch_menu
-    from common import utils
+    from common import utils, mlogger
     from dotenv import load_dotenv
     load_dotenv(dotenv_path=utils.get_resourse_path(".env"))
 

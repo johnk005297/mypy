@@ -9,7 +9,7 @@ import socket
 import base64
 import sys
 
-from mlogger import Logs
+from .mlogger import Logs
 from .http import make_request
 
 _logger = logging.getLogger(__name__)

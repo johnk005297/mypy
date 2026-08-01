@@ -14,7 +14,7 @@ import time
 from bimeister.license import License
 from common.utils import File
 from mrich import ScrollablePanel
-from mlogger import Logs
+from common.mlogger import Logs
 from common.http import make_request
 
 _logger = logging.getLogger(__name__)

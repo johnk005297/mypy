@@ -16,7 +16,7 @@ from psycopg import errors
 from psycopg.types.datetime import TimestampLoader, TimestamptzLoader
 from rich.console import Console
 
-from mlogger import Logs
+from common.mlogger import Logs
 
 # Create custom loaders to translate PostgreSQL infinity to Python boundaries
 class SafeTimestampLoader(TimestampLoader):

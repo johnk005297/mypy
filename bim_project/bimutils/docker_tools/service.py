@@ -9,7 +9,7 @@ import tarfile
 import logging
 from pathlib import Path
 
-from mlogger import Logs
+from common.mlogger import Logs
 
 _logger = logging.getLogger(__name__)
 _logs = Logs()

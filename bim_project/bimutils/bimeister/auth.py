@@ -7,7 +7,7 @@ import logging
 import sys
 from getpass import getpass
 
-from mlogger import Logs
+from common.mlogger import Logs
 from common.http import make_request
 
 _logger = logging.getLogger(__name__)

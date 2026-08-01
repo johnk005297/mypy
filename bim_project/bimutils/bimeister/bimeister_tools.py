@@ -3,9 +3,8 @@ import requests
 import json
 import argparse
 
-import mlogger
 from common.http import make_request
-from common import utils
+from common import utils, mlogger
 
 _logs = mlogger.Logs()
 _logs.set_full_access_to_log_file(_logs.filepath, 0o666)

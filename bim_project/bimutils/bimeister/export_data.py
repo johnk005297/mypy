@@ -10,11 +10,10 @@ import json
 import time
 
 from bimeister.license import License
-from common.utils import Folder
-from mlogger import Logs
+from common.mlogger import Logs
 from mrich import ScrollablePanel
 from common.http import make_request
-from common import utils
+from common.utils import Folder, counter
 
 _logger = logging.getLogger(__name__)
 _logs = Logs()
@@ -257,7 +256,7 @@ class Workflows:
 
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         nodes: dict = self.get_workflow_nodes_id(url, token)
-        count = utils.counter()
+        count = counter()
         self.remove_duplicate_workflows_id(wf_id_array)
         failed_workflows = []
         with open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as file:
@@ -306,7 +305,7 @@ class Workflows:
     def display_list_of_workflowsName_and_workflowsId(self, workflows: dict):
         """ Function to display workFlows on the screen and save that info to a file. """
 
-        count = utils.counter()
+        count = counter()
         for node in workflows:
             for id, name in workflows[node].items():
                 time.sleep(0.01)
@@ -315,7 +314,7 @@ class Workflows:
     def delete_workflows(self, url, token, workflows: dict):
         """ Function to delete workFlows from a certain node, or all at once. """
 
-        count = utils.counter()
+        count = counter()
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
         nodes_to_remove = [node for node in workflows if not workflows[node]]
         {workflows.__delitem__(node) for node in nodes_to_remove}

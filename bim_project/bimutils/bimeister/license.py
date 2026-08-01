@@ -15,7 +15,7 @@ import binascii
 from datetime import date, datetime, timedelta
 
 from common.http import make_request
-from mlogger import Logs
+from common.mlogger import Logs
 
 
 _logger = logging.getLogger(__name__)

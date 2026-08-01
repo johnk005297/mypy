@@ -16,7 +16,7 @@ from getpass import getpass
 from typing import Literal
 
 from common.http import make_request
-from mlogger import Logs
+from common.mlogger import Logs
 
 
 logger = logging.getLogger(__name__)
