@@ -50,7 +50,7 @@ if __name__ == '__main__':
         import readline # opportunity to have access of input history
 
     import mlogger
-    from interactive_menu import launch_menu
+    from bimeister.interactive.dispatcher import launch_menu
     from tools import Tools
     from dotenv import load_dotenv
     load_dotenv(dotenv_path=Tools.get_resourse_path(".env"))

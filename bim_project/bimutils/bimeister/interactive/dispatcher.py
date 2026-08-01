@@ -3,7 +3,7 @@ import os
 def launch_menu():
     import argparse
 
-    import app_menu
+    from . import app_menu
     import bimeister.auth
     import bimeister.license
     import bimeister.export_data as bim_export
