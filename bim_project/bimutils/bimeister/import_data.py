@@ -13,7 +13,7 @@ import time
 
 from bimeister.license import License
 from common.utils import File
-from mrich import ScrollablePanel
+from common.mrich import ScrollablePanel
 from common.mlogger import Logs
 from common.http import make_request
 

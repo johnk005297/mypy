@@ -11,7 +11,7 @@ import time
 
 from bimeister.license import License
 from common.mlogger import Logs
-from mrich import ScrollablePanel
+from common.mrich import ScrollablePanel
 from common.http import make_request
 from common.utils import Folder, counter
 
