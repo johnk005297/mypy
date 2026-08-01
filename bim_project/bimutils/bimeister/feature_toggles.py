@@ -2,7 +2,6 @@ import requests
 import typer
 from rich.console import Console
 from rich.table import Table
-from tools import Tools
 from atlassian import Confluence
 from bs4 import BeautifulSoup
 
@@ -11,6 +10,7 @@ import platform
 import os
 import sys
 
+from common import utils
 
 _logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class FeatureToggle:
         table.add_column("No.", style="cyan", no_wrap=True)
         table.add_column("Feature", style="magenta")
         table.add_column("Status", justify="center", highlight=False)
-        count = Tools.counter()
+        count = utils.counter()
         if response.status_code // 100 == 2:
             _logger.info(f"{self._api_GetFeatures} {response}")
             data: dict = response.json()
@@ -114,7 +114,7 @@ class FeatureToggle:
         if not url:
             print("URL for current env not found.")
             return None
-        elif not Tools.is_url_available(url):
+        elif not utils.is_url_available(url):
             print(f"URL:{url} incorrect or unavailable.")
             return None
         all_ft_on_stand = self.get_list_of_features(url, return_data=True)
@@ -161,7 +161,7 @@ class Conf:
             token = personal_access_token,
             cloud=False  # Critical for Server/Data Center
         )
-        if not Tools.is_url_available(self.url):
+        if not utils.is_url_available(self.url):
             print(f"No connection to {self.url}")
             sys.exit()
         try:

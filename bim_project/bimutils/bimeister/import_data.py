@@ -12,13 +12,13 @@ import json
 import time
 
 from bimeister.license import License
-from tools import File, Tools
+from common.utils import File
 from mrich import ScrollablePanel
 from mlogger import Logs
+from common.http import make_request
 
 _logger = logging.getLogger(__name__)
 _logs = Logs()
-_tools = Tools()
 
 
 
@@ -61,7 +61,7 @@ class Object_model:
         # json_payload = json.dumps(data, ensure_ascii=False) # Doesn't work with json.dumps if read from file
 
         with self.console.status("Importing object model...", spinner="earth"):
-            response = _tools.make_request('POST', url, data=data.encode("utf-8"),  headers=headers, verify=False, return_err_response=True)
+            response = make_request('POST', url, data=data.encode("utf-8"),  headers=headers, verify=False)
             if response.status_code // 100 != 2:
                 _logger.error(response.text)
                 print(f"Status: {response.status_code}. {_logs.err_message}.")
@@ -78,7 +78,6 @@ class Workflows:
 
     def __init__(self):
         self.console = Console()
-        self.tools = Tools()
 
     def import_workflows(self, url: str, token: str, filepath: str):
         ''' Function to post workflows using .zip archives data from the export procedure.
@@ -104,7 +103,7 @@ class Workflows:
                 wf_title: str = textwrap.shorten("{0}".format(name), width=84, placeholder="...")
                 try:
                     with open(f'{self._transfer_folder}/{self._workflows_folder}/{id}.zip', mode='rb') as file:
-                        response = self.tools.make_request('POST', url, headers=headers, files={'file': file}, verify=False, return_err_response=True, custom_log_msg=name)
+                        response = make_request('POST', url, headers=headers, files={'file': file}, verify=False, custom_log_msg=name)
                         if response.status_code // 100 != 2:
                             _logger.error(response.text)
                             failed_workflows.append("Error {0}: {1})".format(response.status_code, wf_title))
@@ -169,7 +168,7 @@ class Abac:
         for key,value in data.items():
             try:
                 with open(value['file'], mode='rb') as file:
-                    response = _tools.make_request('POST', value['url'], files={'file': file}, return_err_response=True, headers=headers, verify=False)
+                    response = make_request('POST', value['url'], files={'file': file}, headers=headers, verify=False)
                     if response.status_code // 100 == 2:
                         print(f"{svc_name}: {key} configuration uploaded successfully")
                     else:

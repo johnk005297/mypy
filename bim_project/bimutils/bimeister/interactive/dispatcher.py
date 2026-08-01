@@ -3,16 +3,16 @@ import os
 def launch_menu():
     import argparse
 
-    from . import app_menu
+    from .shell import Prompt
     import bimeister.auth
     import bimeister.license
     import bimeister.export_data as bim_export
     import bimeister.import_data as bim_import
-    import featureToggle
-    from tools import Tools, Folder
+    import bimeister.feature_toggles as ft
     import bimeister.bimeister_tools as bim_tools
+    from common import utils
 
-    AppMenu_main = app_menu.AppMenu()
+    prompt = Prompt()
     Auth = bimeister.auth.Auth()
     License_main = bimeister.license.License()
     Object_model_export = bim_export.Object_model()
@@ -22,10 +22,10 @@ def launch_menu():
     Risk_assessment = bim_import.RiskAssesment()
     Abac = bim_tools.Abac()
     AssetPerf = bim_tools.AssetPerformance()
-    FT = featureToggle.FeatureToggle()
+    FT = ft.FeatureToggle()
 
 
-    AppMenu_main.welcome_info_note()
+    prompt.show_banner()
     if not Auth.establish_connection():  # if connection was not established, do not continue
         return False
 
@@ -34,13 +34,13 @@ def launch_menu():
         print("Warning!!! Incorrect license detected! Please check!".upper())
 
     while True:
-        user_command = AppMenu_main.get_user_command()
+        user_command = prompt.read_command()
         match user_command:
             case False: # if nothing to check, loop over
                 continue
 
             case ['m']:
-                print(AppMenu_main._main_menu)
+                print(prompt._main_menu)
 
             case ['exit'|'q'|'quit']:  # close the menu and exit from the script
                 break
@@ -108,10 +108,10 @@ def launch_menu():
                     Workflows_export.create_folders_to_export_wf()
 
                 args = user_command[2:]
-                startswith: str = Tools.get_flag_values_from_args_str(args, '--startswith')
-                search_for: str = Tools.get_flag_values_from_args_str(args, '--search')
-                wf_id_array: list = Tools.get_flag_values_from_args_str(args, '--id').split()
-                wf_type: str = Tools.get_flag_values_from_args_str(args, '--type').lower()
+                startswith: str = utils.get_flag_values_from_args_str(args, '--startswith')
+                search_for: str = utils.get_flag_values_from_args_str(args, '--search')
+                wf_id_array: list = utils.get_flag_values_from_args_str(args, '--id').split()
+                wf_type: str = utils.get_flag_values_from_args_str(args, '--type').lower()
 
                 if wf_id_array and user_command[:2] == ['export', 'workflows']:
                     bim_export.export_server_info(url, token, filepath=filepath)
@@ -146,7 +146,7 @@ def launch_menu():
                 Object_model_import.import_object_model(url, token, om_filepath)
 
             case ['rm', 'files']:
-                Folder.clean_folder(f"{os.getcwd()}/transfer_files")
+                utils.Folder.clean_folder(f"{os.getcwd()}/transfer_files")
 
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
             case ['ft', _, *_]:
@@ -481,7 +481,7 @@ def launch_menu():
             
             case ['export', 'template' | 'templates', *_]:
                 args = user_command[2:]
-                id: list = Tools.get_flag_values_from_args_str(args, '--id').split()
+                id: list = utils.get_flag_values_from_args_str(args, '--id').split()
                 data = bim_tools.export_templates(url, token, id)
 
             #    ''' =============================================================================== Tools ============================================================================================ '''
@@ -492,23 +492,6 @@ def launch_menu():
             case ['token']:
                 user_access_token = Auth.get_user_access_token(url, username, password, Auth.providerId)
                 print(f"\n{user_access_token}")
-
-            case ['sh']:
-                Tools.run_terminal_command()
-
-            case ['ls', *_]:
-                if len(user_command) == 1:
-                    Tools.run_terminal_command(Folder.get_content())
-                else:
-                    Tools.run_terminal_command(Folder.get_content(user_command[1]))
-
-            case ['ssh', 'connect']:
-                connection_data:list = input("Enter 'remote host' and 'username' separated by a space: ").strip().split()
-                try:
-                    Tools.connect_ssh(connection_data[0], connection_data[1])
-                except IndexError:
-                    print("Incorrect data. Can't connect.")
-                    continue
 
             case ['basic-auth', *_]:
                 if user_command == ['basic-auth']:

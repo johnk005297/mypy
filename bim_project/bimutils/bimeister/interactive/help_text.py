@@ -21,7 +21,6 @@ Transfer data
 User
     ptoken                              get private token
     token                               get user access token(Bearer)
-    ls                                  list current folder content
     basic-auth --set                    set basic authentication
 
 Feature Toggle

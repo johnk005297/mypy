@@ -1,4 +1,3 @@
-import requests
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
@@ -14,8 +13,9 @@ import re
 import binascii
 import os
 from getpass import getpass
+from typing import Literal
 
-from tools import Tools
+from common.http import make_request
 from mlogger import Logs
 
 
@@ -25,11 +25,9 @@ logs = Logs()
 class Vsphere:
 
     url: str = "https://vcenter.bimeister.io"
-    connection_err_msg: str = "Connection error. Check the log."
     _vsphere_release_schema: str = "8.0.3.0"
 
     def __init__(self):
-        self.tools = Tools()
         self.console = Console()
 
     def get_credentials(self, username=None, password=None):
@@ -42,7 +40,7 @@ class Vsphere:
             creds: str = username[0] + '@bimeister.com' + ':' + password
         else:
             logger.error("No correct credentials were provided.")
-            return False
+            return None
         creds_bytes = creds.encode("utf-8")
         creds_encoded = base64.b64encode(creds_bytes)
         creds_base64 = creds_encoded.decode("utf-8")
@@ -57,7 +55,7 @@ class Vsphere:
         headers = {'vmware-api-session-id': token}
         return headers
 
-    def get_session_token(self, username='', password=''):
+    def get_session_token(self, username='', password='') -> str | None:
         """ Function to get token for execution requests. """
 
         try:
@@ -71,31 +69,24 @@ class Vsphere:
                 password = password_b64_decoded.decode("utf-8").strip() # password utf decoded
         except binascii.Error as err:
             logger.error(err)
-            print("Invalid base64-encoded string. Check the logs. Exit!")
-            return False
+            print(f"{type(err).__name__}: {err}")
+            return None
+        except UnicodeDecodeError as err:
+            logger.error(err)
+            print(f"{type(err).__name__}: {err}")
+            return None
         creds = self.get_credentials(username=username, password=password)
         if not creds:
-            return False
+            return None
         headers = {'Authorization': 'Basic {}'.format(creds)}
         payload = {}
-        try:
-            response = requests.post(url=f"{self.url}/rest/com/vmware/cis/session", headers=headers, data=payload, verify=False)
-            if response.status_code // 100 == 2:
-                logger.info(f"{response.status_code}")
-                data: dict = response.json()
-                return data['value']
-            else:
-                logger.error(response.text)
-                print(f"Error: {response.json()['value']['error_type']}\nCheck the logs!")
-                return False
-        except requests.exceptions.RequestException as err:
-            logger.error(err)
-            print(self.connection_err_msg)
-            return False
-        except:
-            logger.error(response.text)
-            print(self.connection_err_msg)
-            return False
+        response = make_request('POST', url=f"{self.url}/rest/com/vmware/cis/session", headers=headers, data=payload, verify=False, print_err=True)
+        if response:
+            logger.info(f"{response.status_code}")
+            data: dict = response.json()
+            return data['value']
+        else:
+            return None
 
     def print_list_of_vm(self, vm_array) -> None:
         """ Print all VM names from the dictionary. """
@@ -106,15 +97,12 @@ class Vsphere:
         for vm in vm_list:
             print(vm)
 
-    def get_folders_group_id(self, headers, folders: tuple = ()):
+    def get_folders_group_id(self, headers, folders: tuple = ()) -> list | None:
         """ Get group's ID needed to be excluded from the reboot list. """
 
-        try:
-            response = requests.get(url=f"{self.url}/api/vcenter/folder", headers=headers, verify=False)
-        except requests.exceptions.ConnectionError as err:
-            logger.error(err)
-            print(self.connection_err_msg)
-            return False
+        response = make_request('GET', url=f"{self.url}/api/vcenter/folder", headers=headers, verify=False, print_err=True)
+        if not response:
+            return None
         data = response.json()
         group_id: list = [x['folder'] for x in data if x['type'] == 'VIRTUAL_MACHINE' and x['name'] in folders]
         return group_id
@@ -123,7 +111,7 @@ class Vsphere:
         """ Check for power state for provided VMs. """
 
         url: str = f"{self.url}/api/vcenter/vm/{vm}/power"
-        response = self.tools.make_request('GET', url, headers=headers, verify=False, print_err=True)
+        response = make_request('GET', url, headers=headers, verify=False, print_err=True)
         if not response:
             return None
         try:
@@ -137,7 +125,7 @@ class Vsphere:
         """ Function returns an array of VM in vSphere's cluster in format {'vm-moId': 'vm-name'}. """
 
         url = f"{self.url}/api/vcenter/vm"
-        response = self.tools.make_request('GET', url, headers=headers, verify=False, print_err=True)
+        response = make_request('GET', url, headers=headers, verify=False, print_err=True)
         if not response:
             return None
         try:
@@ -180,10 +168,10 @@ class Vsphere:
             url_reboot: str = f"{self.url}/api/vcenter/vm/{value['moId']}/guest/power?action=reboot"
             url_reset: str = f"{self.url}/api/vcenter/vm/{value['moId']}/power?action=reset"
             if self.get_vm_power_state(headers=headers, vm=value['moId']) == 'POWERED_ON':
-                response = self.tools.make_request('POST', url_reboot, headers=headers, verify=False)
+                response = make_request('POST', url_reboot, headers=headers, verify=False)
                 time.sleep(0.15)
                 if not response:
-                    response = self.tools.make_request('POST', url_reset, headers=headers, return_err_response=True, verify=False)
+                    response = make_request('POST', url_reset, headers=headers, verify=False)
                     if not response:
                         self.console.log(f"[red]No connection to {value['name']}. Check VM in vCenter![/red]")
                         continue
@@ -201,7 +189,7 @@ class Vsphere:
             self.console.print(power_on_msg + "  [green]✅[/green]", overflow="ellipsis")
             return True
         with self.console.status(power_on_msg, spinner="earth") as status:
-            response = self.tools.make_request('POST', url, headers=headers, verify=False, return_err_response=True)
+            response = make_request('POST', url, headers=headers, verify=False)
             if response.status_code // 100 != 2:
                 self.console.log(f"[red]No connection to {name}. Check VM in vCenter![/red]")
                 return False
@@ -232,9 +220,9 @@ class Vsphere:
             return True
         with self.console.status(shutting_down_msg, spinner="earth") as status:
             power_off: bool = False
-            response = self.tools.make_request('POST', url_shutdown, headers=headers, return_err_response=True, verify=False)
+            response = make_request('POST', url_shutdown, headers=headers, verify=False)
             if response.status_code // 100 != 2:
-                response = self.tools.make_request('POST', url_stop, headers=headers, return_err_response=True, verify=False)
+                response = make_request('POST', url_stop, headers=headers, verify=False)
                 if response.status_code // 100 != 2:
                     self.console.log(f"[red]No connection to {name}. Check VM in vCenter![/red]")
                     return False
@@ -257,7 +245,7 @@ class Vsphere:
                 self.console.log(f"[red]Error on stop {name} within 15 minutes. Check VM status in vCenter![/red]")
                 return False
 
-    def take_snapshot(self, headers, moId, vm_name, snap_name='', description=''):
+    def take_snapshot(self, headers, moId, vm_name, snap_name='', description='') -> bool | None:
         """ Function takes snapshot of a given VM. Requires moId of the VM."""
 
         url: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachine/{moId}/CreateSnapshotEx_Task"
@@ -266,33 +254,21 @@ class Vsphere:
                     "memory": False,
                     "name": snap_name
                     }
-        response = self.tools.make_request('POST', url, headers=headers, data=json.dumps(payload), verify=False, return_err_response=True)
+        response = make_request('POST', url, headers=headers, data=json.dumps(payload), verify=False)
         if not response:
-            return False
-        if response.status_code // 100 == 2:
-            logger.info(f"Created snapshot for VM: {vm_name}")
-            return True
-        else:
             print(f"Error with {vm_name}. Check logs: {logs.filepath}")
-            return False
+            return None
+        logger.info(f"Created snapshot for VM: {vm_name}")
+        return True
     
     def get_vm_snapshots(self, headers, moId, vm_name) -> dict:
         """ Get snapshot Id, virtual machine Id, snapshot name for a given VM. """
 
         url: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachine/{moId}/snapshot"
-        try:
-            response = requests.get(url=url, headers=headers, verify=False)
-            if response.status_code // 100 == 2:
-                data = response.json() if bool(response.text) else False
-                logger.info(f"Get list of snapshots VM: {vm_name}")
-        except requests.exceptions.HTTPError as err:
-            logger.error(err)
-            print("Error. Check the log!")
-            return False
-        except Exception as err:
-            logger.error(err)
-            print("Error. Check the log!")
-            return False
+        response = make_request('GET', url=url, headers=headers, verify=False, print_err=True)
+        if not response:
+            return None
+        data = response.json()
         snapshots: dict = {}
         snapId, vmId, snapName = [], [], []
         def collect_snapshot_names(data, depth=0, count=1):
@@ -323,56 +299,21 @@ class Vsphere:
                 tree.add(snap['snapName'])
         rprint(tree)
 
-    def revert_to_snapshot(self, headers, moId, vm_name, print_msg=True):
+    def revert_to_snapshot(self, headers, moId) -> Literal[True] | None:
         """ Revert chosen VM(s) to a given snapshot. """
 
         url: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachineSnapshot/{moId}/RevertToSnapshot_Task"
-        try:
-            payload = {
-                        "suppressPowerOn": True
-                        }
-            response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
-            if response.status_code // 100 == 2:
-                msg: str = f"Revert to snapshot VM: {vm_name}"
-                if print_msg:
-                    print(msg)
-                logger.info(msg)
-                return True
-            elif response.status_code == 500:
-                data = response.json() if bool(response.text) else False
-                logger.error(data)
-                return False
-        except requests.exceptions.HTTPError as err:
-            logger.error(err)
-            print("Error. Check the log!")
-            return False
-        except Exception as err:
-            logger.error(err)
-            print("Error. Check the log!")
-            return False            
+        payload = { "suppressPowerOn": True }
+        response = make_request('POST', url=url, headers=headers, data=json.dumps(payload), verify=False)
+        return True if response else None
 
-    def remove_vm_snapshot(self, headers, moId, print_msg=True):
+    def remove_vm_snapshot(self, headers, moId) -> Literal[True] | None:
         """ Remove snapshots for a given VM. """
 
         url: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachineSnapshot/{moId}/RemoveSnapshot_Task"
-        try:
-            payload = {
-                        "removeChildren": False
-                        }
-            response = requests.post(url=url, headers=headers, data=json.dumps(payload), verify=False)
-            if response.status_code // 100 == 2:
-                if print_msg:
-                    print(f"Remove snapshot: {moId}")
-                logger.info(f"Remove snapshot: {moId}")
-                return True
-        except requests.exceptions.HTTPError as err:
-            logger.error(err)
-            print("Error. Check the log!")
-            return False
-        except Exception as err:
-            logger.error(err)
-            print("Error. Check the log!")
-            return False
+        payload = { "removeChildren": False }
+        response = make_request('POST', url=url, headers=headers, data=json.dumps(payload), verify=False)
+        return True if response else None
 
     def is_has_snap(self, headers, vm_name, snap_name) -> bool:
         """ Function tries to find a snapshot in vSphere for a given VM.

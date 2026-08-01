@@ -4,7 +4,7 @@ logger = logging.getLogger(__name__)
 from __init__ import __version__
 from .help_text import HELP_TEXT
 
-class AppMenu:
+class Prompt:
 
     def __init__(self):
         self._main_menu = HELP_TEXT
@@ -12,11 +12,11 @@ class AppMenu:
     def __getattr__(self, item):
         raise AttributeError("AppMenu class has no such attribute: " + item)
 
-    def welcome_info_note(self):
+    def show_banner(self):
         """ first note to be displayed """
         print(f"v{__version__}")
 
-    def get_user_command(self):
+    def read_command(self):
         """ Define what the user would like to do """
 
         exit_command = ['q']

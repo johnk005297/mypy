@@ -5,8 +5,8 @@ import sys
 from datetime import datetime
 import time
 
-from .client import Vsphere
-from tools import Tools
+from .service import Vsphere
+from common import utils
 
 
 # vsphere_app CLI
@@ -143,7 +143,7 @@ def take_snap(
             take_snap_status: bool = vs_ctx.vs.take_snapshot(vs_ctx.headers, value['moId'], value['name'], snap_name=snap_name, description=description)
             time.sleep(0.5)
             if take_snap_status:
-                count = Tools.counter()
+                count = utils.counter()
                 while True:
                     time.sleep(5)
                     if vs_ctx.vs.is_has_snap(vs_ctx.headers, value['name'], snap_name):
@@ -182,10 +182,10 @@ def remove_snap(
             for snap in snapshots.values():
                 if snap['snapName'].strip() == snap_name:
                     is_snap_exists = True
-                    remove_snap_status = vs_ctx.vs.remove_vm_snapshot(vs_ctx.headers, snap['snapId'], print_msg=False)
+                    remove_snap_status = vs_ctx.vs.remove_vm_snapshot(vs_ctx.headers, snap['snapId'])
                     time.sleep(0.5)
                     if remove_snap_status:
-                        count = Tools.counter()
+                        count = utils.counter()
                         while True:
                             time.sleep(5)
                             if not vs_ctx.vs.is_has_snap(vs_ctx.headers, value['name'], snap['snapName'].strip()):
@@ -222,7 +222,7 @@ def revert_snap(
             for snap in snapshots.values():
                 if snap['snapName'].strip() == snap_name:
                     is_snap_exists = True
-                    revert_snap_status = vs_ctx.vs.revert_to_snapshot(vs_ctx.headers, snap['snapId'], value['name'], print_msg=False)
+                    revert_snap_status = vs_ctx.vs.revert_to_snapshot(vs_ctx.headers, snap['snapId'])
                     time.sleep(1)
                     if revert_snap_status:
                         vs_ctx.console.print(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")

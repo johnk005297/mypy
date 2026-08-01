@@ -4,13 +4,13 @@ import sys
 import platform
 import logging
 
-from git import git_app
+from git_tools import git_app
 from postgre import sql_app
-from featureToggle import ft_app
-from mdocker import docker_app
-from bimeister.license import lic_app
-from vsphere import vsphere_app
-from bimeister.auth import auth_app
+from bimeister.feature_toggles import ft_app
+from docker_tools import docker_app
+from bimeister.cli import lic_app
+from vsphere_tools import vsphere_app
+from bimeister.cli import auth_app
 from __init__ import __version__
 
 app = typer.Typer(
@@ -51,9 +51,9 @@ if __name__ == '__main__':
 
     import mlogger
     from bimeister.interactive.dispatcher import launch_menu
-    from tools import Tools
+    from common import utils
     from dotenv import load_dotenv
-    load_dotenv(dotenv_path=Tools.get_resourse_path(".env"))
+    load_dotenv(dotenv_path=utils.get_resourse_path(".env"))
 
     logs = mlogger.Logs()
     logs.set_full_access_to_log_file(logs.filepath, 0o666)
