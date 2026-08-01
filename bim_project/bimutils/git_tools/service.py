@@ -1,13 +1,12 @@
 import yaml
 import base64
-import requests
 from rich.console import Console
 from rich.table import Table
 
 import logging
 import os
 
-from common.http import make_request
+from bimutils.common.http import make_request
 
 
 _logger = logging.getLogger(__name__)

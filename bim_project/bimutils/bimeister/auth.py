@@ -7,8 +7,8 @@ import logging
 import sys
 from getpass import getpass
 
-from common.mlogger import Logs
-from common.http import make_request
+from bimutils.common.mlogger import Logs
+from bimutils.common.http import make_request
 
 _logger = logging.getLogger(__name__)
 _logs = Logs()

@@ -3,8 +3,8 @@ import typer
 import sys
 import os
 
-from docker_tools import Docker
-from common.utils import File
+from .service import Docker
+from bimutils.common.utils import File
 
 
 # docker_app CLI

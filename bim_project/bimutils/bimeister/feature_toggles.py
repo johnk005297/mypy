@@ -10,7 +10,7 @@ import platform
 import os
 import sys
 
-from common import utils
+from bimutils.common import utils
 
 _logger = logging.getLogger(__name__)
 

@@ -14,7 +14,7 @@ from getpass import getpass
 from time import perf_counter
 from pathlib import Path
 
-from common.mlogger import Logs
+from bimutils.common.mlogger import Logs
 from . import queries
 
 # Create custom loaders to translate PostgreSQL infinity to Python boundaries

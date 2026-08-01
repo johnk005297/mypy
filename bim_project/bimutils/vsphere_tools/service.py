@@ -15,8 +15,8 @@ import os
 from getpass import getpass
 from typing import Literal
 
-from common.http import make_request
-from common.mlogger import Logs
+from bimutils.common.http import make_request
+from bimutils.common.mlogger import Logs
 
 
 logger = logging.getLogger(__name__)

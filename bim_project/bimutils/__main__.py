@@ -3,15 +3,25 @@ import typer
 import sys
 import platform
 import logging
+from pathlib import Path
 
-from git_tools import git_app
-from postgre_tools.cli import sql_app
-from bimeister.feature_toggles import ft_app
-from docker_tools import docker_app
-from bimeister.cli import lic_app
-from vsphere_tools import vsphere_app
-from bimeister.cli import auth_app
-from __init__ import __version__
+from bimutils.git_tools import git_app
+from bimutils.postgre_tools.cli import sql_app
+from bimutils.bimeister.feature_toggles import ft_app
+from bimutils.docker_tools import docker_app
+from bimutils.bimeister.cli import lic_app
+from bimutils.vsphere_tools import vsphere_app
+from bimutils.bimeister.cli import auth_app
+from . import __version__
+from bimutils.bimeister.bimeister_tools import print_bim_version
+from bimutils.bimeister.interactive.dispatcher import launch_menu
+from bimutils.common import utils
+from bimutils.common import mlogger
+from dotenv import load_dotenv
+
+env_file = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=env_file)
+
 
 app = typer.Typer(
     add_completion=False,
@@ -32,8 +42,7 @@ def main(
     url: str = typer.Option(None, "--url", help="Check bimeister version.")
         ):
         if url:
-            import bimeister.bimeister_tools as bt
-            bt.print_bim_version(url)
+            print_bim_version(url)
             raise typer.Exit()
 
 app.add_typer(git_app, name="git")
@@ -48,11 +57,6 @@ app.add_typer(auth_app)
 if __name__ == '__main__':
     if platform.system() == 'Linux':
         import readline # opportunity to have access of input history
-
-    from bimeister.interactive.dispatcher import launch_menu
-    from common import utils, mlogger
-    from dotenv import load_dotenv
-    load_dotenv(dotenv_path=utils.get_resourse_path(".env"))
 
     logs = mlogger.Logs()
     logs.set_full_access_to_log_file(logs.filepath, 0o666)

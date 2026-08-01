@@ -4,8 +4,8 @@ import sys
 from getpass import getpass
 
 from .auth import Auth
-from common import utils
-from bimeister.license import License, Issue
+from .license import License, Issue
+from bimutils.common import utils
 
 
 #auth_app CLI

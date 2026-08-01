@@ -6,7 +6,7 @@ from datetime import datetime
 import time
 
 from .service import Vsphere
-from common import utils
+from bimutils.common import utils
 
 
 # vsphere_app CLI

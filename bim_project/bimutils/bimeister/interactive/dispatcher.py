@@ -4,17 +4,17 @@ def launch_menu():
     import argparse
 
     from .shell import Prompt
-    import bimeister.auth
-    import bimeister.license
-    import bimeister.export_data as bim_export
-    import bimeister.import_data as bim_import
-    import bimeister.feature_toggles as ft
-    import bimeister.bimeister_tools as bim_tools
-    from common import utils
+    import bimutils.bimeister.auth as auth
+    import bimutils.bimeister.license as license
+    import bimutils.bimeister.export_data as bim_export
+    import bimutils.bimeister.import_data as bim_import
+    import bimutils.bimeister.feature_toggles as ft
+    import bimutils.bimeister.bimeister_tools as bim_tools
+    from bimutils.common import utils
 
     prompt = Prompt()
-    Auth = bimeister.auth.Auth()
-    License_main = bimeister.license.License()
+    Auth = auth.Auth()
+    License_main = license.License()
     Object_model_export = bim_export.Object_model()
     Object_model_import = bim_import.Object_model()
     Workflows_export = bim_export.Workflows()

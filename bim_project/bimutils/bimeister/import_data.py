@@ -11,11 +11,11 @@ import os
 import json
 import time
 
-from bimeister.license import License
-from common.utils import File
-from common.mrich import ScrollablePanel
-from common.mlogger import Logs
-from common.http import make_request
+from .license import License
+from bimutils.common.utils import File
+from bimutils.common.mrich import ScrollablePanel
+from bimutils.common.mlogger import Logs
+from bimutils.common.http import make_request
 
 _logger = logging.getLogger(__name__)
 _logs = Logs()

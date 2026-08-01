@@ -1,7 +1,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from __init__ import __version__
+from bimutils import __version__
 from .help_text import HELP_TEXT
 
 class Prompt:
