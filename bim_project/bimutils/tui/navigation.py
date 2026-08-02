@@ -1,26 +1,31 @@
-from textual.widgets import Tree
+"""
+Main module navigation.
 
-from .messages import MenuSelected
-from .models import MenuItem
-from .menu import MENU
+Responsible for:
+- displaying available application modules;
+- notifying the app when the user selects a module.
+
+Does not:
+- load screens directly;
+- call backend services.
+"""
+from textual.widgets import ListView, ListItem, Label
+from .messages import ModuleSelected
 
 
-class Navigation(Tree[MenuItem]):
-    def __init__(self):
-        super().__init__("Services")
+class Navigation(ListView):
+    def __init__(self, items: list[str]) -> None:
+        self.items = items
+        super().__init__()
 
-    def on_mount(self):
-        self.root.expand()
-        self.show_root = False
+    def on_mount(self) -> None:
+        self.set_items(self.items)
 
-        for item in MENU:
-            if not item.children:
-                self.root.add(item.title, data=item)
-            else:
-                parent = self.root.add(item.title, data=item)
-                for child in item.children:
-                    parent.add(child.title, data=child)
+    def set_items(self, items: list[str]) -> None:
+        self.clear()
+        for item in items:
+            self.append(ListItem(Label(item)))
 
-    def on_tree_node_selected(self, event: Tree.NodeSelected[MenuItem]) -> None:
-        if event.node.data is not None:
-            self.post_message(MenuSelected(event.node.data))
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        label = event.item.query_one(Label)
+        self.post_message(ModuleSelected(str(label.render())))
