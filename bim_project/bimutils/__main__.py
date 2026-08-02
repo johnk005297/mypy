@@ -15,13 +15,17 @@ from bimutils.bimeister.cli import auth_app
 from . import __version__
 from bimutils.bimeister.bimeister_tools import print_bim_version
 from bimutils.bimeister.interactive.dispatcher import launch_menu
-from bimutils.common import utils
 from bimutils.common import mlogger
 from dotenv import load_dotenv
 
-env_file = Path(__file__).resolve().parent / ".env"
-load_dotenv(dotenv_path=env_file)
-
+def get_env_file_path():
+    """Return path to application .env resource."""
+    try:
+        abs_path = Path(sys._MEIPASS)
+    except AttributeError:
+        abs_path = Path(__file__).resolve().parent
+    return abs_path / ".env"
+load_dotenv(dotenv_path=get_env_file_path())
 
 app = typer.Typer(
     add_completion=False,
@@ -53,10 +57,9 @@ app.add_typer(lic_app, name="license")
 app.add_typer(vsphere_app, name="vsphere")
 app.add_typer(auth_app)
 
-
-if __name__ == '__main__':
+def run():
     if platform.system() == 'Linux':
-        import readline # opportunity to have access of input history
+        import readline
 
     logs = mlogger.Logs()
     logs.set_full_access_to_log_file(logs.filepath, 0o666)
@@ -68,7 +71,10 @@ if __name__ == '__main__':
         except typer.Abort:
             sys.exit(1)
     else:
-        try:    
+        try:
             launch_menu()
         except KeyboardInterrupt:
             print('\nKeyboardInterrupt')
+
+if __name__ == "__main__":
+    run()
