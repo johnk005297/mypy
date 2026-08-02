@@ -1,11 +1,21 @@
+"""
+Textual event messages.
+
+Responsible for:
+- defining communication events between widgets;
+- allowing components to notify each other without direct imports.
+
+Does not:
+- perform actions;
+- contain UI or backend logic.
+"""
 from textual.message import Message
 
-from .models import MenuItem
 
-
-class MenuSelected(Message):
-    """Sent when the user selects a menu item."""
-
-    def __init__(self, item: MenuItem):
+class ModuleSelected(Message):
+    def __init__(self, module: str) -> None:
+        self.module = module
         super().__init__()
-        self.item = item
+
+class BackRequested(Message):
+    pass

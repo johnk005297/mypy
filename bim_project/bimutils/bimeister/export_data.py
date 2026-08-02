@@ -9,10 +9,11 @@ import os
 import json
 import time
 
-from license import License
-from tools import Tools, Folder
-from mlogger import Logs
-from mrich import ScrollablePanel
+from .license import License
+from bimutils.common.mlogger import Logs
+from bimutils.common.mrich import ScrollablePanel
+from bimutils.common.http import make_request
+from bimutils.common.utils import Folder, counter
 
 _logger = logging.getLogger(__name__)
 _logs = Logs()
@@ -53,7 +54,6 @@ class Object_model:
     def __init__(self):
         self.failed_workflows: list = []
         self.exported_workflows: list = []
-        self.tools = Tools()
         self.console = Console()
 
     def is_export_obj_model_file_exists(self):
@@ -82,7 +82,7 @@ class Object_model:
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
         url += '/' + self.__api_Integration_ObjectModel_Export
         with self.console.status("Exporting object model...", spinner="earth"):
-            response = self.tools.make_request('GET', url, headers=headers, verify=False, return_err_response=True)
+            response = make_request('GET', url, headers=headers, verify=False)
             if response.status_code // 100 != 2:
                 _logger.error(response.text)
                 print(_logs.err_message)
@@ -118,7 +118,6 @@ class Workflows:
 
     def __init__(self):
         self.issue_message = lambda status_code, wf: print("Error {0}: {1}.".format(status_code, wf))
-        self.tools = Tools()
         self.console = Console()
 
     def create_folders_to_export_wf(self):
@@ -134,7 +133,7 @@ class Workflows:
 
         url += '/' + self.__api_WorkFlowNodes
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
-        response = self.tools.make_request('GET', url, headers=headers, verify=False)
+        response = make_request('GET', url, headers=headers, verify=False)
         try:
             data = response.json()
         except Exception as err:
@@ -166,7 +165,7 @@ class Workflows:
             return False
         for name, id in workflow_nodes.items():
                 url_get_workflows = f"{url}/{self.__api_WorkFlowNodes}/{id}/children"
-                response = self.tools.make_request('GET', url_get_workflows, headers=headers, verify=False)
+                response = make_request('GET', url_get_workflows, headers=headers, verify=False)
                 try:
                     data = response.json()
                 except Exception as err:
@@ -189,7 +188,7 @@ class Workflows:
 
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
         url += f"/{self.__api_WorkFlows}/{id}"
-        response = self.tools.make_request('GET', url, headers=headers, verify=False)
+        response = make_request('GET', url, headers=headers, verify=False)
         try:
             data = response.json()
         except Exception as err:
@@ -231,7 +230,7 @@ class Workflows:
                     for id, name in workflows[node].items():
                         wf_title: str = textwrap.shorten("{0}: {1}".format(node, name), width=75, placeholder="...")
                         url_export = f"{url}/api/Integration/WorkFlow/{id}/Export"
-                        response = self.tools.make_request('GET', url_export, headers=headers, verify=False, return_err_response=True)
+                        response = make_request('GET', url_export, headers=headers, verify=False)
                         if response.status_code // 100 != 2:
                             _logger.error(response.text)
                             failed_workflows.append("Error {0}: {1})".format(response.status_code, name))
@@ -257,13 +256,13 @@ class Workflows:
 
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         nodes: dict = self.get_workflow_nodes_id(url, token)
-        count = self.tools.counter()
+        count = counter()
         self.remove_duplicate_workflows_id(wf_id_array)
         failed_workflows = []
         with open(f"{self._workflows_folder_path}/{self._exported_workflows_list}", mode='a', encoding='utf-8') as file:
             for id in wf_id_array:
                 url_export = f"{url}/api/WorkFlows/{id}"
-                response = self.tools.make_request('GET', url_export, headers=headers, verify=False, return_err_response=True)
+                response = make_request('GET', url_export, headers=headers, verify=False)
                 if response.status_code // 100 != 2:
                     _logger.error(response.text)
                     if response.status_code == 400 and data['type']:
@@ -281,7 +280,7 @@ class Workflows:
                 else:
                     url_export = f"{url}/api/Integration/WorkFlow/{id}/Export"
                     try:
-                        response = self.tools.make_request('GET', url_export, headers=headers, verify=False, return_err_response=True)
+                        response = make_request('GET', url_export, headers=headers, verify=False)
                         node_name: set = {key for key in nodes if nodes[key] == node_id}
                         if response.status_code // 100 != 2:
                             _logger.error(response.text)
@@ -306,7 +305,7 @@ class Workflows:
     def display_list_of_workflowsName_and_workflowsId(self, workflows: dict):
         """ Function to display workFlows on the screen and save that info to a file. """
 
-        count = Tools.counter()
+        count = counter()
         for node in workflows:
             for id, name in workflows[node].items():
                 time.sleep(0.01)
@@ -315,14 +314,14 @@ class Workflows:
     def delete_workflows(self, url, token, workflows: dict):
         """ Function to delete workFlows from a certain node, or all at once. """
 
-        count = Tools.counter()
+        count = counter()
         headers = {'accept': '*/*', 'Content-type':'application/json', 'Authorization': f"Bearer {token}"}
         nodes_to_remove = [node for node in workflows if not workflows[node]]
         {workflows.__delitem__(node) for node in nodes_to_remove}
         for node in workflows:
             for id, name in workflows[node].items():
                 url_delete_workflow = f"{url}/{self.__api_WorkFlows}/{id}"
-                response = self.tools.make_request('DELETE', url_delete_workflow, headers=headers, verify=False, return_err_response=True)
+                response = make_request('DELETE', url_delete_workflow, headers=headers, verify=False)
                 if response.status_code // 100 != 2:
                     _logger.error(response.text)
                     self.issue_message(response.status_code, name)

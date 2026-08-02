@@ -3,14 +3,12 @@ import requests
 import json
 import argparse
 
-import mlogger
-from tools import Tools
+from bimutils.common.http import make_request
+from bimutils.common import utils, mlogger
 
 _logs = mlogger.Logs()
 _logs.set_full_access_to_log_file(_logs.filepath, 0o666)
 _logger = mlogger.file_logger(_logs.filepath, logLevel=logging.INFO)
-_tools = Tools()
-
 
 
 def apply_bimeister_customUI(url, token, file):
@@ -147,7 +145,7 @@ def print_list_of_templates(templates: list):
     if not templates:
         print("No data was provided.")
         return False
-    count = Tools.counter()
+    count = utils.counter()
     for template in templates:
         print(f"{count()})Name: {template['name']}  Id: {template['id']}  TypeName: {template['typeName']}")
 
@@ -197,7 +195,7 @@ def basic_auth(url, token, username, password, set=False):
     else:
         url: str = f"{url}/api/Users/check-user-basic-auth"
     try:
-        response = Tools.make_request('POST', url, json=data, return_err_response=True, headers=headers, verify=False)
+        response = make_request('POST', url, json=data, headers=headers, verify=False)
         if response.status_code // 100 == 2:
             print(f"Username: {username}\nStatus: True")
         else:
@@ -221,7 +219,7 @@ def import_activity_collector(url: str, token: str, x_imui_key: str ="ce090efa02
     url: str = f"{url.rstrip('/')}/api/activity-collector/configuration/tasks/upload"
     try:
         with open(filepath, mode='rb') as file:
-            response = Tools.make_request('POST', url, headers=headers, files={'file': file}, verify=False, return_err_response=True)
+            response = make_request('POST', url, headers=headers, files={'file': file}, verify=False)
             if response.status_code // 100 == 2:
                 print("Configuration uploaded successfully.")
             else:
@@ -247,7 +245,7 @@ def export_activity_collector(url: str, token: str) -> requests.Response:
         }
     url: str = f"{url.rstrip('/')}/api/activity-collector/configuration/tasks/download"
     try:
-        response = _tools.make_request('GET', url, headers=headers, verify=False, return_err_response=True)
+        response = make_request('GET', url, headers=headers, verify=False)
         if response.status_code // 100 == 2:
             data: dict = response.json()
             filename: str = 'ActivityCollectorConfiguration.json'
@@ -299,9 +297,9 @@ class Abac:
         for object_name, url in data.items():
             try:
                 if object_name == "Rules":
-                    response = _tools.make_request('POST', url, return_err_response=True, headers=headers, verify=False)
+                    response = make_request('POST', url, headers=headers, verify=False)
                 else:
-                    response = _tools.make_request('GET', url, return_err_response=True, headers=headers, verify=False)
+                    response = make_request('GET', url, headers=headers, verify=False)
                 if response.status_code // 100 == 2:
                     data: dict = response.json()
                     with open(f"{svc_name}_{object_name}.json", mode="w", encoding="utf-8") as file:
@@ -418,7 +416,7 @@ class Abac:
         for key,value in data.items():
             try:
                 with open(value['file'], mode='rb') as file:
-                    response = _tools.make_request('POST', value['url'], files={'file': file}, return_err_response=True, headers=headers, verify=False)
+                    response = make_request('POST', value['url'], files={'file': file}, headers=headers, verify=False)
                     if response.status_code // 100 == 2:
                         print(f"{svc_name}: {key} configuration uploaded successfully")
                     else:
@@ -681,7 +679,7 @@ class Auth:
         filename: str = "auth_Rules.json"
         url += '/api/abac/rules/export'
         try:
-            response = _tools.make_request('POST', url, return_err_response=True, headers=headers, verify=False)
+            response = make_request('POST', url, headers=headers, verify=False)
             data: dict = response.json()
             with open(filename, mode="w", encoding="utf-8") as file:
                 json.dump(data, file, indent=2, ensure_ascii=False)
@@ -701,7 +699,7 @@ class Auth:
         url += '/api/abac/rules/import'
         try:
             with open(filepath, mode='rb') as file:
-                response = _tools.make_request('POST', url, files={'file': file}, return_err_response=True, headers=headers, verify=False)
+                response = make_request('POST', url, files={'file': file}, headers=headers, verify=False)
                 if response.status_code // 100 == 2:
                     print(f"{filepath} imported successfully.")
                 else:
@@ -727,7 +725,7 @@ class Auth:
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         url += '/api/abac/rules/allowed-modules'
         try:
-            response = _tools.make_request('GET', url, return_err_response=True, headers=headers, verify=False)
+            response = make_request('GET', url, headers=headers, verify=False)
             print(response.json())
         except Exception as err:
             _logger.error(err)
@@ -743,7 +741,7 @@ class Auth:
         headers = {'accept': '*/*', 'Content-Type': 'application/json-patch+json', 'Authorization': f"Bearer {token}"}
         url += '/api/abac/rules/allowed-modules'
         try:
-            response = _tools.make_request('PUT', url, data=json.dumps(modules), return_err_response=True, headers=headers, verify=False)
+            response = make_request('PUT', url, data=json.dumps(modules), headers=headers, verify=False)
             if response.status_code // 100 == 2:
                 print(f"{response.status_code}: OK.")
             else:
@@ -759,7 +757,7 @@ class Auth:
         
         headers = {'accept': '*/*', 'Authorization': f"Bearer {token}"}
         try:
-            response = _tools.make_request('GET', f'{url}/api/public/user-attributes', return_err_response=True, headers=headers, verify=False)
+            response = make_request('GET', f'{url}/api/public/user-attributes', headers=headers, verify=False)
             if response.status_code // 100 == 2:
                 data = response.json()
                 for item in data:
@@ -781,7 +779,7 @@ class Auth:
             return None
         for code in codes:
             try:
-                response = _tools.make_request('PUT', f'{url}/api/public/user-attributes/{code}', return_err_response=True, headers=headers, verify=False)
+                response = make_request('PUT', f'{url}/api/public/user-attributes/{code}', headers=headers, verify=False)
                 if response.status_code // 100 == 2:
                     print(f"{code}: attribute applied successfully")
                 else:
@@ -805,7 +803,7 @@ class Auth:
             return None
         payload = {"userIds": [user_id]}
         try:
-            response = _tools.make_request('POST', f'{url}/api/public/users/attributes', data=json.dumps(payload), return_err_response=True, headers=headers, verify=False)
+            response = make_request('POST', f'{url}/api/public/users/attributes', data=json.dumps(payload), headers=headers, verify=False)
             if response.status_code // 100 == 2:
                 data = response.json()
                 for user in data['users']:
@@ -842,7 +840,7 @@ class Auth:
                     }]
                  }
         try:
-            response = _tools.make_request('PUT', f'{url}/api/public/users/attributes', data=json.dumps(payload), return_err_response=True, headers=headers, verify=False)
+            response = make_request('PUT', f'{url}/api/public/users/attributes', data=json.dumps(payload), headers=headers, verify=False)
             if response.status_code // 100 == 2:
                 data = response.json()
                 for user in data['users']:
@@ -882,15 +880,8 @@ class AssetPerformance:
             _logger.error("Missing value.")
             print(_logs.err_message)
             return None
-        try:
-            response = _tools.make_request('GET', f'{url}/api/asset-performance-management/settings/attribute-codes-mapping', return_err_response=True, headers=headers, verify=False)
-            if response.status_code // 100 == 2:
-                data = response.json()
-                print(data)
-            else:
-                _logger.error(response.text)
-                print(_logs.err_message)
-        except Exception as err:
-            _logger.error(err)
-            print(_logs.err_message)
+        response = make_request('GET', f'{url}/api/asset-performance-management/settings/attribute-codes-mapping', headers=headers, verify=False)
+        if not response:
             return None
+        data = response.json()
+        print(data)

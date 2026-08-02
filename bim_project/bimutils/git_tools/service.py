@@ -1,21 +1,15 @@
 import yaml
 import base64
-import requests
-import typer
 from rich.console import Console
 from rich.table import Table
 
-import sys
 import logging
 import os
 
-from tools import Tools
-from mlogger import Logs
+from bimutils.common.http import make_request
 
 
-logger = logging.getLogger(__name__)
-tools = Tools()
-logs = Logs()
+_logger = logging.getLogger(__name__)
 
 class Git:
 
@@ -56,21 +50,23 @@ class Git:
 
 class Project(Git):
 
-    def get_project_id(self, project='bimeister') -> int:
+    def get_project_id(self, project='bimeister') -> int | None:
         """ Get from Gitlab ID of the project bimeister. """
 
         url = f"{self._url}/search?scope=projects&search={project}&per_page=100"
-        response = tools.make_request('GET', url, headers=self.headers, return_err_response=True, print_err=True)
+        response = make_request('GET', url, headers=self.headers, print_err=True)
+        if not response:
+            return None
         data = response.json()
         try:
             for proj in reversed(data):
                 if proj['name'] == project:
                     return proj['id']
         except Exception as err:
-            logger.error(err)
+            _logger.error(err)
             return None
-        logger.error(f"Id for project {project} not found.")
-        return False
+        _logger.error(f"Id for project {project} not found.")
+        return None
 
 
 class Chart(Git):
@@ -90,21 +86,17 @@ class Chart(Git):
 
 class Tag(Git):
 
-    def search_tag(self, project_id, search: list) -> dict:
+    def search_tag(self, project_id, search: list) -> dict | None:
         """ Search for needed tags. """
 
         __url = f"{self._url}/projects/{project_id}/repository/tags"
         tag_data = dict()
         for x in search:
-            try:
-                payload = {'search': x}
-                response = requests.get(url=__url, headers=self.headers, params=payload, verify=False)
-                response.raise_for_status()
-                data = response.json()
-            except requests.exceptions.RequestException as err:
-                logger.error(err)
-                print(logs.err_message)
-                return False
+            payload = {'search': x}
+            response = make_request('GET', url=__url, headers=self.headers, params=payload, verify=False, print_err=True)
+            if not response:
+                return None
+            data = response.json()
             for tag in data:
                 branch: list = self.branch().get_branch_name_using_commit(project_id, tag['commit']['short_id'])
                 if not branch:
@@ -127,7 +119,7 @@ class Tag(Git):
 
 class Branch(Git):
 
-    def search_branches_commits_tags_jobs(self, project_id, search: list):
+    def search_branches_commits_tags_jobs(self, project_id, search: list) -> list[list[str]] | None:
         """ Search branches with their commits, tags and jobs. """
 
         result_data: list = []
@@ -136,13 +128,9 @@ class Branch(Git):
             status.update("[magenta]Searching branches...[/magenta]")
             for x in search:
                 url = f"{self._url}/projects/{project_id}/repository/branches?regex=\D{x}"
-                try:
-                    response = requests.get(url=url, headers=self.headers)
-                    response.raise_for_status()
-                except requests.exceptions.RequestException as err:
-                    logger.error(err)
-                    print(logs.err_message)
-                    return False
+                response = make_request('GET', url=url, headers=self.headers, print_err=True)
+                if not response:
+                    return None
                 for branch in response.json():
                     branch_commit = branch['commit']['short_id']                                
                     if tags and tags.get(branch_commit):
@@ -176,26 +164,22 @@ class Branch(Git):
             return None
         return result_data
 
-    def get_branch_name_using_commit(self, project_id, commit) -> list:
+    def get_branch_name_using_commit(self, project_id, commit) -> list | None:
         """ Get branch name(s) using commit from a given repository. """
 
         url = f"{self._url}/projects/{project_id}/repository/commits/{commit}/refs?type=branch&per_page=100"
-        try:
-            response = requests.get(url=url, headers=self.headers, verify=False)
-            response.raise_for_status()
-            branches: list = [branch['name'] for branch in response.json()]
+        response = make_request('GET', url=url, headers=self.headers, verify=False, print_err=True)
+        if not response:
+            return None
+        branches: list = [branch['name'] for branch in response.json()]
+        next_page = response.headers['X-Next-Page']
+        while next_page:
+            url_next_page = f"https://git.bimeister.io/api/v4/projects/{project_id}/repository/commits/{commit}/refs?id={project_id}&page={next_page}&per_page=100&sha={commit}&type=branch"
+            response = make_request('GET', url=url_next_page, headers=self.headers, verify=False)
+            for branch in response.json():
+                branches.append(branch['name'])
             next_page = response.headers['X-Next-Page']
-            while next_page:
-                url_next_page = f"https://git.bimeister.io/api/v4/projects/{project_id}/repository/commits/{commit}/refs?id={project_id}&page={next_page}&per_page=100&sha={commit}&type=branch"
-                response = requests.get(url=url_next_page, headers=self.headers, verify=False)
-                for branch in response.json():
-                    branches.append(branch['name'])
-                next_page = response.headers['X-Next-Page']
-            return branches if branches else False
-        except requests.exceptions.RequestException as err:
-            logger.error(err)
-            print(logs.err_message)
-            return False
+        return branches if branches else None
 
 
 class Job(Git):
@@ -205,20 +189,16 @@ class Job(Git):
                     )
     _build_job: str = "build_chart"
 
-    def get_pipeline_jobs(self, project_id, pipeline_id) -> list:
+    def get_pipeline_jobs(self, project_id, pipeline_id) -> list[dict] | None:
         """ Get a list of jobs for provided pipeline. """
 
         if not pipeline_id:
             return []
         url = f"{self._url}/projects/{project_id}/pipelines/{pipeline_id}/jobs"
-        try:
-            response = requests.get(url=url, headers=self.headers, verify=False)
-            response.raise_for_status()
-            jobs = response.json()
-        except requests.exceptions.RequestException as err:
-            logger.error(err)
-            print(logs.err_message)
-            return False
+        response = make_request('GET', url=url, headers=self.headers, verify=False, print_err=True)
+        if not response:
+            return None
+        jobs = response.json()
         return jobs
 
     def get_specific_jobs(self, project_id: int, commit: str, branch_name: str) -> dict:
@@ -267,37 +247,24 @@ class Job(Git):
                              })
         return job
 
-    def run_job(self, project_id: int, job_id: list):
+    def run_job(self, project_id: int, job_id: list) -> dict | None:
         """ Execute job run for a given job id list. """
 
         if not project_id or not job_id or not isinstance(job_id, list):
-            logger.error(f"{self.job.__qualname__} Incorrect data transferred.")
+            _logger.error(f"{self.job.__qualname__} Incorrect data transferred.")
             raise TypeError("Run job function accepts project_id and job_id as a list.")
         for id in job_id:
             url = f"{self._url}/projects/{project_id}/jobs/{id}/play"
-            try:
-                response = requests.post(url=url, headers=self.headers, verify=False)
-                response.raise_for_status()
-                data = response.json()
-                if response.status_code // 100 == 2:
-                    print(f"Job started successfully                \
-                          \nname: {data['name']}                    \
-                          \npipeline id: {data['pipeline']['id']}   \
-                          \nref: {data['pipeline']['ref']}          \
-                          \nurl: {data['pipeline']['web_url']}      ")
-            except requests.exceptions.RequestException as err:
-                logger.error(err)
-                print(logs.err_message)
-                return False                
-            except Exception as err:
-                logger.error(err)
-                print(logs.err_message)
-                return False                
+            response = make_request('POST', url=url, headers=self.headers, verify=False, print_err=True)
+            if not response:
+                return None
+            data: dict = response.json()
+            return data
 
 
 class Pipeline(Git):
 
-    def get_pipelines(self, project_id, commit) -> list:
+    def get_pipelines(self, project_id, commit) -> list | None:
         """ Get list of pipeline(s) with 'success' status for provided commit. """
 
         branches: list = self.branch().get_branch_name_using_commit(project_id, commit)
@@ -306,19 +273,15 @@ class Pipeline(Git):
             return False
         for branch in branches:
             url = f"{self._url}/projects/{project_id}/pipelines?ref={branch}"
-            try:
-                payload = {
-                    "order_by": "updated_at",
-                    # "status": "success"
-                        }
-                response = requests.get(url=url, headers=self.headers, params=payload, verify=False)
-                response.raise_for_status()
-                for pipeline in response.json():
-                    pipelines.append(pipeline)
-            except requests.exceptions.RequestException as err:
-                logger.error(err)
-                print(logs.err_message)
-                return False
+            payload = {
+                "order_by": "updated_at",
+                # "status": "success"
+                    }
+            response = make_request('GET', url=url, headers=self.headers, params=payload, verify=False, print_err=True)
+            if not response:
+                return None
+            for pipeline in response.json():
+                pipelines.append(pipeline)
         # sort pipelines by id
         pipelines = sorted(pipelines, key=lambda x: x['id'], reverse=True)
         return pipelines
@@ -326,49 +289,32 @@ class Pipeline(Git):
 
 class Tree(Git):
 
-    def print_list_of_branch_files(self, project_id, branch_name):
+    def get_list_of_branch_files(self, project_id, branch_name) -> dict | None:
         """ Get a list of tree. """
 
         url = f"{self._url}/projects/{project_id}/repository/tree?ref={branch_name}"
-        try:
-            response = requests.get(url=url, headers=self.headers)
-            response.raise_for_status()
-            data = response.json()
-        except requests.exceptions.RequestException as err:
-            logger.error(err)
-            print(logs.err_message)
-            return False
-        except Exception as err:
-            logger.error(err)
-            print(logs.err_message)
-            return False
-        for x in data:
-            print(x['name'])
+        response = make_request('GET', url=url, headers=self.headers, print_err=True)
+        if not response:
+            return None
+        data = response.json()
+        return data
 
 
 class Product_collection_file(Git):
 
-    def get_product_collection_file_content(self, project_id, commit):
+    def get_product_collection_file_content(self, project_id, commit) -> dict | None:
         """ Get a product-collection.yaml file content. """
 
         url = f"{self._url}/projects/{project_id}/repository/files/product-collections%2Eyaml?ref={commit}"
-        try:
-            response = requests.get(url=url, headers=self.headers)
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as err:
-            print(logs.err_message)
-            logger.error(err)
-            return False
-        except requests.exceptions.RequestException as err:
-            logger.error(err)
-            print(logs.err_message)
-            return False
+        response = make_request('GET', url=url, headers=self.headers, print_err=True)
+        if not response:
+            return None
         data_base64 = response.json()['content']
         data_bytes = data_base64.encode('utf-8')
         decode_bytes = base64.b64decode(data_bytes)
         decode_string = decode_bytes.decode('utf-8')
         data: dict = yaml.safe_load(decode_string)
-        return(data)
+        return data
 
     def parse_product_collection_yaml(self, data: dict, project_name=''):
         """ Function returns a tuple with the project name and two lists of services and DB for a chosen project. """
@@ -388,8 +334,7 @@ class Product_collection_file(Git):
                 print(f"Incorrect input. Should be between 1 and {len(list(data['collections']))}")
                 return None
             except Exception as err:
-                logger.error(err)
-                print(logs.err_message)
+                _logger.error(err)
                 return None
         else:
             project = project_name
@@ -469,108 +414,6 @@ class Product_collection_file(Git):
         self.console.print(table)
 
 
-# git_app CLI
-git_app = typer.Typer(help="Get info from gitlab. Search branches, tags, commits, product-collection.yaml data.")
-
-class GitContext:
-    """Store shared FT parameters"""
-    def __init__(self):
-        self.git = Git()
-
-# Create a context instance
-git_context = GitContext()
-
-@git_app.command(name="search", help="Get table with info about branches, commits, tags, helm charts \[aliases: s]")
-@git_app.command(name="s", hidden=True)
-def search(
-    branches: list[str] = typer.Argument(..., help="Search pattern by it's name"),
-    project_id: str = typer.Option("bimeister", "--project", "-p", help="Name of the project in gitlab")
-        ):
-    """ Get table with info about branches, commits, tags, helm charts. """
-
-    project = git_context.git.project()
-    branch = git_context.git.branch()
-    project_id = project.get_project_id(project='bimeister')
-    if not project_id:
-        sys.exit()
-    data = branch.search_branches_commits_tags_jobs(project_id, search=branches)
-    git_context.git.display_table_with_branches_commits_tags_jobs(data)
-
-@git_app.command(name="build-charts")
-@git_app.command(name="build-chart", hidden=True)
-def build_charts(commit: str = typer.Argument(..., help="Requires commit to activate job")):
-    """ Activate gitlab job: Build Charts. For a given commit. """
-
-    project = git_context.git.project()
-    branch = git_context.git.branch()
-    job = git_context.git.job()
-    project_id = project.get_project_id(project='bimeister')
-    branches: list = branch.get_branch_name_using_commit(project_id, commit)
-    if isinstance(branches, bool):
-        print("No branch was found for provided commit.")
-        sys.exit()
-    if len(branches) == 1:
-        branch_name = branches[0]
-    else:
-        branch_name = input(f"{commit} commit appears in several branches: {branches}\nSelect branch: ")
-    charts_jobs = job.get_specific_jobs(project_id, commit=commit, branch_name=branch_name)
-    pipeline_id = charts_jobs['pipeline_id']
-    if not pipeline_id:
-        print("No pipelines with 'success' status. Can't run the job.")
-        sys.exit()
-    job.run_job(project_id, str(charts_jobs['build_chart']['id']).split())
-
-@git_app.command()
-def commit(
-    commit: str = typer.Argument(..., help="Commit for product-collection.yaml info from"),
-    project_name: str = typer.Option(None, "--project", "-p", help="Provide project name from the product-collection.yaml without prompt")
-        ):
-    """ Get info about services and databases from the product-collection.yaml file for a given commit. """
-
-    project = git_context.git.project()
-    product_collection = git_context.git.product_collection()
-    project_id = project.get_project_id(project='bimeister')
-    file_content: dict = product_collection.get_product_collection_file_content(project_id, commit)
-    if not file_content:
-        sys.exit()
-    data = product_collection.parse_product_collection_yaml(file_content, project_name=project_name)
-    if not data:
-        sys.exit()
-    else:
-        project_name, services, db = data
-    if not services or not db:
-        sys.exit()
-    product_collection.print_services_and_db(services, db)
-
-@git_app.command()
-def compare(
-    commits: list[str] = typer.Argument(help="Flag expects two commits to compare differences between them")
-        ):
-    """ Compare two commits for difference in product-collection.yaml in DBs list and services list """
-
-    project = git_context.git.project()
-    product_collection = git_context.git.product_collection()
-    project_id = project.get_project_id(project='bimeister')
-
-    if len(commits) != 2:
-        print("Need two commits two compare.")
-        return None
-    first_commit, second_commit = commits[0], commits[1]
-    first_commit_data: dict = product_collection.get_product_collection_file_content(project_id, first_commit)
-    second_commit_data: dict = product_collection.get_product_collection_file_content(project_id, second_commit)
-    if not first_commit_data or not second_commit_data:
-        sys.exit()
-    data = product_collection.parse_product_collection_yaml(first_commit_data)
-    if not data:
-        sys.exit()
-    first_commit_project_name, first_commit_services, first_commit_db = data
-    data = product_collection.parse_product_collection_yaml(second_commit_data, project_name=first_commit_project_name)
-    if not data:
-        sys.exit()
-    second_commit_project_name, second_commit_services, second_commit_db = data
-    product_collection.compare_two_commits(first_commit_services, first_commit_db, second_commit_services, second_commit_db)
-
-
 
 
 
@@ -607,7 +450,7 @@ def compare(
     #             response.raise_for_status()
     #         except requests.exceptions.RequestException as err:
     #             print(self._error_msg)
-    #             logger.error(err)
+    #             _logger.error(err)
     #             return False
     #         for branch in response.json():
     #             branch_commit = branch['commit']['short_id']
@@ -667,9 +510,9 @@ def compare(
     #                 else:
     #                     continue
     #             else:
-    #                 logger.error("Incorrect chart name.")
+    #                 _logger.error("Incorrect chart name.")
     #                 return False
     #         except Exception as err:
-    #             logger.error(err)
+    #             _logger.error(err)
     #             return False
     #     return result    

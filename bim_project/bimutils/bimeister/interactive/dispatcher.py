@@ -3,43 +3,29 @@ import os
 def launch_menu():
     import argparse
 
-    import app_menu
-    import auth
-    import user
-    import license
-    import export_data
-    import import_data
-    import featureToggle
-    from tools import Tools, Folder
-    import bimeister
+    from .shell import Prompt
+    import bimutils.bimeister.auth as auth
+    import bimutils.bimeister.license as license
+    import bimutils.bimeister.export_data as bim_export
+    import bimutils.bimeister.import_data as bim_import
+    import bimutils.bimeister.feature_toggles as ft
+    import bimutils.bimeister.bimeister_tools as bim_tools
+    from bimutils.common import utils
 
-    AppMenu_main = app_menu.AppMenu()
+    prompt = Prompt()
     Auth = auth.Auth()
-    User = user.User()
     License_main = license.License()
-    Object_model_export = export_data.Object_model()
-    Object_model_import = import_data.Object_model()
-    Workflows_export = export_data.Workflows()
-    Workflows_import = import_data.Workflows()
-    Risk_assessment = import_data.RiskAssesment()
-    Abac = bimeister.Abac()
-    Auth_api = bimeister.Auth()
-    AssetPerf = bimeister.AssetPerformance()
-    FT = featureToggle.FeatureToggle()
+    Object_model_export = bim_export.Object_model()
+    Object_model_import = bim_import.Object_model()
+    Workflows_export = bim_export.Workflows()
+    Workflows_import = bim_import.Workflows()
+    Risk_assessment = bim_import.RiskAssesment()
+    Abac = bim_tools.Abac()
+    AssetPerf = bim_tools.AssetPerformance()
+    FT = ft.FeatureToggle()
 
 
-# ---------------------------------------------------------
-#   TEST ZONE       LOBBY
-# ---------------------------------------------------------
-
-
-
-
-# ---------------------------------------------------------
-#
-# ---------------------------------------------------------
-
-    AppMenu_main.welcome_info_note()
+    prompt.show_banner()
     if not Auth.establish_connection():  # if connection was not established, do not continue
         return False
 
@@ -48,13 +34,13 @@ def launch_menu():
         print("Warning!!! Incorrect license detected! Please check!".upper())
 
     while True:
-        user_command = AppMenu_main.get_user_command()
+        user_command = prompt.read_command()
         match user_command:
             case False: # if nothing to check, loop over
                 continue
 
             case ['m']:
-                print(AppMenu_main._main_menu)
+                print(prompt._main_menu)
 
             case ['exit'|'q'|'quit']:  # close the menu and exit from the script
                 break
@@ -89,12 +75,12 @@ def launch_menu():
                 License_main.activate_license(url, token, username, password, license_id) # type: ignore
 
             #    ''' =============================================================================== User objects BLOCK =============================================================================== '''
+            ### DEPRECATED
+            # case ['drop', 'uo']:
+            #     User.delete_user_objects(url, token)
 
-            case ['drop', 'uo']:
-                User.delete_user_objects(url, token)
-
-            case ['drop', 'uo', '-h']:
-                print(User.delete_user_objects.__doc__)
+            # case ['drop', 'uo', '-h']:
+            #     print(User.delete_user_objects.__doc__)
 
             #    ''' =============================================================================== TRANSFER DATA BLOCK ============================================================================== '''
 
@@ -104,7 +90,7 @@ def launch_menu():
                 if not os.path.isfile(filepath):
                     Object_model_export.create_folders_to_export_om()
                 if user_command == ['export', 'om']:
-                    export_data.export_server_info(url, token, filepath=filepath)
+                    bim_export.export_server_info(url, token, filepath=filepath)
                     Object_model_export.export_object_model(Object_model_export._object_model_file, Auth.url, Auth.token)
 
             case ['ls', 'workflows', *_] | ['export', 'workflows', *_] | ['rm', 'workflows', *_]:
@@ -122,20 +108,20 @@ def launch_menu():
                     Workflows_export.create_folders_to_export_wf()
 
                 args = user_command[2:]
-                startswith: str = Tools.get_flag_values_from_args_str(args, '--startswith')
-                search_for: str = Tools.get_flag_values_from_args_str(args, '--search')
-                wf_id_array: list = Tools.get_flag_values_from_args_str(args, '--id').split()
-                wf_type: str = Tools.get_flag_values_from_args_str(args, '--type').lower()
+                startswith: str = utils.get_flag_values_from_args_str(args, '--startswith')
+                search_for: str = utils.get_flag_values_from_args_str(args, '--search')
+                wf_id_array: list = utils.get_flag_values_from_args_str(args, '--id').split()
+                wf_type: str = utils.get_flag_values_from_args_str(args, '--type').lower()
 
                 if wf_id_array and user_command[:2] == ['export', 'workflows']:
-                    export_data.export_server_info(url, token, filepath=filepath)
+                    bim_export.export_server_info(url, token, filepath=filepath)
                     Workflows_export.export_workflows_by_choice(url, token, wf_id_array)
                     continue
                 workflows = Workflows_export.define_needed_workflows(url, token, args, startswith=startswith, search_for=search_for, type=wf_type)
                 if not workflows:
                     continue
                 if user_command[:2] == ['export', 'workflows']:
-                    export_data.export_server_info(url, token, filepath=filepath)
+                    bim_export.export_server_info(url, token, filepath=filepath)
                     Workflows_export.export_workflows_at_once(url, token, workflows)
                 elif user_command[:2] == ['ls', 'workflows']:
                     Workflows_export.display_list_of_workflowsName_and_workflowsId(workflows)
@@ -146,7 +132,7 @@ def launch_menu():
             case ['import', 'workflows']:
                 server_info_filepath = f"{Workflows_import._transfer_folder}/{Workflows_import._workflows_folder}/{Workflows_export._wf_export_server_info_file}"
                 exported_wf_filepath = f"{Workflows_import._transfer_folder}/{Workflows_import._workflows_folder}/{Workflows_export._exported_workflows_list}"
-                if not import_data.validate_import_server(url, token, server_info_filepath):
+                if not bim_import.validate_import_server(url, token, server_info_filepath):
                     print("Server validation failed")
                     continue
                 Workflows_import.import_workflows(url, token, exported_wf_filepath)
@@ -154,13 +140,13 @@ def launch_menu():
             case ['import', 'om']:
                 server_info_filepath = f"{Object_model_import._transfer_folder}/{Object_model_import._object_model_folder}/{Object_model_export._om_export_server_info_file}"
                 om_filepath = f"{Object_model_import._transfer_folder}/{Object_model_import._object_model_folder}/{Object_model_export._object_model_file}"
-                if not import_data.validate_import_server(url, token, server_info_filepath):
+                if not bim_import.validate_import_server(url, token, server_info_filepath):
                     print("Server validation failed")
                     continue
                 Object_model_import.import_object_model(url, token, om_filepath)
 
             case ['rm', 'files']:
-                Folder.clean_folder(f"{os.getcwd()}/transfer_files")
+                utils.Folder.clean_folder(f"{os.getcwd()}/transfer_files")
 
             #    ''' =============================================================================== Feature Toggle =================================================================================== '''
             case ['ft', _, *_]:
@@ -482,21 +468,21 @@ def launch_menu():
                     file = user_command[2:][1]
                 except IndexError as err:
                     print("Incorrect command. No file pointed out.")
-                bimeister.apply_bimeister_customUI(url, token, file)
+                bim_tools.apply_bimeister_customUI(url, token, file)
             
             #    ''' =============================================================================== Recalculate path ================================================================================= '''
             case ['recalc-paths', *_]:
-                bimeister.recalculate_path(url, token)
+                bim_tools.recalculate_path(url, token)
             
             #    ''' =============================================================================== Templates ======================================================================================== '''
             case ['ls', 'templates']:
-                templates: list = bimeister.get_list_of_templates(url, token)
-                bimeister.print_list_of_templates(templates)
+                templates: list = bim_tools.get_list_of_templates(url, token)
+                bim_tools.print_list_of_templates(templates)
             
             case ['export', 'template' | 'templates', *_]:
                 args = user_command[2:]
-                id: list = Tools.get_flag_values_from_args_str(args, '--id').split()
-                data = bimeister.export_templates(url, token, id)
+                id: list = utils.get_flag_values_from_args_str(args, '--id').split()
+                data = bim_tools.export_templates(url, token, id)
 
             #    ''' =============================================================================== Tools ============================================================================================ '''
             case ['ptoken']:
@@ -507,28 +493,11 @@ def launch_menu():
                 user_access_token = Auth.get_user_access_token(url, username, password, Auth.providerId)
                 print(f"\n{user_access_token}")
 
-            case ['sh']:
-                Tools.run_terminal_command()
-
-            case ['ls', *_]:
-                if len(user_command) == 1:
-                    Tools.run_terminal_command(Folder.get_content())
-                else:
-                    Tools.run_terminal_command(Folder.get_content(user_command[1]))
-
-            case ['ssh', 'connect']:
-                connection_data:list = input("Enter 'remote host' and 'username' separated by a space: ").strip().split()
-                try:
-                    Tools.connect_ssh(connection_data[0], connection_data[1])
-                except IndexError:
-                    print("Incorrect data. Can't connect.")
-                    continue
-
             case ['basic-auth', *_]:
                 if user_command == ['basic-auth']:
-                    bimeister.basic_auth(url, token, username, password)
+                    bim_tools.basic_auth(url, token, username, password)
                 elif user_command == ['basic-auth', '--set']:
-                    bimeister.basic_auth(url, token, username, password, set=True)
+                    bim_tools.basic_auth(url, token, username, password, set=True)
                 else:
                     print("Unknown command")
 
@@ -540,43 +509,43 @@ def launch_menu():
                     continue
                 try:
                     file = user_command[2:][1]
-                    bimeister.import_activity_collector(url, token, filepath=file)
+                    bim_tools.import_activity_collector(url, token, filepath=file)
                 except IndexError as err:
                     print(no_file_msg)
 
             case ['ac', 'export', *_]:
-                bimeister.export_activity_collector(url, token)
+                bim_tools.export_activity_collector(url, token)
 
             #    ''' =============================================================================== Auth ============================================================================================= '''
-            case ['auth', *_]:
-                parser = Auth_api.get_auth_parser()
-                try:
-                    args = parser.parse_args(user_command[1:])
-                except argparse.ArgumentError:
-                    continue
-                except SystemExit:
-                    continue
-                if args.command in ('rules', 'rule'):
-                    if args.export_rule:
-                        Auth_api.export_auth_rules(token, url)
-                    elif args.import_rule:
-                        Auth_api.import_auth_rules(token, url, filepath=args.file)
-                elif args.command in ('modules', 'module'):
-                    if args.get:
-                        Auth_api.print_abac_allowed_modules(token, url)
-                    elif args.set:
-                        Auth_api.set_abac_allowed_modules(token, url, modules=args.set)
-                elif args.command == 'attr':
-                    if args.get:
-                        Auth_api.get_user_attributes(url, token)
-                    elif args.set:
-                        Auth_api.set_user_attributes(url, token, codes=args.set)
-                    elif args.get_values:
-                        user_id = User.get_current_user(url, token)['id']
-                        Auth_api.get_user_attribute_values(url, token, user_id)
-                    elif args.set_values:
-                        user_id = User.get_current_user(url, token)['id']
-                        Auth_api.set_user_attribute_values(url, token, user_id=user_id, code=args.code, value=args.value)
+            # case ['auth', *_]:
+            #     parser = Auth_api.get_auth_parser()
+            #     try:
+            #         args = parser.parse_args(user_command[1:])
+            #     except argparse.ArgumentError:
+            #         continue
+            #     except SystemExit:
+            #         continue
+            #     if args.command in ('rules', 'rule'):
+            #         if args.export_rule:
+            #             Auth_api.export_auth_rules(token, url)
+            #         elif args.import_rule:
+            #             Auth_api.import_auth_rules(token, url, filepath=args.file)
+            #     elif args.command in ('modules', 'module'):
+            #         if args.get:
+            #             Auth_api.print_abac_allowed_modules(token, url)
+            #         elif args.set:
+            #             Auth_api.set_abac_allowed_modules(token, url, modules=args.set)
+            #     elif args.command == 'attr':
+            #         if args.get:
+            #             Auth_api.get_user_attributes(url, token)
+            #         elif args.set:
+            #             Auth_api.set_user_attributes(url, token, codes=args.set)
+            #         elif args.get_values:
+            #             user_id = User.get_current_user(url, token)['id']
+            #             Auth_api.get_user_attribute_values(url, token, user_id)
+            #         elif args.set_values:
+            #             user_id = User.get_current_user(url, token)['id']
+            #             Auth_api.set_user_attribute_values(url, token, user_id=user_id, code=args.code, value=args.value)
 
             #    ''' =============================================================================== Asset ============================================================================================ '''
             case ['asset', *_]:

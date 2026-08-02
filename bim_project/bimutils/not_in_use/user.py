@@ -5,7 +5,7 @@ import logging
 import time
 import json
 
-import license
+import bimeister.license
 from tools import Tools
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class User:
     __api_SystemRoles: str = 'api/SystemRoles'
     __api_Users_AddSystemRole: str = 'api/Users/AddSystemRole'
     __api_Users_RemoveSystemRole: str = 'api/Users/RemoveSystemRole'
-    License = license.License()
+    License = bimeister.license.License()
     _License_server_exception: bool = False
 
 

@@ -3,14 +3,29 @@ import typer
 import sys
 import platform
 import logging
+from pathlib import Path
 
-from git import git_app
-from postgre import sql_app
-from featureToggle import ft_app
-from mdocker import docker_app
-from license import lic_app
-from vsphere import vsphere_app
-from auth import auth_app
+from bimutils.git_tools import git_app
+from bimutils.postgre_tools.cli import sql_app
+from bimutils.bimeister.feature_toggles import ft_app
+from bimutils.docker_tools import docker_app
+from bimutils.bimeister.cli import lic_app
+from bimutils.vsphere_tools import vsphere_app
+from bimutils.bimeister.cli import auth_app
+from . import __version__
+from bimutils.bimeister.bimeister_tools import print_bim_version
+from bimutils.bimeister.interactive.dispatcher import launch_menu
+from bimutils.common import mlogger
+from dotenv import load_dotenv
+
+def get_env_file_path():
+    """Return path to application .env resource."""
+    try:
+        abs_path = Path(sys._MEIPASS)
+    except AttributeError:
+        abs_path = Path(__file__).resolve().parent
+    return abs_path / ".env"
+load_dotenv(dotenv_path=get_env_file_path())
 
 app = typer.Typer(
     add_completion=False,
@@ -20,8 +35,7 @@ app = typer.Typer(
 
 def version_callback(value: bool):
     if value:
-        import app_menu
-        print(f"version: {app_menu.AppMenu.__version__}")
+        print(f"version: {__version__}")
         raise typer.Exit()
 
 @app.callback(invoke_without_command=True)
@@ -32,8 +46,7 @@ def main(
     url: str = typer.Option(None, "--url", help="Check bimeister version.")
         ):
         if url:
-            import bimeister
-            bimeister.print_bim_version(url)
+            print_bim_version(url)
             raise typer.Exit()
 
 app.add_typer(git_app, name="git")
@@ -44,16 +57,9 @@ app.add_typer(lic_app, name="license")
 app.add_typer(vsphere_app, name="vsphere")
 app.add_typer(auth_app)
 
-
-if __name__ == '__main__':
+def run():
     if platform.system() == 'Linux':
-        import readline # opportunity to have access of input history
-
-    import mlogger
-    from interactive_menu import launch_menu
-    from tools import Tools
-    from dotenv import load_dotenv
-    load_dotenv(dotenv_path=Tools.get_resourse_path(".env"))
+        import readline
 
     logs = mlogger.Logs()
     logs.set_full_access_to_log_file(logs.filepath, 0o666)
@@ -65,7 +71,10 @@ if __name__ == '__main__':
         except typer.Abort:
             sys.exit(1)
     else:
-        try:    
+        try:
             launch_menu()
         except KeyboardInterrupt:
             print('\nKeyboardInterrupt')
+
+if __name__ == "__main__":
+    run()
