@@ -5,26 +5,17 @@ import sys
 from datetime import datetime
 import time
 
-from .service import Vsphere
+from .context import vs_ctx
 from bimutils.common import utils
 
 
 # vsphere_app CLI
 vsphere_app = typer.Typer(help="Perform different operations in vSphere.")
-
+console = Console()
 VSPHERE_HELP = {
     'filter': "Filter VMs by occurrences in the name using regular expressions",
     'exclude': "Exclude VMs by occurrences in the name using regular expressions",
 }
-class VsphereContext:
-    """Store shared vsphere parameters"""
-    def __init__(self):
-        self.vs = Vsphere()
-        self.console = Console()
-        self.headers = None
-
-# Create a context instance
-vs_ctx = VsphereContext()
 
 def action_confirmation_and_stop_vm(vm_array):
     """ Function to confirm some actions in vsphere before execution. 
@@ -39,7 +30,7 @@ def action_confirmation_and_stop_vm(vm_array):
         raise typer.Abort()
     vm_powered_on: dict = {k: v for k,v in vm_array.items() if v.get('power_state') == 'POWERED_ON'}
     if vm_powered_on:
-        vs_ctx.console.rule(title="Shutdown guest OS")
+        console.rule(title="Shutdown guest OS")
         for value in vm_powered_on.values():
             vs_ctx.vs.stop_vm(vs_ctx.headers, value["moId"], value["name"])
 
@@ -47,7 +38,7 @@ def vm_power_restore(vm_array: dict):
     """ Function to restore power state after operations with VMs. """
     vm_powered_on: dict = {k: v for k,v in vm_array.items() if v.get('power_state') == 'POWERED_ON'}
     if vm_powered_on:
-        vs_ctx.console.rule(title="Power state restore")
+        console.rule(title="Power state restore")
         for value in vm_powered_on.values():
             vs_ctx.vs.start_vm(vs_ctx.headers, value["moId"], value["name"])
 
@@ -75,7 +66,7 @@ def restart_vm(
     exclude: str = typer.Option(None, "-e", "--exclude", help=VSPHERE_HELP['exclude']),
     all: bool = typer.Option("False", "--all", help="Restart all working VMs in implementation cluster.")
         ):
-    vs_ctx.console.rule(title="Reboot guest OS")
+    console.rule(title="Reboot guest OS")
     if all:
         confirm: bool = True if input("YOU ARE ABOUT TO RESTART ALL VM's IN THE CLUSTER!!! ARE YOU SURE?(YES|NO) ").lower() == 'yes' else False
         if not confirm:
@@ -91,7 +82,7 @@ def start_vm(
     filter: str = typer.Option(None, "-f", "--filter", help=VSPHERE_HELP['filter']),
     exclude: str = typer.Option(None, "-e", "--exclude", help=VSPHERE_HELP['exclude'])
         ):
-    vs_ctx.console.rule(title="Power On virtual machine")
+    console.rule(title="Power On virtual machine")
     vm_array: dict = vs_ctx.vs.get_array_of_vm(vs_ctx.headers, exclude, filter)
     for value in vm_array.values():
         vs_ctx.vs.start_vm(vs_ctx.headers, value["moId"], value["name"])
@@ -101,7 +92,7 @@ def stop_vm(
     filter: str = typer.Option(None, "-f", "--filter", help=VSPHERE_HELP['filter']),
     exclude: str = typer.Option(None, "-e", "--exclude", help=VSPHERE_HELP['exclude'])
         ):
-    vs_ctx.console.rule(title="Shutdown guest OS")
+    console.rule(title="Shutdown guest OS")
     vm_array: dict = vs_ctx.vs.get_array_of_vm(vs_ctx.headers, exclude, filter)
     for value in vm_array.values():
         vs_ctx.vs.stop_vm(vs_ctx.headers, value["moId"], value["name"])
@@ -137,9 +128,9 @@ def take_snap(
         action_confirmation_and_stop_vm(vm_array)
     snap_name: str = name.strip()
     if not hide_console_rule:
-        vs_ctx.console.rule(title="Create virtual machine snapshot")
+        console.rule(title="Create virtual machine snapshot")
     for value in vm_array.values():
-        with vs_ctx.console.status(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]", spinner="earth") as status:
+        with console.status(f"[bold magenta]Create snapshot: {value['name']}[/bold magenta]", spinner="earth") as status:
             take_snap_status: bool = vs_ctx.vs.take_snapshot(vs_ctx.headers, value['moId'], value['name'], snap_name=snap_name, description=description)
             time.sleep(0.5)
             if take_snap_status:
@@ -174,9 +165,9 @@ def remove_snap(
         action_confirmation_and_stop_vm(vm_array)
     snap_name: str = name.strip()
     if not hide_console_rule:
-        vs_ctx.console.rule(title="Remove virtual machine snapshot")
+        console.rule(title="Remove virtual machine snapshot")
     for value in vm_array.values():
-        with vs_ctx.console.status(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]", spinner="earth") as status:
+        with console.status(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]", spinner="earth") as status:
             snapshots: dict = vs_ctx.vs.get_vm_snapshots(vs_ctx.headers, value['moId'], value['name'])
             is_snap_exists: bool = False
             for snap in snapshots.values():
@@ -213,10 +204,10 @@ def revert_snap(
     vm_array: dict = vs_ctx.vs.get_array_of_vm(vs_ctx.headers, exclude, filter)
     vm_powered_on: dict = {k: v for k,v in vm_array.items() if v.get('power_state') == 'POWERED_ON'}
     action_confirmation_and_stop_vm(vm_array)
-    vs_ctx.console.rule(title="Revert virtual machine snapshot")
+    console.rule(title="Revert virtual machine snapshot")
     snap_name: str = name.strip()
     for value in vm_array.values():
-        with vs_ctx.console.status(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]", spinner="earth"):
+        with console.status(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]", spinner="earth"):
             snapshots: dict = vs_ctx.vs.get_vm_snapshots(vs_ctx.headers, value['moId'], value['name'])
             is_snap_exists: bool = False
             for snap in snapshots.values():
@@ -225,14 +216,14 @@ def revert_snap(
                     revert_snap_status = vs_ctx.vs.revert_to_snapshot(vs_ctx.headers, snap['snapId'])
                     time.sleep(1)
                     if revert_snap_status:
-                        vs_ctx.console.print(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
+                        console.print(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]  [green]✅[/green]")
                     else:
-                        vs_ctx.console.print(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
+                        console.print(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]  [red]❌[/red]")
                     break
             if not is_snap_exists:
-                vs_ctx.console.print(f"[red]No snapshot name '{snap_name}' for VM: {value['name']}[/red]")
+                console.print(f"[red]No snapshot name '{snap_name}' for VM: {value['name']}[/red]")
     if vm_powered_on:
-        vs_ctx.console.rule(title="Power state restore")
+        console.rule(title="Power state restore")
         for value in vm_powered_on.values():
             vs_ctx.vs.start_vm(vs_ctx.headers, value["moId"], value["name"])
 
@@ -246,7 +237,7 @@ def replace_snap(
         ):
     vm_array: dict = vs_ctx.vs.get_array_of_vm(vs_ctx.headers, exclude, filter)
     action_confirmation_and_stop_vm(vm_array)
-    vs_ctx.console.rule(title="Replace virtual machine snapshot")
+    console.rule(title="Replace virtual machine snapshot")
     remove_snap(
         filter=filter,
         exclude=exclude,

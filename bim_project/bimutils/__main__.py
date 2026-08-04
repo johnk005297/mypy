@@ -5,14 +5,14 @@ import platform
 import logging
 from pathlib import Path
 
+from . import __version__
 from bimutils.git_tools import git_app
 from bimutils.postgre_tools.cli import sql_app
 from bimutils.bimeister.feature_toggles import ft_app
 from bimutils.docker_tools import docker_app
 from bimutils.bimeister.cli import lic_app
-from bimutils.vsphere_tools import vsphere_app
+from bimutils.vsphere_tools.cli import vsphere_app
 from bimutils.bimeister.cli import auth_app
-from . import __version__
 from bimutils.bimeister.bimeister_tools import print_bim_version
 from bimutils.bimeister.interactive.dispatcher import launch_menu
 from bimutils.common import mlogger

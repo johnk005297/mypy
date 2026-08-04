@@ -19,3 +19,8 @@ class ModuleSelected(Message):
 
 class BackRequested(Message):
     pass
+
+class OperationSelected(Message):
+    def __init__(self, operation: str) -> None:
+        self.operation = operation
+        super().__init__()
