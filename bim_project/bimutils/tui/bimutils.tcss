@@ -1,0 +1,17 @@
+Screen {
+    layout: horizontal;
+}
+
+#menu {
+    width: 30;
+    border: solid gray;
+}
+
+#menu Button {
+    width: 100%;
+}
+
+#content {
+    width: 1fr;
+    border: solid gray;
+}

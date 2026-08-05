@@ -1,70 +1,61 @@
-"""
-Main TUI application.
+from textual.app import App, ComposeResult, on
+from textual.containers import Horizontal, VerticalScroll, Container
+from textual.widgets import Button
 
-Responsible for:
-- creating the Textual application;
-- assembling the main layout;
-- connecting major UI components.
+import logging
 
-Does not contain:
-- module logic;
-- backend calls;
-- screen-specific behavior.
-"""
-from textual.app import App, ComposeResult
-from textual.containers import Horizontal
+from bimutils.common.mlogger import file_logger, Logs
+from bimutils.tui import menus
+from bimutils.tui.widgets.vsphere.list_vm import VmListWidget
 
-from .navigation import Navigation
-from .content import Content
-from .messages import ModuleSelected, OperationSelected, BackRequested
-from .menus import MAIN_MENU
-from .screens import SCREENS
+_logger = logging.getLogger(__name__)
+logs = Logs()
 
 class MainApp(App):
-    """Main Textual application."""
     TITLE = "bimutils"
-    BINDINGS = [
-        ("escape", "back", "Back"),
-    ]
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.current_menu = MAIN_MENU
-        self.menu_stack = []
-        self.current_screen = None
+    CSS_PATH = "bimutils.tcss"
 
     def compose(self) -> ComposeResult:
         with Horizontal():
-            yield Navigation(MAIN_MENU)
-            yield Content()
+            with VerticalScroll(id="menu"):
+                for label, button_id in menus.MAIN_MENU:
+                    yield Button(label, id=button_id)
+            yield Container(id="content")
 
-    async def on_module_selected(self, message: ModuleSelected) -> None:
-        navigation = self.query_one(Navigation)
-        submenu = self.current_menu.get(message.module)
-        if submenu is not None:
-            self.menu_stack.append(self.current_menu)
-            self.current_menu = submenu
-            navigation.set_items(submenu)
-            navigation.mode = "operations"
+    @on(Button.Pressed, "#exit")
+    def exit_pressed(self, event: Button.Pressed) -> None:
+        self.exit()
 
-        content = self.query_one(Content)
-        screen_class = SCREENS.get(message.module)
-        if screen_class is not None:
-            self.current_screen = screen_class()
-            await content.show(self.current_screen)
+    @on(Button.Pressed)
+    async def button_pressed(self, event: Button.Pressed) -> None:
+        """Event handler called when a button is pressed."""
+        msg = f"{event.button.id} is pressed."
+        if event.button.id == "vsphere":
+            _logger.info(msg)
+            await self.show_menu(menus.VSPHERE_MENU, show_back=True)
+        elif event.button.id == "git":
+            _logger.info(msg)
+        elif event.button.id == "bimeister":
+            _logger.info(msg)
+        elif event.button.id == "back":
+            await self.show_menu(menus.MAIN_MENU)
+        elif event.button.id == "list_vm":
+            await self.show_content(VmListWidget())
 
-    async def on_operation_selected(self, message: OperationSelected) -> None:
-        if self.current_screen is None:
-            return
-        await self.current_screen.handle_operation(message.operation)
+    async def show_menu(self, menu_items, show_back=False) -> None:
+        menu = self.query_one("#menu", VerticalScroll)
+        await menu.remove_children()
+        for label, button_id in menu_items:
+            await menu.mount(Button(label, id=button_id))
+        if show_back:
+            await menu.mount(Button("Back", id="back"))
 
-    async def action_back(self) -> None:
-        if not self.menu_stack:
-            return
-        navigation = self.query_one(Navigation)
-        self.current_menu = self.menu_stack.pop()
-        navigation.set_items(list(self.current_menu.keys()))
-        self.current_screen = None
-        navigation.mode = "modules"
+    async def show_content(self, widget) -> None:
+        content = self.query_one("#content", Container)
+        await content.remove_children()
+        await content.mount(widget)
 
 if __name__ == "__main__":
-    MainApp().run()
+    file_logger(logs.filepath, logLevel=logging.INFO)
+    app = MainApp()
+    app.run()

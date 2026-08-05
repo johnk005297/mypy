@@ -16,11 +16,9 @@ from getpass import getpass
 from typing import Literal
 
 from bimutils.common.http import make_request
-from bimutils.common.mlogger import Logs
 
 
-logger = logging.getLogger(__name__)
-logs = Logs()
+_logger = logging.getLogger(__name__)
 
 class Vsphere:
 
@@ -39,7 +37,7 @@ class Vsphere:
         if username and password:
             creds: str = username[0] + '@bimeister.com' + ':' + password
         else:
-            logger.error("No correct credentials were provided.")
+            _logger.error("No correct credentials were provided.")
             return None
         creds_bytes = creds.encode("utf-8")
         creds_encoded = base64.b64encode(creds_bytes)
@@ -57,7 +55,6 @@ class Vsphere:
 
     def get_session_token(self, username='', password='') -> str | None:
         """ Function to get token for execution requests. """
-
         try:
             if (os.environ.get('DOMAIN_USER') or os.getenv("DOMAIN_USER")) and not username:
                 username_utf_encoded = os.environ.get('DOMAIN_USER').encode("utf-8")
@@ -68,11 +65,11 @@ class Vsphere:
                 password_b64_decoded = base64.b64decode(password_utf_encoded)
                 password = password_b64_decoded.decode("utf-8").strip() # password utf decoded
         except binascii.Error as err:
-            logger.error(err)
+            _logger.error(err)
             print(f"{type(err).__name__}: {err}")
             return None
         except UnicodeDecodeError as err:
-            logger.error(err)
+            _logger.error(err)
             print(f"{type(err).__name__}: {err}")
             return None
         creds = self.get_credentials(username=username, password=password)
@@ -82,7 +79,7 @@ class Vsphere:
         payload = {}
         response = make_request('POST', url=f"{self.url}/rest/com/vmware/cis/session", headers=headers, data=payload, verify=False, print_err=True)
         if response:
-            logger.info(f"{response.status_code}")
+            _logger.info(f"{response.status_code}")
             data: dict = response.json()
             return data['value']
         else:
@@ -118,7 +115,7 @@ class Vsphere:
             data = response.json()
             return data['state']
         except Exception as err:
-            logger.error(err)
+            _logger.error(err)
             return None
 
     def get_array_of_vm(self, headers, search_for_exclude='', search_for='', powered_on=False) -> dict[str, dict] | None:
@@ -131,7 +128,7 @@ class Vsphere:
         try:
             data = response.json()
         except Exception as err:
-            logger.error(err)
+            _logger.error(err)
             return None
         exclude_vm: list = []
         if search_for_exclude:
@@ -256,9 +253,8 @@ class Vsphere:
                     }
         response = make_request('POST', url, headers=headers, data=json.dumps(payload), verify=False)
         if not response:
-            print(f"Error with {vm_name}. Check logs: {logs.filepath}")
             return None
-        logger.info(f"Created snapshot for VM: {vm_name}")
+        _logger.info(f"Created snapshot for VM: {vm_name}")
         return True
     
     def get_vm_snapshots(self, headers, moId, vm_name) -> dict:

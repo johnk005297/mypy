@@ -15,17 +15,10 @@ from bimutils.vsphere_tools.cli import vsphere_app
 from bimutils.bimeister.cli import auth_app
 from bimutils.bimeister.bimeister_tools import print_bim_version
 from bimutils.bimeister.interactive.dispatcher import launch_menu
-from bimutils.common import mlogger
-from dotenv import load_dotenv
+from bimutils.common.mlogger import file_logger, Logs
+from bimutils.common.startup import initialize
+initialize() # load credentials from .env file
 
-def get_env_file_path():
-    """Return path to application .env resource."""
-    try:
-        abs_path = Path(sys._MEIPASS)
-    except AttributeError:
-        abs_path = Path(__file__).resolve().parent
-    return abs_path / ".env"
-load_dotenv(dotenv_path=get_env_file_path())
 
 app = typer.Typer(
     add_completion=False,
@@ -61,9 +54,9 @@ def run():
     if platform.system() == 'Linux':
         import readline
 
-    logs = mlogger.Logs()
+    logs = Logs()
     logs.set_full_access_to_log_file(logs.filepath, 0o666)
-    logger = mlogger.file_logger(logs.filepath, logLevel=logging.INFO)
+    file_logger(logs.filepath, logLevel=logging.INFO)
 
     if len(sys.argv) > 1:
         try:

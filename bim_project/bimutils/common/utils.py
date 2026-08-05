@@ -1,6 +1,7 @@
 import logging
 import json
 import os
+import sys
 import shutil
 import time
 import platform
@@ -180,3 +181,12 @@ class File:
             new_json = file.read().replace(find, replace)      # find/replace vars must be string
         with open(filepath_2write, 'w', encoding='utf-8') as file:
             file.write(new_json)
+
+    @staticmethod
+    def get_env_file_path():
+        """Return path to application .env resource."""
+        try:
+            abs_path = Path(sys._MEIPASS)
+        except AttributeError:
+            abs_path = Path(__file__).resolve().parent.parent
+        return abs_path / ".env"

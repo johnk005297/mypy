@@ -1,19 +1,18 @@
-VSPHERE_MENU = [
-    "List VMs",
-    "Start VM",
-    "Stop VM",
-    "Restart VM",
-    "Snapshots",
+MAIN_MENU = [
+    ("vSphere", "vsphere"),
+    ("Git", "git"),
+    ("Bimeister", "bimeister"),
+    ("Exit", "exit"),
 ]
-DOCKER_MENU = []
-GIT_MENU = []
-BIMEISTER_MENU = []
-POSTGRE_MENU = []
 
-MAIN_MENU = {
-    "vSphere": VSPHERE_MENU,
-    "Docker": DOCKER_MENU,
-    "Git": GIT_MENU,
-    "Bimeister": BIMEISTER_MENU,
-    "Postgre": POSTGRE_MENU
-}
+VSPHERE_MENU = [
+    ("List VMs", "list_vm"),
+    ("Start VM", "start_vm"),
+    ("Stop VM", "stop_vm"),
+    ("Restart VM", "restart_vm"),
+    ("Take snapshot", "take_snap"),
+    ("Show snapshot", "show_snap"),
+    ("Revert snapshot", "revert_snap"),
+    ("Remove snapshot", "remove_snap"),
+    ("Replace snapshot", "replace_snap"),
+]
