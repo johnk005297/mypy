@@ -7,6 +7,9 @@ import logging
 from bimutils.common.mlogger import file_logger, Logs
 from bimutils.tui import menus
 from bimutils.tui.widgets.vsphere.list_vm import VmListWidget
+from bimutils.common.startup import initialize
+initialize() # load credentials from .env file
+
 
 _logger = logging.getLogger(__name__)
 logs = Logs()
@@ -29,14 +32,12 @@ class MainApp(App):
     @on(Button.Pressed)
     async def button_pressed(self, event: Button.Pressed) -> None:
         """Event handler called when a button is pressed."""
-        msg = f"{event.button.id} is pressed."
         if event.button.id == "vsphere":
-            _logger.info(msg)
             await self.show_menu(menus.VSPHERE_MENU, show_back=True)
         elif event.button.id == "git":
-            _logger.info(msg)
+            pass
         elif event.button.id == "bimeister":
-            _logger.info(msg)
+            pass
         elif event.button.id == "back":
             await self.show_menu(menus.MAIN_MENU)
         elif event.button.id == "list_vm":

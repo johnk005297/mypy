@@ -264,7 +264,11 @@ class Vsphere:
         response = make_request('GET', url=url, headers=headers, verify=False, print_err=True)
         if not response:
             return None
-        data = response.json()
+        try:
+            data = response.json()
+        except json.JSONDecodeError as err:
+            _logger.error(err)
+            return None
         snapshots: dict = {}
         snapId, vmId, snapName = [], [], []
         def collect_snapshot_names(data, depth=0, count=1):

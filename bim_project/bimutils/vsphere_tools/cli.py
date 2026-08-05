@@ -105,6 +105,8 @@ def show_snap(
     vm_array: dict = vs_ctx.vs.get_array_of_vm(vs_ctx.headers, exclude, filter)
     for value in vm_array.values():
         snapshots: dict = vs_ctx.vs.get_vm_snapshots(vs_ctx.headers, value["moId"], value["name"])
+        if not snapshots:
+            continue
         vs_ctx.vs.print_vm_snapshots(value["name"], snapshots)
         print()
 
