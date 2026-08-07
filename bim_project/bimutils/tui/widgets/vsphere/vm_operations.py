@@ -2,7 +2,7 @@ from textual.widgets import Static
 
 from bimutils.vsphere_tools.context import vs_ctx
 
-class VmListWidget(Static):
+class VmOperationsWidget(Static):
     def on_mount(self) -> None:
         headers = vs_ctx.vs.get_headers()
         if not headers:

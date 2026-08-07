@@ -1,22 +1,23 @@
 from textual.app import App, ComposeResult, on
 from textual.containers import Horizontal, VerticalScroll, Container
-from textual.widgets import Button
+from textual.widgets import Button, Footer
+from textual.binding import Binding
 
 import logging
 
-from bimutils.common.mlogger import file_logger, Logs
 from bimutils.tui import menus
-from bimutils.tui.widgets.vsphere.list_vm import VmListWidget
-from bimutils.common.startup import initialize
-initialize() # load credentials from .env file
+from bimutils.tui.widgets.vsphere.vm_operations import VmOperationsWidget
 
 
 _logger = logging.getLogger(__name__)
-logs = Logs()
+
 
 class MainApp(App):
     TITLE = "bimutils"
     CSS_PATH = "bimutils.tcss"
+    BINDINGS = [
+        Binding(key="q", action="quit", description="Quit"),
+    ]
 
     def compose(self) -> ComposeResult:
         with Horizontal():
@@ -24,10 +25,7 @@ class MainApp(App):
                 for label, button_id in menus.MAIN_MENU:
                     yield Button(label, id=button_id)
             yield Container(id="content")
-
-    @on(Button.Pressed, "#exit")
-    def exit_pressed(self, event: Button.Pressed) -> None:
-        self.exit()
+        yield Footer()
 
     @on(Button.Pressed)
     async def button_pressed(self, event: Button.Pressed) -> None:
@@ -35,13 +33,13 @@ class MainApp(App):
         if event.button.id == "vsphere":
             await self.show_menu(menus.VSPHERE_MENU, show_back=True)
         elif event.button.id == "git":
-            pass
+            await self.show_menu(menus.GIT_MENU, show_back=True)
         elif event.button.id == "bimeister":
-            pass
+            await self.show_menu(menus.BIMEISTER_MENU, show_back=True)
         elif event.button.id == "back":
             await self.show_menu(menus.MAIN_MENU)
         elif event.button.id == "list_vm":
-            await self.show_content(VmListWidget())
+            await self.show_content(VmOperationsWidget())
 
     async def show_menu(self, menu_items, show_back=False) -> None:
         menu = self.query_one("#menu", VerticalScroll)
@@ -55,8 +53,3 @@ class MainApp(App):
         content = self.query_one("#content", Container)
         await content.remove_children()
         await content.mount(widget)
-
-if __name__ == "__main__":
-    file_logger(logs.filepath, logLevel=logging.INFO)
-    app = MainApp()
-    app.run()

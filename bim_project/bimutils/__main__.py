@@ -3,7 +3,6 @@ import typer
 import sys
 import platform
 import logging
-from pathlib import Path
 
 from . import __version__
 from bimutils.git_tools import git_app
@@ -13,6 +12,7 @@ from bimutils.docker_tools import docker_app
 from bimutils.bimeister.cli import lic_app
 from bimutils.vsphere_tools.cli import vsphere_app
 from bimutils.bimeister.cli import auth_app
+from bimutils.tui.app import MainApp
 from bimutils.bimeister.bimeister_tools import print_bim_version
 from bimutils.bimeister.interactive.dispatcher import launch_menu
 from bimutils.common.mlogger import file_logger, Logs
@@ -49,6 +49,11 @@ app.add_typer(docker_app, name="image")
 app.add_typer(lic_app, name="license")
 app.add_typer(vsphere_app, name="vsphere")
 app.add_typer(auth_app)
+
+@app.command()
+def ui():
+    """ Launch Textual UI. """
+    MainApp().run()
 
 def run():
     if platform.system() == 'Linux':

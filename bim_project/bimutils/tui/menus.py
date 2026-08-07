@@ -2,7 +2,6 @@ MAIN_MENU = [
     ("vSphere", "vsphere"),
     ("Git", "git"),
     ("Bimeister", "bimeister"),
-    ("Exit", "exit"),
 ]
 
 VSPHERE_MENU = [
@@ -16,3 +15,7 @@ VSPHERE_MENU = [
     ("Remove snapshot", "remove_snap"),
     ("Replace snapshot", "replace_snap"),
 ]
+
+GIT_MENU = []
+
+BIMEISTER_MENU = []
