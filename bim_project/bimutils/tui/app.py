@@ -27,19 +27,25 @@ class MainApp(App):
             yield Container(id="content")
         yield Footer()
 
-    @on(Button.Pressed)
-    async def button_pressed(self, event: Button.Pressed) -> None:
-        """Event handler called when a button is pressed."""
-        if event.button.id == "vsphere":
-            await self.show_menu(menus.VSPHERE_MENU, show_back=True)
-        elif event.button.id == "git":
-            await self.show_menu(menus.GIT_MENU, show_back=True)
-        elif event.button.id == "bimeister":
-            await self.show_menu(menus.BIMEISTER_MENU, show_back=True)
-        elif event.button.id == "back":
-            await self.show_menu(menus.MAIN_MENU)
-        elif event.button.id == "list_vm":
-            await self.show_content(VmOperationsWidget())
+    @on(Button.Pressed, "#git")
+    async def handle_git_button_pressed(self, evenv: Button.Pressed) -> None:
+        """Called when the Git button is pressed."""
+        await self.show_menu(menus.GIT_MENU, show_back=True)
+
+    @on(Button.Pressed, "#vsphere")
+    async def handle_vsphere_button_pressed(self, evenv: Button.Pressed) -> None:
+        """Called when the vSphere button is pressed."""
+        await self.show_menu(menus.VSPHERE_MENU, show_back=True)
+
+    @on(Button.Pressed, "#bimeister")
+    async def handle_bimeister_button_pressed(self, evenv: Button.Pressed) -> None:
+        """Called when the Bimeister button is pressed."""
+        await self.show_menu(menus.BIMEISTER_MENU, show_back=True)
+
+    @on(Button.Pressed, "#back")
+    async def handle_back_button_pressed(self, evenv: Button.Pressed) -> None:
+        """Called when the Back button is pressed."""
+        await self.show_menu(menus.MAIN_MENU)
 
     async def show_menu(self, menu_items, show_back=False) -> None:
         menu = self.query_one("#menu", VerticalScroll)
