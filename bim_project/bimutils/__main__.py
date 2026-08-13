@@ -52,7 +52,7 @@ app.add_typer(auth_app)
 
 @app.command()
 def ui():
-    """ Launch Textual UI. """
+    """ Launch Textual UI. Note: Isn't ready yet."""
     MainApp().run()
 
 def run():

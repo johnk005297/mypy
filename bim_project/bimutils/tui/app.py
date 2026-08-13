@@ -1,13 +1,12 @@
 from textual.app import App, ComposeResult, on
 from textual.containers import Horizontal, VerticalScroll, Container
-from textual.widgets import Button, Footer
+from textual.widgets import Button, Footer, Static
 from textual.binding import Binding
 
 import logging
 
 from bimutils.tui import menus
 from bimutils.tui.widgets.vsphere.vm_operations import VmOperationsWidget
-
 
 _logger = logging.getLogger(__name__)
 
@@ -27,23 +26,26 @@ class MainApp(App):
             yield Container(id="content")
         yield Footer()
 
+    def on_mount(self):
+        self.theme = "gruvbox"
+
     @on(Button.Pressed, "#git")
-    async def handle_git_button_pressed(self, evenv: Button.Pressed) -> None:
+    async def handle_git_button_pressed(self, event: Button.Pressed) -> None:
         """Called when the Git button is pressed."""
         await self.show_menu(menus.GIT_MENU, show_back=True)
 
     @on(Button.Pressed, "#vsphere")
-    async def handle_vsphere_button_pressed(self, evenv: Button.Pressed) -> None:
+    async def handle_vsphere_button_pressed(self, event: Button.Pressed) -> None:
         """Called when the vSphere button is pressed."""
         await self.show_menu(menus.VSPHERE_MENU, show_back=True)
 
     @on(Button.Pressed, "#bimeister")
-    async def handle_bimeister_button_pressed(self, evenv: Button.Pressed) -> None:
+    async def handle_bimeister_button_pressed(self, event: Button.Pressed) -> None:
         """Called when the Bimeister button is pressed."""
         await self.show_menu(menus.BIMEISTER_MENU, show_back=True)
 
     @on(Button.Pressed, "#back")
-    async def handle_back_button_pressed(self, evenv: Button.Pressed) -> None:
+    async def handle_back_button_pressed(self, event: Button.Pressed) -> None:
         """Called when the Back button is pressed."""
         await self.show_menu(menus.MAIN_MENU)
 

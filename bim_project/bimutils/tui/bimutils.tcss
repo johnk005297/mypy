@@ -12,6 +12,7 @@ Screen {
 }
 
 #content {
+    border: $secondary tall;
     width: 1fr;
     border: solid gray;
 }

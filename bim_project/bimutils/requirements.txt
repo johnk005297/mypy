@@ -21,10 +21,9 @@ pandas==2.3.3
 platformdirs==4.11.0
 psycopg==3.3.4
 psycopg-binary==3.3.4
-psycopg2-binary==2.9.11
 Pygments==2.19.2
 pyinstaller==6.18.0
-pyinstaller-hooks-contrib==2026.0
+pyinstaller-hooks-contrib==2026.6
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
 pytz==2025.2
