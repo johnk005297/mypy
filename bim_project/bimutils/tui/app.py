@@ -1,12 +1,12 @@
 from textual.app import App, ComposeResult, on
 from textual.containers import Horizontal, VerticalScroll, Container
-from textual.widgets import Button, Footer, Static
+from textual.widgets import Button, Footer
 from textual.binding import Binding
 
 import logging
 
 from bimutils.tui import menus
-from bimutils.tui.widgets.vsphere.vm_operations import VmOperationsWidget
+from bimutils.tui.widgets.vsphere.vm_operations import VsphereScreen
 
 _logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class MainApp(App):
     @on(Button.Pressed, "#vsphere")
     async def handle_vsphere_button_pressed(self, event: Button.Pressed) -> None:
         """Called when the vSphere button is pressed."""
-        await self.show_menu(menus.VSPHERE_MENU, show_back=True)
+        await self.show_content(VsphereScreen())
 
     @on(Button.Pressed, "#bimeister")
     async def handle_bimeister_button_pressed(self, event: Button.Pressed) -> None:
