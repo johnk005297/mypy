@@ -257,7 +257,7 @@ class Vsphere:
         _logger.info(f"Created snapshot for VM: {vm_name}")
         return True
     
-    def get_vm_snapshots(self, headers, moId, vm_name) -> dict:
+    def get_vm_snapshots(self, headers, moId) -> dict | None:
         """ Get snapshot Id, virtual machine Id, snapshot name for a given VM. """
 
         url: str = f"{self.url}/sdk/vim25/{self._vsphere_release_schema}/VirtualMachine/{moId}/snapshot"
@@ -323,8 +323,12 @@ class Vsphere:
 
         # getting first key from the dictionary
         vm_moId = next(iter(self.get_array_of_vm(headers, [], vm_name)))
-        snapshots = [snap['snapName'].strip() for snap in self.get_vm_snapshots(headers, vm_moId, vm_name).values()]
-        if snap_name in snapshots:
+        snapshots: dict = self.get_vm_snapshots(headers, vm_moId)
+        if not snapshots:
+            return False
+        else:
+            snap_list: list = [snap['snapName'].strip() for snap in snapshots.values()]
+        if snap_name in snap_list:
             return True
         else:
             return False

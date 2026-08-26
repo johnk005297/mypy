@@ -104,7 +104,7 @@ def show_snap(
         ):
     vm_array: dict = vs_ctx.vs.get_array_of_vm(vs_ctx.headers, exclude, filter)
     for value in vm_array.values():
-        snapshots: dict = vs_ctx.vs.get_vm_snapshots(vs_ctx.headers, value["moId"], value["name"])
+        snapshots: dict = vs_ctx.vs.get_vm_snapshots(vs_ctx.headers, value["moId"])
         if not snapshots:
             continue
         vs_ctx.vs.print_vm_snapshots(value["name"], snapshots)
@@ -170,7 +170,9 @@ def remove_snap(
         console.rule(title="Remove virtual machine snapshot")
     for value in vm_array.values():
         with console.status(f"[bold magenta]Remove snapshot: {value['name']}[/bold magenta]", spinner="earth") as status:
-            snapshots: dict = vs_ctx.vs.get_vm_snapshots(vs_ctx.headers, value['moId'], value['name'])
+            snapshots: dict = vs_ctx.vs.get_vm_snapshots(vs_ctx.headers, value['moId'])
+            if not snapshots:
+                continue
             is_snap_exists: bool = False
             for snap in snapshots.values():
                 if snap['snapName'].strip() == snap_name:
@@ -210,7 +212,9 @@ def revert_snap(
     snap_name: str = name.strip()
     for value in vm_array.values():
         with console.status(f"[bold magenta]Revert snapshot: {value['name']}[/bold magenta]", spinner="earth"):
-            snapshots: dict = vs_ctx.vs.get_vm_snapshots(vs_ctx.headers, value['moId'], value['name'])
+            snapshots: dict = vs_ctx.vs.get_vm_snapshots(vs_ctx.headers, value['moId'])
+            if not snapshots:
+                continue
             is_snap_exists: bool = False
             for snap in snapshots.values():
                 if snap['snapName'].strip() == snap_name:

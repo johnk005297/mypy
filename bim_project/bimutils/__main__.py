@@ -5,6 +5,7 @@ import platform
 import logging
 
 from . import __version__
+from . import __supported_OS__
 from bimutils.git_tools import git_app
 from bimutils.postgre_tools.cli import sql_app
 from bimutils.bimeister.feature_toggles import ft_app
@@ -29,6 +30,7 @@ app = typer.Typer(
 def version_callback(value: bool):
     if value:
         print(f"version: {__version__}")
+        print(f"os: {__supported_OS__}")
         raise typer.Exit()
 
 @app.callback(invoke_without_command=True)
