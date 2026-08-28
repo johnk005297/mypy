@@ -12,29 +12,29 @@ class VsphereScreen(Container):
         with Vertical(id="vsphere-screen"):
             with Horizontal(id="filter-row"):
                 yield Label("Filter:")
-                yield Input(id="filter")
+                yield Input(id="filter-input")
 
             with Horizontal(id="exclude-row"):
                 yield Label("Exclude:")
-                yield Input(id="exclude")
+                yield Input(id="exclude-input")
 
             with Horizontal(id="filter-options"):
-                yield Checkbox("Powered on only", id="powered-on")
-                yield Button("Refresh", id="refresh")
+                yield Checkbox("Powered on only", id="powered-on-checkbox")
+                yield Button("Refresh", id="refresh-button")
 
             with Container(id="actions"):
                 with Horizontal(id="power-row"):
-                    yield Label("Power")
-                    yield Button("Start", id="start")
-                    yield Button("Stop", id="stop")
-                    yield Button("Restart", id="restart")
+                    yield Label("Power:")
+                    yield Button("Start", id="start-button", compact=True)
+                    yield Button("Stop", id="stop-button", compact=True)
+                    yield Button("Restart", id="restart-button", compact=True)
                 with Horizontal(id="snapshot-row"):
-                    yield Label("Snapshot")
-                    yield Button("Show", id="show-snap")
-                    yield Button("Take", id="take-snap")
-                    yield Button("Revert", id="revert-snap")
-                    yield Button("Remove", id="remove-snap")
-                    yield Button("Replace", id="replace-snap")
+                    yield Label("Snapshot:")
+                    yield Button("Show", id="show-snap-button", compact=True)
+                    yield Button("Take", id="take-snap-button", compact=True)
+                    yield Button("Revert", id="revert-snap-button", compact=True)
+                    yield Button("Remove", id="remove-snap-button", compact=True)
+                    yield Button("Replace", id="replace-snap-button", compact=True)
 
             with Container(id="vsphere-content"):
                 table = DataTable(id="vm-table")
@@ -46,6 +46,6 @@ class VsphereScreen(Container):
                 ])
                 yield table
 
-    @on(Button.Pressed, "#refresh")
+    @on(Button.Pressed, "#refresh-button")
     def handle_refresh_pressed(self) -> None:
         _logger.info("Rerfresh pressed")

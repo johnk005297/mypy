@@ -26,8 +26,8 @@ class MainApp(App):
             yield Container(id="content")
         yield Footer()
 
-    def on_mount(self):
-        self.theme = "gruvbox"
+    # def on_mount(self):
+    #     self.theme = "gruvbox"
 
     @on(Button.Pressed, "#git")
     async def handle_git_button_pressed(self, event: Button.Pressed) -> None:

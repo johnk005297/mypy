@@ -3,48 +3,67 @@
     height: 1fr;
 }
 
-#filter-row, #exclude-row, #filter-options {
-    height: 2;
+#filter-row,
+#exclude-row {
+    height: 3;
     width: 1fr;
 }
 
-#filter-row Label, #exclude-row Label {
+#filter-row Label,
+#exclude-row Label {
     width: 10;
     padding-top: 1;
 }
 
-#filter, #exclude {
+#filter-input, #exclude-input {
     width: 40;
 }
 
 #filter-options {
     height: 3;
+    width: 1fr;
+    align: left middle;
+    margin-top: 1;
+}
+
+#powered-on-checkbox {
+    width: 24;
+    margin-left: 0;
+    margin-right: 1;
+    background: transparent;
+    border: none;
+}
+
+#refresh-button {
+    width: 9;
+    min-width: 9;
+    height: 3;
+    margin-left: 2;
+    background: transparent;
+    border: none;
+    content-align: center top;
+}
+
+#power-row,
+#snapshot-row {
+    height: 3;
+    width: 1fr;
     align: left middle;
 }
 
-#powered-on {
-    width: auto;
-    margin-left: 10;
-    margin-right: 0;
-}
-
-#refresh {
-    width: 5;
-    height: 3;
-    margin-left: 0;
-}
-
-#power-row, #snapshot-row {
-    height: 3;
-}
-
-#power-row Label, #snapshot-row Label {
+#power-row Label,
+#snapshot-row Label {
     width: 10;
+    height: 3;
+    
 }
 
-#power-row Button, #snapshot-row Button {
-    width: 10;
+#power-row Button,
+#snapshot-row Button {
+    width: 9;
+    min-width: 9;
     margin-right: 1;
+
 }
 
 #actions {
