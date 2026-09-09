@@ -20,24 +20,26 @@ def get_token(
         ):
     """ Get user access token for a given URL. """
 
-    if not url.startswith('http'):
-        url = 'https://' + url
-    url = url[:-len('/products')] if url.endswith('/products') else url
-    url = url[:-len('/auth')] if url.endswith('/auth') else url
+    # if not url.startswith('http'):
+    #     url = 'https://' + url
+    # url = url[:-len('/products')] if url.endswith('/products') else url
+    # url = url[:-len('/auth')] if url.endswith('/auth') else url
     
-    auth = Auth()
-    providers = auth.get_providerId(url, interactive=False)
-    if providers and isinstance(providers, list) and len(providers) > 1 and not providerId:
-        print("Provide needed id with flag -pid / --providerId")
-        for provider in providers:
-            for k,v in provider.items():
-                print(k,v)
-    elif providers and providerId:
-        token = auth.get_user_access_token(url, user, password, providerId)
-        print(token if token else '')
-    elif providers and isinstance(providers, str):
-        token = auth.get_user_access_token(url, user, password, providers)
-        print(token if token else '')
+    # auth = Auth()
+    # providers = auth.get_providerId(url, interactive=False)
+    # if providers and isinstance(providers, list) and len(providers) > 1 and not providerId:
+    #     print("Provide needed id with flag -pid / --providerId")
+    #     for provider in providers:
+    #         for k,v in provider.items():
+    #             print(k,v)
+    # elif providers and providerId:
+    #     token = auth.get_user_access_token(url, user, password, providerId)
+    #     print(token if token else '')
+    # elif providers and isinstance(providers, str):
+    #     token = auth.get_user_access_token(url, user, password, providers)
+    #     print(token if token else '')
+    pass
+
 
 
 # lic_app CLI

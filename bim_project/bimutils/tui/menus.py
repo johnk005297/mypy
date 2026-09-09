@@ -2,6 +2,7 @@ MAIN_MENU = [
     ("vSphere", "vsphere"),
     ("Git", "git"),
     ("Bimeister", "bimeister"),
+    ("Token", "bim-user-token")
 ]
 
 VSPHERE_MENU = [

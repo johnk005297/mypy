@@ -13,7 +13,7 @@ from bimutils.docker_tools import docker_app
 from bimutils.bimeister.cli import lic_app
 from bimutils.vsphere_tools.cli import vsphere_app
 from bimutils.bimeister.cli import auth_app
-from bimutils.tui.app import MainApp
+from bimutils.tui.app import BimutilsTUI
 from bimutils.bimeister.bimeister_tools import print_bim_version
 from bimutils.bimeister.interactive.dispatcher import launch_menu
 from bimutils.common.mlogger import file_logger, Logs
@@ -55,7 +55,7 @@ app.add_typer(auth_app)
 @app.command()
 def ui():
     """ Launch Textual UI. Note: Isn't ready yet."""
-    MainApp().run()
+    BimutilsTUI().run()
 
 def run():
     if platform.system() == 'Linux':
