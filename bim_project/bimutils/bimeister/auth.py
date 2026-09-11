@@ -47,9 +47,6 @@ class Auth:
                 return False
         else:
             self.url = url.strip().lower()
-        self.url = self.url[:-1] if self.url.endswith('/') else self.url
-        self.url = self.url[:-len("/auth")] if self.url.endswith('/auth') else self.url
-        self.url = self.url[:-len("/products")] if self.url.endswith('/products') else self.url
         if not self.url_validation(self.url):
             return False
         if not self.get_providerId(self.url):
@@ -57,9 +54,10 @@ class Auth:
         self.get_credentials(username=username, password=password)
         return True if self.get_user_access_token(self.url, self.username, self.password, self.providerId) else False
 
-    def url_validation(self, url):
+    def url_validation(self, url: str) -> bool:
         """ Function checks if provided URL is correct and accessible. """
 
+        url = url.removesuffix('/').removesuffix('/auth').removesuffix('/products')
         if not url.startswith('http'):
             url = 'http://' + url
         # Check both ports: 80 and 443
@@ -69,7 +67,7 @@ class Auth:
                 if response.status_code // 100 == 2:
                     _logger.info(f"{url} {response.status_code}")
                     self.url = url
-                    return url
+                    return True
                 # fix issues if the redirect is set up
                 elif response.status_code in (301, 302, 308):
                     url = url[:4] + url[5:] if url[4] == 's' else url[:4] + 's' + url[4:]
@@ -106,7 +104,7 @@ class Auth:
                 continue
             continue
 
-    def get_providerId(self, url, interactive=True):
+    def get_providerId(self, url: str, interactive: bool = True) -> str | list[dict] | None:
         """ Function checks if Bimeister has more than one provider. If so, user prompt will appear to choose from the list.
             A single provider Id will be returned.
         """
@@ -124,7 +122,7 @@ class Auth:
             providers: list = response.json()
         elif response.status_code // 100 != 2:
             print(_logs.err_message)
-            return False
+            return None
         if len(providers) == 1:
             self.providerId = providers[0]['id']
             return self.providerId
@@ -139,12 +137,12 @@ class Auth:
                 inp = int(input('    value: '))
                 if inp > len(providers):
                     print("Incorrect input")
-                    return False
+                    return None
                 self.providerId = providers[inp - 1]['id']
                 return self.providerId
             except ValueError:
                 print('Input should be a number')
-                return False
+                return None
 
     def get_credentials(self, username=None, password=None):
         """ Prompt login and password from the user. """
@@ -164,7 +162,7 @@ class Auth:
             self.username = username
             self.password = password
 
-    def get_user_access_token(self, url, username, password, providerId) -> str:
+    def get_user_access_token(self, url: str, username: str, password: str, providerId: str) -> str:
         """ Function sends login request.
             Success response returns a .json with 'access_token'.
         """
