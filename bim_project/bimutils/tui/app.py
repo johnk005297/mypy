@@ -9,14 +9,14 @@ from textual.widgets import (
     )
 from textual import on, work
 from textual.app import App, ComposeResult
-from textual.binding import Binding
 from textual.containers import Horizontal, VerticalScroll
+from textual.binding import Binding
 
 import logging
 
 from bimutils.tui.menus import MAIN_MENU
-from bimutils.bimeister.auth import Auth
-from bimutils.common.mlogger import Logs
+# from bimutils.bimeister.auth import Auth
+from bimutils.tui.panels.bimeister import CheckLicensePanel, TokenPanel
 
 _logger = logging.getLogger(__name__)
 
@@ -26,25 +26,8 @@ class LogPanel(VerticalScroll):
         yield Log(id="log-view")
 
 
-class TokenPanel(VerticalScroll):
-    def compose(self) -> ComposeResult:
-        yield Input(placeholder="URL", id="token-url")
-        yield Input(placeholder="Provider ID", id="token-provider-id")
-        yield Input(placeholder="Username", id="token-user")
-        yield Input(placeholder="Password", password=True, id="token-pass")
-        yield Button("Get token", variant="primary", compact=True, id="token-run-button")
-        yield Static(id="token-result")
-
-
-class CheckLicensePanel(VerticalScroll):
-    def compose(self) -> ComposeResult:
-        yield Static("Check license", classes="panel-title")
-        yield Input(placeholder="Bimeister URL")
-        yield Button("Check license", variant="primary", compact=True)
-
-
 class BimutilsTUI(App):
-    CSS_PATH = "bimutils.tcss"
+    CSS_PATH = "styles/bimutils.tcss"
     BINDINGS = [
         Binding(key="q", action="quit", description="Quit"),
         Binding(key="l", action="show_log", description="Show log")
@@ -86,30 +69,6 @@ class BimutilsTUI(App):
         if panel_id is None:
             return
         self.query_one("#content", ContentSwitcher).current = panel_id
-
-    @on(Button.Pressed, "#token-run-button")
-    def load_token(self) -> None:
-        panel = self.query_one("#bim-token", TokenPanel)
-        result = panel.query_one("#token-result", Static)
-        result.update("Loading...")
-        self.fetch_token(
-            result,
-            panel.query_one("#token-url", Input).value,
-            panel.query_one("#token-user", Input).value,
-            panel.query_one("#token-pass", Input).value,
-            panel.query_one("#token-provider-id", Input).value,
-        )
-
-    @work(thread=True)
-    def fetch_token(self, result, url: str, username: str, password: str, provider_id: str) -> None:
-        auth = Auth()
-        try:
-            token = auth.get_user_access_token(url, username, password, provider_id)
-        except Exception as err:
-            token = f"Error: {err}"
-        if not token:
-            token = "Error: press Show log button from the footer menu."
-        self.call_from_thread(result.update, token)
 
     def action_show_log(self) -> None:
         self.query_one("#content", ContentSwitcher).current = "log-panel"
