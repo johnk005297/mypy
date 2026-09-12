@@ -128,6 +128,7 @@ class Auth:
             return self.providerId
         elif len(providers) > 1 and not interactive:
             providers: list = [{dct['name']: dct['id']} for dct in providers]
+            print(providers)
             return providers
         else:
             print('    Choose authorization type:')
