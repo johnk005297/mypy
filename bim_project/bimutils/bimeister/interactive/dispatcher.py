@@ -30,7 +30,7 @@ def launch_menu():
         return False
 
     url, token, username, password = Auth.url, Auth.token, Auth.username, Auth.password
-    if not License_main.get_license_status(url, token, username, password):
+    if not License_main.get_license_status(url, token):
         print("Warning!!! Incorrect license detected! Please check!".upper())
 
     while True:
@@ -48,7 +48,7 @@ def launch_menu():
             #    ''' =============================================================================== LICENSE BLOCK ==================================================================================== '''
 
             case ['check', 'lic']:
-                License_main.display_licenses(url, token, username, password)
+                License_main.display_licenses(url, token)
 
             case ['get', 'sid']:
                 response = License_main.get_serverID(url, token)
@@ -58,21 +58,21 @@ def launch_menu():
 
             case ['apply', 'lic', *_]:
                 if '-f' not in user_command:
-                    License_main.apply_license(url, token, username, password)
+                    License_main.apply_license(url, token, username)
                 else:
                     try:
                         flag_index = user_command.index('-f')
                         filepath = user_command[flag_index + 1].strip('"').strip("'")
-                        License_main.apply_license(url, token, username, password, filepath=filepath)
+                        License_main.apply_license(url, token, username, filepath=filepath)
                     except IndexError:
                         print("Error: Missing file path after '-f' flag.")
 
             case  ['delete', 'lic']:
-                License_main.delete_license(url, token, username, password)
+                License_main.delete_license(url, token, username)
 
             case ['activate', 'lic']:
                 license_id:str = input("Enter license id: ").strip()
-                License_main.activate_license(url, token, username, password, license_id) # type: ignore
+                License_main.activate_license(url, token, username, license_id) # type: ignore
 
             #    ''' =============================================================================== User objects BLOCK =============================================================================== '''
             ### DEPRECATED

@@ -13,7 +13,7 @@ from textual.binding import Binding
 import logging
 
 from bimutils.tui.menus import MAIN_MENU
-from bimutils.tui.panels.bimeister import CheckLicensePanel, TokenPanel, BimeisterSession
+from bimutils.tui.panels.bimeister import CheckLicensePanel, TokenPanel, BimeisterSession, LoginPanel
 
 _logger = logging.getLogger(__name__)
 
@@ -29,6 +29,10 @@ class BimutilsTUI(App):
         Binding(key="q", action="quit", description="Quit"),
         Binding(key="l", action="show_log", description="Show log")
     ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bimeister_session = BimeisterSession()
 
     def compose(self) -> ComposeResult:
         tree: Tree[str] = Tree("hidden", id="command-tree")
@@ -52,16 +56,14 @@ class BimutilsTUI(App):
         user_menu.add_leaf("Get user access token", data="bim-token")
         user_menu.add_leaf("Get private token", data="bim-private-token")
 
-        bimeister_session = BimeisterSession()
-
         with Horizontal(id="main"):
             yield tree
             with ContentSwitcher(initial=None, id="content"):
-                yield CheckLicensePanel(bimeister_session, id="bim-check-license")
-                yield TokenPanel(bimeister_session, id="bim-token")
+                yield CheckLicensePanel(self.bimeister_session, id="bim-check-license")
+                yield TokenPanel(self.bimeister_session, id="bim-token")
                 yield Static("Get server ID", id="bim-get-server-id")
                 yield Static("Get private token", id="bim-private-token")
-                yield Static("Placeholder for login box", id="bim-user-login")
+                yield LoginPanel(self.bimeister_session, id="bim-user-login")
                 yield LogPanel(id="log-panel")
         yield Footer()
 

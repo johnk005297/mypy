@@ -130,7 +130,7 @@ class License:
             list_of_licenses[EDMS], list_of_licenses[EPMM] = list_of_licenses[EPMM], list_of_licenses[EDMS]    
         return list_of_licenses
 
-    def get_licenses(self, url, token, username, password) -> list:
+    def get_licenses(self, url, token) -> list:
         """ Function gets all the licenses in the system,
             and returns a list of dictionaries: 
             [{'name': value, 'isActive': value, 'serverId': value, 'licenseID': value, 'until': value, 'activeUsers': value, 'activeUsersLimit': value}]
@@ -138,11 +138,7 @@ class License:
 
         url_get_licenses: str = f'{url}/{self.__api_License}'
         headers = {'accept': '*/*', 'Content-type':'text/plain', 'Authorization': f"Bearer {token}"}
-        payload = {
-                    "username": username,
-                    "password": password
-                  }
-        response = make_request('GET', url_get_licenses, data=payload, headers=headers, verify=False)
+        response = make_request('GET', url_get_licenses, headers=headers, verify=False)
         if response.status_code // 100 == 2:
             return response.json()
         else:
@@ -150,10 +146,10 @@ class License:
             print(self.logs.err_message)
             return False
 
-    def get_license_status(self, url, token, username, password):
+    def get_license_status(self, url, token):
         """ Check if there is an active license. Return True/False. """
 
-        licenses = self.get_licenses(url, token, username, password)
+        licenses = self.get_licenses(url, token)
         if not licenses:
             return False
         current_date: str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
@@ -185,10 +181,10 @@ class License:
         message: str = "Current user does not have sufficient privileges."
         return (True, response.text) if response and response.status_code // 100 == 2 else (False, message)
 
-    def display_licenses(self, url, token, username, password):
+    def display_licenses(self, url, token):
         """ Display the list of licenses. """
 
-        licenses: list = self.get_licenses(url, token, username, password)
+        licenses: list = self.get_licenses(url, token)
         if not licenses:
             return None
         if len(licenses) > 5:
@@ -202,8 +198,10 @@ class License:
         current_date: str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
         for license in licenses:
             # convert str format of expiration date to datetime format
-            format = "%Y-%m-%dT%H:%M:%S"
-            expiration_date = datetime.strptime(license["until"], format).strftime("%d %B %Y")
+            # format = "%Y-%m-%dT%H:%M:%S"
+            dt_obj = datetime.fromisoformat(license["until"])
+            expiration_date = dt_obj.strftime("%d %B %Y")
+            # expiration_date = datetime.strptime(license["until"], format).strftime("%d %B %Y")
             table.add_row(
                           license["name"],
                           license["serverId"],
@@ -213,12 +211,12 @@ class License:
                           )
         self.console.print(table)
 
-    def delete_license(self, url, token, username, password):
+    def delete_license(self, url, token, username):
         """   Delete active license, if there is one.   """    
 
         headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
         _logger.info("Delete license:")
-        licenses = self.get_licenses(url, token, username, password)
+        licenses = self.get_licenses(url, token)
         active_licenses = dict()
         """ 
             There is a default trial license from the installation with no ID(000..00). It cannot be deactivated, so we simply ignore it.
@@ -261,7 +259,6 @@ class License:
         url: str,
         token: str,
         username: str,
-        password: str,
         filepath: str | None = None,
         raw_data: str | None = None
         ) -> None | bool:
@@ -272,7 +269,7 @@ class License:
         if not url.startswith("http"):
             url = "https://" + url
         # create a tuple to check if license is already presents in Bimeister
-        licenses_id = tuple(dict.get('licenseID', False) for dict in self.get_licenses(url, token, username, password))
+        licenses_id = tuple(dict.get('licenseID', False) for dict in self.get_licenses(url, token))
         if filepath:
             new_license_data: list = self.read_license_token(filepath=filepath)
         else:
@@ -281,7 +278,7 @@ class License:
             return None
         for license in new_license_data:
             if license['LicenseID'] in licenses_id:
-                self.activate_license(url, token, username, password, license['LicenseID'])
+                self.activate_license(url, token, username, license['LicenseID'])
             else:
                 data = json.dumps(license['base64_encoded_license'])
                 response = requests.post(url=f'{url}/{self.__api_License}', headers=headers, data=data, verify=False)
@@ -289,7 +286,7 @@ class License:
                 time.sleep(0.15)
                 if response.status_code // 100 == 2:
                     self.console.print(f"\n   - new license '{response_data['product']}' has been posted successfully!", style="green")
-                    self.activate_license(url, token, username, password, license['LicenseID'])
+                    self.activate_license(url, token, username, license['LicenseID'])
                     time.sleep(0.15)
                 elif response_data['type'] and response_data['type'] == 'ForbiddenException':
                     print(f"User '{username}' does not have sufficient privileges!")
@@ -300,7 +297,7 @@ class License:
                     return None
         return True
 
-    def activate_license(self, url: str, token: str, username, password, license_id: str):
+    def activate_license(self, url: str, token: str, username, license_id: str):
         """ Activate license which is already uploaded in Bimeister platform. """
 
         headers = {'accept': '*/*', 'Content-type': 'text/plain', 'Authorization': f"Bearer {token}"}
@@ -313,7 +310,7 @@ class License:
         #         pass
         check_id: bool = False
         _logger.info("Activating a license:")
-        for license in self.get_licenses(url, token, username, password):
+        for license in self.get_licenses(url, token):
             if license['licenseID'] == license_id:
                 check_id = True
                 break
