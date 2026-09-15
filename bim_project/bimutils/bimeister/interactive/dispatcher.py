@@ -2,6 +2,10 @@ import os
 
 def launch_menu():
     import argparse
+    from datetime import date, datetime
+
+    from rich.table import Table
+    from rich.console import Console
 
     from .shell import Prompt
     import bimutils.bimeister.auth as auth
@@ -14,7 +18,7 @@ def launch_menu():
 
     prompt = Prompt()
     Auth = auth.Auth()
-    License_main = license.License()
+    License = license.License()
     Object_model_export = bim_export.Object_model()
     Object_model_import = bim_import.Object_model()
     Workflows_export = bim_export.Workflows()
@@ -30,7 +34,7 @@ def launch_menu():
         return False
 
     url, token, username, password = Auth.url, Auth.token, Auth.username, Auth.password
-    if not License_main.get_license_status(url, token):
+    if not License.get_license_status(url, token):
         print("Warning!!! Incorrect license detected! Please check!".upper())
 
     while True:
@@ -48,31 +52,57 @@ def launch_menu():
             #    ''' =============================================================================== LICENSE BLOCK ==================================================================================== '''
 
             case ['check', 'lic']:
-                License_main.display_licenses(url, token)
+                def display_licenses(url, token):
+                    """ Display the list of licenses. """
+                    licenses: list = License.get_licenses(url, token)
+                    if not licenses:
+                        return None
+                    if len(licenses) > 5:
+                        licenses = licenses[:5]
+                    table = Table(show_lines=True)
+                    table.add_column("Name", justify="left", no_wrap=True)
+                    table.add_column("Server Id", justify="left")
+                    table.add_column("Users", justify="left")
+                    table.add_column("Expiration date", justify="left")
+                    table.add_column("Status", justify="center")
+                    current_date: str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
+                    for license in licenses:
+                        # convert str format of expiration date to datetime format
+                        dt_obj = datetime.fromisoformat(license["until"])
+                        expiration_date = dt_obj.strftime("%d %B %Y")
+                        table.add_row(
+                                    license["name"],
+                                    license["serverId"],
+                                    f"{license['activeUsers']}/{license['activeUsersLimit']}",
+                                    f"[red]{expiration_date}[/red]" if license["until"] < current_date and license["isActive"] else expiration_date,
+                                    "[green]Active[/green]" if license["isActive"] else "[red]Inactive[/red]", style="cyan" if license["isActive"] else "dim cyan"
+                                    )
+                    Console().print(table)
+                display_licenses(url, token)
 
             case ['get', 'sid']:
-                response = License_main.get_serverID(url, token)
+                response = License.get_serverID(url, token)
                 success: bool = response[0]
                 message: str = response[1]
                 print(f"Error: {message}" if not success else f"\n   - serverId: {message}")
 
             case ['apply', 'lic', *_]:
                 if '-f' not in user_command:
-                    License_main.apply_license(url, token, username)
+                    License.apply_license(url, token, username)
                 else:
                     try:
                         flag_index = user_command.index('-f')
                         filepath = user_command[flag_index + 1].strip('"').strip("'")
-                        License_main.apply_license(url, token, username, filepath=filepath)
+                        License.apply_license(url, token, username, filepath=filepath)
                     except IndexError:
                         print("Error: Missing file path after '-f' flag.")
 
             case  ['delete', 'lic']:
-                License_main.delete_license(url, token, username)
+                License.delete_license(url, token, username)
 
             case ['activate', 'lic']:
                 license_id:str = input("Enter license id: ").strip()
-                License_main.activate_license(url, token, username, license_id) # type: ignore
+                License.activate_license(url, token, username, license_id) # type: ignore
 
             #    ''' =============================================================================== User objects BLOCK =============================================================================== '''
             ### DEPRECATED
@@ -490,8 +520,8 @@ def launch_menu():
                 print(f"\n{private_token}")
 
             case ['token']:
-                user_access_token = Auth.get_user_access_token(url, username, password, Auth.providerId)
-                print(f"\n{user_access_token}")
+                access_token = Auth.get_user_access_token(url, username, password, Auth.providerId)
+                print(f"\n{access_token}")
 
             case ['basic-auth', *_]:
                 if user_command == ['basic-auth']:

@@ -50,12 +50,12 @@ class LicContext:
         self.lic = License()
 
 # Create a context instance
-lic_context = LicContext()
+lic_ctx = LicContext()
 
 @lic_app.callback()
 def check_connection():
-    if not lic_context.utils.is_socket_available(lic_context.issue._license_server, lic_context.issue._license_server_port):
-        print(f"License server socket is NOT available <{lic_context.issue._license_server}:{lic_context.issue._license_server_port}>")
+    if not lic_ctx.utils.is_socket_available(lic_ctx.issue._license_server, lic_ctx.issue._license_server_port):
+        print(f"License server socket is NOT available <{lic_ctx.issue._license_server}:{lic_ctx.issue._license_server_port}>")
         raise typer.Abort()
 
 @lic_app.command(name="issue", help="Issue, apply license.")
@@ -88,33 +88,33 @@ def issue_lic(
     elif not serverId and not url:
         typer.echo("Error: Either --serverId or --url is required.")
         raise typer.Abort()
-    lic_username, lic_password = lic_context.utils.get_creds_from_env('LICENSE_USER', 'LICENSE_PASSWORD')
+    lic_username, lic_password = lic_ctx.utils.get_creds_from_env('LICENSE_USER', 'LICENSE_PASSWORD')
     if not lic_username or not lic_password:
         print("Enter credentials for license server:")
         lic_username = input("login: ")
         lic_password = getpass("password: ")
-    token = lic_context.issue.get_token_to_issue_license(username=lic_username, password=lic_password)
+    token = lic_ctx.issue.get_token_to_issue_license(username=lic_username, password=lic_password)
     if not token:
         sys.exit()
     params = locals().copy()
     if serverId:
-        server_license = lic_context.issue.issue_license(**params)
+        server_license = lic_ctx.issue.issue_license(**params)
     else:
         url = url[:-1] if url.endswith('/') else url
         url = url[:-len("/auth")] if url.endswith('/auth') else url
         url = url[:-len("/products")] if url.endswith('/products') else url
         url = "https://" + url if not url.startswith('http') else url
-        if not lic_context.utils.is_url_available(url):
+        if not lic_ctx.utils.is_url_available(url):
             print(f"URL: {url} is not available.")
             raise typer.Abort()
-        check = lic_context.auth_.establish_connection(url=url, username=user, password=password)
+        check = lic_ctx.auth_.establish_connection(url=url, username=user, password=password)
         if not check:
             sys.exit()
-        success, message = lic_context.lic.get_serverID(url, lic_context.auth_.token)
+        success, message = lic_ctx.lic.get_serverID(url, lic_ctx.auth_.token)
         if success:
             params['serverId'] = message
         else:
             print(f"Error: {message}")
-        server_license = lic_context.issue.issue_license(**params)
+        server_license = lic_ctx.issue.issue_license(**params)
         if apply:
-            lic_context.lic.apply_license(url, lic_context.auth_.token, user, password, raw_data=server_license)
+            lic_ctx.lic.apply_license(url, lic_ctx.auth_.token, user, raw_data=server_license)

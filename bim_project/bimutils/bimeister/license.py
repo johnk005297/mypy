@@ -4,7 +4,6 @@ from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
 from dateutil.relativedelta import relativedelta
 from rich.console import Console
-from rich.table import Table
 
 import base64
 import logging
@@ -180,36 +179,6 @@ class License:
         response = make_request('GET', url=url, headers=headers, verify=False)
         message: str = "Current user does not have sufficient privileges."
         return (True, response.text) if response and response.status_code // 100 == 2 else (False, message)
-
-    def display_licenses(self, url, token):
-        """ Display the list of licenses. """
-
-        licenses: list = self.get_licenses(url, token)
-        if not licenses:
-            return None
-        if len(licenses) > 5:
-            licenses = licenses[:5]
-        table = Table(show_lines=True)
-        table.add_column("Name", justify="left", no_wrap=True)
-        table.add_column("Server Id", justify="left")
-        table.add_column("Users", justify="left")
-        table.add_column("Expiration date", justify="left")
-        table.add_column("Status", justify="center")
-        current_date: str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
-        for license in licenses:
-            # convert str format of expiration date to datetime format
-            # format = "%Y-%m-%dT%H:%M:%S"
-            dt_obj = datetime.fromisoformat(license["until"])
-            expiration_date = dt_obj.strftime("%d %B %Y")
-            # expiration_date = datetime.strptime(license["until"], format).strftime("%d %B %Y")
-            table.add_row(
-                          license["name"],
-                          license["serverId"],
-                          f"{license['activeUsers']}/{license['activeUsersLimit']}",
-                          f"[red]{expiration_date}[/red]" if license["until"] < current_date and license["isActive"] else expiration_date,
-                        "[green]Active[/green]" if license["isActive"] else "[red]Inactive[/red]", style="cyan" if license["isActive"] else "dim cyan"
-                          )
-        self.console.print(table)
 
     def delete_license(self, url, token, username):
         """   Delete active license, if there is one.   """    

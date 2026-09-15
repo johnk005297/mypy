@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import date, datetime
+import logging
+import os
 
 from textual import on, work
 from textual.app import ComposeResult
@@ -10,14 +12,16 @@ from rich.table import Table
 from bimutils.bimeister.auth import Auth
 from bimutils.bimeister.license import License
 
+_logger = logging.getLogger(__name__)
 
 @dataclass
 class BimeisterSession:
     url: str | None = None
     provider_id: str | None = None
-    user_access_token: str | None = None
+    access_token: str | None = None
     username: str | None = None
     auth: Auth = field(default_factory=Auth)
+    license: License = field(default_factory=License)
 
 
 class LoginPanel(VerticalScroll):
@@ -28,13 +32,15 @@ class LoginPanel(VerticalScroll):
         ) -> None:
         super().__init__(**kwargs)
         self.session = session
+        self.default_user: str = os.getenv("BIMEISTER_DEFAULT_USER")
+        self.default_pass: str = os.getenv("BIMEISTER_DEFAULT_PASS")
 
     def compose(self) -> ComposeResult:
         yield Input(placeholder="URL", id="login-url")
         yield Button("Go", variant="primary", compact=True, id="login-go")
         yield Select([], prompt="Select provider", id="login-provider", disabled=True)
-        yield Input(placeholder="Username", id="login-user", disabled=True)
-        yield Input(placeholder="Password", id="login-pass", password=True, disabled=True)
+        yield Input(value=self.default_user, placeholder="Username", id="login-user", disabled=True)
+        yield Input(value=self.default_pass, placeholder="Password", id="login-pass", password=True, disabled=True)
         yield Button("Login", variant="success", compact=True, id="login-submit", disabled=True)
         yield Static(id="login-status")
 
@@ -102,7 +108,7 @@ class LoginPanel(VerticalScroll):
             status.update("Login failed: press Show log from the footer.")
             return
         self.session.provider_id = provider_id
-        self.session.user_access_token = token
+        self.session.access_token = token
         status.update("Connected. You can now use Bimeister commands.")
 
 
@@ -122,8 +128,8 @@ class TokenPanel(VerticalScroll):
     @on(Button.Pressed, "#token-run-button")
     def load_token(self) -> None:
         result: Static = self.query_one("#token-result", Static)
-        if self.session.user_access_token:
-            result.update(self.session.user_access_token)
+        if self.session.access_token:
+            result.update(self.session.access_token)
         else:
             result.update("Not connected. Use Bimeister → Login first.")
 
@@ -154,7 +160,7 @@ class CheckLicensePanel(VerticalScroll):
     @on(Button.Pressed, "#check-lic-button")
     def on_check(self) -> None:
         result: Static = self.query_one("#check-lic-result", Static)
-        if not self.session.user_access_token:
+        if not self.session.access_token:
             result.update("Not connected. Use Bimeister → Login first.")
             return
         result.update("Loading...")
@@ -162,5 +168,37 @@ class CheckLicensePanel(VerticalScroll):
 
     @work(thread=True)
     def fetch_licenses(self, result: Static) -> None:
-        pass
+        try:
+            licenses = self.session.license.get_licenses(self.session.url, self.session.access_token)
+        except Exception as err:
+            _logger.error(err)
+            self.app.call_from_thread(result.update, f"Error: {err}")
+            return
+        if not licenses:
+            self.app.call_from_thread(result.update, "No licenses found.")
+            return
+        table = self._build_table(licenses)
+        self.app.call_from_thread(result.update, table)
 
+    def _build_table(self, licenses: list) -> Table:
+        licenses = licenses[:5]
+        table = Table(show_lines=True)
+        table.add_column("Name", justify="left", no_wrap=True)
+        table.add_column("Server Id", justify="left")
+        table.add_column("Users", justify="left")
+        table.add_column("Expiration date", justify="left")
+        table.add_column("Status", justify="center")
+
+        current_date: str = str(date.today()) + 'T' + datetime.now().strftime("%H:%M:%S")
+        for license in licenses:
+            # convert str format of expiration date to datetime format
+            dt_obj = datetime.fromisoformat(license["until"])
+            expiration_date = dt_obj.strftime("%d %B %Y")
+            table.add_row(
+                        license["name"],
+                        license["serverId"],
+                        f"{license['activeUsers']}/{license['activeUsersLimit']}",
+                        f"[red]{expiration_date}[/red]" if license["until"] < current_date and license["isActive"] else expiration_date,
+                        "[green]Active[/green]" if license["isActive"] else "[red]Inactive[/red]", style="cyan" if license["isActive"] else "dim cyan"
+                        )
+        return table

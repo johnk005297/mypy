@@ -10,7 +10,7 @@ class Prompt:
         self._main_menu = HELP_TEXT
 
     def __getattr__(self, item):
-        raise AttributeError("AppMenu class has no such attribute: " + item)
+        raise AttributeError("Prompt class has no such attribute: " + item)
 
     def show_banner(self):
         """ first note to be displayed """

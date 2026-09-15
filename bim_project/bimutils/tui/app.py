@@ -27,12 +27,14 @@ class BimutilsTUI(App):
     CSS_PATH = "styles/bimutils.tcss"
     BINDINGS = [
         Binding(key="q", action="quit", description="Quit"),
-        Binding(key="l", action="show_log", description="Show log")
+        Binding(key="l", action="show_log", description="Show log"),
+        Binding(key="escape", action="back", description="Back")
     ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bimeister_session = BimeisterSession()
+        self._previous_panel = None
 
     def compose(self) -> ComposeResult:
         tree: Tree[str] = Tree("hidden", id="command-tree")
@@ -46,15 +48,15 @@ class BimutilsTUI(App):
 
         bimeister = tree.root.add("Bimeister", expand=False)
 
-        login_menu = bimeister.add_leaf("Login", data="bim-user-login")
+        bimeister.add_leaf("Login", data="bim-user-login")
 
         license_menu = bimeister.add("License")
-        license_menu.add_leaf("Check license", data="bim-check-license")
-        license_menu.add_leaf("Get server ID", data="bim-get-server-id")
+        license_menu.add_leaf("License", data="bim-check-license")
+        license_menu.add_leaf("Server ID", data="bim-get-server-id")
 
         user_menu = bimeister.add("User")
-        user_menu.add_leaf("Get user access token", data="bim-token")
-        user_menu.add_leaf("Get private token", data="bim-private-token")
+        user_menu.add_leaf("Access token", data="bim-token")
+        user_menu.add_leaf("Private token", data="bim-private-token")
 
         with Horizontal(id="main"):
             yield tree
@@ -75,7 +77,9 @@ class BimutilsTUI(App):
         self.query_one("#content", ContentSwitcher).current = panel_id
 
     def action_show_log(self) -> None:
-        self.query_one("#content", ContentSwitcher).current = "log-panel"
+        switcher = self.query_one("#content", ContentSwitcher)
+        self._previous_panel = switcher.current
+        switcher.current = "log-panel"
         log_view = self.query_one("#log-view", Log)
         log_view.clear()
         self.read_log(log_view)
@@ -88,5 +92,11 @@ class BimutilsTUI(App):
         try:
             text = "".join(deque(open(path), maxlen=lines))
         except Exception as err:
+            _logger.error(err)
             text = f"Error reading log: {err}"
         self.call_from_thread(log_view.write, text)
+
+    def action_back(self) -> None:
+        switcher = self.query_one("#content", ContentSwitcher)
+        if switcher.current == "log-panel" and self._previous_panel is not None:
+            switcher.current = self._previous_panel
