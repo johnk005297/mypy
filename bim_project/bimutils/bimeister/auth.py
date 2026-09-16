@@ -300,6 +300,10 @@ class Auth:
                                 verify=False
                                 )
         if response.status_code == 200:
+            self.__url = url
+            self.__token = None
+            self.__privateToken = None
+            self.__providerId = None
             return True
         else:
             return False

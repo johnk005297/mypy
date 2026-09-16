@@ -14,6 +14,7 @@ import logging
 
 from bimutils.tui.menus import MAIN_MENU
 from bimutils.tui.panels.bimeister import CheckLicensePanel, TokenPanel, BimeisterSession, LoginPanel
+from bimutils.bimeister.auth import Auth
 
 _logger = logging.getLogger(__name__)
 
@@ -78,8 +79,8 @@ class BimutilsTUI(App):
 
         # gate Bimeister commands behind login
         needs_login = panel_id.startswith("bim-") and panel_id != "bim-user-login"
-        if needs_login and not self.bimeister_session.access_token:
-            self.notify("Log in first: Bimeister → Login", severity="warning")
+        if needs_login and not self.bimeister_session.auth.token:
+            self.notify("Bimeister → Login first.", title="Not connected", severity="warning")
             return
         self.query_one("#content", ContentSwitcher).current = panel_id
 
