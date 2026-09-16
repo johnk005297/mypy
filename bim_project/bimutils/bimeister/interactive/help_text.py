@@ -22,6 +22,7 @@ User
     ptoken                              get private token
     token                               get user access token(Bearer)
     basic-auth --set                    set basic authentication
+    session-id                          get user session ID('X-User-ID' in swagger)
 
 Feature Toggle
     ft --list                           display list of features

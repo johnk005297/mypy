@@ -76,6 +76,13 @@ class BimutilsTUI(App):
             return
         self.query_one("#content", ContentSwitcher).current = panel_id
 
+        # gate Bimeister commands behind login
+        needs_login = panel_id.startswith("bim-") and panel_id != "bim-user-login"
+        if needs_login and not self.bimeister_session.access_token:
+            self.notify("Log in first: Bimeister → Login", severity="warning")
+            return
+        self.query_one("#content", ContentSwitcher).current = panel_id
+
     def action_show_log(self) -> None:
         switcher = self.query_one("#content", ContentSwitcher)
         self._previous_panel = switcher.current

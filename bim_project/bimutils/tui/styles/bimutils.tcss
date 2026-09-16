@@ -1,3 +1,9 @@
+ToastRack {
+    dock: top;
+    align-horizontal: right;
+    height: auto;
+}
+
 ContentSwitcher {
     height: 1fr;
     border: round $primary;
@@ -6,4 +12,8 @@ ContentSwitcher {
 
 #command-tree {
     width: 35;
+}
+
+#login-form {
+    display: none;
 }

@@ -1,4 +1,5 @@
 import requests
+import jwt
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
 disable_warnings(InsecureRequestWarning)
@@ -14,30 +15,62 @@ _logger = logging.getLogger(__name__)
 _logs = Logs()
 
 class Auth:
-    __slots__ = ('url', 'username', 'password', 'token', 'providerId', 'privateToken')
+    __slots__ = (
+        '_Auth__url',
+        '_Auth__username',
+        '_Auth__password',
+        '_Auth__token',
+        '_Auth__providerId',
+        '_Auth__privateToken'
+        )
     __api_Providers: str = 'api/Providers'
     __api_Auth_Login: str = 'api/Auth/Login'
     __api_PrivateToken: str = 'api/PrivateToken'
+    __api_Auth_Logout: str = 'api/Auth/Logout'
 
     def __init__(self, url=None, username=None, password=None):
-        self.url = url
-        self.username = username
-        self.password = password
-        self.token = None
-        self.privateToken = None
-        self.providerId = None
+        self.__url = url
+        self.__username = username
+        self.__password = password
+        self.__token = None
+        self.__privateToken = None
+        self.__providerId = None
+
+    @property
+    def url(self):
+        return self.__url
+
+    @property
+    def username(self):
+        return self.__username
+
+    @property
+    def password(self):
+        return self.__password
+
+    @property
+    def token(self):
+        return self.__token
+
+    @property
+    def privateToken(self):
+        return self.__privateToken
+
+    @property
+    def providerId(self):
+        return self.__providerId
 
     def __getattr__(self, item):
         raise AttributeError("Auth class instance has no such attribute: " + item)
 
-    def establish_connection(self, url=None, username=None, password=None) -> bool:
+    def establish_connection(self, url: str = "", username: str = "", password: str = "") -> bool:
         """ Function performs URL validation, gets prodivers Id, gets user access token.
             Returns True if connection with provided credentials were establish, False otherwise.
         """
         
         if not url:
             try:
-                self.url = input("\nEnter URL: ").strip().lower()
+                self.__url = input("\nEnter URL: ").strip().lower()
             except IndexError:
                 message: str = 'Incorrect input.'
                 print(message)
@@ -46,13 +79,13 @@ class Auth:
                 print('\nKeyboardInterrupt')
                 return False
         else:
-            self.url = url.strip().lower()
-        if not self.url_validation(self.url):
+            self.__url = url.strip().lower()
+        if not self.url_validation(self.__url):
             return False
-        if not self.get_providerId(self.url):
+        if not self.get_providerId(self.__url):
             return False
         self.get_credentials(username=username, password=password)
-        return True if self.get_user_access_token(self.url, self.username, self.password, self.providerId) else False
+        return True if self.get_user_access_token(self.__url, self.__username, self.__password, self.__providerId) else False
 
     def url_validation(self, url: str) -> bool:
         """ Function checks if provided URL is correct and accessible. """
@@ -66,7 +99,7 @@ class Auth:
                 response = requests.head(url=url, verify=False, allow_redirects=False, timeout=2)
                 if response.status_code // 100 == 2:
                     _logger.info(f"{url} {response.status_code}")
-                    self.url = url
+                    self.__url = url
                     return True
                 # fix issues if the redirect is set up
                 elif response.status_code in (301, 302, 308):
@@ -124,11 +157,10 @@ class Auth:
             print(_logs.err_message)
             return None
         if len(providers) == 1:
-            self.providerId = providers[0]['id']
-            return self.providerId
+            self.__providerId = providers[0]['id']
+            return self.__providerId
         elif len(providers) > 1 and not interactive:
             providers: list = [{dct['name']: dct['id']} for dct in providers]
-            print(providers)
             return providers
         else:
             print('    Choose authorization type:')
@@ -139,8 +171,8 @@ class Auth:
                 if inp > len(providers):
                     print("Incorrect input")
                     return None
-                self.providerId = providers[inp - 1]['id']
-                return self.providerId
+                self.__providerId = providers[inp - 1]['id']
+                return self.__providerId
             except ValueError:
                 print('Input should be a number')
                 return None
@@ -152,16 +184,16 @@ class Auth:
             try:
                 username = input("Enter login(default, admin): ")
                 password = getpass("Enter password(default, Qwerty12345!): ")
-                self.username = username if username else 'admin'
-                self.password = password if password else 'Qwerty12345!'
+                self.__username = username if username else 'admin'
+                self.__password = password if password else 'Qwerty12345!'
             except KeyboardInterrupt:
                 print('\nKeyboardInterrupt')
                 return False
             except Exception:
                 sys.exit()
         else:
-            self.username = username
-            self.password = password
+            self.__username = username
+            self.__password = password
 
     def get_user_access_token(self, url: str, username: str, password: str, providerId: str) -> str:
         """ Function sends login request.
@@ -206,14 +238,16 @@ class Auth:
             else:
                 return False
         elif response.status_code // 100 == 2:
-            self.token = data['access_token']
-            return self.token
+            self.__token = data['access_token']
+            return self.__token
         else:
             return False
 
     def get_private_token(self, url, token):
         """ Function provides user private token. """
 
+        if self.__privateToken:
+            return self.__privateToken
         headers = {'accept': 'text/plain', 'Authorization': f"Bearer {token}"}
         url = f"{url}/{self.__api_PrivateToken}"
         try:
@@ -222,8 +256,50 @@ class Auth:
                 _logger.info(f"{url}: {response.status_code}")
                 response = requests.post(url=url, headers=headers, verify=False)
             data = response.json()
-            self.privateToken: str = data['privateToken']
+            self.__privateToken: str = data['privateToken']
         except requests.exceptions.RequestException as err:
             _logger.error(err)
             return False
-        return self.privateToken
+        return self.__privateToken
+
+    def get_x_user_id(self, token: str) -> str:
+        """ Get user session ID from jwt token. """
+        if not token:
+            _logger.error("No JWT token was provided.")
+            return None
+        try:
+            decoded_payload = jwt.decode(token, options={'verify_signature': False})
+        except jwt.DecodeError as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+        except jwt.InvalidTokenError as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+        except jwt.PyJWTError as err:
+            _logger.error(err)
+            print(_logs.err_message)
+            return None
+        if isinstance(decoded_payload, dict):
+            sid: str = decoded_payload.get('sid')
+            return sid
+        else:
+            return None
+
+    def user_logout(self, url: str, token: str) -> bool:
+        """ Logout user from bimeister web session. """
+
+        headers = {'accept': '*/*', 'Content-type': 'application/json; charset=utf-8', 'Authorization': f"Bearer {token}"}
+        payload = {}
+        response = make_request(
+                                'POST',
+                                url=f"{url}/{self.__api_Auth_Logout}",
+                                json=payload,
+                                headers=headers,
+                                verify=False
+                                )
+        if response.status_code == 200:
+            return True
+        else:
+            return False

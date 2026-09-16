@@ -6,7 +6,7 @@ import os
 from textual import on, work
 from textual.app import ComposeResult
 from textual.widgets import Input, Button, Static, Select
-from textual.containers import VerticalScroll
+from textual.containers import VerticalScroll, Vertical
 from rich.table import Table
 
 from bimutils.bimeister.auth import Auth
@@ -38,19 +38,20 @@ class LoginPanel(VerticalScroll):
     def compose(self) -> ComposeResult:
         yield Input(placeholder="URL", id="login-url")
         yield Button("Go", variant="primary", compact=True, id="login-go")
-        yield Select([], prompt="Select provider", id="login-provider", disabled=True)
-        yield Input(value=self.default_user, placeholder="Username", id="login-user", disabled=True)
-        yield Input(value=self.default_pass, placeholder="Password", id="login-pass", password=True, disabled=True)
-        yield Button("Login", variant="success", compact=True, id="login-submit", disabled=True)
-        yield Static(id="login-status")
+
+        with Vertical(id="login-form"):
+            yield Select([], prompt="Select provider", id="login-provider")
+            yield Input(value=self.default_user, placeholder="Username", id="login-user")
+            yield Input(value=self.default_pass, placeholder="Password", id="login-pass", password=True)
+            yield Button("Login", variant="primary", compact=True, id="login-submit")
+        yield Static(id="login-form-msg")
 
     @on(Button.Pressed, "#login-go")
     def on_go(self) -> None:
         url = self.query_one("#login-url", Input).value.strip().lower().removesuffix('/').removesuffix('/auth').removesuffix('/products')
         if not url:
-            self.query_one("#login-status", Static).update("Enter a URL first.")
+            self.notify("Enter a URL first.")
             return
-        self.query_one("#login-status", Static).update("Connecting...")
         self.fetch_providers(url)
 
     @work(thread=True)
@@ -62,9 +63,8 @@ class LoginPanel(VerticalScroll):
         self.app.call_from_thread(self._apply_providers, url, providers)
 
     def _apply_providers(self, url, providers) -> None:
-        status = self.query_one("#login-status", Static)
         if providers is None:
-            status.update("Error: press Show log button from the footer menu.")
+            self.notify("Press Show log button from the footer menu.", title="ERROR", severity="error")
             return
         if isinstance(providers, str):
             options = [('Local', providers)]
@@ -76,22 +76,17 @@ class LoginPanel(VerticalScroll):
         default = next((value for label, value in options if label == "Local"), options[0][1],)
         provider.value = default
         self.session.url = url
-
-        for wid in ("#login-provider", "#login-user", "#login-pass", "#login-submit"):
-            self.query_one(wid).disabled = False
-        status.update("Enter username, password and log in.")
+        self.query_one("#login-form").display = True
 
     @on(Button.Pressed, "#login-submit")
     def on_login(self) -> None:
         provider_id = self.query_one("#login-provider", Select).value
         username = self.query_one("#login-user", Input).value
         password = self.query_one("#login-pass", Input).value
-        status = self.query_one("#login-status", Static)
 
         if not username or not password:
-            status.update("Enter username and password.")
+            self.notify("Enter username and password.", title="INFO")
             return
-        status.update("Logging in...")
         self.do_login(provider_id, username, password)
 
     @work(thread=True)
@@ -103,13 +98,13 @@ class LoginPanel(VerticalScroll):
         self.app.call_from_thread(self._apply_login, provider_id, token)
 
     def _apply_login(self, provider_id, token):
-        status = self.query_one("#login-status", Static)
         if not token:
-            status.update("Login failed: press Show log from the footer.")
+            # status.update("Login failed: press Show log from the footer.")
+            self.notify("Press Show log from the footer.", title="LOGIN FAILED", severity="error")
             return
         self.session.provider_id = provider_id
         self.session.access_token = token
-        status.update("Connected. You can now use Bimeister commands.")
+        self.notify("You can now use Bimeister commands.", title="Connected", severity="information")
 
 
 class TokenPanel(VerticalScroll):
@@ -131,7 +126,7 @@ class TokenPanel(VerticalScroll):
         if self.session.access_token:
             result.update(self.session.access_token)
         else:
-            result.update("Not connected. Use Bimeister → Login first.")
+            self.notify("Bimeister → Login first.", title="Not connected", severity="warning")
 
     @work(thread=True)
     def fetch_token(self, result: Static, url: str, username: str, password: str, provider_id: str) -> None:
@@ -161,7 +156,7 @@ class CheckLicensePanel(VerticalScroll):
     def on_check(self) -> None:
         result: Static = self.query_one("#check-lic-result", Static)
         if not self.session.access_token:
-            result.update("Not connected. Use Bimeister → Login first.")
+            self.notify("Bimeister → Login first.", title="Not connected", severity="warning")
             return
         result.update("Loading...")
         self.fetch_licenses(result)

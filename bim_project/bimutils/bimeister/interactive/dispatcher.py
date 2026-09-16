@@ -47,6 +47,7 @@ def launch_menu():
                 print(prompt._main_menu)
 
             case ['exit'|'q'|'quit']:  # close the menu and exit from the script
+                Auth.user_logout(url, token)
                 break
 
             #    ''' =============================================================================== LICENSE BLOCK ==================================================================================== '''
@@ -516,16 +517,16 @@ def launch_menu():
 
             #    ''' =============================================================================== Tools ============================================================================================ '''
             case ['ptoken']:
-                private_token = Auth.get_private_token(url, token)
-                print(f"\n{private_token}")
+                if not Auth.privateToken:
+                    Auth.get_private_token(url, token)
+                print(f"\n{Auth.privateToken}")
 
             case ['token']:
-                access_token = Auth.get_user_access_token(url, username, password, Auth.providerId)
-                print(f"\n{access_token}")
+                print(f"\n{token}")
 
             case ['basic-auth', *_]:
                 if user_command == ['basic-auth']:
-                    bim_tools.basic_auth(url, token, username, password)
+                    bim_tools.basic_auth(url, token, username)
                 elif user_command == ['basic-auth', '--set']:
                     bim_tools.basic_auth(url, token, username, password, set=True)
                 else:
@@ -547,6 +548,9 @@ def launch_menu():
                 bim_tools.export_activity_collector(url, token)
 
             #    ''' =============================================================================== Auth ============================================================================================= '''
+            case ['session-id']:
+                data = Auth.get_x_user_id(token)
+                print(data)
             # case ['auth', *_]:
             #     parser = Auth_api.get_auth_parser()
             #     try:
