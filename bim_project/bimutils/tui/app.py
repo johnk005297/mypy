@@ -11,6 +11,8 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.binding import Binding
 
 import logging
+from pathlib import Path
+from collections import deque
 
 from bimutils.tui.menus import MAIN_MENU
 from bimutils.tui.panels.bimeister import CheckLicensePanel, TokenPanel, BimeisterSession, LoginPanel
@@ -25,7 +27,10 @@ class LogPanel(VerticalScroll):
 
 
 class BimutilsTUI(App):
-    CSS_PATH = "styles/bimutils.tcss"
+    CSS_PATH = [
+        "styles/app.tcss",
+        "styles/bimeister.tcss"
+    ]
     BINDINGS = [
         Binding(key="q", action="quit", description="Quit"),
         Binding(key="l", action="show_log", description="Show log"),
@@ -94,8 +99,6 @@ class BimutilsTUI(App):
 
     @work(thread=True)
     def read_log(self, log_view: Log, lines: int = 300) -> None:
-        from pathlib import Path
-        from collections import deque
         path = Path.home() / ".bimutils.log"
         try:
             text = "".join(deque(open(path), maxlen=lines))

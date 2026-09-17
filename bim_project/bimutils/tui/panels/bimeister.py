@@ -5,8 +5,17 @@ import os
 
 from textual import on, work
 from textual.app import ComposeResult
-from textual.widgets import Input, Button, Static, Select
-from textual.containers import VerticalScroll, Vertical, Horizontal
+from textual.widgets import (
+    Input,
+    Button,
+    Static,
+    Select
+)
+from textual.containers import (
+    VerticalScroll,
+    Vertical,
+    Horizontal
+)
 from rich.table import Table
 
 from bimutils.bimeister.auth import Auth
@@ -22,6 +31,7 @@ class BimeisterSession:
 
 
 class LoginPanel(VerticalScroll):
+
     def __init__(
             self,
             session: BimeisterSession,
@@ -34,21 +44,21 @@ class LoginPanel(VerticalScroll):
         self.check_log_msg: str = "Press Show log button from the footer menu."
 
     def compose(self) -> ComposeResult:
-        yield Input(placeholder="URL", id="login-url-input")
+        yield Input(placeholder="URL", id="login-url")
         yield Button("Go", variant="primary", compact=True, id="url-go-button")
 
         with Vertical(id="login-form"):
             yield Select([], prompt="Select provider", id="login-provider")
             yield Input(value=self.default_user, placeholder="Username", id="login-user")
             yield Input(value=self.default_pass, placeholder="Password", id="login-pass", password=True)
-            with Horizontal(id="login-from-buttons"):
+            with Horizontal(id="login-form-buttons"):
                 yield Button("Login", variant="primary", compact=True, id="login-submit")
                 yield Button("Logout", variant="primary", compact=True, id="logout-submit")
         yield Static(id="login-form-msg")
 
     @on(Button.Pressed, "#url-go-button")
     def on_go(self) -> None:
-        self.session.url = self.query_one("#login-url-input", Input).value.strip().lower().removesuffix('/').removesuffix('/auth').removesuffix('/products')
+        self.session.url = self.query_one("#login-url", Input).value.strip().lower().removesuffix('/').removesuffix('/auth').removesuffix('/products')
         if not self.session.url:
             self.notify("Enter a URL first.", severity="warning")
             return

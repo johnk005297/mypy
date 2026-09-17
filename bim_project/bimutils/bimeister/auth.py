@@ -70,7 +70,7 @@ class Auth:
         
         if not url:
             try:
-                self.__url = input("\nEnter URL: ").strip().lower()
+                url = input("\nEnter URL: ").strip().lower()
             except IndexError:
                 message: str = 'Incorrect input.'
                 print(message)
@@ -79,13 +79,23 @@ class Auth:
                 print('\nKeyboardInterrupt')
                 return False
         else:
-            self.__url = url.strip().lower()
-        if not self.url_validation(self.__url):
+            url = url.strip().lower()
+        if not self.url_validation(url):
             return False
-        if not self.get_providerId(self.__url):
+        if not self.get_providerId(url):
             return False
-        self.get_credentials(username=username, password=password)
-        return True if self.get_user_access_token(self.__url, self.__username, self.__password, self.__providerId) else False
+        if not username or not password:
+            try:
+                username = input("Enter login(default, admin): ")
+                password = getpass("Enter password(default, Qwerty12345!): ")
+                username = username if username else 'admin'
+                password = password if password else 'Qwerty12345!'
+            except KeyboardInterrupt:
+                print('\nKeyboardInterrupt')
+                return False
+            except Exception:
+                sys.exit()
+        return True if self.get_user_access_token(url, username, password, self.__providerId) else False
 
     def url_validation(self, url: str) -> bool:
         """ Function checks if provided URL is correct and accessible. """
@@ -99,7 +109,6 @@ class Auth:
                 response = requests.head(url=url, verify=False, allow_redirects=False, timeout=2)
                 if response.status_code // 100 == 2:
                     _logger.info(f"{url} {response.status_code}")
-                    self.__url = url
                     return True
                 # fix issues if the redirect is set up
                 elif response.status_code in (301, 302, 308):
@@ -177,24 +186,6 @@ class Auth:
                 print('Input should be a number')
                 return None
 
-    def get_credentials(self, username=None, password=None):
-        """ Prompt login and password from the user. """
-
-        if not username or not password:
-            try:
-                username = input("Enter login(default, admin): ")
-                password = getpass("Enter password(default, Qwerty12345!): ")
-                self.__username = username if username else 'admin'
-                self.__password = password if password else 'Qwerty12345!'
-            except KeyboardInterrupt:
-                print('\nKeyboardInterrupt')
-                return False
-            except Exception:
-                sys.exit()
-        else:
-            self.__username = username
-            self.__password = password
-
     def get_user_access_token(self, url: str, username: str, password: str, providerId: str) -> str:
         """ Function sends login request.
             Success response returns a .json with 'access_token'.
@@ -238,6 +229,9 @@ class Auth:
             else:
                 return False
         elif response.status_code // 100 == 2:
+            self.__url = url
+            self.__username = username
+            self.__password = password
             self.__token = data['access_token']
             return self.__token
         else:
@@ -294,13 +288,13 @@ class Auth:
         payload = {}
         response = make_request(
                                 'POST',
-                                url=f"{url}/{self.__api_Auth_Logout}",
-                                json=payload,
-                                headers=headers,
-                                verify=False
+                                url = f"{url}/{self.__api_Auth_Logout}",
+                                json = payload,
+                                headers = headers,
+                                verify = False
                                 )
         if response.status_code == 200:
-            self.__url = url
+            self.__url = None
             self.__token = None
             self.__privateToken = None
             self.__providerId = None
