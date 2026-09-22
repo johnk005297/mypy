@@ -20,6 +20,7 @@ from rich.table import Table
 
 from bimutils.bimeister.auth import Auth
 from bimutils.bimeister.license import License
+from bimutils.tui.panels.constants import CHECK_LOG_MSG
 
 _logger = logging.getLogger(__name__)
 
@@ -41,7 +42,6 @@ class LoginPanel(VerticalScroll):
         self.session = session
         self.default_user: str = os.getenv("BIMEISTER_DEFAULT_USER")
         self.default_pass: str = os.getenv("BIMEISTER_DEFAULT_PASS")
-        self.check_log_msg: str = "Press Show log button from the footer menu."
 
     def compose(self) -> ComposeResult:
         yield Input(placeholder="URL", id="login-url")
@@ -54,7 +54,6 @@ class LoginPanel(VerticalScroll):
             with Horizontal(id="login-form-buttons"):
                 yield Button("Login", variant="primary", compact=True, id="login-submit")
                 yield Button("Logout", variant="primary", compact=True, id="logout-submit")
-        yield Static(id="login-form-msg")
 
     @on(Button.Pressed, "#url-go-button")
     def on_go(self) -> None:
@@ -74,7 +73,7 @@ class LoginPanel(VerticalScroll):
 
     def _apply_providers(self, providers) -> None:
         if providers is None:
-            self.notify(self.check_log_msg, title="ERROR", severity="error")
+            self.notify(CHECK_LOG_MSG, title="ERROR", severity="error")
             return
         if isinstance(providers, str):
             options = [('Local', providers)]
@@ -107,7 +106,7 @@ class LoginPanel(VerticalScroll):
 
     def _apply_login(self, token):
         if not token:
-            self.notify(self.check_log_msg, title="LOGIN FAILED", severity="error")
+            self.notify(CHECK_LOG_MSG, title="LOGIN FAILED", severity="error")
             return
         self.notify("You can now use Bimeister commands.", title="Connected")
 
@@ -121,7 +120,7 @@ class LoginPanel(VerticalScroll):
             self.session.auth.user_logout(self.session.auth.url, self.session.auth.token)
         except Exception as err:
             _logger.error(err)
-            self.notify(self.check_log_msg, severity="error")
+            self.notify(CHECK_LOG_MSG, severity="error")
         self.app.call_from_thread(self._after_logout)
 
     def _after_logout(self) -> None:
@@ -150,6 +149,46 @@ class TokenPanel(VerticalScroll):
             result.update(self.session.auth.token)
         else:
             self.notify("Bimeister → Login first.", title="Not connected", severity="warning")
+
+
+class PrivateTokenPanel(VerticalScroll):
+    def __init__(
+            self,
+            session: BimeisterSession,
+            **kwargs
+    ) -> None:
+        super().__init__(**kwargs)
+        self.session = session
+
+    def compose(self) -> ComposeResult:
+        yield Button("Get private token", variant="primary", compact=True, id="get-priv-token-button")
+        yield Static(id="get-priv-token-result")
+
+    @on(Button.Pressed, "#get-priv-token-button")
+    def on_get_priv_token(self) -> None:
+        result: Static = self.query_one("#get-priv-token-result", Static)
+        if not self.session.auth.token:
+            self.notify("Bimeister → Login first.", title="Not connected", severity="warning")
+            return
+        result.update("Loading...")
+        self.get_priv_token(result)
+
+    @work(thread=True)
+    def get_priv_token(self, result: Static) -> None:
+        if not self.session.auth.url.startswith("http"):
+            url = "https://" + self.session.auth.url
+        else:
+            url = self.session.auth.url
+        try:
+            response = self.session.auth.get_private_token(url, self.session.auth.token)
+        except Exception as err:
+            _logger.error(err)
+            self.notify(CHECK_LOG_MSG, title="ERROR", severity="error")
+            return
+        if response:
+            self.app.call_from_thread(result.update, response)
+        else:
+            self.notify(CHECK_LOG_MSG, title="ERROR", severity="error")
 
 
 class CheckLicensePanel(VerticalScroll):
@@ -210,3 +249,39 @@ class CheckLicensePanel(VerticalScroll):
                         "[green]Active[/green]" if license["isActive"] else "[red]Inactive[/red]", style="cyan" if license["isActive"] else "dim cyan"
                         )
         return table
+
+
+class GetServerIdPanel(VerticalScroll):
+    def __init__(
+            self,
+            session: BimeisterSession,
+            **kwargs
+    ) -> None:
+        super().__init__(**kwargs)
+        self.session = session
+
+    def compose(self) -> ComposeResult:
+        yield Button("Get server ID", variant="primary", compact=True, id="get-sid-button")
+        yield Static(id="get-sid-result")
+
+    @on(Button.Pressed, "#get-sid-button")
+    def on_get_sid(self) -> None:
+        result: Static = self.query_one("#get-sid-result", Static)
+        if not self.session.auth.token:
+            self.notify("Bimeister → Login first.", title="Not connected", severity="warning")
+            return
+        result.update("Loading...")
+        self.get_server_id(result)
+
+    @work(thread=True)
+    def get_server_id(self, result: Static) -> None:
+        try:
+            response = self.session.license.get_serverID(self.session.auth.url, self.session.auth.token)
+        except Exception as err:
+            _logger.error(err)
+            self.notify(CHECK_LOG_MSG, title="ERROR", severity="error")
+            return
+        if response[0]:
+            self.app.call_from_thread(result.update, response[1])
+        else:
+            self.notify(CHECK_LOG_MSG, title="ERROR", severity="error")

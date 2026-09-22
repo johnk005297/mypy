@@ -13,7 +13,3 @@ ContentSwitcher {
 #command-tree {
     width: 35;
 }
-
-#login-form {
-    display: none;
-}

@@ -1,3 +1,12 @@
 #login-submit {
     margin-right: 2;
 }
+
+#login-form {
+    display: none;
+    width: 50;
+}
+
+#login-url {
+    width: 50;
+}

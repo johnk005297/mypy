@@ -237,7 +237,7 @@ class Auth:
         else:
             return False
 
-    def get_private_token(self, url, token):
+    def get_private_token(self, url: str, token: str):
         """ Function provides user private token. """
 
         if self.__privateToken:

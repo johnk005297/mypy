@@ -15,7 +15,14 @@ from pathlib import Path
 from collections import deque
 
 from bimutils.tui.menus import MAIN_MENU
-from bimutils.tui.panels.bimeister import CheckLicensePanel, TokenPanel, BimeisterSession, LoginPanel
+from bimutils.tui.panels.bimeister import (
+    CheckLicensePanel,
+    TokenPanel,
+    BimeisterSession,
+    LoginPanel,
+    GetServerIdPanel,
+    PrivateTokenPanel
+)
 from bimutils.bimeister.auth import Auth
 
 _logger = logging.getLogger(__name__)
@@ -69,8 +76,8 @@ class BimutilsTUI(App):
             with ContentSwitcher(initial=None, id="content"):
                 yield CheckLicensePanel(self.bimeister_session, id="bim-check-license")
                 yield TokenPanel(self.bimeister_session, id="bim-token")
-                yield Static("Get server ID", id="bim-get-server-id")
-                yield Static("Get private token", id="bim-private-token")
+                yield GetServerIdPanel(self.bimeister_session, id="bim-get-server-id")
+                yield PrivateTokenPanel(self.bimeister_session, id="bim-private-token")
                 yield LoginPanel(self.bimeister_session, id="bim-user-login")
                 yield LogPanel(id="log-panel")
         yield Footer()

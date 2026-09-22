@@ -1,0 +1,1 @@
+CHECK_LOG_MSG = "Press Show log button from the footer menu."
