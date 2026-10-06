@@ -21,7 +21,8 @@ from bimutils.tui.panels.bimeister import (
     BimeisterSession,
     LoginPanel,
     GetServerIdPanel,
-    PrivateTokenPanel
+    PrivateTokenPanel,
+    BimeisterMenu
 )
 from bimutils.bimeister.auth import Auth
 
@@ -59,17 +60,18 @@ class BimutilsTUI(App):
         tree.root.add("SQL", expand=False)
         tree.root.add("Images", expand=False)
 
-        bimeister = tree.root.add("Bimeister", expand=False)
+        bimeister_menu = BimeisterMenu(tree.root)
+        # bimeister = tree.root.add("Bimeister", expand=False)
 
-        bimeister.add_leaf("Login", data="bim-user-login")
+        # bimeister.add_leaf("Pa", data="bim-user-login")
 
-        license_menu = bimeister.add("License")
-        license_menu.add_leaf("License", data="bim-check-license")
-        license_menu.add_leaf("Server ID", data="bim-get-server-id")
+        # license_menu = bimeister.add("License")
+        # license_menu.add_leaf("License", data="bim-check-license")
+        # license_menu.add_leaf("Server ID", data="bim-get-server-id")
 
-        user_menu = bimeister.add("User")
-        user_menu.add_leaf("Access token", data="bim-token")
-        user_menu.add_leaf("Private token", data="bim-private-token")
+        # user_menu = bimeister.add("User")
+        # user_menu.add_leaf("Access token", data="bim-token")
+        # user_menu.add_leaf("Private token", data="bim-private-token")
 
         with Horizontal(id="main"):
             yield tree
@@ -78,7 +80,7 @@ class BimutilsTUI(App):
                 yield TokenPanel(self.bimeister_session, id="bim-token")
                 yield GetServerIdPanel(self.bimeister_session, id="bim-get-server-id")
                 yield PrivateTokenPanel(self.bimeister_session, id="bim-private-token")
-                yield LoginPanel(self.bimeister_session, id="bim-user-login")
+                yield LoginPanel(self.bimeister_session, bimeister_menu, id="bim-user-login")
                 yield LogPanel(id="log-panel")
         yield Footer()
 

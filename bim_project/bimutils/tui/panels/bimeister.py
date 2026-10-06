@@ -9,7 +9,8 @@ from textual.widgets import (
     Input,
     Button,
     Static,
-    Select
+    Select,
+    Tree
 )
 from textual.containers import (
     VerticalScroll,
@@ -31,17 +32,39 @@ class BimeisterSession:
     license: License = field(default_factory=License)
 
 
+class BimeisterMenu:
+    """Builds the Bimeister subtree and owns its state."""
+
+    def __init__(self, parent: Tree) -> None:
+        bimeister = parent.add("Bimeister", expand=False)
+
+        self.login_leaf = bimeister.add_leaf("[red]●[/red] Login", data="bim-user-login")
+
+        license_menu = bimeister.add("License")
+        license_menu.add_leaf("License", data="bim-check-license")
+        license_menu.add_leaf("Server ID", data="bim-get-server-id")
+
+        user_menu = bimeister.add("User")
+        user_menu.add_leaf("Access token", data="bim-token")
+        user_menu.add_leaf("Private token", data="bim-private-token")
+
+    def set_connected(self, connected: bool) -> None:
+        dot = "[green]●[/green]" if connected else "[red]●[/red]"
+        self.login_leaf.label = f"{dot} Login"
+
 class LoginPanel(VerticalScroll):
 
     def __init__(
             self,
             session: BimeisterSession,
+            menu: BimeisterMenu,
             **kwargs
         ) -> None:
         super().__init__(**kwargs)
         self.session = session
         self.default_user: str = os.getenv("BIMEISTER_DEFAULT_USER")
         self.default_pass: str = os.getenv("BIMEISTER_DEFAULT_PASS")
+        self.menu = menu
 
     def compose(self) -> ComposeResult:
         yield Input(placeholder="URL", id="login-url")
@@ -109,6 +132,7 @@ class LoginPanel(VerticalScroll):
             self.notify(CHECK_LOG_MSG, title="LOGIN FAILED", severity="error")
             return
         self.notify("You can now use Bimeister commands.", title="Connected")
+        self.menu.set_connected(True)
 
     @on(Button.Pressed, "#logout-submit")
     def on_logout(self) -> None:
@@ -127,6 +151,7 @@ class LoginPanel(VerticalScroll):
         self.query_one("#login-form").display = False
         self.query_one("#login-url", Input).value = ""
         self.notify("Logged out.", title="Disconnected")
+        self.menu.set_connected(True)
 
 
 class TokenPanel(VerticalScroll):
