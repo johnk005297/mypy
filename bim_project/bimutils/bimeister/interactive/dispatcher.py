@@ -597,14 +597,17 @@ def launch_menu():
 
             #    ''' =============================================================================== Bash command ===================================================================================== '''
             case [user_command, *args] if user_command.startswith(("!", "bash")):
-                bash_cmd = ''
+                # make sure that shell commands work in every environment
+                safe_env = os.environ.copy()
+                safe_env.pop("LD_LIBRARY_PATH", None)
+                safe_env.pop("PYTHONPATH", None)
                 if user_command == '!':
                     bash_cmd = ' '.join(args)
                 elif user_command.startswith('!'):
                     bash_cmd = ' '.join([user_command[1:]] + args)
                 else:
                     bash_cmd = ' '.join([user_command[4:]] + args)
-                subprocess.run(bash_cmd, shell=True)
+                subprocess.run(bash_cmd, shell=True, env=safe_env)
 
             # wildcard pattern if no cases before where matched
             case _:

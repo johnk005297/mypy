@@ -59,7 +59,7 @@ def ui():
 
 def run():
     if platform.system() == 'Linux':
-        import readline
+        import readline # support command history(pressing the UP arrow) 
 
     logs = Logs()
     logs.set_full_access_to_log_file(logs.filepath, 0o666)
