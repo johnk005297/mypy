@@ -2,6 +2,7 @@ import os
 
 def launch_menu():
     import argparse
+    import subprocess
     from datetime import date, datetime
 
     from rich.table import Table
@@ -593,6 +594,17 @@ def launch_menu():
                 if args.command == "attr-code-map":
                     if args.get:
                         AssetPerf.get_attr_codes_mapping(url, token)
+
+            #    ''' =============================================================================== Bash command ===================================================================================== '''
+            case [user_command, *args] if user_command.startswith(("!", "bash")):
+                bash_cmd = ''
+                if user_command == '!':
+                    bash_cmd = ' '.join(args)
+                elif user_command.startswith('!'):
+                    bash_cmd = ' '.join([user_command[1:]] + args)
+                else:
+                    bash_cmd = ' '.join([user_command[4:]] + args)
+                subprocess.run(bash_cmd, shell=True)
 
             # wildcard pattern if no cases before where matched
             case _:

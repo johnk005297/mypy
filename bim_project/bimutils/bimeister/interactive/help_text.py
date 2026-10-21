@@ -54,6 +54,9 @@ Templates
     export templates --id "id1 id2 ..." export template(s) using id
     risk-ass -f <file>                  import risk assessment template
 
+Extra tools
+    !, bash                             prefix to execute shell/bash command locally
+
     m                                   print this menu
     q                                   exit
 """
